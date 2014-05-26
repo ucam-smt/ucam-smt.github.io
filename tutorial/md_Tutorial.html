@@ -174,8 +174,8 @@ Effect on Speed, Memory, Scores</h1>
 Source Sentence Chopping</h1>
 <p>Long source sentences make the translation process slow and expensive in memory consumption; see [<a class="el" href="index.html#Allauzen2014">Allauzen2014</a>] for a discussion of how source sentence length affects computational complexity and memory use by HiFST and HiPDT. There are various strategies for controlling translation complexity; pruning has been discussed (<a class="el" href="md_Tutorial.html#lpruning">Local pruning / pruning in search</a>), and it is also possible to set the maximum span and gap spans allowed in translation so as to control computational complexity. However translation quality can be affected if pruning is too heavy or if span constraints are set too aggressively.</p>
 <p>An alternative approach is to 'chop' long sentences into shorter segements which can then be translated separately. If the sentence chopping is done carefully, the impact on the translation quality can be minimized. The benefits to chopping are faster translation that consumes less memory. The potential drawbacks are twofold: chopping can prevent the search procedure from finding good hypothesis under the grammar, and care must be taken to correctly apply the target language model at the sentence level.</p>
-<h1><a class="anchor" id="chopping_gb"></a>
-Grammar-based Sentence Chopping</h1>
+<h2><a class="anchor" id="chopping_gb"></a>
+Grammar-based Sentence Chopping</h2>
 <p>Chopping can be done by inserting the special 'chop' symbol '0' in the source sentence, and then translating with a modified grammar. The chopping grammar is constructed so that translation rules are not applied across the chopping points, thus limiting the space of translation that are generated. Conceptually, translation proceeds as:</p>
 <ol type="1">
 <li>the translation grammar is applied separately to source sentence segments demarcated by chop symbols</li>
@@ -209,8 +209,8 @@ Grammar-based Sentence Chopping</h1>
 <pre class="fragment">  hifst.replacefstbyarc=X,V
   hifst.replacefstbyarc.exceptions=S,R,T
 </pre><p>The second line above prevents substitution for rules with LHS '<code>S</code>', '<code>R</code>' and '<code>T</code>'. It is better to have a fully expanded FST for these rules for more effective optimisation (Determinization and Minimisation).</p>
-<h1><a class="anchor" id="chopping_eg"></a>
-Converting Grammars and Input Text for Chopping</h1>
+<h2><a class="anchor" id="chopping_eg"></a>
+Converting Grammars and Input Text for Chopping</h2>
 <p>The usual Hiero grammar can be converted for chopping, as follows; note that no-cost, 0 valued, weights are added to rules :</p>
 <p>First, create the chopping and glue rules: </p>
 <pre class="fragment"> &gt; (echo "T T_D_X T_D_X 0" ; echo "T T_X T_X 0" ; echo "T 0 0 0") &gt; G/rules.hiero.chop
@@ -255,8 +255,8 @@ Converting Grammars and Input Text for Chopping</h1>
  # find the score of the best hypothesis for the 3rd sentence, with chopping
  &gt; zcat output/exp.chopping/chop/LATS/3.fst.gz | printstrings.O2 --semiring=lexstdarc
  1 106 4 9 3 1552 6 3 96 3 200 8072 4 5452 10 3 4143 535 6 1206 9 628 9 3 232 56 4 3 2723 6 11 21441 2645 5 2       130.309,1.31641
-</pre><h1><a class="anchor" id="chopping_sseg"></a>
-Chopping by Explicit Source Sentence Segmentation</h1>
+</pre><h2><a class="anchor" id="chopping_sseg"></a>
+Chopping by Explicit Source Sentence Segmentation</h2>
 <p>It is also possible to segment and translate each segment completely independently, as shown in this example for sentence 3. Here, the original Russian sentence is chopped into three shorter sentences which are to be translated independently, as follows: </p>
 <pre class="fragment"> # split sentence 3 into 4 separate sentences
  &gt; awk 'NR==3' RU/RU.set1.idx | sed 's, 3 , 3 2\n1 ,g'  &gt; RU/RU.sent3.chopped
@@ -297,185 +297,12 @@ Chopping by Explicit Source Sentence Segmentation</h1>
 <pre class="fragment"> &gt; applylm.O2 --lm.load=M/lm.4g.mmap --lm.featureweights=1 --lm.wps=0.0 --semiring=lexstdarc --lattice.load=output/exp.chopping/sent3/LATS/sent_no12.fst --lattice.store=output/exp.chopping/sent?/LATS/sent_no12_rescore.fst --lattice.load.deletelmcost --range=3:3
 </pre><p>The rescored output is written to <code>output/exp.chopping/sent3/LATS/sent_no12_rescore.fst</code> with correctly applied language model scores. The total translation cost is much lower (better) than when segment hypotheses are simply combined (i.e. 115.855 vs. 141.166): </p>
 <pre class="fragment"> &gt; cat output/exp.chopping/sent3/LATS/sent_no12_rescore.fst | printstrings.O2 --semiring=lexstdarc -m wmaps/wmt13.en.wmap -w 2&gt;/dev/null
- &lt;s&gt; however , in the heart of the take the last myth , arguing that the rare cases of fraud in elections in the united states , the deaths of a lightning strike . &lt;/s&gt;       115.855,-13.1377</pre><h1><a class="anchor" id="pda"></a>
-Translation with Push-Down Automata</h1>
-<p>This HiFST package can also perform decoding using Push-Down Automata (PDA) as described in [<a class="el" href="index.html#Iglesias2011">Iglesias2011</a>, <a class="el" href="index.html#Allauzen2014">Allauzen2014</a>]. We call this the HiPDT decoder. A brief overview of it and an example on how to use it is given next.</p>
-<p>In this framework, the RTN at the top-most cell of the CYK grid is converted into a PDA (via the Replace operation in the <a class="el" href="index.html#OpenFst">OpenFst</a> Extensions) and efficiently composed with a language model to produce another PDA. To obtain the final output FSA, the PDA is expanded to an FSA either entirely (if memory is sufficient and the language model is small enough) or via pruned expansion (for larger language models). This is useful in exploring large and complex translation grammars where HiFST requires a lot of local pruning. However, it requires the language model to be 'small' (for example, entropy-pruned as in [<a class="el" href="index.html#Iglesias2011">Iglesias2011</a>, <a class="el" href="index.html#Allauzen2014">Allauzen2014</a>]). Therefore, we then typically rescore the pruned output FSA with a stronger language model.</p>
-<p>This whole setup can be accomplished in one single command as follows: </p>
-<pre class="fragment">&gt; hifst.O2 --config=configs/CF.hiero.pdt &amp;&gt; log/log.hiero.pdt
-</pre><p>Please see the config file for the parameters needed, along with explanatory comments.</p>
-<p>In this particular example, the output 1-best for the first two sentences is identical to the baseline Hiero case (with translation via RTN replacement followed by composition). However, the output lattices differ as they contain different hypotheses (due to the different pruning strategy).</p>
-<h2><a class="anchor" id="pda_rtns"></a>
-Recursive Transition Networks</h2>
-<p>As already discussed with respect to <a class="el" href="md_Tutorial.html#lpruning">Local pruning / pruning in search</a>, HiFST generates an initial representation of the space of translation in the form of an RTN, which is then transformed either to WFSAs or to PDAs using the <a class="el" href="index.html#OpenFst">OpenFst</a> <a href="http://openfst.org/twiki/bin/view/FST/ReplaceDoc">Replace</a> operation prior to application of the language model.</p>
-<p>HiFST can save the RTNs to disk, and the language model application and shortest path operations can be carried out using the <a class="el" href="index.html#OpenFst">OpenFst</a> command line tools.</p>
-<p>For example, consider generation of the baseline lattices with the Shallow-1 translation grammar and the 4-gram language model. The command can be re-run, but with added instructions to save the RTNs to disk: </p>
-<pre class="fragment">&gt; hifst.O2 --config=configs/CF.baseline --hifst.writertn=output/exp.baseline/rtn/?/%%rtn_label%%.fst --grammar.storentorder=output/exp.baseline/rtn/ntmap  --hifst.rtnopt=yes &amp;&gt; log/log.baseline.rtn
-</pre><p>The RTNs are written to the directory <code>output/exp.baseline/rtn/*</code> as </p>
-<pre class="fragment">&gt; ls output/exp.baseline/rtn/1/
-1001000007.fst  1003001002.fst  1003003000.fst  1003004001.fst  1003006000.fst  1004002000.fst  1004005000.fst
-1003001000.fst  1003002000.fst  1003003001.fst  1003005000.fst  1003007000.fst  1004003000.fst  1004006000.fst
-1003001001.fst  1003002001.fst  1003004000.fst  1003005001.fst  1004001000.fst  1004004000.fst
-</pre><p>and the non-terminal mapping is written to output/exp.baseline/rtn/ntmap : </p>
-<pre class="fragment">&gt; cat output/exp.baseline/rtn/ntmap
-S   1
-D   2
-X   3
-V   4
-</pre><p>Each RTN name is of the form 1ABC.fst , where A, B, and C are 3-digit strings.</p>
-<ul>
-<li>A is the numerical code for a non-terminal in the grammar; in this case, 001 corresponds to S.</li>
-<li>B indicates a position in the source sentence: 0 &lt;= B &lt; I, where I is the source sentence length</li>
-<li>C indicates the offset to the end of a span, 0 &lt;= C and B+C &lt; I</li>
-<li>The automata 1ABC.fst corresponds to T_(A,B,B+C) in the formulation of <a class="el" href="md_Tutorial.html#lpruning">Local pruning / pruning in search</a></li>
-</ul>
-<p>In this example, the automata 1003001002.fst contains all derivations headed by X, the third non-terminal, and spanning source positions 1 to 3 (=1+2).</p>
-<p>The root automata is 1001000007.fst, since A=001 (the S non-terminal), B=0 (the first source position), and C=7 (the sentence has 8 words). This automata is a representation of all possible translations of the source sentence under this grammar, as can be seen by printing its paths (here the first 2): </p>
-<pre class="fragment">&gt; cat output/exp.baseline/rtn/1/1001000007.fst | printstrings.O2 --semiring=lexstdarc -u --nbest=2 2&gt;/dev/null
-1 1004001000 11 384 1004003000 1004004000 1004005000 1004006000 2
-1 1004001000 11 384 1003003001 1004005000 1004006000 2
-</pre><p>As can be seen, the symbols are a mix of target language symbols (1,2,11,384,...) and pointers to other automata (1004001000, 1004003000, ...). Conversion of the RTN is done by recursive substitution of these symbols by the FSTs to which they point, starting from the root automata.</p>
-<h2><a class="anchor" id="pda_replace"></a>
-Replacement: Translation by Converting RTNs to WFSAs</h2>
-<pre class="fragment"> &gt; fstreplace | head -n 3
- Recursively replaces FST arcs with other FST(s).
-
- Usage: fstreplace root.fst rootlabel [rule1.fst label1 ...] [out.fst]
-</pre><p>Note that the root FST and root label are always of the form 1001000C, where C = I - 1 , where I is the source sentence length.</p>
-<p>HiFST uses the same names for rules and labels, so we get get the filenames and labels in the right form by, e.g. </p>
-<pre class="fragment"> &gt; ls output/exp.baseline/rtn/1/1*.fst | sed 's,\(.*\)/\(.*\).fst,\1/\2.fst \2,' | head -n 5
- output/exp.baseline/rtn/1/1001000007.fst 1001000007
- output/exp.baseline/rtn/1/1003001000.fst 1003001000
- output/exp.baseline/rtn/1/1003001001.fst 1003001001
- output/exp.baseline/rtn/1/1003001002.fst 1003001002
- output/exp.baseline/rtn/1/1003002000.fst 1003002000
-</pre><p>The following will expand the RTN into an FSA: </p>
-<pre class="fragment"> &gt; fstreplace `ls output/exp.baseline/rtn/1/1*.fst | sed 's,\(.*\)/\(.*\).fst,\1/\2.fst \2,'` &gt; output/exp.baseline/rtn/1/T.fst
-</pre><p>The WFSA T is the replacement of the RTN that was generated in translation.</p>
-<h3><a class="anchor" id="rtn_lm_app"></a>
-Composition and Shortest Path</h3>
-<p>The applylm tool can be used to apply the baseline 4-gram language model to T via composition. This generates a new WFSA containing both translation and language model scores:</p>
-<ul>
-<li>Input<ul>
-<li>M/lm.4g.mmap : n-gram LM</li>
-<li>output/exp.baseline/rtn/1/T.fst : WFSA containing translation scores</li>
-</ul>
-</li>
-<li>Output<ul>
-<li>output/exp.baseline/rtn/1/TG.fst.gz : WFSA containing translation grammar and LM scores</li>
-</ul>
-</li>
-</ul>
-<p>The output is written in the form of a transducer, with the RTN labels as the input symbols and the target language words on the output symbols: </p>
-<pre class="fragment"> &gt; applylm.O2 --lm.load=M/lm.4g.mmap --semiring=lexstdarc --lattice.load=output/exp.baseline/rtn/1/T.fst --lattice.store=output/exp.baseline/rtn/1/TG.fst.gz
-
- &gt; zcat output/exp.baseline/rtn/1/TG.fst.gz | fstshortestpath | fstrmepsilon | fsttopsort | fstprint
- 0    1     1               1       -2.609375,-2.609375
- 1    2     9121            9121    9.33318996,-1.26074219
- 2    3     1004002000      0
- 3    4     384             384     7.13530731,-2.609375
- 4    5     1004003000      0       1.28222656,1.28222656
- 5    6     6               6       -0.390115976,-3.328125
- 6    7     2756            2756    9.45967484,0.288085938
- 7    8     7               7       1.79730964,0
- 8    9     1004004000      0
- 9    10    3               3       -0.395056069,-1.23925781
- 10   11    4144            4144    9.78138161,0
- 11   12    6               6       0.201819927,0
- 12   13    1003005001      0       3.29199219,3.29199219
- 13   14    1458528         1458528 10.2062063,-1.0703125
- 14   15    1004005000      0
- 15   16    1341            1341    6.04568958,1.55957031
- 16   17    2               2       2.33047056,-2.34277344
- 17
-</pre><p>To see the translation alone, we project to the output symbols: </p>
-<pre class="fragment">&gt; zcat output/exp.baseline/rtn/1/TG.fst.gz | fstproject --project_output | printstrings.O2 --semiring=lexstdarc -w -m wmaps/wmt13.en.wmap 2&gt;/dev/null
-&lt;s&gt; republican strategy of resistance to the renewal of obamas election &lt;/s&gt;                        57.4707,-8.03809
-</pre><p>which should agree with the previously generated contents of output/exp.baseline/LATS/1.fst.gz produced by the baseline system: </p>
-<pre class="fragment">&gt; zcat output/exp.baseline/LATS/1.fst.gz | printstrings.O2 --semiring=lexstdarc -w -m wmaps/wmt13.en.wmap 2&gt;/dev/null
-&lt;s&gt; republican strategy of resistance to the renewal of obamas election &lt;/s&gt;             57.4707,-8.03809
-</pre><h2><a class="anchor" id="pda_expand"></a>
-Expansion: Translation by Composition of PDAs and WFSAs followed by Pruned Expansion</h2>
-<p>When using PDTs, the decoding process differs from the above in that the RTN is not expanded to an FSA prior to composition with the LM. Instead, HiPDT replaces the RTN by a PDA, which is efficiently composed with the LM to produce another PDA. Finally, this resulting PDA is converted to the final translation FSA via pruned expansion.</p>
-<p>As explained in the example of <a class="el" href="md_Tutorial.html#pda">Translation with Push-Down Automata</a>, this process is done by the decoder in one go. For explanatory reasons, here we reproduce it externally for one sentence via the command line.</p>
-<p>(Note: as of March 2014 we have not managed to make the OpenFST PDT command line operations work well with our lexicographic library, so the standard tropical semirring must be used in this example. This makes it slightly more complex than it should be, but we believe it is useful to understand HiPDT anyway)</p>
-<p>First, we dump the RTN for the full hiero grammar as follows: </p>
-<pre class="fragment">&gt; hifst.O2 --config=configs/CF.hiero --hifst.writertn=output/exp.hiero/rtn/?/%%rtn_label%%.fst --grammar.storentorder=output/exp.hiero/rtn/ntmap --hifst.rtnopt=yes &amp;&gt; log/log.hiero.rtn
-</pre><p>Then, we ensure that the RTN files are in the tropical semiring: </p>
-<pre class="fragment">&gt; mkdir -p output/exp.hiero/rtn-tp/1 output/exp.hiero/rtn-tp/2
-&gt; pushd output/exp.hiero/rtn/ ; for f in ?/100*.fst; do cat $f | lexmap.O2 --action=lex2std &gt; ../rtn-tp/$f; done; popd
-</pre><p>The PDT is then created as follows: </p>
-<pre class="fragment">&gt; for f in 1 2; do pdtreplace --pdt_parentheses=output/exp.hiero/rtn-tp/$f/parens.txt `ls output/exp.hiero/rtn-tp/$f/1*.fst | sed 's,\(.*\)/\(.*\).fst,\1/\2.fst \2,'` &gt; output/exp.hiero/rtn-tp/$f/T.pdt; done
-</pre><p>where the `pdt_parentheses' option indicates that the open/close parentheses symbols are to be stored into a file. This is used later in order to expand the PDA to an FSA.</p>
-<p>Then the PDA is composed with the weak language model. This is done via the standard composition algorithm, but making sure that open/close parentheses symbols are treated as epsilons by the composition algorithm. To accomplish this, their respective output symbols need to be relabel to 0 before applying the LM: </p>
-<pre class="fragment">&gt; for f in 1 2; do cat output/exp.hiero/rtn-tp/1/parens.txt | tr '\t' '\n' | sed 's/$/\t0/' &gt; output/exp.hiero/rtn-tp/$f/parens-to-epsilon.txt ;
-&gt; cat output/exp.hiero/rtn-tp/$f/T.pdt | fstrelabel -relabel_opairs=output/exp.hiero/rtn-tp/$f/parens-to-epsilon.txt &gt; output/exp.hiero/rtn-tp/$f/Tb.pdt
-&gt; applylm.O2 --lm.load=M/lm.4g.eprnd.mmap --lattice.load=output/exp.hiero/rtn-tp/$f/Tb.pdt --lattice.store=output/exp.hiero/rtn-tp/$f/TG.pdt ;
-&gt; done
-</pre><p>Then the resulting PDT is expanded into an FSA while applying a pruning weight of 9: </p>
-<pre class="fragment">&gt; for f in 1 2; do fstproject output/exp.hiero/rtn-tp/$f/TG.pdt | pdtexpand --pdt_parentheses=output/exp.hiero/rtn-tp/$f/parens.txt --weight=9 &gt; output/exp.hiero/rtn-tp/$f/TG.fst ; done
-</pre><p>Finally, the weak LM is removed and the full LM is applied: </p>
-<pre class="fragment">&gt; for f in 1 2; do applylm.O2 --lm.load=M/lm.4g.eprnd.mmap --lm.featureweights=-1 --lattice.load=output/exp.hiero/rtn-tp/$f/TG.fst --lattice.store=output/exp.hiero/rtn-tp/$f/TG-nolm.fst ; applylm.O2 --lm.load=M/lm.4g.mmap --lattice.load=output/exp.hiero/rtn-tp/$f/TG-nolm.fst --lattice.store=output/exp.hiero/rtn-tp/$f/TG-final.fst ; done
-</pre><p>The final FSA that results from this process (<code>output/exp.hiero/rtn-tp/1/TG-final.fst</code>) should be equivalent to the one obtained by HiPDT (<code>output/exp.hiero.pdt/LATS/1.fst.gz</code>) except for numerical differences. Their 1-best hypothesis can be obtained as follows: </p>
-<pre class="fragment">&gt; zcat output/exp.hiero.pdt/LATS/1.fst.gz | printstrings.O2 --semiring=lexstdarc -w -m wmaps/wmt13.en.wmap 2&gt;/dev/null
-&lt;s&gt; the republican strategy of resistance to the renewal of obama 's election &lt;/s&gt;  55.2515,-11.6445
-
-&gt; cat output/exp.hiero/rtn-tp/1/TG-final.fst | printstrings.O2 -w -m wmaps/wmt13.en.wmap 2&gt;/dev/null
-    &lt;s&gt; the republican strategy of resistance to the renewal of obama 's election &lt;/s&gt;      55.2515</pre><h1><a class="anchor" id="true_casing"></a>
-Fst-based True casing</h1>
-<p>HiFST includes a tool typically used for true casing the output. It relies on two models:</p>
-<ul>
-<li>A true-case integer-mapped language model in ARPA or KenLM format.</li>
-<li>A flower transducer that transduces uncased words to every true case alternative. This model is loaded from a file with the following format per line, one for each uncased word:<ul>
-<li>uncased-case-word true-case-word1 prob1 true-case-word2 prob2 ...</li>
-<li>This format is compatible with the unigram model for <a class="el" href="index.html#SRILM">SRILM</a> <a href="http://www.speech.sri.com/projects/srilm/manpages/disambig.1.html">disambig</a> tool (see <code>--map</code> option).</li>
-</ul>
-</li>
-</ul>
-<p>Words must be integer-mapped. A file with this model is available: </p>
-<pre class="fragment">&gt; head  G/tc.unimap
-1 1 1.0
-2 2 1.0
-3 5943350 0.00002 3 0.86370 5943349 0.13628
-4 4 1.00000
-5 5 1.00000
-6 5942623 0.00452 5942624 0.00002 6 0.99546
-7 5943397 0.00000 5943398 0.01875 7 0.98121 5943399 0.00004
-8 5941239 0.00003 8 0.99494 5941238 0.00502
-9 5942238 0.06269 9 0.93729 5942239 0.00002
-10 5943348 0.00001 10 0.99498 5943347 0.00501
-</pre><p>For example, under this model word 4 (comma ",") transduces to itself with probability 1. The uncased word 3 ("the") has three upper-case alternatives: "the", "THE", and "The", with the following probabilities </p>
-<pre class="fragment"> P(the | the) = 0.86
- P(THE | the) = 0.00002
- P(The | the) = 0.13628
-</pre><p>To generate these probabilities, you just need counts of truecased words. You can extract these unigrams with <a class="el" href="index.html#SRILM">SRILM</a> <a href="http://www.speech.sri.com/projects/srilm/manpages/ngram-count.1.html">ngram-count</a> tool, and calculate the probability of each particular true-cased form given the aggregated number of lower-cased instances.</p>
-<p>These models are provided to the recaser module via the following configuration options </p>
-<pre class="fragment">&gt; cat configs/CF.recaser
-[recaser]
-lm.load=M/lm.tc.gz
-unimap.load=G/tc.unimap
-</pre><p>The true casing procedure is very similar to that of <a class="el" href="index.html#SRILM">SRILM</a> <a href="http://www.speech.sri.com/projects/srilm/manpages/disambig.1.html">disambig</a> tool. In our case this is accomplished with two subsequent compositions, followed by exact pruning. An acceptable performance vs speed/memory trade-off can be achieved e.g. with offline entropy pruning of the language model.</p>
-<p>A range of input lattices can be true-cased in the following way with our fst-based disambig tool: </p>
-<pre class="fragment">&gt; disambig.O2 configs/CF.recaser --recaser.input=output/exp.hiero.pdt/LATS/?.fst.gz --recaser.output=output/exp.recasing/LATS/?.fst.gz --range=1:2 -s lexstdarc
-</pre><p>The result can be printed as so: </p>
-<pre class="fragment">&gt; printstrings.O2 --range=1:2 --input=output/exp.recasing/LATS/?.fst.gz --semiring=lexstdarc --label-map=wmaps/wmt13.en.wmap 2&gt;/dev/null
-&lt;s&gt; The Republican strategy of resistance to the renewal of Obama 's election &lt;/s&gt;
-&lt;s&gt; The leaders of the Republican justified their policies need to deal with the spin on the elections . &lt;/s&gt;
-</pre><p>Note that both models need to be integer-mapped, hence the external target wordmap (&ndash;label-map) must also map true case words.</p>
-<p>HiFST can include truecasing as subsequent step following decoding, prior to writing the output hypotheses. For instance: </p>
-<pre class="fragment">&gt; hifst.O2 --config=configs/CF.hiero.pdt.recaser --target.store=output/exp.hiero.pdt/recased/hyps &amp;&gt; log/log.hiero.pdt.recase
-
-&gt; farcompilestrings --entry_type=line output/exp.hiero.pdt/recased/hyps | farprintstrings --symbols=wmaps/wmt13.en.wmap
-&lt;s&gt; The Republican strategy of resistance to the renewal of Obama 's election &lt;/s&gt;
-&lt;s&gt; The leaders of the Republican justified their policies need to deal with the spin on the elections . &lt;/s&gt;
-</pre><p>However, the output lattices are left in uncased form: </p>
-<pre class="fragment">&gt; zcat output/exp.hiero.pdt/LATS/1.fst.gz | printstrings.O2 --semiring=lexstdarc --label-map=wmaps/wmt13.en.wmap -w 2&gt;/dev/null
-&lt;s&gt; the republican strategy of resistance to the renewal of obama 's election &lt;/s&gt;               55.2515,-11.6445</pre> </div></div><!-- contents -->
+ &lt;s&gt; however , in the heart of the take the last myth , arguing that the rare cases of fraud in elections in the united states , the deaths of a lightning strike . &lt;/s&gt;       115.855,-13.1377</pre> </div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Mon May 26 2014 02:52:17 for Cambridge SMT System by
+    <li class="footer">Generated on Mon May 26 2014 12:45:34 for Cambridge SMT System by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.3 </li>
   </ul>

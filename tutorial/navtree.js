@@ -41,18 +41,11 @@ var NAVTREE =
       [ "Local pruning / pruning in search", "md_Tutorial.html#lpruning", null ],
       [ "Local Pruning Algorithm", "md_Tutorial.html#local_prune", null ],
       [ "Effect on Speed, Memory, Scores", "md_Tutorial.html#lpruning_effects", null ],
-      [ "Source Sentence Chopping", "md_Tutorial.html#chopping", null ],
-      [ "Grammar-based Sentence Chopping", "md_Tutorial.html#chopping_gb", null ],
-      [ "Converting Grammars and Input Text for Chopping", "md_Tutorial.html#chopping_eg", null ],
-      [ "Chopping by Explicit Source Sentence Segmentation", "md_Tutorial.html#chopping_sseg", null ],
-      [ "Translation with Push-Down Automata", "md_Tutorial.html#pda", [
-        [ "Recursive Transition Networks", "md_Tutorial.html#pda_rtns", null ],
-        [ "Replacement: Translation by Converting RTNs to WFSAs", "md_Tutorial.html#pda_replace", [
-          [ "Composition and Shortest Path", "md_Tutorial.html#rtn_lm_app", null ]
-        ] ],
-        [ "Expansion: Translation by Composition of PDAs and WFSAs followed by Pruned Expansion", "md_Tutorial.html#pda_expand", null ]
-      ] ],
-      [ "Fst-based True casing", "md_Tutorial.html#true_casing", null ]
+      [ "Source Sentence Chopping", "md_Tutorial.html#chopping", [
+        [ "Grammar-based Sentence Chopping", "md_Tutorial.html#chopping_gb", null ],
+        [ "Converting Grammars and Input Text for Chopping", "md_Tutorial.html#chopping_eg", null ],
+        [ "Chopping by Explicit Source Sentence Segmentation", "md_Tutorial.html#chopping_sseg", null ]
+      ] ]
     ] ],
     [ "MERT - Features Only", "mert.html", [
       [ "HiFST_nbestformert", "mert.html#mert_nblists", null ],
@@ -72,6 +65,13 @@ var NAVTREE =
       [ "Efficient Language Model Rescoring", "rescoring.html#rescoring_lm", null ],
       [ "Lattice Minimum Bayes Risk Decoding", "rescoring.html#lmbr", null ]
     ] ],
+    [ "Translation with Push-Down Automata", "pda.html", [
+      [ "Recursive Transition Networks", "pda.html#pda_rtns", null ],
+      [ "Replacement: Translation by Converting RTNs to WFSAs", "pda.html#pda_replace", null ],
+      [ "Composition and Shortest Path", "pda.html#rtn_lm_app", null ],
+      [ "Expansion: Translation by Composition of PDAs and WFSAs followed by Pruned Expansion", "pda.html#pda_expand", null ]
+    ] ],
+    [ "Fst-based True Casing", "true_casing.html", null ],
     [ "Appendices", "appendices.html", [
       [ "Using Grammars From Open Source SMT Systems", "appendices.html#gext", [
         [ "Moses", "appendices.html#gext_moses", null ],
@@ -122,9 +122,9 @@ var NAVTREEINDEX =
 "constants-hifst_8hpp.html#aa8a006f7a5dc82ada8c0c8d551cc6b03",
 "functions_0x63.html",
 "index.html#intro_features",
-"multithreading_8helpers_8hpp_source.html",
-"structfst_1_1MakeWeight_3_01LexStdArc_01_4.html#a3a1094d56ebcff1f14345b4959f8af04",
-"task_8lmbr_8common_8hpp.html"
+"namespacefst.html",
+"structfst_1_1MakeWeight_3_01LexStdArc_01_4.html#a6c5ce7c5813ec780ce1828945d6ccfea",
+"task_8lmbr_8common_8hpp.html#acae3267cabd7a53005f4c0145a482d6c"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
