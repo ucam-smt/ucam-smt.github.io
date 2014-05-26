@@ -79,13 +79,52 @@ var NAVTREE =
         [ "NiuTrans", "appendices.html#gext_niutrans", null ]
       ] ],
       [ "Translation Grammar Pruning", "appendices.html#grammarpruning", null ]
+    ] ],
+    [ "Namespaces", null, [
+      [ "Namespace List", "namespaces.html", "namespaces" ],
+      [ "Namespace Members", "namespacemembers.html", [
+        [ "All", "namespacemembers.html", "namespacemembers_dup" ],
+        [ "Functions", "namespacemembers_func.html", null ],
+        [ "Variables", "namespacemembers_vars.html", null ],
+        [ "Typedefs", "namespacemembers_type.html", null ]
+      ] ]
+    ] ],
+    [ "Classes", null, [
+      [ "Class List", "annotated.html", "annotated" ],
+      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
+      [ "Class Members", "functions.html", [
+        [ "All", "functions.html", "functions_dup" ],
+        [ "Functions", "functions_func.html", "functions_func" ],
+        [ "Variables", "functions_vars.html", "functions_vars" ],
+        [ "Typedefs", "functions_type.html", null ],
+        [ "Related Functions", "functions_rela.html", null ]
+      ] ]
+    ] ],
+    [ "Files", null, [
+      [ "File List", "files.html", "files" ],
+      [ "File Members", "globals.html", [
+        [ "All", "globals.html", "globals_dup" ],
+        [ "Functions", "globals_func.html", "globals_func" ],
+        [ "Variables", "globals_vars.html", null ],
+        [ "Typedefs", "globals_type.html", null ],
+        [ "Macros", "globals_defs.html", null ]
+      ] ]
     ] ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"appendices.html"
+"BleuStats_8cpp.html",
+"classErrorSurface.html#aba17c7765049911f337e69e9520bef45",
+"classlm_1_1HifstEnumerateVocab.html#a419f7e3e8d04ef2baf45c9dd4cc91a07",
+"classucam_1_1lmbr_1_1ComputePosteriors.html#a5fa277081958796ef0891b304d5fea72",
+"constants-hifst_8hpp.html#aa8a006f7a5dc82ada8c0c8d551cc6b03",
+"functions_0x63.html",
+"index.html#intro_features",
+"multithreading_8helpers_8hpp_source.html",
+"structfst_1_1MakeWeight_3_01LexStdArc_01_4.html#a3a1094d56ebcff1f14345b4959f8af04",
+"task_8lmbr_8common_8hpp.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

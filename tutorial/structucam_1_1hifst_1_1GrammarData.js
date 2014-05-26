@@ -1,0 +1,27 @@
+var structucam_1_1hifst_1_1GrammarData =
+[
+    [ "GrammarData", "structucam_1_1hifst_1_1GrammarData.html#a3897a158805e82ce446216524ba45fe1", null ],
+    [ "~GrammarData", "structucam_1_1hifst_1_1GrammarData.html#aaa038d1e8a24de68cbfd5b3ff160c528", null ],
+    [ "getIdx", "structucam_1_1hifst_1_1GrammarData.html#a3e08646b9b374a12caf9123877fc0653", null ],
+    [ "getLHS", "structucam_1_1hifst_1_1GrammarData.html#aa1a8af50dea1af8ddcfa66485214ac39", null ],
+    [ "getMappings", "structucam_1_1hifst_1_1GrammarData.html#aedbb12acdb0b8eee047c0ca71b466987", null ],
+    [ "getRHSSource", "structucam_1_1hifst_1_1GrammarData.html#a7a57d446bf9d6b48a3d780eea41e6287", null ],
+    [ "getRHSSource", "structucam_1_1hifst_1_1GrammarData.html#a66fb505d25c4199403273c0634f35672", null ],
+    [ "getRHSSourceSize", "structucam_1_1hifst_1_1GrammarData.html#af0fe157454cf3a29f18449ef86f0d574", null ],
+    [ "getRHSSplitSource", "structucam_1_1hifst_1_1GrammarData.html#ab3ef7a637313ab26ee10bac1c66486fa", null ],
+    [ "getRHSSplitTranslation", "structucam_1_1hifst_1_1GrammarData.html#afdb6d47d6cb345fafd7c27c93c69bc69", null ],
+    [ "getRHSTranslation", "structucam_1_1hifst_1_1GrammarData.html#a61c5c26d85a50a934875d702e5cd156c", null ],
+    [ "getRHSTranslationSize", "structucam_1_1hifst_1_1GrammarData.html#a7cbde21f31db01bad26322e12f681ac4", null ],
+    [ "getRule", "structucam_1_1hifst_1_1GrammarData.html#af4d46f784994a05368e00b3b9c80d597", null ],
+    [ "getWeight", "structucam_1_1hifst_1_1GrammarData.html#a708820dc0dc70ed2dadf4b8c6ed0f3cb", null ],
+    [ "isAcceptedByVocabulary", "structucam_1_1hifst_1_1GrammarData.html#a4adc88e09b5c373f5a98d2da8513d3ed", null ],
+    [ "isPhrase", "structucam_1_1hifst_1_1GrammarData.html#a446a713d74a7a3f60a0ce3df8ee89d57", null ],
+    [ "reset", "structucam_1_1hifst_1_1GrammarData.html#a573c63959512338922ba878b014f1d87", null ],
+    [ "categories", "structucam_1_1hifst_1_1GrammarData.html#a22b94dcd6ca448535b4be74984cb8f47", null ],
+    [ "ct", "structucam_1_1hifst_1_1GrammarData.html#a9cbeaf18be926600d6e3ec03520de869", null ],
+    [ "filecontents", "structucam_1_1hifst_1_1GrammarData.html#a96bdb626d74145bd127b5a68a70acd96", null ],
+    [ "patterns", "structucam_1_1hifst_1_1GrammarData.html#aeb4bb16978516c61026fceb637150ea9", null ],
+    [ "sizeofvpos", "structucam_1_1hifst_1_1GrammarData.html#ae89d637397f057d44134885ee0d818eb", null ],
+    [ "vcat", "structucam_1_1hifst_1_1GrammarData.html#a9aa43d47c2398a3f9c8a2c0e609984f3", null ],
+    [ "vpos", "structucam_1_1hifst_1_1GrammarData.html#a886dd141e500c863c5564b431f5be1a9", null ]
+];
