@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.3"/>
-<title>Cambridge SMT System: $title</title>
+<title>Cambridge SMT System: Basic Translation</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -33,12 +33,16 @@
     </ul>
   </div>
 </div><!-- top -->
+<div class="header">
+  <div class="headertitle">
+<div class="title">Basic Translation </div>  </div>
+</div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="basic"></a>
-Basic Translation and Lattice Generation</h1>
+<div class="textblock"><h1><a class="anchor" id="Basic"></a>
+Translation and Lattice Generation</h1>
 <p>The first demonstration exercise is to generate translations of integer-mapped Russian text using the translation grammar and English n-gram language model provided. HiFST is configured to generate one-best translation hypotheses as well as translation lattices.</p>
 <p>The baseline configuration file is </p>
-<pre class="fragment">configs/CF.baseline 
+<pre class="fragment">configs/CF.baseline
 </pre><p>See the comments in that file for brief explanations of the HiFST options.</p>
 <p>The following command will translate the first 2 lines in the Russian integer-mapped file <code>RU/RU.set1.idx</code>: </p>
 <pre class="fragment"># Run HiFST
@@ -51,20 +55,20 @@ Fri May  9 11:04:37 2014: run.INF:Loading hierarchical grammar: G/rules.shallow.
 Fri May  9 11:04:37 2014: run.INF:loading LM=M/lm.4g.mmap
 Fri May  9 11:04:37 2014: run.INF:Stats for Sentence 1: local pruning, number of times=0
 Fri May  9 11:04:37 2014: run.INF:End Sentence ******************************************************
-Fri May  9 11:04:37 2014: run.INF:Translation 1best is: 1 9121 384 6 2756 7 3 4144 6 1458528 1341 2 
+Fri May  9 11:04:37 2014: run.INF:Translation 1best is: 1 9121 384 6 2756 7 3 4144 6 1458528 1341 2
 Fri May  9 11:04:37 2014: run.INF:=====Translate sentence 2:1 1716 20196 95123 154 1049 6778 996 9 239837 7 1799 4 2
 Fri May  9 11:04:37 2014: run.INF:Stats for Sentence 2: local pruning, number of times=0
 Fri May  9 11:04:38 2014: run.INF:End Sentence ******************************************************
-Fri May  9 11:04:38 2014: run.INF:Translation 1best is: 1 3 1119 6 3 9121 1711 63 355 85 7 369 24 3 13907 17 3 628 5 2 
+Fri May  9 11:04:38 2014: run.INF:Translation 1best is: 1 3 1119 6 3 9121 1711 63 355 85 7 369 24 3 13907 17 3 628 5 2
 Fri May  9 11:04:38 2014: main.INF:hifst.O2 ends!
 </pre><p>The best scoring translation hypotheses are given in integer-mapped form, e.g. for the second Russian sentence, the best-scoring translation hypothesis is </p>
 <pre class="fragment">run.INF:Translation 1best is: 1 3 1119 6 3 9121 1711 63 355 85 7 369 24 3 13907 17 3 628 5 2
-</pre><h2><a class="anchor" id="basic_latshyps"></a>
-Translation Lattices and 1-Best Hypotheses</h2>
+</pre><h1><a class="anchor" id="basic_latshyps"></a>
+Translation Lattices and 1-Best Hypotheses</h1>
 <p>The baseline configuration file instructs HiFST to write its 1-best translations to the output file <code>output/exp.baseline/hyps</code> (see the <code>target.store=</code> specification in the config file). The contents of this file should agree with the <em>Translation 1best</em> entries in the log file (compare these results to above): </p>
 <pre class="fragment"> &gt; cat output/exp.baseline/hyps
- 1 9121 384 6 2756 7 3 4144 6 1458528 1341 2 
- 1 3 1119 6 3 9121 1711 63 355 85 7 369 24 3 13907 17 3 628 5 2 
+ 1 9121 384 6 2756 7 3 4144 6 1458528 1341 2
+ 1 3 1119 6 3 9121 1711 63 355 85 7 369 24 3 13907 17 3 628 5 2
 </pre><p>The configuration file also directs HiFST to write translation lattices to <code>output/exp.baseline/LATS/?.fst.gz</code> (see the <code>hifst.lattice.store=</code> specification in the config file). Note the use of the placeholder '<code>?</code>' in the argument <code>.../LATS/?.fst.gz</code> . The placeholder is replaced by the line number of sentence being translated, e.g. so that <code>.../LATS/2.fst.gz</code> is a weighted finite state transducer (WFST) containing translations of the second line in the source text file. Note also the use of the '<code>.gz</code>' extension: when this is provided, lattices are written as gzipped files.</p>
 <p>The shortest path through each of these output lattices should agree with the top-scoring hypotheses in the hyps and log files : </p>
 <pre class="fragment">&gt; echo `zcat output/exp.baseline/LATS/1.fst.gz | fstshortestpath | fsttopsort | fstprint | awk '{print $3}'`
@@ -109,7 +113,7 @@ Translation Lattices and 1-Best Hypotheses</h2>
 9       8       6       6       0.892110586,-2.04589844
 10      9       384     384     7.13530731,-2.609375
 11      10      9121    9121    9.33318996,-1.26074219
-</pre><p>(the paired weights are described in the next section (<a class="el" href="Basics.html#basic_scores">Scores, Costs, and Semirings</a>))</p>
+</pre><p>(the paired weights are described in the next section (<a class="el" href="basic.html#basic_scores">Scores, Costs, and Semirings</a>))</p>
 <p>Topologically Sorted Shortest Path: </p>
 <pre class="fragment">&gt; zcat output/exp.baseline/LATS/1.fst.gz | fstshortestpath | fsttopsort | fstprint
 0       1       1       1       -2.609375,-2.609375
@@ -144,8 +148,8 @@ Translation Lattices and 1-Best Hypotheses</h2>
 <pre class="fragment">&gt; farcompilestrings --entry_type=line output/exp.baseline/hyps | farprintstrings --symbols=wmaps/wmt13.en.wmap
 &lt;s&gt; republican strategy of resistance to the renewal of obamas election &lt;/s&gt;
 &lt;s&gt; the leaders of the republican justified their policies need to deal with the spin on the elections . &lt;/s&gt;
-</pre><h2><a class="anchor" id="basic_nbest"></a>
-N-Best Lists</h2>
+</pre><h1><a class="anchor" id="basic_nbest"></a>
+N-Best Lists</h1>
 <p>The <code>printstrings</code> tool provided with this tutorial combines the above operations into a single programme. It also can print the top-N hypotheses, as the following example shows </p>
 <pre class="fragment">&gt; zcat output/exp.baseline/LATS/1.fst.gz | printstrings.O2 --semiring=lexstdarc --nbest=10 --unique -w 2&gt;/dev/null
 1 9121 384 6 2756 7 3 4144 6 1458528 1341 2             57.4705,-8.03809
@@ -170,8 +174,8 @@ N-Best Lists</h2>
 &lt;s&gt; the republican opposition strategy renewal of obamas election &lt;/s&gt;              59.8094,1.74512
 &lt;s&gt; the republican strategy resistance to the renewal of obama 's election &lt;/s&gt;             59.8376,-7.41309
 &lt;s&gt; the republican opposition strategy the renewal of obamas election &lt;/s&gt;          59.8382,-0.804688
-</pre><h2><a class="anchor" id="basic_scores"></a>
-Scores, Costs, and Semirings</h2>
+</pre><h1><a class="anchor" id="basic_scores"></a>
+Scores, Costs, and Semirings</h1>
 <p>HiFST follows the formalism in which rule probabilities are represented as arc weights (see Section 2 of [<a class="el" href="index.html#deGispert2010">deGispert2010</a>]).</p>
 <p>A rule with probability <em>p</em> is represented as a negative log probability, i.e. </p>
 <pre class="fragment"> X -&gt; &lt; A , B &gt; / - log(p)
@@ -203,10 +207,10 @@ Scores, Costs, and Semirings</h2>
 </ul>
 <p>One advantage of this representation is that it is easy to remove the language model score prior to <a href="#lmrescore">rescoring the lattice with a new language model</a> simply by mapping the second component of the lexicographic weight to a plain tropical weight prior to composition with a weighted finite state automaton (WFSA) containing the new language model scores.</p>
 <ul>
-<li>N.B. Also see (<a class="el" href="Lattice.html#lmert_veclats_tst">Notes on Tropical Sparse Tuple Vector Weights</a>)</li>
+<li>N.B. Also see (<a class="el" href="lmert.html#lmert_veclats_tst">Notes on Tropical Sparse Tuple Vector Weights</a>)</li>
 </ul>
-<h2><a class="anchor" id="basic_toplevelpruning"></a>
-Admissible pruning / top-level pruning</h2>
+<h1><a class="anchor" id="basic_toplevelpruning"></a>
+Admissible pruning / top-level pruning</h1>
 <p>HiFST can prune translation lattices prior to saving them to disk. Pruning is done using the <a class="el" href="index.html#OpenFst">OpenFst</a> <a href="http://openfst.cs.nyu.edu/twiki/bin/view/FST/PruneDoc">Prune</a> operation. Pruning in this case is admissible, since it is performed after translation and language model scores have been completely applied. Low-scoring hypotheses are discarded, but no search errors are introduced by this pruning. Top-level pruning is described in detail in Section 2.2.2, [<a class="el" href="index.html#deGispert2010">deGispert2010</a>].</p>
 <p>Top-level pruning is controlled by the <code>--hifst.prune</code> option. In the previous examples, <code>--hifst.prune</code> was set to 9. If we use the default (3.40282347e+38), then the output lattice size becomes very large. For example, compare lattices in <code>exp1/</code> generated with <code>prune=9</code> vs. unpruned lattices in <code>exp2/</code>: </p>
 <pre class="fragment">&gt; hifst.O2 --config=configs/CF.baseline.outputnoprune &amp;&gt; log/log.baseline.outputnoprune
@@ -245,41 +249,41 @@ Admissible pruning / top-level pruning</h2>
 </pre><p>The unpruned lattices are much bigger, and contain many translation hypotheses, although the top scoring hypotheses should be unchanged by this form of pruning, as is the case in this example: </p>
 <pre class="fragment">&gt; head output/exp.baseline/hyps output/exp.baseline.outputnoprune/hyps
 ==&gt; output/exp1/hyps &lt;==
-1 9121 384 6 2756 7 3 4144 6 1458528 1341 2 
-1 3 1119 6 3 9121 1711 63 355 85 7 369 24 3 13907 17 3 628 5 2 
+1 9121 384 6 2756 7 3 4144 6 1458528 1341 2
+1 3 1119 6 3 9121 1711 63 355 85 7 369 24 3 13907 17 3 628 5 2
 
 ==&gt; output/exp.baseline.outputnoprune/hyps &lt;==
-1 9121 384 6 2756 7 3 4144 6 1458528 1341 2 
-1 3 1119 6 3 9121 1711 63 355 85 7 369 24 3 13907 17 3 628 5 2 
-</pre><h2><a class="anchor" id="multithread"></a>
-Multithreading</h2>
+1 9121 384 6 2756 7 3 4144 6 1458528 1341 2
+1 3 1119 6 3 9121 1711 63 355 85 7 369 24 3 13907 17 3 628 5 2
+</pre><h1><a class="anchor" id="multithread"></a>
+Multithreading</h1>
 <p>(* note that the timing results here are illustrative only.)</p>
 <p>HiFST uses <a href="http://www.boost.org/doc/libs/1_38_0/doc/html/thread.html">Boost.Thread</a> to enable multithreading. This is disabled by default, but can enabled using the flag <code>--nthreads=N</code> . If set, each source language sentence is translated simultaneously on its own thread (trimmed to the number of CPUs available). The translation grammar and language model are kept in shared memory.</p>
 <p>To see the effects of multithreading on speed and memory use, the baseline configuration is run over the first twenty sentences without multithreading: </p>
-<pre class="fragment"> &gt; time hifst.O2 --config=configs/CF.baseline --range=1:20 
+<pre class="fragment"> &gt; time hifst.O2 --config=configs/CF.baseline --range=1:20
 </pre><p>Processing time is 140 seconds and maximum memory use is about 0.3GB. In the same decoder configuration but with 2 threads </p>
 <pre class="fragment"> &gt; time hifst.O2 --config=configs/CF.baseline --range=1:20 --nthreads=2
 </pre><p>processing time is reduced to 90 seconds with maximum memory use of about 0.5GB.</p>
 <p>In these examples, both the LM and translation grammar are relatively small, and so there is not a great deal of gain from keeping them in shared memory. But in larger tasks, multithreading can be a significant advantage.</p>
-<h2><a class="anchor" id="server"></a>
-Client-Server Mode (Experimental)</h2>
+<h1><a class="anchor" id="server"></a>
+Client-Server Mode (Experimental)</h1>
 <p>HiFST can run in server mode. </p>
 <pre class="fragment"> &gt; hifst.O2 --config=configs/CF.baseline.server &amp;&gt; log/log.server &amp;
- &gt; pid=$! # catch the server pid 
-</pre><p>Note that in this particular configuration, both source and target wordmaps are loaded, so Hifst can read tokenized Russian text and produce tokenized English translations (see options <code>--prepro.wordmap.load</code> and <code>--postpro.wordmap.load</code>). Also, to ensure that CYK parser never fails, out of vocabulary (OOV) words must be detected (<code>--ssgrammar.addoovs.enable</code>) and sentence markers (<code>&lt;s&gt;</code>,<code>&lt;/s&gt;</code>) have to be added on the fly, as the shallow grammar relies on them (i.e. <code>S 1 1</code>).</p>
+ &gt; pid=$! # catch the server pid
+</pre><p>Note that in this particular configuration, both source and target wordmaps are loaded. Hifst can read tokenized Russian text and produce tokenized English translations (see options <code>--prepro.wordmap.load</code> and <code>--postpro.wordmap.load</code>). Also, to ensure that CYK parser never fails, out of vocabulary (OOV) words must be detected (<code>--ssgrammar.addoovs.enable</code>) and sentence markers (<code>&lt;s&gt;</code>,<code>&lt;/s&gt;</code>) have to be added on the fly, as the shallow grammar relies on them (i.e. <code>S 1 1</code>).</p>
 <p>With the <code>hifst-client.O2</code> binary, we can read Russian tokenized text (<code>RU/RU.tune</code>) and submit translation requests to the server. The output is stored in a file specified by the client tool (<code>--target.store</code>). </p>
 <pre class="fragment">&gt; sleep 60 # make sure to wait for the server to finish loading, otherwise clients will fail
 &gt; hifst-client.O2 --config=configs/CF.baseline.client --range=200:5:300 --target.store=output/exp.clientserver/translation1.txt &amp;&gt; log/log.client1 &amp;
 # Connect to localhost, port=1205 and translate a bunch of sentences. Lets do this in background, just for fun
 # Note that the localhost setting is in the config file; this can point to another machine, of course
-&gt; pid2=$! 
+&gt; pid2=$!
 
 &gt; hifst-client.O2 --config=configs/CF.baseline.client --range=1:50,100,1300 --target.store=output/exp.clientserver/translation2.txt &amp;&gt; log/log.client2 &amp;
 # In the meantime, we request another 52 translations...
 &gt; wait $pid2
 
-&gt; kill -9 $pid      
-# We are finished -- kill the server 
+&gt; kill -9 $pid
+# We are finished -- kill the server
 
 &gt; head -5 output/exp.clientserver/translation2.txt
 parliament supports amendment giving freedom tymoshenko
@@ -289,7 +293,7 @@ proposal cancel article 365 criminal-procedural codex whereby former prime minis
 winning libya</pre> </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 26 2014 00:15:20 for Cambridge SMT System by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon May 26 2014 02:34:16 for Cambridge SMT System by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.3
 </small></address>

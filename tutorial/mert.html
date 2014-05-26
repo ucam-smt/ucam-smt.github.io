@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.3"/>
-<title>Cambridge SMT System: $title</title>
+<title>Cambridge SMT System: MERT - Features Only</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -33,12 +33,14 @@
     </ul>
   </div>
 </div><!-- top -->
+<div class="header">
+  <div class="headertitle">
+<div class="title">MERT - Features Only </div>  </div>
+</div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="mert"></a>
-MERT - Features Only</h1>
-<p>This section describes how to generate N-Best lists of features for use with MERT [<a href="http://aclweb.org/anthology/P/P03/P03-1021.pdf">Och 2003</a>].</p>
-<h2><a class="anchor" id="mert_nblists"></a>
-HiFST_nbestformert</h2>
+<div class="textblock"><p>This section describes how to generate N-Best lists of features for use with MERT [<a href="http://aclweb.org/anthology/P/P03/P03-1021.pdf">Och 2003</a>].</p>
+<h1><a class="anchor" id="mert_nblists"></a>
+HiFST_nbestformert</h1>
 <p>A script named <code>scripts/HiFST_nbestformert</code> is provided which can generate hypotheses and feature vectors that can be used by MERT. We use N-Best lists of depth N = 100 , set by the <code>prunereferenceshortestpath=</code> option in <code>configs/CF.mert.alilats.nbest</code>.</p>
 <p>For this tutorial, the configuration files specify multithreading, and N-Best lists will be generated only for the first 2 sentences in RU/RU.tune.idx ; the script can be edited to process the entire file. The output is written to the file <code>output/exp.mert/nbest/nbest.list</code>. </p>
 <pre class="fragment">&gt; scripts/HiFST_nbestformert
@@ -49,9 +51,9 @@ HiFST_nbestformert</h2>
 2 ||| the amendment , which has led to the release of which is in jail , former prime minister , was rejected during the second reading of the bill to ease penalty for economic offences . ||| 135.8217 24.0928 50.8281 -37.0000 -21.0000 -12.0000 0.0000 -1.0000 0.0000 -20.0000 100.6992 111.6357
 2 ||| the amendment , which would have led to the release of which is in the jail of former prime minister , was rejected during the second reading of the bill to ease sentences for economic offences . |||        145.1169         23.7305  41.4756  -39.0000       -23.0000        -14.0000 0.0000 -1.0000 0.0000 -22.0000 93.0488 107.7188
 </pre><p>The steps carried out in the <code>HiFST_nbestformert</code> script are described next.</p>
-<h2><a class="anchor" id="mert_hyps"></a>
-1. Hypotheses for MERT</h2>
-<p>(note that this step is also done in <a class="el" href="Lattice.html#lmert">Lattice MERT</a>)</p>
+<h1><a class="anchor" id="mert_hyps"></a>
+1. Hypotheses for MERT</h1>
+<p>(note that this step is also done in <a class="el" href="lmert.html">Lattice MERT</a>)</p>
 <ul>
 <li>Input:<ul>
 <li><code>RU/RU.tune.idx</code> &ndash; tuning set source language sentences</li>
@@ -94,14 +96,14 @@ arc type                                          tropical_LT_tropical
 
 &gt; zcat output/exp.mert/LATS/1.fst.gz | printstrings.O2 --semiring=lexstdarc -m wmaps/wmt13.en.all.wmap -w 2&gt;/dev/null
 &lt;s&gt; parliament does not support the amendment , which gives you the freedom of tymoshenko &lt;/s&gt;      43.093,-19.4512
-</pre><h2><a class="anchor" id="mert_nblist_derivations"></a>
-2. Guided Translation / Forced Alignment</h2>
+</pre><h1><a class="anchor" id="mert_nblist_derivations"></a>
+2. Guided Translation / Forced Alignment</h1>
 <ul>
 <li>Input:<ul>
 <li><code>RU/RU.tune.idx</code> &ndash; tuning set source language sentences</li>
 <li><code>G/rules.shallow.all.gz</code> &ndash; translation grammar</li>
 <li><code>M/interp.4g.arpa.newstest2012.tune.corenlp.ru.idx.union.mmap</code> &ndash; target language model</li>
-<li><code>output/exp.mert/LATS/?.fst.gz</code> &ndash; word lattices (WFSAs), determinized and minimized (from <a class="el" href="MERT.html#mert_hyps">1. Hypotheses for MERT</a>)</li>
+<li><code>output/exp.mert/LATS/?.fst.gz</code> &ndash; word lattices (WFSAs), determinized and minimized (from <a class="el" href="mert.html#mert_hyps">1. Hypotheses for MERT</a>)</li>
 </ul>
 </li>
 <li>Output:<ul>
@@ -138,12 +140,12 @@ arc type                                          tropical_LT_tropical
 S-&gt;&lt;1,1&gt; V-&gt;&lt;3526,50&gt; X-&gt;&lt;V,V&gt; S-&gt;&lt;S_X,S_X&gt; V-&gt;&lt;28847,245&gt; X-&gt;&lt;10_1278_V,135_20_103_3_V&gt; S-&gt;&lt;S_X,S_X&gt; V-&gt;&lt;3_64570,4_25_1145_48&gt; X-&gt;&lt;V,V&gt; S-&gt;&lt;S_X,S_X&gt; V-&gt;&lt;1857,3_425_6&gt; X-&gt;&lt;V_7786,V_23899&gt; S-&gt;&lt;S_X,S_X&gt; X-&gt;&lt;2,&lt;/s&gt;&gt; S-&gt;&lt;S_X,S_X&gt;
 S-&gt;&lt;1,1&gt; V-&gt;&lt;3526,50&gt; X-&gt;&lt;V,V&gt; S-&gt;&lt;S_X,S_X&gt; V-&gt;&lt;28847,245&gt; X-&gt;&lt;10_1278_V,135_20_103_3_V&gt; S-&gt;&lt;S_X,S_X&gt; V-&gt;&lt;3_64570,4_25_1145_48&gt; X-&gt;&lt;V,V&gt; S-&gt;&lt;S_X,S_X&gt; V-&gt;&lt;1857,3_425_6&gt; X-&gt;&lt;V,V&gt; S-&gt;&lt;S_X,S_X&gt; V-&gt;&lt;7786,23899&gt; X-&gt;&lt;V,V&gt; S-&gt;&lt;S_X,S_X&gt; X-&gt;&lt;2,&lt;/s&gt;&gt; S-&gt;&lt;S_X,S_X&gt;
 </pre><p>The order of the rules in these rule sequences correspond to HiFST's bottom-up (left-to-right) CYK grid structure. Rule IDs are added as input symbols to the component WFSTs in the RTN following the translation rule (with its non-terminals). This leads to the bottom-up ordering after Replacement.</p>
-<h2><a class="anchor" id="mert_alilats"></a>
-3. Hypotheses with Unweighted Feature Vectors</h2>
+<h1><a class="anchor" id="mert_alilats"></a>
+3. Hypotheses with Unweighted Feature Vectors</h1>
 <ul>
 <li>Input:<ul>
 <li><code>G/rules.shallow.vecfea.all.gz</code> &ndash; translation grammar, rules with (unweighted) feature vectors</li>
-<li><code>output/exp.mert/nbest/ALILATS/?.fst.gz</code> &ndash; transducers mapping derivations to translations, for n-best entries (from <a class="el" href="MERT.html#mert_nblist_derivations">2. Guided Translation / Forced Alignment</a>)</li>
+<li><code>output/exp.mert/nbest/ALILATS/?.fst.gz</code> &ndash; transducers mapping derivations to translations, for n-best entries (from <a class="el" href="mert.html#mert_nblist_derivations">2. Guided Translation / Forced Alignment</a>)</li>
 <li>language model and translation grammar feature weights (see <code>configs/CF.mert.vecfea.nbest</code>)</li>
 </ul>
 </li>
@@ -219,7 +221,7 @@ wordmap=wmaps/wmt13.en.all.wmap
 &lt;s&gt; the parliament does not support the amendment , which gives you the freedom of tymoshenko &lt;/s&gt;  43.1757</pre> </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 26 2014 00:15:20 for Cambridge SMT System by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon May 26 2014 02:34:16 for Cambridge SMT System by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.3
 </small></address>
