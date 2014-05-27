@@ -120,11 +120,11 @@ var NAVTREEINDEX =
 "classlm_1_1HifstEnumerateVocab.html#a419f7e3e8d04ef2baf45c9dd4cc91a07",
 "classucam_1_1lmbr_1_1ComputePosteriors.html#a5fa277081958796ef0891b304d5fea72",
 "constants-hifst_8hpp.html#aa8a006f7a5dc82ada8c0c8d551cc6b03",
-"functions_0x63.html",
-"index.html#intro_features",
-"namespacefst.html",
-"structfst_1_1MakeWeight_3_01LexStdArc_01_4.html#a6c5ce7c5813ec780ce1828945d6ccfea",
-"task_8lmbr_8common_8hpp.html#acae3267cabd7a53005f4c0145a482d6c"
+"functions_0x70.html",
+"latmert_2include_2tropical-sparse-tuple-weight-decls_8h.html#a9f63561022e474d6a08012e22ec3f166",
+"namespacemembers.html",
+"structfst_1_1ScaleWeight.html",
+"task_8loadwordmap_8hpp.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
