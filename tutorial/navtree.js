@@ -13,8 +13,6 @@ var NAVTREE =
         [ "Language Modelling Toolkits", "index.html#othertools", null ]
       ] ]
     ] ],
-    [ "README", "md_README.html", null ],
-    [ "Cambridge SMT Rule Extraction", "md__home_giglesias_HIFST_8github_ucam-smt_java_ruleXtract_README.html", null ],
     [ "Getting Started", "start.html", [
       [ "Installation of UCAM-SMT package", "start.html#build", [
         [ "Rule extraction installation", "start.html#rulextract_start", null ]
@@ -155,8 +153,8 @@ var NAVTREEINDEX =
 "functions_func_0x72.html",
 "latmert_8main_8cpp.html#a3cdb956b6a7e4ffcdbfde5a1b9bbd04d",
 "namespacemembers.html",
-"structfst_1_1Expand.html#a460aa7ae54d29187f5b610825f8dcf7c",
-"structucam_1_1util_1_1ParamsInit.html"
+"structfst_1_1GeneralMapper.html#a342af22508b8c9e6020a3b633819763b",
+"structucam_1_1util_1_1ParamsInit.html#af1627064ce16a385db91ea4a010fa361"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
