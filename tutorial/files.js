@@ -2,14 +2,32 @@ var files =
 [
     [ "address.gtest.cpp", "address_8gtest_8cpp.html", "address_8gtest_8cpp" ],
     [ "addresshandler.hpp", "addresshandler_8hpp.html", "addresshandler_8hpp" ],
+    [ "Alignment.java", "Alignment_8java.html", [
+      [ "Alignment", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Alignment.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Alignment" ]
+    ] ],
+    [ "AlignmentAndFeatureMap.java", "AlignmentAndFeatureMap_8java.html", [
+      [ "AlignmentAndFeatureMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentAndFeatureMap.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentAndFeatureMap" ]
+    ] ],
+    [ "AlignmentCountMapWritable.java", "AlignmentCountMapWritable_8java.html", null ],
+    [ "AlignmentLink.java", "AlignmentLink_8java.html", [
+      [ "AlignmentLink", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1AlignmentLink.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1AlignmentLink" ]
+    ] ],
+    [ "AlignmentWritable.java", "AlignmentWritable_8java.html", [
+      [ "AlignmentWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentWritable.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentWritable" ]
+    ] ],
     [ "alilats2splats.main.cpp", "alilats2splats_8main_8cpp.html", "alilats2splats_8main_8cpp" ],
     [ "applylm.main.cpp", "applylm_8main_8cpp.html", "applylm_8main_8cpp" ],
     [ "backtrace.hpp", "backtrace_8hpp.html", "backtrace_8hpp" ],
+    [ "bleu.hpp", "bleu_8hpp.html", "bleu_8hpp" ],
     [ "BleuStats.cpp", "BleuStats_8cpp.html", "BleuStats_8cpp" ],
     [ "BleuStats.h", "BleuStats_8h.html", "BleuStats_8h" ],
+    [ "Block.java", "Block_8java.html", [
+      [ "Block", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Block.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Block" ]
+    ] ],
     [ "CommonFlags.h", "CommonFlags_8h.html", "CommonFlags_8h" ],
     [ "constants-fsttools.hpp", "constants-fsttools_8hpp.html", "constants-fsttools_8hpp" ],
     [ "constants-hifst.hpp", "constants-hifst_8hpp.html", "constants-hifst_8hpp" ],
+    [ "constants-lmert.hpp", "constants-lmert_8hpp.html", "constants-lmert_8hpp" ],
     [ "countstrings.main.cpp", "countstrings_8main_8cpp.html", "countstrings_8main_8cpp" ],
     [ "createssgrammar.main.cpp", "createssgrammar_8main_8cpp.html", "createssgrammar_8main_8cpp" ],
     [ "custom_assert.hpp", "custom__assert_8hpp.html", "custom__assert_8hpp" ],
@@ -69,9 +87,25 @@ var files =
     [ "defs.grammar.hpp", "defs_8grammar_8hpp.html", "defs_8grammar_8hpp" ],
     [ "defs.ssgrammar.hpp", "defs_8ssgrammar_8hpp.html", "defs_8ssgrammar_8hpp" ],
     [ "disambig.main.cpp", "disambig_8main_8cpp.html", "disambig_8main_8cpp" ],
+    [ "EnumRuleType.java", "EnumRuleType_8java.html", [
+      [ "EnumRuleType", "enumuk_1_1ac_1_1cam_1_1eng_1_1rulebuilding_1_1features_1_1EnumRuleType.html", "enumuk_1_1ac_1_1cam_1_1eng_1_1rulebuilding_1_1features_1_1EnumRuleType" ]
+    ] ],
     [ "ErrorSurface.cpp", "ErrorSurface_8cpp.html", null ],
     [ "ErrorSurface.h", "ErrorSurface_8h.html", "ErrorSurface_8h" ],
+    [ "ExtractorDataLoader.java", "ExtractorDataLoader_8java.html", [
+      [ "ExtractorDataLoader", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1ExtractorDataLoader.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1ExtractorDataLoader" ]
+    ] ],
+    [ "ExtractorJob.java", "ExtractorJob_8java.html", [
+      [ "ExtractorJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1extraction_1_1ExtractorJob.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1extraction_1_1ExtractorJob" ]
+    ] ],
     [ "fast-shortest-distance.h", "fast-shortest-distance_8h.html", "fast-shortest-distance_8h" ],
+    [ "Feature.java", "Feature_8java.html", null ],
+    [ "FeatureCreator.java", "FeatureCreator_8java.html", [
+      [ "FeatureCreator", "classuk_1_1ac_1_1cam_1_1eng_1_1rulebuilding_1_1features_1_1FeatureCreator.html", "classuk_1_1ac_1_1cam_1_1eng_1_1rulebuilding_1_1features_1_1FeatureCreator" ]
+    ] ],
+    [ "FeatureMap.java", "FeatureMap_8java.html", [
+      [ "FeatureMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1FeatureMap.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1FeatureMap" ]
+    ] ],
     [ "fstio.gtest.cpp", "fstio_8gtest_8cpp.html", "fstio_8gtest_8cpp" ],
     [ "fstio.hpp", "fstio_8hpp.html", "fstio_8hpp" ],
     [ "fstutils.applylmonthefly.hpp", "fstutils_8applylmonthefly_8hpp.html", [
@@ -99,7 +133,15 @@ var files =
     [ "global_funcs.hpp", "global__funcs_8hpp.html", "global__funcs_8hpp" ],
     [ "global_incls.hpp", "global__incls_8hpp.html", null ],
     [ "globalfunctions.gtest.cpp", "globalfunctions_8gtest_8cpp.html", "globalfunctions_8gtest_8cpp" ],
+    [ "GlueRule.java", "GlueRule_8java.html", null ],
     [ "googletesting.h", "googletesting_8h.html", "googletesting_8h" ],
+    [ "HFilePrint.java", "HFilePrint_8java.html", [
+      [ "HFilePrint", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1HFilePrint.html", null ]
+    ] ],
+    [ "HFileRuleQuery.java", "HFileRuleQuery_8java.html", null ],
+    [ "HFileRuleReader.java", "HFileRuleReader_8java.html", [
+      [ "HFileRuleReader", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1HFileRuleReader.html", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1HFileRuleReader" ]
+    ] ],
     [ "hifst-client.main.cpp", "hifst-client_8main_8cpp.html", "hifst-client_8main_8cpp" ],
     [ "hifst.main.cpp", "hifst_8main_8cpp.html", "hifst_8main_8cpp" ],
     [ "hifst.task.cykparser.gtest.cpp", "hifst_8task_8cykparser_8gtest_8cpp.html", "hifst_8task_8cykparser_8gtest_8cpp" ],
@@ -117,11 +159,16 @@ var files =
     [ "idbridge.hpp", "idbridge_8hpp.html", [
       [ "IdBridge", "classucam_1_1fsttools_1_1IdBridge.html", "classucam_1_1fsttools_1_1IdBridge" ]
     ] ],
+    [ "InsertScale.java", "InsertScale_8java.html", null ],
     [ "IntervalData.cpp", "IntervalData_8cpp.html", null ],
     [ "IntervalData.h", "IntervalData_8h.html", "IntervalData_8h" ],
+    [ "IntWritableCache.java", "IntWritableCache_8java.html", [
+      [ "IntWritableCache", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1IntWritableCache.html", null ]
+    ] ],
     [ "kenlmdetect.hpp", "kenlmdetect_8hpp.html", "kenlmdetect_8hpp" ],
     [ "latmert.main.cpp", "latmert_8main_8cpp.html", "latmert_8main_8cpp" ],
     [ "LatMertMain.h", "LatMertMain_8h.html", "LatMertMain_8h" ],
+    [ "LexicalProbability.java", "LexicalProbability_8java.html", null ],
     [ "lexicographic-tropical-tropical-decls.h", "lexicographic-tropical-tropical-decls_8h.html", "lexicographic-tropical-tropical-decls_8h" ],
     [ "lexicographic-tropical-tropical-funcs.h", "lexicographic-tropical-tropical-funcs_8h.html", [
       [ "GetWeight", "structfst_1_1GetWeight.html", "structfst_1_1GetWeight" ],
@@ -137,10 +184,13 @@ var files =
     [ "lexicographic-tropical-tropical-incls.h", "lexicographic-tropical-tropical-incls_8h.html", "lexicographic-tropical-tropical-incls_8h" ],
     [ "lexicographic.gtest.cpp", "lexicographic_8gtest_8cpp.html", "lexicographic_8gtest_8cpp" ],
     [ "lexmap.main.cpp", "lexmap_8main_8cpp.html", "lexmap_8main_8cpp" ],
+    [ "lineoptimize.hpp", "lineoptimize_8hpp.html", "lineoptimize_8hpp" ],
     [ "lmbr.gtest.cpp", "lmbr_8gtest_8cpp.html", "lmbr_8gtest_8cpp" ],
     [ "lmbr.main.cpp", "lmbr_8main_8cpp.html", "lmbr_8main_8cpp" ],
     [ "LMert.cpp", "LMert_8cpp.html", "LMert_8cpp" ],
     [ "LMert.h", "LMert_8h.html", "LMert_8h" ],
+    [ "lmert.hpp", "lmert_8hpp.html", "lmert_8hpp" ],
+    [ "lmert.main.cpp", "lmert_8main_8cpp.html", "lmert_8main_8cpp" ],
     [ "logger.boost_log.hpp", "logger_8boost__log_8hpp.html", "logger_8boost__log_8hpp" ],
     [ "logger.hpp", "logger_8hpp.html", "logger_8hpp" ],
     [ "logger.openfstglog.hpp", "logger_8openfstglog_8hpp.html", "logger_8openfstglog_8hpp" ],
@@ -184,12 +234,25 @@ var files =
     [ "main.lexmap.init_param_options.hpp", "main_8lexmap_8init__param__options_8hpp.html", "main_8lexmap_8init__param__options_8hpp" ],
     [ "main.lmbr.hpp", "main_8lmbr_8hpp.html", null ],
     [ "main.lmbr.init_param_options.hpp", "main_8lmbr_8init__param__options_8hpp.html", "main_8lmbr_8init__param__options_8hpp" ],
+    [ "main.lmert.hpp", "main_8lmert_8hpp.html", null ],
+    [ "main.lmert.init_param_options.hpp", "main_8lmert_8init__param__options_8hpp.html", "main_8lmert_8init__param__options_8hpp" ],
     [ "main.logger.hpp", "main_8logger_8hpp.html", null ],
     [ "main.printstrings.hpp", "main_8printstrings_8hpp.html", null ],
     [ "main.printstrings.init_param_options.hpp", "main_8printstrings_8init__param__options_8hpp.html", "main_8printstrings_8init__param__options_8hpp" ],
     [ "main.tunewp.hpp", "main_8tunewp_8hpp.html", null ],
     [ "main.tunewp.init_param_options.hpp", "main_8tunewp_8init__param__options_8hpp.html", "main_8tunewp_8init__param__options_8hpp" ],
     [ "mapping-shortest-path.h", "mapping-shortest-path_8h.html", "mapping-shortest-path_8h" ],
+    [ "MapReduceFeature.java", "MapReduceFeature_8java.html", [
+      [ "MapReduceFeature", "enumuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1MapReduceFeature.html", "enumuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1MapReduceFeature" ]
+    ] ],
+    [ "MarginalReducer.java", "MarginalReducer_8java.html", null ],
+    [ "MergeComparator.java", "MergeComparator_8java.html", [
+      [ "MergeComparator", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1merge_1_1MergeComparator.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1merge_1_1MergeComparator" ]
+    ] ],
+    [ "MergeJob.java", "MergeJob_8java.html", [
+      [ "MergeJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1merge_1_1MergeJob.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1merge_1_1MergeJob" ]
+    ] ],
+    [ "MergePartitioner.java", "MergePartitioner_8java.html", null ],
     [ "MertCommon.cpp", "MertCommon_8cpp.html", "MertCommon_8cpp" ],
     [ "MertCommon.h", "MertCommon_8h.html", "MertCommon_8h" ],
     [ "MertHashVec.cpp", "MertHashVec_8cpp.html", null ],
@@ -206,24 +269,91 @@ var files =
     [ "openfstversion.hpp", "openfstversion_8hpp.html", "openfstversion_8hpp" ],
     [ "Optimize.cpp", "Optimize_8cpp.html", "Optimize_8cpp" ],
     [ "Optimize.h", "Optimize_8h.html", "Optimize_8h" ],
+    [ "Pair.java", "Pair_8java.html", [
+      [ "Pair< T, U >", "classuk_1_1ac_1_1cam_1_1eng_1_1util_1_1Pair_3_01T_00_01U_01_4.html", "classuk_1_1ac_1_1cam_1_1eng_1_1util_1_1Pair_3_01T_00_01U_01_4" ]
+    ] ],
+    [ "PairWritable.java", "PairWritable_8java.html", null ],
     [ "params.h", "params_8h.html", "params_8h" ],
     [ "params.hpp", "params_8hpp.html", "params_8hpp" ],
     [ "ParamsConfig.cpp", "ParamsConfig_8cpp.html", null ],
     [ "ParamsConfig.h", "ParamsConfig_8h.html", [
       [ "ParamsConfig", "classParamsConfig.html", "classParamsConfig" ]
     ] ],
+    [ "PatternInstanceCreator.java", "PatternInstanceCreator_8java.html", null ],
     [ "printstrings.main.cpp", "printstrings_8main_8cpp.html", "printstrings_8main_8cpp" ],
+    [ "ProvenanceCountMap.java", "ProvenanceCountMap_8java.html", [
+      [ "ProvenanceCountMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1ProvenanceCountMap.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1ProvenanceCountMap" ]
+    ] ],
+    [ "ProvenanceSource2TargetLexicalProbability.java", "ProvenanceSource2TargetLexicalProbability_8java.html", null ],
+    [ "ProvenanceSource2TargetProbability.java", "ProvenanceSource2TargetProbability_8java.html", null ],
+    [ "ProvenanceTarget2SourceLexicalProbability.java", "ProvenanceTarget2SourceLexicalProbability_8java.html", null ],
+    [ "ProvenanceTarget2SourceProbability.java", "ProvenanceTarget2SourceProbability_8java.html", null ],
+    [ "randomlinesearch.hpp", "randomlinesearch_8hpp.html", [
+      [ "RandomLineSearch", "classucam_1_1lmert_1_1RandomLineSearch.html", "classucam_1_1lmert_1_1RandomLineSearch" ]
+    ] ],
     [ "range.gtest.cpp", "range_8gtest_8cpp.html", "range_8gtest_8cpp" ],
     [ "range.hpp", "range_8hpp.html", "range_8hpp" ],
     [ "RefsData.cpp", "RefsData_8cpp.html", "RefsData_8cpp" ],
     [ "RefsData.h", "RefsData_8h.html", "RefsData_8h" ],
     [ "registrypo.gtest.cpp", "registrypo_8gtest_8cpp.html", "registrypo_8gtest_8cpp" ],
     [ "registrypo.hpp", "registrypo_8hpp.html", "registrypo_8hpp" ],
+    [ "Rule.java", "Rule_8java.html", [
+      [ "Rule", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule" ]
+    ] ],
+    [ "RuleCount1.java", "RuleCount1_8java.html", null ],
+    [ "RuleCount2.java", "RuleCount2_8java.html", null ],
+    [ "RuleCountGreaterThan2.java", "RuleCountGreaterThan2_8java.html", null ],
+    [ "RuleExtractor.java", "RuleExtractor_8java.html", [
+      [ "RuleExtractor", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1RuleExtractor.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1RuleExtractor" ]
+    ] ],
+    [ "RuleExtractorTest.java", "RuleExtractorTest_8java.html", [
+      [ "RuleExtractorTest", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1RuleExtractorTest.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1RuleExtractorTest" ]
+    ] ],
+    [ "RuleFilter.java", "RuleFilter_8java.html", null ],
+    [ "RuleInfoWritable.java", "RuleInfoWritable_8java.html", [
+      [ "RuleInfoWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleInfoWritable.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleInfoWritable" ]
+    ] ],
+    [ "RuleInsertionPenalty.java", "RuleInsertionPenalty_8java.html", null ],
+    [ "RulePattern.java", "RulePattern_8java.html", [
+      [ "RulePattern", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RulePattern.html", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RulePattern" ]
+    ] ],
+    [ "RuleRetriever.java", "RuleRetriever_8java.html", [
+      [ "RuleRetriever", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RuleRetriever.html", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RuleRetriever" ]
+    ] ],
+    [ "RuleWritable.java", "RuleWritable_8java.html", [
+      [ "RuleWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleWritable.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleWritable" ]
+    ] ],
     [ "Score.cpp", "Score_8cpp.html", "Score_8cpp" ],
     [ "Score.h", "Score_8h.html", "Score_8h" ],
     [ "score.main.cpp", "score_8main_8cpp.html", "score_8main_8cpp" ],
+    [ "Sentence.java", "Sentence_8java.html", [
+      [ "Sentence", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Sentence.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Sentence" ]
+    ] ],
+    [ "SentencePair.java", "SentencePair_8java.html", [
+      [ "SentencePair", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1SentencePair.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1SentencePair" ]
+    ] ],
+    [ "SequenceFilePrint.java", "SequenceFilePrint_8java.html", [
+      [ "SequenceFilePrint", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1SequenceFilePrint.html", null ]
+    ] ],
+    [ "SidePattern.java", "SidePattern_8java.html", null ],
+    [ "SimpleHFileOutputFormat.java", "SimpleHFileOutputFormat_8java.html", [
+      [ "SimpleHFileOutputFormat", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1SimpleHFileOutputFormat.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1SimpleHFileOutputFormat" ]
+    ] ],
+    [ "Source2TargetJob.java", "Source2TargetJob_8java.html", [
+      [ "Source2TargetJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1Source2TargetJob.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1Source2TargetJob" ]
+    ] ],
+    [ "Source2TargetLexicalProbability.java", "Source2TargetLexicalProbability_8java.html", null ],
+    [ "Source2TargetProbability.java", "Source2TargetProbability_8java.html", null ],
     [ "szfstream.gtest.cpp", "szfstream_8gtest_8cpp.html", "szfstream_8gtest_8cpp" ],
     [ "szfstream.hpp", "szfstream_8hpp.html", "szfstream_8hpp" ],
+    [ "Target2SourceJob.java", "Target2SourceJob_8java.html", [
+      [ "Target2SourceJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1Target2SourceJob.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1Target2SourceJob" ]
+    ] ],
+    [ "Target2SourceLexicalProbability.java", "Target2SourceLexicalProbability_8java.html", null ],
+    [ "Target2SourceProbability.java", "Target2SourceProbability_8java.html", null ],
+    [ "TargetFeatureList.java", "TargetFeatureList_8java.html", [
+      [ "TargetFeatureList", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1TargetFeatureList.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1TargetFeatureList" ]
+    ] ],
     [ "task.applylm.hpp", "task_8applylm_8hpp.html", [
       [ "ApplyLanguageModelTask", "classucam_1_1fsttools_1_1ApplyLanguageModelTask.html", "classucam_1_1fsttools_1_1ApplyLanguageModelTask" ]
     ] ],
@@ -318,6 +448,9 @@ var files =
       [ "TaskInterface", "classucam_1_1util_1_1TaskInterface.html", "classucam_1_1util_1_1TaskInterface" ],
       [ "TaskFunctor", "classucam_1_1util_1_1TaskFunctor.html", "classucam_1_1util_1_1TaskFunctor" ]
     ] ],
+    [ "TextArrayWritable.java", "TextArrayWritable_8java.html", [
+      [ "TextArrayWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1TextArrayWritable.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1TextArrayWritable" ]
+    ] ],
     [ "TGMert.cpp", "TGMert_8cpp.html", "TGMert_8cpp" ],
     [ "TGMert.h", "TGMert_8h.html", "TGMert_8h" ],
     [ "tokenizer.osr.hpp", "tokenizer_8osr_8hpp.html", "tokenizer_8osr_8hpp" ],
@@ -335,10 +468,23 @@ var files =
     [ "tropical_LT_tropical-arc.so.cpp", "tropical__LT__tropical-arc_8so_8cpp.html", null ],
     [ "tropicalsparsetuple-arc.so.cpp", "tropicalsparsetuple-arc_8so_8cpp.html", "tropicalsparsetuple-arc_8so_8cpp" ],
     [ "tropicalsparseweight.gtest.cpp", "tropicalsparseweight_8gtest_8cpp.html", "tropicalsparseweight_8gtest_8cpp" ],
+    [ "TTableClient.java", "TTableClient_8java.html", [
+      [ "TTableClient", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1lexical_1_1TTableClient.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1lexical_1_1TTableClient" ]
+    ] ],
+    [ "TTableServer.java", "TTableServer_8java.html", [
+      [ "TTableServer", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1lexical_1_1TTableServer.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1lexical_1_1TTableServer" ]
+    ] ],
     [ "TuneSet.cpp", "TuneSet_8cpp.html", "TuneSet_8cpp" ],
     [ "TuneSet.h", "TuneSet_8h.html", "TuneSet_8h" ],
+    [ "tuneset.hpp", "tuneset_8hpp.html", [
+      [ "TuneSet", "classucam_1_1fsttools_1_1TuneSet.html", "classucam_1_1fsttools_1_1TuneSet" ]
+    ] ],
     [ "tunewp.main.cpp", "tunewp_8main_8cpp.html", "tunewp_8main_8cpp" ],
+    [ "Util.java", "Util_8java.html", [
+      [ "Util", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1Util.html", null ]
+    ] ],
     [ "vecmap.main.cpp", "vecmap_8main_8cpp.html", "vecmap_8main_8cpp" ],
+    [ "WordInsertionPenalty.java", "WordInsertionPenalty_8java.html", null ],
     [ "wordmapper.gtest.cpp", "wordmapper_8gtest_8cpp.html", "wordmapper_8gtest_8cpp" ],
     [ "wordmapper.hpp", "wordmapper_8hpp.html", [
       [ "PQwmapcompare", "classucam_1_1util_1_1PQwmapcompare.html", "classucam_1_1util_1_1PQwmapcompare" ],

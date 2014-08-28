@@ -6,6 +6,7 @@ var annotated =
     [ "lm", "namespacelm.html", "namespacelm" ],
     [ "mertfst", "namespacemertfst.html", "namespacemertfst" ],
     [ "ucam", "namespaceucam.html", "namespaceucam" ],
+    [ "uk", "namespaceuk.html", "namespaceuk" ],
     [ "Bleu", "classBleu.html", "classBleu" ],
     [ "BleuStats", "classBleuStats.html", "classBleuStats" ],
     [ "CompositeList", "classCompositeList.html", "classCompositeList" ],

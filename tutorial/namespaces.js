@@ -5,5 +5,6 @@ var namespaces =
     [ "HifstConstants", "namespaceHifstConstants.html", null ],
     [ "lm", "namespacelm.html", null ],
     [ "mertfst", "namespacemertfst.html", null ],
-    [ "ucam", "namespaceucam.html", "namespaceucam" ]
+    [ "ucam", "namespaceucam.html", "namespaceucam" ],
+    [ "uk", "namespaceuk.html", "namespaceuk" ]
 ];

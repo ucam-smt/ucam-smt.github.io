@@ -1,7 +1,11 @@
 var global__funcs_8hpp =
 [
-    [ "hasheqvecuint", "classucam_1_1util_1_1hasheqvecuint.html", "classucam_1_1util_1_1hasheqvecuint" ],
-    [ "hashfvecuint", "classucam_1_1util_1_1hashfvecuint.html", "classucam_1_1util_1_1hashfvecuint" ],
+    [ "HashEqVec", "classucam_1_1util_1_1HashEqVec.html", "classucam_1_1util_1_1HashEqVec" ],
+    [ "HashFVec", "classucam_1_1util_1_1HashFVec.html", "classucam_1_1util_1_1HashFVec" ],
+    [ "hasheqvecint64", "global__funcs_8hpp.html#a0e6b7f0be6f5368acdf543caa4d63ddb", null ],
+    [ "hasheqvecuint", "global__funcs_8hpp.html#aedd1d8ea0398d3c43147c4f171425178", null ],
+    [ "hashfvecint64", "global__funcs_8hpp.html#a70da62322f60e14d931d6c38e30ad994", null ],
+    [ "hashfvecuint", "global__funcs_8hpp.html#a0998857de4c50a6e292bdf372be2703f", null ],
     [ "count_needles", "global__funcs_8hpp.html#afb792dafa597a1f56085fc27511c5ac1", null ],
     [ "DirName", "global__funcs_8hpp.html#a1463f6afdec9929a45512c7d3500166c", null ],
     [ "dotproduct", "global__funcs_8hpp.html#a75676f30a10b9986b90a451738493fda", null ],
@@ -10,6 +14,9 @@ var global__funcs_8hpp =
     [ "fileExists", "global__funcs_8hpp.html#a4f7149315526dc66ec9248f481fad58c", null ],
     [ "find_and_replace", "global__funcs_8hpp.html#a3794383ec58cfbbf68e8c48a381c2a31", null ],
     [ "getTimestamp", "global__funcs_8hpp.html#a242abb4ba80ec193d101c36d0f1db266", null ],
+    [ "operator<<", "global__funcs_8hpp.html#a020190ef4efeb2241fc01178db2049c2", null ],
+    [ "operator<<", "global__funcs_8hpp.html#a6e5a8e693e5feb34503132e95f95f9ca", null ],
+    [ "printout", "global__funcs_8hpp.html#ae3b3be236dcc0009d3d76782fb6b9982", null ],
     [ "toNumber", "global__funcs_8hpp.html#a2da6217b54343370f87e6f5d315df4a8", null ],
     [ "toString", "global__funcs_8hpp.html#ab119ae81f73ff680a1554413db702d7b", null ],
     [ "toString", "global__funcs_8hpp.html#a6feb1dd2d5973ae726d951d303780669", null ],

@@ -9,11 +9,16 @@ var NAVTREE =
         [ "OpenFST and Related Modelling Techniques", "index.html#Refs_fsts", null ],
         [ "Lattice Minimum Bayes Risk Decoding using WFSAs", "index.html#Refs_lmbr", null ],
         [ "Lattice Mert", "index.html#lmert_refs", null ],
+        [ "[Rule Extraction]", "index.html#rulextract_refs", null ],
         [ "Language Modelling Toolkits", "index.html#othertools", null ]
       ] ]
     ] ],
+    [ "README", "md_README.html", null ],
+    [ "Cambridge SMT Rule Extraction", "md__home_giglesias_HIFST_8github_ucam-smt_java_ruleXtract_README.html", null ],
     [ "Getting Started", "start.html", [
-      [ "Installation of UCAM-SMT package", "start.html#build", null ],
+      [ "Installation of UCAM-SMT package", "start.html#build", [
+        [ "Rule extraction installation", "start.html#rulextract_start", null ]
+      ] ],
       [ "Paths and Environment Variables", "start.html#paths", null ],
       [ "Tutorial Files", "start.html#Setup_files", [
         [ "Configuration Files and Command Line Options", "start.html#Setup_configs", null ],
@@ -37,14 +42,14 @@ var NAVTREE =
       [ "Multithreading", "basic.html#multithread", null ],
       [ "Client-Server Mode (Experimental)", "basic.html#server", null ]
     ] ],
-    [ "Pruning", "md_Tutorial.html", [
-      [ "Local pruning / pruning in search", "md_Tutorial.html#lpruning", null ],
-      [ "Local Pruning Algorithm", "md_Tutorial.html#local_prune", null ],
-      [ "Effect on Speed, Memory, Scores", "md_Tutorial.html#lpruning_effects", null ],
-      [ "Source Sentence Chopping", "md_Tutorial.html#chopping", [
-        [ "Grammar-based Sentence Chopping", "md_Tutorial.html#chopping_gb", null ],
-        [ "Converting Grammars and Input Text for Chopping", "md_Tutorial.html#chopping_eg", null ],
-        [ "Chopping by Explicit Source Sentence Segmentation", "md_Tutorial.html#chopping_sseg", null ]
+    [ "Pruning", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html", [
+      [ "Local pruning / pruning in search", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#lpruning", null ],
+      [ "Local Pruning Algorithm", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#local_prune", null ],
+      [ "Effect on Speed, Memory, Scores", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#lpruning_effects", null ],
+      [ "Source Sentence Chopping", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#chopping", [
+        [ "Grammar-based Sentence Chopping", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#chopping_gb", null ],
+        [ "Converting Grammars and Input Text for Chopping", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#chopping_eg", null ],
+        [ "Chopping by Explicit Source Sentence Segmentation", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#chopping_sseg", null ]
       ] ]
     ] ],
     [ "MERT - Features Only", "mert.html", [
@@ -72,6 +77,31 @@ var NAVTREE =
       [ "Expansion: Translation by Composition of PDAs and WFSAs followed by Pruned Expansion", "pda.html#pda_expand", null ]
     ] ],
     [ "Fst-based True Casing", "true_casing.html", null ],
+    [ "Rule Extraction", "rulextract.html", [
+      [ "Getting started", "rulextract.html#rulextract_start_reminder", null ],
+      [ "Hadoop Cluster Setup", "rulextract.html#rulextract_cluster_setup", null ],
+      [ "Pipeline Overview", "rulextract.html#rulextract_pipeline_overview", null ],
+      [ "Grammar Extraction", "rulextract.html#rulextract_grammar_extraction", [
+        [ "Running Commands", "rulextract.html#rulextract_commands", null ],
+        [ "Data Loading", "rulextract.html#rulextract_load_data", null ],
+        [ "Rule Extraction", "rulextract.html#rulextract_extract", null ],
+        [ "Source-to-target Probability", "rulextract.html#rulextract_s2t", null ],
+        [ "Target-to-source Probability", "rulextract.html#rulextract_t2s", null ],
+        [ "Feature Merging", "rulextract.html#rulextract_merge", null ]
+      ] ],
+      [ "Grammar Filtering", "rulextract.html#rulextract_retrieval", [
+        [ "Lexical Models Download", "rulextract.html#lex_model", null ],
+        [ "Lexical Probability Servers", "rulextract.html#lex_prob_server", null ],
+        [ "Hadoop Local Configuration", "rulextract.html#hadoop_local_conf", null ],
+        [ "Grammar Filtering", "rulextract.html#retrieval", null ],
+        [ "Grammar Formatting", "rulextract.html#grammar_conversion", null ]
+      ] ],
+      [ "Development", "rulextract.html#Development", [
+        [ "IDE Development", "rulextract.html#ide", null ],
+        [ "Adding a Local Feature", "rulextract.html#local_feature", null ],
+        [ "Adding a MapReduce Feature", "rulextract.html#mapreduce_feature", null ]
+      ] ]
+    ] ],
     [ "Appendices", "appendices.html", [
       [ "Using Grammars From Open Source SMT Systems", "appendices.html#gext", [
         [ "Moses", "appendices.html#gext_moses", null ],
@@ -115,16 +145,18 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"BleuStats_8cpp.html",
-"classErrorSurface.html#aba17c7765049911f337e69e9520bef45",
-"classlm_1_1HifstEnumerateVocab.html#a419f7e3e8d04ef2baf45c9dd4cc91a07",
-"classucam_1_1lmbr_1_1ComputePosteriors.html#a5fa277081958796ef0891b304d5fea72",
-"constants-hifst_8hpp.html#aa8a006f7a5dc82ada8c0c8d551cc6b03",
-"functions_0x70.html",
-"latmert_2include_2tropical-sparse-tuple-weight-decls_8h.html#a9f63561022e474d6a08012e22ec3f166",
+"AlignmentAndFeatureMap_8java.html",
+"Source2TargetProbability_8java_source.html",
+"classRandDirGenerator.html#abf8f620a2871645c920efafdaebafc7a",
+"classucam_1_1hifst_1_1ExpandedNumStatesRTN.html#af8569c79a9dfa943a1e3284c880174fe",
+"classucam_1_1util_1_1NumberRangeInterface.html#a895c0b28bb64185f898d8bdafea4b7fd",
+"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleWritable.html#aa0f4bc22d905dc5ccd0296521ef7f434",
+"data-main_8lmbr_8hpp_source.html",
+"functions_func_0x72.html",
+"latmert_8main_8cpp.html#a3cdb956b6a7e4ffcdbfde5a1b9bbd04d",
 "namespacemembers.html",
-"structfst_1_1ScaleWeight.html",
-"task_8loadwordmap_8hpp.html"
+"structfst_1_1Expand.html#a460aa7ae54d29187f5b610825f8dcf7c",
+"structucam_1_1util_1_1ParamsInit.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

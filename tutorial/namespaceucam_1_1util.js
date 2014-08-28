@@ -1,8 +1,8 @@
 var namespaceucam_1_1util =
 [
     [ "PatternAddress", "classucam_1_1util_1_1PatternAddress.html", "classucam_1_1util_1_1PatternAddress" ],
-    [ "hasheqvecuint", "classucam_1_1util_1_1hasheqvecuint.html", "classucam_1_1util_1_1hasheqvecuint" ],
-    [ "hashfvecuint", "classucam_1_1util_1_1hashfvecuint.html", "classucam_1_1util_1_1hashfvecuint" ],
+    [ "HashEqVec", "classucam_1_1util_1_1HashEqVec.html", "classucam_1_1util_1_1HashEqVec" ],
+    [ "HashFVec", "classucam_1_1util_1_1HashFVec.html", "classucam_1_1util_1_1HashFVec" ],
     [ "silent", "classucam_1_1util_1_1silent.html", null ],
     [ "Runner", "classucam_1_1util_1_1Runner.html", "classucam_1_1util_1_1Runner" ],
     [ "Runner2", "classucam_1_1util_1_1Runner2.html", "classucam_1_1util_1_1Runner2" ],
