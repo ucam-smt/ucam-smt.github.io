@@ -9,7 +9,7 @@ var fstutils_8hpp =
     [ "EncodeDeterminizeMinimizeDecode", "fstutils_8hpp.html#a75bd845593defe804c6f4f05d776ab6f", null ],
     [ "EncodeDeterminizeMinimizeDecode", "fstutils_8hpp.html#aad5d74ea7387baf7cb2b0913b883daf0", null ],
     [ "extractSourceVocabulary", "fstutils_8hpp.html#a60fbcd08f97bfcab1d23d7ebd9e29103", null ],
-    [ "extractSourceVocabulary", "fstutils_8hpp.html#aa54d5c93c9215cc328786c48dcec2e31", null ],
+    [ "extractSourceVocabulary", "fstutils_8hpp.html#a62bb5c890c976b9f052c407f3a338588", null ],
     [ "extractTargetVocabulary", "fstutils_8hpp.html#a124af3e844db065da1c151b60e200189", null ],
     [ "FstGetBestHypothesis", "fstutils_8hpp.html#afd4c351215a1ce5f3d2a7c6301096003", null ],
     [ "FstGetBestHypothesis", "fstutils_8hpp.html#aabb52b1d003bbaf6f7cef35deec9fd51", null ],

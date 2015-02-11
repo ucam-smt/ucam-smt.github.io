@@ -16,13 +16,19 @@ var files =
       [ "AlignmentWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentWritable.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentWritable" ]
     ] ],
     [ "alilats2splats.main.cpp", "alilats2splats_8main_8cpp.html", "alilats2splats_8main_8cpp" ],
-    [ "applylm.main.cpp", "applylm_8main_8cpp.html", "applylm_8main_8cpp" ],
+    [ "applylm.main.cpp", "applylm_8main_8cpp.html", [
+      [ "RunApplyLm", "structRunApplyLm.html", "structRunApplyLm" ]
+    ] ],
     [ "backtrace.hpp", "backtrace_8hpp.html", "backtrace_8hpp" ],
     [ "bleu.hpp", "bleu_8hpp.html", "bleu_8hpp" ],
     [ "BleuStats.cpp", "BleuStats_8cpp.html", "BleuStats_8cpp" ],
     [ "BleuStats.h", "BleuStats_8h.html", "BleuStats_8h" ],
     [ "Block.java", "Block_8java.html", [
       [ "Block", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Block.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Block" ]
+    ] ],
+    [ "common-helpers.hpp", "common-helpers_8hpp.html", [
+      [ "RunTask2", "structucam_1_1fsttools_1_1RunTask2.html", "structucam_1_1fsttools_1_1RunTask2" ],
+      [ "RunTask3", "structucam_1_1fsttools_1_1RunTask3.html", "structucam_1_1fsttools_1_1RunTask3" ]
     ] ],
     [ "CommonFlags.h", "CommonFlags_8h.html", "CommonFlags_8h" ],
     [ "constants-fsttools.hpp", "constants-fsttools_8hpp.html", "constants-fsttools_8hpp" ],
@@ -51,6 +57,9 @@ var files =
     ] ],
     [ "data-main.lmbr.hpp", "data-main_8lmbr_8hpp.html", [
       [ "LmbrTaskData", "classucam_1_1lmbr_1_1LmbrTaskData.html", "classucam_1_1lmbr_1_1LmbrTaskData" ]
+    ] ],
+    [ "data-main.rules2weights.hpp", "data-main_8rules2weights_8hpp.html", [
+      [ "RuleIdsToSparseWeightLatsData", "classucam_1_1hifst_1_1RuleIdsToSparseWeightLatsData.html", "classucam_1_1hifst_1_1RuleIdsToSparseWeightLatsData" ]
     ] ],
     [ "data.cykparser.cykbackpointers.hpp", "data_8cykparser_8cykbackpointers_8hpp.html", [
       [ "CYKbackpointers", "classucam_1_1hifst_1_1CYKbackpointers.html", "classucam_1_1hifst_1_1CYKbackpointers" ]
@@ -109,6 +118,8 @@ var files =
     [ "fstio.gtest.cpp", "fstio_8gtest_8cpp.html", "fstio_8gtest_8cpp" ],
     [ "fstio.hpp", "fstio_8hpp.html", "fstio_8hpp" ],
     [ "fstutils.applylmonthefly.hpp", "fstutils_8applylmonthefly_8hpp.html", [
+      [ "StateHandler", "structfst_1_1StateHandler.html", "structfst_1_1StateHandler" ],
+      [ "StateHandler< lm::np::State >", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4.html", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4" ],
       [ "ApplyLanguageModelOnTheFly", "classfst_1_1ApplyLanguageModelOnTheFly.html", "classfst_1_1ApplyLanguageModelOnTheFly" ]
     ] ],
     [ "fstutils.extractngrams.hpp", "fstutils_8extractngrams_8hpp.html", "fstutils_8extractngrams_8hpp" ],
@@ -118,6 +129,8 @@ var files =
     [ "fstutils.mapper.hpp", "fstutils_8mapper_8hpp.html", [
       [ "GenericWeightAutoMapper", "classfst_1_1GenericWeightAutoMapper.html", "classfst_1_1GenericWeightAutoMapper" ],
       [ "GenericWeightMapper", "classfst_1_1GenericWeightMapper.html", "classfst_1_1GenericWeightMapper" ],
+      [ "GenericArcMapper", "classfst_1_1GenericArcMapper.html", "classfst_1_1GenericArcMapper" ],
+      [ "GenericArcAutoMapper", "classfst_1_1GenericArcAutoMapper.html", "classfst_1_1GenericArcAutoMapper" ],
       [ "WordPenaltyMapper", "classfst_1_1WordPenaltyMapper.html", "classfst_1_1WordPenaltyMapper" ],
       [ "StdToLexStdMapper", "structfst_1_1StdToLexStdMapper.html", "structfst_1_1StdToLexStdMapper" ],
       [ "LexStdToStdMapper", "structfst_1_1LexStdToStdMapper.html", "structfst_1_1LexStdToStdMapper" ]
@@ -165,7 +178,7 @@ var files =
     [ "IntWritableCache.java", "IntWritableCache_8java.html", [
       [ "IntWritableCache", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1IntWritableCache.html", null ]
     ] ],
-    [ "kenlmdetect.hpp", "kenlmdetect_8hpp.html", "kenlmdetect_8hpp" ],
+    [ "kenlmdetect.hpp", "kenlmdetect_8hpp.html", null ],
     [ "latmert.main.cpp", "latmert_8main_8cpp.html", "latmert_8main_8cpp" ],
     [ "LatMertMain.h", "LatMertMain_8h.html", "LatMertMain_8h" ],
     [ "LexicalProbability.java", "LexicalProbability_8java.html", null ],
@@ -182,7 +195,6 @@ var files =
       [ "LexToStd", "structfst_1_1LexToStd.html", "structfst_1_1LexToStd" ]
     ] ],
     [ "lexicographic-tropical-tropical-incls.h", "lexicographic-tropical-tropical-incls_8h.html", "lexicographic-tropical-tropical-incls_8h" ],
-    [ "lexicographic.gtest.cpp", "lexicographic_8gtest_8cpp.html", "lexicographic_8gtest_8cpp" ],
     [ "lexmap.main.cpp", "lexmap_8main_8cpp.html", "lexmap_8main_8cpp" ],
     [ "lineoptimize.hpp", "lineoptimize_8hpp.html", "lineoptimize_8hpp" ],
     [ "lmbr.gtest.cpp", "lmbr_8gtest_8cpp.html", "lmbr_8gtest_8cpp" ],
@@ -212,6 +224,10 @@ var files =
       [ "SingleThreadedLmbrTask", "classucam_1_1lmbr_1_1SingleThreadedLmbrTask.html", "classucam_1_1lmbr_1_1SingleThreadedLmbrTask" ],
       [ "MultiThreadedLmbrTask", "classucam_1_1lmbr_1_1MultiThreadedLmbrTask.html", "classucam_1_1lmbr_1_1MultiThreadedLmbrTask" ]
     ] ],
+    [ "main-run.rules2weights.hpp", "main-run_8rules2weights_8hpp.html", [
+      [ "RulesToWeightsMapperObject", "structucam_1_1hifst_1_1RulesToWeightsMapperObject.html", "structucam_1_1hifst_1_1RulesToWeightsMapperObject" ],
+      [ "SingleThreadededRulesToWeightsSparseLatsTask", "classucam_1_1hifst_1_1SingleThreadededRulesToWeightsSparseLatsTask.html", "classucam_1_1hifst_1_1SingleThreadededRulesToWeightsSparseLatsTask" ]
+    ] ],
     [ "main.alilats2splats.hpp", "main_8alilats2splats_8hpp.html", "main_8alilats2splats_8hpp" ],
     [ "main.alilats2splats.init_param_options.hpp", "main_8alilats2splats_8init__param__options_8hpp.html", "main_8alilats2splats_8init__param__options_8hpp" ],
     [ "main.applylm.hpp", "main_8applylm_8hpp.html", "main_8applylm_8hpp" ],
@@ -230,6 +246,7 @@ var files =
     [ "main.hifst-client.init_param_options.hpp", "main_8hifst-client_8init__param__options_8hpp.html", "main_8hifst-client_8init__param__options_8hpp" ],
     [ "main.hifst.hpp", "main_8hifst_8hpp.html", "main_8hifst_8hpp" ],
     [ "main.hifst.init_param_options.hpp", "main_8hifst_8init__param__options_8hpp.html", "main_8hifst_8init__param__options_8hpp" ],
+    [ "main.hpp", "main_8hpp.html", "main_8hpp" ],
     [ "main.lexmap.hpp", "main_8lexmap_8hpp.html", null ],
     [ "main.lexmap.init_param_options.hpp", "main_8lexmap_8init__param__options_8hpp.html", "main_8lexmap_8init__param__options_8hpp" ],
     [ "main.lmbr.hpp", "main_8lmbr_8hpp.html", null ],
@@ -239,6 +256,11 @@ var files =
     [ "main.logger.hpp", "main_8logger_8hpp.html", null ],
     [ "main.printstrings.hpp", "main_8printstrings_8hpp.html", null ],
     [ "main.printstrings.init_param_options.hpp", "main_8printstrings_8init__param__options_8hpp.html", "main_8printstrings_8init__param__options_8hpp" ],
+    [ "main.rules2weights.hpp", "main_8rules2weights_8hpp.html", null ],
+    [ "main.rules2weights.init_param_options.hpp", "main_8rules2weights_8init__param__options_8hpp.html", "main_8rules2weights_8init__param__options_8hpp" ],
+    [ "main.rules2weights.init_param_options_common.hpp", "main_8rules2weights_8init__param__options__common_8hpp.html", "main_8rules2weights_8init__param__options__common_8hpp" ],
+    [ "main.samplehyps.hpp", "main_8samplehyps_8hpp.html", null ],
+    [ "main.samplehyps.init_param_options.hpp", "main_8samplehyps_8init__param__options_8hpp.html", "main_8samplehyps_8init__param__options_8hpp" ],
     [ "main.tunewp.hpp", "main_8tunewp_8hpp.html", null ],
     [ "main.tunewp.init_param_options.hpp", "main_8tunewp_8init__param__options_8hpp.html", "main_8tunewp_8init__param__options_8hpp" ],
     [ "mapping-shortest-path.h", "mapping-shortest-path_8h.html", "mapping-shortest-path_8h" ],
@@ -320,9 +342,11 @@ var files =
     [ "RuleRetriever.java", "RuleRetriever_8java.html", [
       [ "RuleRetriever", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RuleRetriever.html", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RuleRetriever" ]
     ] ],
+    [ "rules2weights.main.cpp", "rules2weights_8main_8cpp.html", "rules2weights_8main_8cpp" ],
     [ "RuleWritable.java", "RuleWritable_8java.html", [
       [ "RuleWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleWritable.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleWritable" ]
     ] ],
+    [ "samplehyps.main.cpp", "samplehyps_8main_8cpp.html", "samplehyps_8main_8cpp" ],
     [ "Score.cpp", "Score_8cpp.html", "Score_8cpp" ],
     [ "Score.h", "Score_8h.html", "Score_8h" ],
     [ "score.main.cpp", "score_8main_8cpp.html", "score_8main_8cpp" ],
@@ -384,11 +408,13 @@ var files =
       [ "conditions", "structucam_1_1hifst_1_1conditions.html", "structucam_1_1hifst_1_1conditions" ],
       [ "LocalPruningConditions", "classucam_1_1hifst_1_1LocalPruningConditions.html", "classucam_1_1hifst_1_1LocalPruningConditions" ]
     ] ],
+    [ "task.hifst.makeweights.hpp", "task_8hifst_8makeweights_8hpp.html", "task_8hifst_8makeweights_8hpp" ],
     [ "task.hifst.optimize.hpp", "task_8hifst_8optimize_8hpp.html", [
       [ "OptimizeMachine", "classucam_1_1hifst_1_1OptimizeMachine.html", "classucam_1_1hifst_1_1OptimizeMachine" ],
       [ "OptimizeMachineNoDetMin", "classucam_1_1hifst_1_1OptimizeMachineNoDetMin.html", "classucam_1_1hifst_1_1OptimizeMachineNoDetMin" ]
     ] ],
     [ "task.hifst.replacefstbyarc.hpp", "task_8hifst_8replacefstbyarc_8hpp.html", [
+      [ "GenerateTrivialFst", "structucam_1_1hifst_1_1GenerateTrivialFst.html", "structucam_1_1hifst_1_1GenerateTrivialFst" ],
       [ "ReplaceFstByArc", "classucam_1_1hifst_1_1ReplaceFstByArc.html", "classucam_1_1hifst_1_1ReplaceFstByArc" ],
       [ "ManualReplaceFstByArc", "classucam_1_1hifst_1_1ManualReplaceFstByArc.html", "classucam_1_1hifst_1_1ManualReplaceFstByArc" ]
     ] ],
@@ -407,16 +433,21 @@ var files =
       [ "LmbrTask", "classucam_1_1lmbr_1_1LmbrTask.html", "classucam_1_1lmbr_1_1LmbrTask" ]
     ] ],
     [ "task.loadlm.hpp", "task_8loadlm_8hpp.html", [
+      [ "KenLMModelHelper", "structucam_1_1fsttools_1_1KenLMModelHelper.html", "structucam_1_1fsttools_1_1KenLMModelHelper" ],
       [ "LoadLanguageModelTask", "classucam_1_1fsttools_1_1LoadLanguageModelTask.html", "classucam_1_1fsttools_1_1LoadLanguageModelTask" ]
     ] ],
     [ "task.loadsparseweightflowerfst.hpp", "task_8loadsparseweightflowerfst_8hpp.html", [
-      [ "LoadSparseWeightFlowerLatticeTask", "classucam_1_1hifst_1_1LoadSparseWeightFlowerLatticeTask.html", "classucam_1_1hifst_1_1LoadSparseWeightFlowerLatticeTask" ]
+      [ "LoadSparseWeightFlowerLatticeTask", "classucam_1_1hifst_1_1LoadSparseWeightFlowerLatticeTask.html", "classucam_1_1hifst_1_1LoadSparseWeightFlowerLatticeTask" ],
+      [ "LoadSparseWeightsTask", "classucam_1_1hifst_1_1LoadSparseWeightsTask.html", "classucam_1_1hifst_1_1LoadSparseWeightsTask" ]
     ] ],
     [ "task.loadunimap.hpp", "task_8loadunimap_8hpp.html", [
       [ "LoadUnimapTask", "classucam_1_1fsttools_1_1LoadUnimapTask.html", "classucam_1_1fsttools_1_1LoadUnimapTask" ]
     ] ],
     [ "task.loadwordmap.hpp", "task_8loadwordmap_8hpp.html", [
       [ "LoadWordMapTask", "classucam_1_1fsttools_1_1LoadWordMapTask.html", "classucam_1_1fsttools_1_1LoadWordMapTask" ]
+    ] ],
+    [ "task.optimizefst.hpp", "task_8optimizefst_8hpp.html", [
+      [ "OptimizeFstTask", "classucam_1_1fsttools_1_1OptimizeFstTask.html", "classucam_1_1fsttools_1_1OptimizeFstTask" ]
     ] ],
     [ "task.patternstoinstances.hpp", "task_8patternstoinstances_8hpp.html", [
       [ "PatternsToInstancesTask", "classucam_1_1hifst_1_1PatternsToInstancesTask.html", "classucam_1_1hifst_1_1PatternsToInstancesTask" ]
@@ -467,7 +498,6 @@ var files =
     ] ],
     [ "tropical_LT_tropical-arc.so.cpp", "tropical__LT__tropical-arc_8so_8cpp.html", null ],
     [ "tropicalsparsetuple-arc.so.cpp", "tropicalsparsetuple-arc_8so_8cpp.html", "tropicalsparsetuple-arc_8so_8cpp" ],
-    [ "tropicalsparseweight.gtest.cpp", "tropicalsparseweight_8gtest_8cpp.html", "tropicalsparseweight_8gtest_8cpp" ],
     [ "TTableClient.java", "TTableClient_8java.html", [
       [ "TTableClient", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1lexical_1_1TTableClient.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1lexical_1_1TTableClient" ]
     ] ],
@@ -484,6 +514,7 @@ var files =
       [ "Util", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1Util.html", null ]
     ] ],
     [ "vecmap.main.cpp", "vecmap_8main_8cpp.html", "vecmap_8main_8cpp" ],
+    [ "weights.gtest.cpp", "weights_8gtest_8cpp.html", "weights_8gtest_8cpp" ],
     [ "WordInsertionPenalty.java", "WordInsertionPenalty_8java.html", null ],
     [ "wordmapper.gtest.cpp", "wordmapper_8gtest_8cpp.html", "wordmapper_8gtest_8cpp" ],
     [ "wordmapper.hpp", "wordmapper_8hpp.html", [

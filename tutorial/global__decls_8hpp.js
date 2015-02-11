@@ -14,6 +14,7 @@ var global__decls_8hpp =
     [ "OOVID", "global__decls_8hpp.html#a3102c22a0fcdf737c11c0d977f3be9c8", null ],
     [ "OSR", "global__decls_8hpp.html#a6635b8e7dcc9bf9c45f14a29fd508720", null ],
     [ "PHI", "global__decls_8hpp.html#a2203853edabc3de5f785e54b55eb5e3c", null ],
+    [ "PROTECTEDEPSILON", "global__decls_8hpp.html#ad1ca7a114bb0a9f457a02641114b225a", null ],
     [ "RHO", "global__decls_8hpp.html#a3bf4402b9e2ae88e4462c3689f5d22b8", null ],
     [ "SEP", "global__decls_8hpp.html#a95cf1ca63ff303311d342d1a53d51f38", null ],
     [ "SIGMA", "global__decls_8hpp.html#ab899f53048f1f06a224b5eb1fa369750", null ],

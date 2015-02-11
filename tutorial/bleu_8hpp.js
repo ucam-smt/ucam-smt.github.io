@@ -2,8 +2,11 @@ var bleu_8hpp =
 [
     [ "Bleu", "classucam_1_1fsttools_1_1Bleu.html", "classucam_1_1fsttools_1_1Bleu" ],
     [ "BleuStats", "classucam_1_1fsttools_1_1BleuStats.html", "classucam_1_1fsttools_1_1BleuStats" ],
+    [ "LRUCache", "classucam_1_1fsttools_1_1LRUCache.html", "classucam_1_1fsttools_1_1LRUCache" ],
     [ "BleuScorer", "classucam_1_1fsttools_1_1BleuScorer.html", "classucam_1_1fsttools_1_1BleuScorer" ],
     [ "PARAMS32", "bleu_8hpp.html#adf95c3270fe4bcdb1e511ea0293e8dcf", null ],
+    [ "pipe_in", "bleu_8hpp.html#a5e96af0dc790bf5e52a04865a7a4c418", null ],
+    [ "pipe_out", "bleu_8hpp.html#a9a300b633d3be0a4ff457bf1155e10ac", null ],
     [ "SentenceIdx", "bleu_8hpp.html#a403e34c940c6f3d1c3a1db25c11fc641", null ],
     [ "Sid", "bleu_8hpp.html#a1c59dd7cabdba4b72c37c4d8a73fe94e", null ],
     [ "Wid", "bleu_8hpp.html#a4565d81bbd23a4084baa8e44e3690231", null ],

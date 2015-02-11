@@ -6,5 +6,5 @@ var classfst_1_1GenericWeightAutoMapper =
     [ "operator()", "classfst_1_1GenericWeightAutoMapper.html#acdcc078dd279758fdc462c04b6449c73", null ],
     [ "OutputSymbolsAction", "classfst_1_1GenericWeightAutoMapper.html#ab04013b9e9314649979a56fece22cffc", null ],
     [ "Properties", "classfst_1_1GenericWeightAutoMapper.html#a52a694c8cb7128a32c14525c8dafb944", null ],
-    [ "mw_", "classfst_1_1GenericWeightAutoMapper.html#a2d370d6be968390dc5df85075f320219", null ]
+    [ "mw_", "classfst_1_1GenericWeightAutoMapper.html#a758bd8704a0f9f1901b3a456bdecb542", null ]
 ];

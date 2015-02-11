@@ -1,6 +1,8 @@
 var namespacefst =
 [
     [ "Hyp", "structfst_1_1Hyp.html", "structfst_1_1Hyp" ],
+    [ "StateHandler", "structfst_1_1StateHandler.html", "structfst_1_1StateHandler" ],
+    [ "StateHandler< lm::np::State >", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4.html", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4" ],
     [ "ApplyLanguageModelOnTheFly", "classfst_1_1ApplyLanguageModelOnTheFly.html", "classfst_1_1ApplyLanguageModelOnTheFly" ],
     [ "GetNGrams", "classfst_1_1GetNGrams.html", "classfst_1_1GetNGrams" ],
     [ "hypcost", "structfst_1_1hypcost.html", "structfst_1_1hypcost" ],
@@ -8,6 +10,8 @@ var namespacefst =
     [ "RelabelUtil", "classfst_1_1RelabelUtil.html", "classfst_1_1RelabelUtil" ],
     [ "GenericWeightAutoMapper", "classfst_1_1GenericWeightAutoMapper.html", "classfst_1_1GenericWeightAutoMapper" ],
     [ "GenericWeightMapper", "classfst_1_1GenericWeightMapper.html", "classfst_1_1GenericWeightMapper" ],
+    [ "GenericArcMapper", "classfst_1_1GenericArcMapper.html", "classfst_1_1GenericArcMapper" ],
+    [ "GenericArcAutoMapper", "classfst_1_1GenericArcAutoMapper.html", "classfst_1_1GenericArcAutoMapper" ],
     [ "WordPenaltyMapper", "classfst_1_1WordPenaltyMapper.html", "classfst_1_1WordPenaltyMapper" ],
     [ "StdToLexStdMapper", "structfst_1_1StdToLexStdMapper.html", "structfst_1_1StdToLexStdMapper" ],
     [ "LexStdToStdMapper", "structfst_1_1LexStdToStdMapper.html", "structfst_1_1LexStdToStdMapper" ],

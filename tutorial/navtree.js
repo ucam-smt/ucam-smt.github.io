@@ -1,72 +1,76 @@
 var NAVTREE =
 [
   [ "Cambridge SMT System", "index.html", [
-    [ "Introduction", "index.html", [
-      [ "Reading Material", "index.html#Refs", [
-        [ "Features Included in this Release", "index.html#intro_features", null ],
-        [ "HiFST, HiPDT and Hierarchical Phrase-Based Decoding", "index.html#Refs_decoding", null ],
-        [ "CUED SMT System Descriptions", "index.html#Refs_systems", null ],
-        [ "OpenFST and Related Modelling Techniques", "index.html#Refs_fsts", null ],
-        [ "Lattice Minimum Bayes Risk Decoding using WFSAs", "index.html#Refs_lmbr", null ],
-        [ "Lattice Mert", "index.html#lmert_refs", null ],
-        [ "[Rule Extraction]", "index.html#rulextract_refs", null ],
-        [ "Language Modelling Toolkits", "index.html#othertools", null ]
+    [ "Introduction", "intro.html", [
+      [ "Features Included in this Release", "intro.html#intro_features", null ],
+      [ "Relevant papers", "intro.html#Refs", [
+        [ "HiFST, HiPDT and Hierarchical Phrase-Based Decoding", "intro.html#Refs_decoding", null ],
+        [ "CUED SMT System Descriptions", "intro.html#Refs_systems", null ],
+        [ "OpenFST and Related Modelling Techniques", "intro.html#Refs_fsts", null ],
+        [ "Lattice Minimum Bayes Risk Decoding using WFSAs", "intro.html#Refs_lmbr", null ],
+        [ "Lattice Mert", "intro.html#lmert_refs", null ],
+        [ "[HiFST Rule Extraction]", "intro.html#rulextract_refs", null ],
+        [ "Language Modelling Toolkits", "intro.html#othertools", null ]
       ] ]
     ] ],
-    [ "Getting Started", "start.html", [
-      [ "Installation of UCAM-SMT package", "start.html#build", [
-        [ "Rule extraction installation", "start.html#rulextract_start", null ]
+    [ "Installation", "build.html", [
+      [ "HiFST Binary Installation", "build.html#install_binaries", null ],
+      [ "HiFST Paths and Environment Variables", "build.html#hifst_paths", null ],
+      [ "Installation of the Hadoop-based Grammar Extraction Tools", "build.html#rulextract_install", null ],
+      [ "Tutorial Installation", "build.html#tutorial_install", null ]
+    ] ],
+    [ "HiFST Data and Control Files", "tutorial_.html", [
+      [ "Tutorial Directory Structure", "tutorial_.html#tutorial_directories", null ],
+      [ "Configuration Files and Command Line Options", "tutorial_.html#Setup_configs", null ],
+      [ "Word Maps", "tutorial_.html#wmaps", null ],
+      [ "Integer-Mapped Text Files", "tutorial_.html#wmappedfiles", null ],
+      [ "Language Models", "tutorial_.html#lms", null ],
+      [ "Translation Grammars", "tutorial_.html#tgrammars", [
+        [ "Grammar File Formats", "tutorial_.html#rules", null ],
+        [ "Feature Vectors", "tutorial_.html#tgrammars_formats_fea", null ],
+        [ "Non-Terminals", "tutorial_.html#tgrammars_formats_nt", null ],
+        [ "Shallow-N Translation Grammars", "tutorial_.html#tgrammars_shallow", null ]
+      ] ]
+    ] ],
+    [ "Translation and FST Operations", "basictrans.html", [
+      [ "Basic Translation Operations", "basictrans.html#basic_trans", null ],
+      [ "Printing the 1-Best Hypotheses", "basictrans.html#printing_hyps", null ],
+      [ "Extracting the Best Translation from a Lattice", "basictrans.html#basic_latshyps", [
+        [ "OpenFst ShortestPath Operations", "basictrans.html#fst_shortestpath_discuss", null ]
       ] ],
-      [ "Paths and Environment Variables", "start.html#paths", null ],
-      [ "Tutorial Files", "start.html#Setup_files", [
-        [ "Configuration Files and Command Line Options", "start.html#Setup_configs", null ],
-        [ "Word Maps and Integer Mapped Files", "start.html#wmaps", null ],
-        [ "Language Models", "start.html#lms", null ],
-        [ "Translation Grammars", "start.html#tgrammars", [
-          [ "Grammar File Formats", "start.html#rules", [
-            [ "Feature Vectors", "start.html#tgrammars_formats_fea", null ],
-            [ "Non-Terminals", "start.html#tgrammars_formats_nt", null ]
-          ] ],
-          [ "Shallow-N Translation Grammars", "start.html#tgrammars_shallow", null ]
+      [ "Extracting N-Best Translations from Lattices", "basictrans.html#basic_nbest", null ],
+      [ "Weight Vectors and Feature Vectors", "basictrans.html#vector_feature_grammars", null ],
+      [ "Applying Weight Vectors in Translation", "basictrans.html#weight_feature_vector_examples", null ],
+      [ "Lexicographic Semirings: Translation Grammar and Language Model Scores", "basictrans.html#basic_scores", null ],
+      [ "Admissible Pruning", "basictrans.html#basic_toplevelpruning", null ],
+      [ "Inadmissible Pruning", "basictrans.html#lpruning", [
+        [ "Local Pruning Algorithm", "basictrans.html#local_prune", null ],
+        [ "Effect on Speed, Memory, Scores", "basictrans.html#lpruning_effects", null ]
+      ] ],
+      [ "Language Model Rescoring", "basictrans.html#rescoring_lm", null ],
+      [ "Multithreading", "basictrans.html#multithread", null ],
+      [ "Lattice Minimum Bayes Risk Decoding", "basictrans.html#lmbr", null ],
+      [ "MERT (Features Only)", "basictrans.html#mert", [
+        [ "Step 1. Hypotheses for MERT", "basictrans.html#mert_hyps", null ],
+        [ "Step 2. Guided Translation / Forced Alignment", "basictrans.html#mert_nblist_derivations", null ],
+        [ "Step 3. Hypotheses with Unweighted Feature Vectors", "basictrans.html#mert_alilats", null ]
+      ] ],
+      [ "Lattice MERT", "basictrans.html#lmert", [
+        [ "Step 1. Hypotheses for LMERT", "basictrans.html#lmert_hyps", null ],
+        [ "Step 2. Guided Translation / Forced Alignment", "basictrans.html#lmert_veclats", null ],
+        [ "Step 3. WFSAs with Unweighted Feature Vectors", "basictrans.html#lmert_alilats", null ],
+        [ "Step 4. LMERT", "basictrans.html#lmert_lmert", null ],
+        [ "References and De/Tokenization", "basictrans.html#lmert_references", null ]
+      ] ],
+      [ "Tropical Sparse Tuple Semiring", "basictrans.html#lmert_veclats_tst", null ],
+      [ "Source Sentence Chopping", "basictrans.html#chopping", [
+        [ "Chopping by Explicit Source Sentence Segmentation", "basictrans.html#chopping_sseg", null ],
+        [ "Grammar-based Sentence Chopping", "basictrans.html#chopping_gb", [
+          [ "Converting Grammars and Input Text for Chopping", "basictrans.html#chopping_eg", null ]
         ] ]
-      ] ]
-    ] ],
-    [ "Basic Translation", "basic.html", [
-      [ "Translation and Lattice Generation", "basic.html#Basic", null ],
-      [ "Translation Lattices and 1-Best Hypotheses", "basic.html#basic_latshyps", null ],
-      [ "N-Best Lists", "basic.html#basic_nbest", null ],
-      [ "Scores, Costs, and Semirings", "basic.html#basic_scores", null ],
-      [ "Admissible pruning / top-level pruning", "basic.html#basic_toplevelpruning", null ],
-      [ "Multithreading", "basic.html#multithread", null ],
-      [ "Client-Server Mode (Experimental)", "basic.html#server", null ]
-    ] ],
-    [ "Pruning", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html", [
-      [ "Local pruning / pruning in search", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#lpruning", null ],
-      [ "Local Pruning Algorithm", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#local_prune", null ],
-      [ "Effect on Speed, Memory, Scores", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#lpruning_effects", null ],
-      [ "Source Sentence Chopping", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#chopping", [
-        [ "Grammar-based Sentence Chopping", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#chopping_gb", null ],
-        [ "Converting Grammars and Input Text for Chopping", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#chopping_eg", null ],
-        [ "Chopping by Explicit Source Sentence Segmentation", "md__home_giglesias_HIFST_8github_demo-files_Docs_8dox_Tutorial_802_8pruning.html#chopping_sseg", null ]
-      ] ]
-    ] ],
-    [ "MERT - Features Only", "mert.html", [
-      [ "HiFST_nbestformert", "mert.html#mert_nblists", null ],
-      [ "1. Hypotheses for MERT", "mert.html#mert_hyps", null ],
-      [ "2. Guided Translation / Forced Alignment", "mert.html#mert_nblist_derivations", null ],
-      [ "3. Hypotheses with Unweighted Feature Vectors", "mert.html#mert_alilats", null ]
-    ] ],
-    [ "Lattice MERT", "lmert.html", [
-      [ "HiFST_lmert", "lmert.html#lmert_run", null ],
-      [ "1. Hypotheses for LMERT", "lmert.html#lmert_hyps", null ],
-      [ "2. Guided Translation / Forced Alignment", "lmert.html#lmert_veclats", null ],
-      [ "3. WFSAs with Unweighted Feature Vectors", "lmert.html#lmert_alilats", null ],
-      [ "4. LMERT", "lmert.html#lmert_lmert", null ],
-      [ "Notes on Tropical Sparse Tuple Vector Weights", "lmert.html#lmert_veclats_tst", null ]
-    ] ],
-    [ "Rescoring Procedures", "rescoring.html", [
-      [ "Efficient Language Model Rescoring", "rescoring.html#rescoring_lm", null ],
-      [ "Lattice Minimum Bayes Risk Decoding", "rescoring.html#lmbr", null ]
+      ] ],
+      [ "FST-based True Casing", "basictrans.html#true_casing", null ],
+      [ "Client-Server Mode (Experimental)", "basictrans.html#server", null ]
     ] ],
     [ "Translation with Push-Down Automata", "pda.html", [
       [ "Recursive Transition Networks", "pda.html#pda_rtns", null ],
@@ -74,7 +78,6 @@ var NAVTREE =
       [ "Composition and Shortest Path", "pda.html#rtn_lm_app", null ],
       [ "Expansion: Translation by Composition of PDAs and WFSAs followed by Pruned Expansion", "pda.html#pda_expand", null ]
     ] ],
-    [ "Fst-based True Casing", "true_casing.html", null ],
     [ "Rule Extraction", "rulextract.html", [
       [ "Getting started", "rulextract.html#rulextract_start_reminder", null ],
       [ "Hadoop Cluster Setup", "rulextract.html#rulextract_cluster_setup", null ],
@@ -145,18 +148,21 @@ var NAVTREEINDEX =
 [
 "AlignmentAndFeatureMap_8java.html",
 "Source2TargetProbability_8java_source.html",
-"classRandDirGenerator.html#abf8f620a2871645c920efafdaebafc7a",
-"classucam_1_1hifst_1_1ExpandedNumStatesRTN.html#af8569c79a9dfa943a1e3284c880174fe",
-"classucam_1_1util_1_1NumberRangeInterface.html#a895c0b28bb64185f898d8bdafea4b7fd",
-"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleWritable.html#aa0f4bc22d905dc5ccd0296521ef7f434",
-"data-main_8lmbr_8hpp_source.html",
-"functions_func_0x72.html",
-"latmert_8main_8cpp.html#a3cdb956b6a7e4ffcdbfde5a1b9bbd04d",
-"namespacemembers.html",
-"structfst_1_1GeneralMapper.html#a342af22508b8c9e6020a3b633819763b",
-"structucam_1_1util_1_1ParamsInit.html#af1627064ce16a385db91ea4a010fa361"
+"classOptimizer.html#a6a70c93c80808489657b66b7ecc4c927",
+"classucam_1_1fsttools_1_1OptimizeFstTask.html",
+"classucam_1_1hifst_1_1SingleThreadededRulesToWeightsSparseLatsTask.html#abc5d351dfbeb0cb4e9749ef55f3fcc43",
+"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a9e255789ca0b8488a95880993409f9ae",
+"constants-hifst_8hpp.html#a05365c1afbbd2dcd3625dd0671a94da2",
+"fstutils_8extractngrams_8hpp_source.html",
+"globals_g.html",
+"main_8applylm_8init__param__options_8hpp.html",
+"registrypo_8gtest_8cpp.html#a8654243a6a2b4ee9d206697dc64cce9c",
+"structgoogletesting_1_1PreProTaskData.html#a18025b03e95fe0f24d02ca32fd7376fb",
+"task_8grammar_8hpp.html"
 ];
 
+var SYNCONMSG = 'click to disable panel synchronisation';
+var SYNCOFFMSG = 'click to enable panel synchronisation';
 var SYNCONMSG = 'click to disable panel synchronisation';
 var SYNCOFFMSG = 'click to enable panel synchronisation';
 var navTreeSubIndices = new Array();
@@ -239,12 +245,12 @@ function createIndent(o,domNode,node,level)
   var level=-1;
   var n = node;
   while (n.parentNode) { level++; n=n.parentNode; }
-  var imgNode = document.createElement("img");
-  imgNode.style.paddingLeft=(16*level).toString()+'px';
-  imgNode.width  = 16;
-  imgNode.height = 22;
-  imgNode.border = 0;
   if (node.childrenData) {
+    var imgNode = document.createElement("img");
+    imgNode.style.paddingLeft=(16*level).toString()+'px';
+    imgNode.width  = 16;
+    imgNode.height = 22;
+    imgNode.border = 0;
     node.plus_img = imgNode;
     node.expandToggle = document.createElement("a");
     node.expandToggle.href = "javascript:void(0)";
@@ -261,8 +267,12 @@ function createIndent(o,domNode,node,level)
     domNode.appendChild(node.expandToggle);
     imgNode.src = node.relpath+"ftv2pnode.png";
   } else {
-    imgNode.src = node.relpath+"ftv2node.png";
-    domNode.appendChild(imgNode);
+    var span = document.createElement("span");
+    span.style.display = 'inline-block';
+    span.style.width   = 16*(level+1)+'px';
+    span.style.height  = '22px';
+    span.innerHTML = '&#160;';
+    domNode.appendChild(span);
   } 
 }
 
@@ -481,7 +491,7 @@ function showNode(o, node, index, hash)
       if (!node.childrenVisited) {
         getNode(o, node);
       }
-      $(node.getChildrenUL()).show();
+      $(node.getChildrenUL()).css({'display':'block'});
       if (node.isLast) {
         node.plus_img.src = node.relpath+"ftv2mlastnode.png";
       } else {
@@ -513,8 +523,22 @@ function showNode(o, node, index, hash)
   }
 }
 
+function removeToInsertLater(element) {
+  var parentNode = element.parentNode;
+  var nextSibling = element.nextSibling;
+  parentNode.removeChild(element);
+  return function() {
+    if (nextSibling) {
+      parentNode.insertBefore(element, nextSibling);
+    } else {
+      parentNode.appendChild(element);
+    }
+  };
+}
+
 function getNode(o, po)
 {
+  var insertFunction = removeToInsertLater(po.li);
   po.childrenVisited = true;
   var l = po.childrenData.length-1;
   for (var i in po.childrenData) {
@@ -522,6 +546,7 @@ function getNode(o, po)
     po.children[i] = newNode(o, po, nodeData[0], nodeData[1], nodeData[2],
       i==l);
   }
+  insertFunction();
 }
 
 function gotoNode(o,subIndex,root,hash,relpath)
@@ -625,7 +650,10 @@ function initNavTree(toroot,relpath)
     navSync.click(function(){ toggleSyncButton(relpath); });
   }
 
-  navTo(o,toroot,window.location.hash,relpath);
+  $(window).load(function(){
+    navTo(o,toroot,window.location.hash,relpath);
+    showRoot();
+  });
 
   $(window).bind('hashchange', function(){
      if (window.location.hash && window.location.hash.length>1){
@@ -648,7 +676,5 @@ function initNavTree(toroot,relpath)
        navTo(o,toroot,window.location.hash,relpath);
      }
   })
-
-  $(window).load(showRoot);
 }
 
