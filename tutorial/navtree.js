@@ -149,16 +149,16 @@ var NAVTREEINDEX =
 "AlignmentAndFeatureMap_8java.html",
 "Source2TargetProbability_8java_source.html",
 "classOptimizer.html#a6a70c93c80808489657b66b7ecc4c927",
-"classucam_1_1fsttools_1_1OptimizeFstTask.html",
-"classucam_1_1hifst_1_1SingleThreadededRulesToWeightsSparseLatsTask.html#abc5d351dfbeb0cb4e9749ef55f3fcc43",
-"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a9e255789ca0b8488a95880993409f9ae",
-"constants-hifst_8hpp.html#a05365c1afbbd2dcd3625dd0671a94da2",
-"fstutils_8extractngrams_8hpp_source.html",
-"globals_g.html",
-"main_8applylm_8init__param__options_8hpp.html",
-"registrypo_8gtest_8cpp.html#a8654243a6a2b4ee9d206697dc64cce9c",
-"structgoogletesting_1_1PreProTaskData.html#a18025b03e95fe0f24d02ca32fd7376fb",
-"task_8grammar_8hpp.html"
+"classucam_1_1fsttools_1_1LoadWordMapTask.html#ab198b80e7722f263e7a2714bf3b05ac3",
+"classucam_1_1hifst_1_1SingleThreadedHifstTask.html#a7713b351737539a7bc8c16510997d81c",
+"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a760463c9540b43a60cd993a77d1262e5",
+"constants-fsttools_8hpp.html#af335785054a853b268cda52d8a084ab7",
+"fstutils_8extractngrams_8hpp.html#a0ea721f75905cb03f7ba9cf61ef7a377",
+"globals_func_p.html",
+"main_8alilats2splats_8init__param__options_8hpp.html#a3f338db23b7acf0b96e95cbfaf29041a",
+"range_8hpp.html#a843d6e7b2f08d907e1cbfa3fe73bd532",
+"structgoogletesting_1_1DataForStats.html#a22faf9774b9a5f6515f11196860ace6b",
+"task_8cykparser_8hpp.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

@@ -1,5 +1,10 @@
 var NAVTREEINDEX4 =
 {
+"classucam_1_1hifst_1_1SingleThreadedHifstTask.html#a7713b351737539a7bc8c16510997d81c":[8,0,5,1,18,2],
+"classucam_1_1hifst_1_1SingleThreadedHifstTask.html#ac4843e1b1b1c57ef9ba003f154858407":[8,0,5,1,18,0],
+"classucam_1_1hifst_1_1SingleThreadedHifstTask.html#afb72c11feccfa05362663ccf6a9e957f":[8,0,5,1,18,1],
+"classucam_1_1hifst_1_1SingleThreadededRulesToWeightsSparseLatsTask.html":[8,0,5,1,22],
+"classucam_1_1hifst_1_1SingleThreadededRulesToWeightsSparseLatsTask.html#a594c9d076b6de243eb53625dbeae2065":[8,0,5,1,22,0],
 "classucam_1_1hifst_1_1SingleThreadededRulesToWeightsSparseLatsTask.html#abc5d351dfbeb0cb4e9749ef55f3fcc43":[8,0,5,1,22,1],
 "classucam_1_1hifst_1_1SingleThreadededRulesToWeightsSparseLatsTask.html#ad99a87b9021b184326cbaac04a9c9b5c":[8,0,5,1,22,2],
 "classucam_1_1hifst_1_1SparseWeightVectorLatticesTask.html":[8,0,5,1,50],
@@ -244,10 +249,5 @@ var NAVTREEINDEX4 =
 "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a539181d30ed01772b77f531418c57206":[8,0,6,0,0,0,0,0,3,5],
 "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a5489e17074f7566a26962d4f746235f1":[8,0,6,0,0,0,0,0,3,22],
 "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a59880c784832519a0ad3c439e7fc6834":[8,0,6,0,0,0,0,0,3,7],
-"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a5f66551bbe6bfe52a33131f464475a5f":[8,0,6,0,0,0,0,0,3,17],
-"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a760463c9540b43a60cd993a77d1262e5":[8,0,6,0,0,0,0,0,3,10],
-"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a8b76c2afd511b232156376f038951b0f":[8,0,6,0,0,0,0,0,3,2],
-"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a8d44422e97e9f39fabaf9ff92995cd7c":[8,0,6,0,0,0,0,0,3,12],
-"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a93ed2a8ecac3a0d2db8bdc9d79e7e88c":[8,0,6,0,0,0,0,0,3,23],
-"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a9785b7fa25ec35926cbc698a2f316105":[8,0,6,0,0,0,0,0,3,18]
+"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a5f66551bbe6bfe52a33131f464475a5f":[8,0,6,0,0,0,0,0,3,17]
 };

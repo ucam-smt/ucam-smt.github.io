@@ -3,6 +3,7 @@ var namespacefst =
     [ "Hyp", "structfst_1_1Hyp.html", "structfst_1_1Hyp" ],
     [ "StateHandler", "structfst_1_1StateHandler.html", "structfst_1_1StateHandler" ],
     [ "StateHandler< lm::np::State >", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4.html", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4" ],
+    [ "ApplyLanguageModelOnTheFlyInterface", "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html", "structfst_1_1ApplyLanguageModelOnTheFlyInterface" ],
     [ "ApplyLanguageModelOnTheFly", "classfst_1_1ApplyLanguageModelOnTheFly.html", "classfst_1_1ApplyLanguageModelOnTheFly" ],
     [ "GetNGrams", "classfst_1_1GetNGrams.html", "classfst_1_1GetNGrams" ],
     [ "hypcost", "structfst_1_1hypcost.html", "structfst_1_1hypcost" ],

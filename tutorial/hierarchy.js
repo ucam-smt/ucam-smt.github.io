@@ -5,12 +5,15 @@ var hierarchy =
     [ "fst::AE< T, std::vector< T > >", "structfst_1_1AE_3_01T_00_01std_1_1vector_3_01T_01_4_01_4.html", null ],
     [ "fst::AE< T, TropicalSparseTupleWeight< T > >", "structfst_1_1AE_3_01T_00_01TropicalSparseTupleWeight_3_01T_01_4_01_4.html", null ],
     [ "uk.ac.cam.eng.extraction.datatypes.Alignment", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Alignment.html", null ],
-    [ "ucam::hifst::AlilatsToSparseWeightLatsData< KenLMModelT, ArcT >", "classucam_1_1hifst_1_1AlilatsToSparseWeightLatsData.html", null ],
-    [ "fst::ApplyLanguageModelOnTheFly< Arc, MakeWeightT, KenLMModelT, IdBridgeT >", "classfst_1_1ApplyLanguageModelOnTheFly.html", null ],
-    [ "ucam::fsttools::ApplyLMData< KenLMModelT, ArcT >", "structucam_1_1fsttools_1_1ApplyLMData.html", null ],
+    [ "ucam::hifst::AlilatsToSparseWeightLatsData< ArcT >", "classucam_1_1hifst_1_1AlilatsToSparseWeightLatsData.html", null ],
+    [ "fst::ApplyLanguageModelOnTheFlyInterface< ArcT >", "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html", null ],
+    [ "fst::ApplyLanguageModelOnTheFlyInterface< Arc >", "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html", [
+      [ "fst::ApplyLanguageModelOnTheFly< Arc, MakeWeightT, KenLMModelT, IdBridgeT >", "classfst_1_1ApplyLanguageModelOnTheFly.html", null ]
+    ] ],
+    [ "ucam::fsttools::ApplyLMData< ArcT >", "structucam_1_1fsttools_1_1ApplyLMData.html", null ],
     [ "ucam::lmbr::ApplyPosteriors", "classucam_1_1lmbr_1_1ApplyPosteriors.html", null ],
-    [ "Bleu", "classBleu.html", null ],
     [ "ucam::fsttools::Bleu", "classucam_1_1fsttools_1_1Bleu.html", null ],
+    [ "Bleu", "classBleu.html", null ],
     [ "ucam::fsttools::BleuScorer", "classucam_1_1fsttools_1_1BleuScorer.html", null ],
     [ "BleuStats", "classBleuStats.html", null ],
     [ "ucam::fsttools::BleuStats", "classucam_1_1fsttools_1_1BleuStats.html", null ],
@@ -34,7 +37,7 @@ var hierarchy =
     [ "googletesting::DataTest2", "classgoogletesting_1_1DataTest2.html", null ],
     [ "DebugMertAlgorithm", "classDebugMertAlgorithm.html", null ],
     [ "Directions", "classDirections.html", null ],
-    [ "ucam::fsttools::DisambigData< KenLMModelT >", "structucam_1_1fsttools_1_1DisambigData.html", null ],
+    [ "ucam::fsttools::DisambigData", "structucam_1_1fsttools_1_1DisambigData.html", null ],
     [ "fst::DotProductMap< T >", "structfst_1_1DotProductMap.html", null ],
     [ "EnumerateVocab", null, [
       [ "lm::HifstEnumerateVocab", "classlm_1_1HifstEnumerateVocab.html", null ]
@@ -66,7 +69,7 @@ var hierarchy =
     [ "hasheqvecint64", "classhasheqvecint64.html", null ],
     [ "uk.ac.cam.eng.extraction.hadoop.util.HFilePrint", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1HFilePrint.html", null ],
     [ "ucam::hifst::HifstClientTaskData", "classucam_1_1hifst_1_1HifstClientTaskData.html", null ],
-    [ "ucam::hifst::HifstTaskData< KenLMModelT, ArcT >", "classucam_1_1hifst_1_1HifstTaskData.html", null ],
+    [ "ucam::hifst::HifstTaskData< ArcT >", "classucam_1_1hifst_1_1HifstTaskData.html", null ],
     [ "ucam::hifst::HifstTaskData<>", "classucam_1_1hifst_1_1HifstTaskData.html", null ],
     [ "fst::Hyp< Arc >", "structfst_1_1Hyp.html", [
       [ "HypW< Arc >", "structHypW.html", null ],
@@ -85,7 +88,7 @@ var hierarchy =
     [ "iterator", null, [
       [ "CompositeList::cl_iterator", "classCompositeList_1_1cl__iterator.html", null ]
     ] ],
-    [ "ucam::fsttools::KenLMData< KenLMModelT >", "structucam_1_1fsttools_1_1KenLMData.html", null ],
+    [ "ucam::fsttools::KenLMData", "structucam_1_1fsttools_1_1KenLMData.html", null ],
     [ "ucam::fsttools::KenLMModelHelper< KenLMModelT >", "structucam_1_1fsttools_1_1KenLMModelHelper.html", null ],
     [ "LabeledFeature< Value, Weight >", "structLabeledFeature.html", null ],
     [ "fst::LexStdToStdMapper", "structfst_1_1LexStdToStdMapper.html", null ],
@@ -147,8 +150,8 @@ var hierarchy =
       [ "uk.ac.cam.eng.extraction.hadoop.datatypes.AlignmentAndFeatureMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentAndFeatureMap.html", null ]
     ] ],
     [ "ParamsConfig", "classParamsConfig.html", null ],
-    [ "fst::ParamsInit< T >", "structfst_1_1ParamsInit.html", null ],
     [ "ucam::util::ParamsInit< T >", "structucam_1_1util_1_1ParamsInit.html", null ],
+    [ "fst::ParamsInit< T >", "structfst_1_1ParamsInit.html", null ],
     [ "ucam::util::PatternAddress< T >", "classucam_1_1util_1_1PatternAddress.html", null ],
     [ "ucam::hifst::posindex", "structucam_1_1hifst_1_1posindex.html", null ],
     [ "ucam::hifst::PosIndexCompare", "classucam_1_1hifst_1_1PosIndexCompare.html", null ],
@@ -171,14 +174,14 @@ var hierarchy =
     [ "ucam::hifst::RuleIdsToSparseWeightLatsData< KenLMModelT >", "classucam_1_1hifst_1_1RuleIdsToSparseWeightLatsData.html", null ],
     [ "uk.ac.cam.eng.rule.retrieval.RulePattern", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RulePattern.html", null ],
     [ "ucam::hifst::RulesToWeightsMapperObject", "structucam_1_1hifst_1_1RulesToWeightsMapperObject.html", null ],
-    [ "RunAlilatsToSplats< DataT, KenLMModelT, ArcT >", "structRunAlilatsToSplats.html", null ],
-    [ "RunApplyLm< DataT, KenLMModelT, ArcT >", "structRunApplyLm.html", null ],
-    [ "RunHifst< DataT, KenLMModelT, ArcT >", "structRunHifst.html", null ],
+    [ "RunAlilatsToSplats< DataT, ArcT >", "structRunAlilatsToSplats.html", null ],
+    [ "RunApplyLm< DataT, ArcT >", "structRunApplyLm.html", null ],
+    [ "RunHifst< DataT, ArcT >", "structRunHifst.html", null ],
     [ "ucam::util::Runner< SingleThreadedFunctorT, MultiThreadedFunctorT >", "classucam_1_1util_1_1Runner.html", null ],
     [ "ucam::util::Runner2< SingleThreadedFunctorT, MultiThreadedFunctorT >", "classucam_1_1util_1_1Runner2.html", null ],
     [ "ucam::util::Runner3< SingleThreadedFunctorT, MultiThreadedFunctorT, ServerFunctorT >", "classucam_1_1util_1_1Runner3.html", null ],
-    [ "ucam::fsttools::RunTask2< TaskOneT, TaskTwoT, DataT, KenLMModelT, ArcT >", "structucam_1_1fsttools_1_1RunTask2.html", null ],
-    [ "ucam::fsttools::RunTask3< TaskOneT, TaskTwoT, TaskThreeT, DataT, KenLMModelT, ArcT >", "structucam_1_1fsttools_1_1RunTask3.html", null ],
+    [ "ucam::fsttools::RunTask2< TaskOneT, TaskTwoT, DataT, ArcT >", "structucam_1_1fsttools_1_1RunTask2.html", null ],
+    [ "ucam::fsttools::RunTask3< TaskOneT, TaskTwoT, TaskThreeT, DataT, ArcT >", "structucam_1_1fsttools_1_1RunTask3.html", null ],
     [ "Sample", "classSample.html", null ],
     [ "fst::ScaleWeight< Arc >", "structfst_1_1ScaleWeight.html", null ],
     [ "fst::ScaleWeight< LexStdArc >", "structfst_1_1ScaleWeight_3_01LexStdArc_01_4.html", null ],
@@ -212,9 +215,9 @@ var hierarchy =
       [ "googletesting::Task2b< Data >", "classgoogletesting_1_1Task2b.html", null ],
       [ "googletesting::Task3< Data >", "classgoogletesting_1_1Task3.html", null ],
       [ "googletesting::Task4< Data >", "classgoogletesting_1_1Task4.html", null ],
-      [ "ucam::fsttools::ApplyLanguageModelTask< Data, KenLMModelT, Arc >", "classucam_1_1fsttools_1_1ApplyLanguageModelTask.html", null ],
-      [ "ucam::fsttools::DisambigTask< Data, KenLMModelT, Arc >", "classucam_1_1fsttools_1_1DisambigTask.html", null ],
-      [ "ucam::fsttools::LoadLanguageModelTask< Data, KenLMModelT >", "classucam_1_1fsttools_1_1LoadLanguageModelTask.html", null ],
+      [ "ucam::fsttools::ApplyLanguageModelTask< Data, Arc >", "classucam_1_1fsttools_1_1ApplyLanguageModelTask.html", null ],
+      [ "ucam::fsttools::DisambigTask< Data, Arc >", "classucam_1_1fsttools_1_1DisambigTask.html", null ],
+      [ "ucam::fsttools::LoadLanguageModelTask< Data >", "classucam_1_1fsttools_1_1LoadLanguageModelTask.html", null ],
       [ "ucam::fsttools::LoadUnimapTask< Data, Arc >", "classucam_1_1fsttools_1_1LoadUnimapTask.html", null ],
       [ "ucam::fsttools::LoadWordMapTask< Data >", "classucam_1_1fsttools_1_1LoadWordMapTask.html", null ],
       [ "ucam::fsttools::OptimizeFstTask< Data, Arc >", "classucam_1_1fsttools_1_1OptimizeFstTask.html", null ],
@@ -225,7 +228,7 @@ var hierarchy =
       [ "ucam::hifst::DumpNbestFeaturesTask< Data, Arc >", "classucam_1_1hifst_1_1DumpNbestFeaturesTask.html", null ],
       [ "ucam::hifst::GrammarTask< Data >", "classucam_1_1hifst_1_1GrammarTask.html", null ],
       [ "ucam::hifst::HifstStatsTask< Data >", "classucam_1_1hifst_1_1HifstStatsTask.html", null ],
-      [ "ucam::hifst::HiFSTTask< Data, KenLMModelT, Arc, OptimizeT, CYKdataT, MultiUnionT, ExpandedNumStatesRTNT, ReplaceFstByArcT, RTNT >", "classucam_1_1hifst_1_1HiFSTTask.html", null ],
+      [ "ucam::hifst::HiFSTTask< Data, Arc, OptimizeT, CYKdataT, MultiUnionT, ExpandedNumStatesRTNT, ReplaceFstByArcT, RTNT >", "classucam_1_1hifst_1_1HiFSTTask.html", null ],
       [ "ucam::hifst::MultiThreadedCreateSentenceSpecificGrammarTask< Data >", "classucam_1_1hifst_1_1MultiThreadedCreateSentenceSpecificGrammarTask.html", null ],
       [ "ucam::hifst::PatternsToInstancesTask< Data >", "classucam_1_1hifst_1_1PatternsToInstancesTask.html", null ],
       [ "ucam::hifst::PostProTask< Data, Arc >", "classucam_1_1hifst_1_1PostProTask.html", null ],
@@ -244,16 +247,16 @@ var hierarchy =
         [ "ucam::hifst::LoadSparseWeightsTask< DataT >", "classucam_1_1hifst_1_1LoadSparseWeightsTask.html", null ]
       ] ]
     ] ],
-    [ "ucam::util::TaskInterface< DataT< KenLMModelT, ArcT > >", "classucam_1_1util_1_1TaskInterface.html", [
-      [ "ucam::fsttools::MultiThreadedApplyLanguageModelTask< DataT, KenLMModelT, ArcT >", "classucam_1_1fsttools_1_1MultiThreadedApplyLanguageModelTask.html", null ],
-      [ "ucam::fsttools::SingleThreadedApplyLanguageModelTask< DataT, KenLMModelT, ArcT >", "classucam_1_1fsttools_1_1SingleThreadedApplyLanguageModelTask.html", null ],
-      [ "ucam::hifst::HifstServerTask< DataT, KenLMModelT, ArcT >", "classucam_1_1hifst_1_1HifstServerTask.html", null ],
-      [ "ucam::hifst::MultiThreadedHifstTask< DataT, KenLMModelT, ArcT >", "classucam_1_1hifst_1_1MultiThreadedHifstTask.html", null ],
-      [ "ucam::hifst::SingleThreadedHifstTask< DataT, KenLMModelT, ArcT >", "classucam_1_1hifst_1_1SingleThreadedHifstTask.html", null ]
+    [ "ucam::util::TaskInterface< DataT< ArcT > >", "classucam_1_1util_1_1TaskInterface.html", [
+      [ "ucam::fsttools::MultiThreadedApplyLanguageModelTask< DataT, ArcT >", "classucam_1_1fsttools_1_1MultiThreadedApplyLanguageModelTask.html", null ],
+      [ "ucam::fsttools::SingleThreadedApplyLanguageModelTask< DataT, ArcT >", "classucam_1_1fsttools_1_1SingleThreadedApplyLanguageModelTask.html", null ],
+      [ "ucam::hifst::HifstServerTask< DataT, ArcT >", "classucam_1_1hifst_1_1HifstServerTask.html", null ],
+      [ "ucam::hifst::MultiThreadedHifstTask< DataT, ArcT >", "classucam_1_1hifst_1_1MultiThreadedHifstTask.html", null ],
+      [ "ucam::hifst::SingleThreadedHifstTask< DataT, ArcT >", "classucam_1_1hifst_1_1SingleThreadedHifstTask.html", null ]
     ] ],
-    [ "ucam::util::TaskInterface< DataT< KenLMModelT, TupleArc32 > >", "classucam_1_1util_1_1TaskInterface.html", [
-      [ "ucam::hifst::MultiThreadedAliLatsToSparseVecLatsTask< DataT, KenLMModelT, ArcT >", "classucam_1_1hifst_1_1MultiThreadedAliLatsToSparseVecLatsTask.html", null ],
-      [ "ucam::hifst::SingleThreadedAliLatsToSparseVecLatsTask< DataT, KenLMModelT, ArcT >", "classucam_1_1hifst_1_1SingleThreadedAliLatsToSparseVecLatsTask.html", null ]
+    [ "ucam::util::TaskInterface< DataT< TupleArc32 > >", "classucam_1_1util_1_1TaskInterface.html", [
+      [ "ucam::hifst::MultiThreadedAliLatsToSparseVecLatsTask< DataT, ArcT >", "classucam_1_1hifst_1_1MultiThreadedAliLatsToSparseVecLatsTask.html", null ],
+      [ "ucam::hifst::SingleThreadedAliLatsToSparseVecLatsTask< DataT, ArcT >", "classucam_1_1hifst_1_1SingleThreadedAliLatsToSparseVecLatsTask.html", null ]
     ] ],
     [ "ucam::util::TaskInterface< RuleIdsToSparseWeightLatsData<> >", "classucam_1_1util_1_1TaskInterface.html", [
       [ "ucam::hifst::SingleThreadededRulesToWeightsSparseLatsTask", "classucam_1_1hifst_1_1SingleThreadededRulesToWeightsSparseLatsTask.html", null ]
@@ -270,8 +273,8 @@ var hierarchy =
     [ "ucam::lmbr::Theta", "classucam_1_1lmbr_1_1Theta.html", null ],
     [ "ucam::util::TrivialThreadPool", "classucam_1_1util_1_1TrivialThreadPool.html", null ],
     [ "uk.ac.cam.eng.extraction.hadoop.features.lexical.TTableClient", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1lexical_1_1TTableClient.html", null ],
-    [ "TuneSet", "classTuneSet.html", null ],
     [ "ucam::fsttools::TuneSet< Arc >", "classucam_1_1fsttools_1_1TuneSet.html", null ],
+    [ "TuneSet", "classTuneSet.html", null ],
     [ "TuneWpMain< Arc >", "classTuneWpMain.html", null ],
     [ "unary_function", null, [
       [ "hashfvecint64", "classhashfvecint64.html", null ],

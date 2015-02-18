@@ -120,6 +120,7 @@ var files =
     [ "fstutils.applylmonthefly.hpp", "fstutils_8applylmonthefly_8hpp.html", [
       [ "StateHandler", "structfst_1_1StateHandler.html", "structfst_1_1StateHandler" ],
       [ "StateHandler< lm::np::State >", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4.html", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4" ],
+      [ "ApplyLanguageModelOnTheFlyInterface", "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html", "structfst_1_1ApplyLanguageModelOnTheFlyInterface" ],
       [ "ApplyLanguageModelOnTheFly", "classfst_1_1ApplyLanguageModelOnTheFly.html", "classfst_1_1ApplyLanguageModelOnTheFly" ]
     ] ],
     [ "fstutils.extractngrams.hpp", "fstutils_8extractngrams_8hpp.html", "fstutils_8extractngrams_8hpp" ],
@@ -381,6 +382,7 @@ var files =
     [ "task.applylm.hpp", "task_8applylm_8hpp.html", [
       [ "ApplyLanguageModelTask", "classucam_1_1fsttools_1_1ApplyLanguageModelTask.html", "classucam_1_1fsttools_1_1ApplyLanguageModelTask" ]
     ] ],
+    [ "task.applylm.kenlmtype.hpp", "task_8applylm_8kenlmtype_8hpp.html", "task_8applylm_8kenlmtype_8hpp" ],
     [ "task.cykparser.hpp", "task_8cykparser_8hpp.html", "task_8cykparser_8hpp" ],
     [ "task.disambig.flowerfst.hpp", "task_8disambig_8flowerfst_8hpp.html", "task_8disambig_8flowerfst_8hpp" ],
     [ "task.disambig.hpp", "task_8disambig_8hpp.html", [
@@ -432,10 +434,7 @@ var files =
     [ "task.lmbr.hpp", "task_8lmbr_8hpp.html", [
       [ "LmbrTask", "classucam_1_1lmbr_1_1LmbrTask.html", "classucam_1_1lmbr_1_1LmbrTask" ]
     ] ],
-    [ "task.loadlm.hpp", "task_8loadlm_8hpp.html", [
-      [ "KenLMModelHelper", "structucam_1_1fsttools_1_1KenLMModelHelper.html", "structucam_1_1fsttools_1_1KenLMModelHelper" ],
-      [ "LoadLanguageModelTask", "classucam_1_1fsttools_1_1LoadLanguageModelTask.html", "classucam_1_1fsttools_1_1LoadLanguageModelTask" ]
-    ] ],
+    [ "task.loadlm.hpp", "task_8loadlm_8hpp.html", "task_8loadlm_8hpp" ],
     [ "task.loadsparseweightflowerfst.hpp", "task_8loadsparseweightflowerfst_8hpp.html", [
       [ "LoadSparseWeightFlowerLatticeTask", "classucam_1_1hifst_1_1LoadSparseWeightFlowerLatticeTask.html", "classucam_1_1hifst_1_1LoadSparseWeightFlowerLatticeTask" ],
       [ "LoadSparseWeightsTask", "classucam_1_1hifst_1_1LoadSparseWeightsTask.html", "classucam_1_1hifst_1_1LoadSparseWeightsTask" ]

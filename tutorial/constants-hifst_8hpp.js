@@ -27,6 +27,7 @@ var constants_hifst_8hpp =
     [ "kHifstReplacefstbyarcNonterminals", "constants-hifst_8hpp.html#aba43e5c6dd74c9d9bdb104a2d2eea99f", null ],
     [ "kHifstReplacefstbyarcNumstates", "constants-hifst_8hpp.html#a69711b4bf2ce85e28695130f54fe924f", null ],
     [ "kHifstRtnopt", "constants-hifst_8hpp.html#a786981fc7a11e0997b4453499a6b9b46", null ],
+    [ "kHifstStripSpecialEpsilonLabels", "constants-hifst_8hpp.html#a7ef3aea467fda14a780412bb6f7a44be", null ],
     [ "kHifstUsepdt", "constants-hifst_8hpp.html#a24949641c40d5c24f2efc1506dcb5f65", null ],
     [ "kHifstWritertn", "constants-hifst_8hpp.html#a4bd136ebfd7e86728978a00b567368f1", null ],
     [ "kLmbrAlpha", "constants-hifst_8hpp.html#af7eae02b739180b74ce310c8d2b4daa7", null ],
