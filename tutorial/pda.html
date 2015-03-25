@@ -56,7 +56,7 @@ $(document).ready(function(){initNavTree('pda.html','');});
 <div class="textblock"><p>This HiFST package can also perform decoding using Push-Down Automata (PDA) as described in [<a class="el" href="intro.html#Iglesias2011">Iglesias2011</a>, <a class="el" href="intro.html#Allauzen2014">Allauzen2014</a>]. We call this the HiPDT decoder. A brief overview of it and an example on how to use it is given next.</p>
 <p>In this framework, the RTN at the top-most cell of the CYK grid is converted into a PDA (via the Replace operation in the <a class="el" href="intro.html#OpenFst">OpenFst</a> Extensions) and efficiently composed with a language model to produce another PDA. To obtain the final output FSA, the PDA is expanded to an FSA either entirely (if memory is sufficient and the language model is small enough) or via pruned expansion (for larger language models). This is useful in exploring large and complex translation grammars where HiFST requires a lot of local pruning. However, it requires the language model to be 'small' (for example, entropy-pruned as in [<a class="el" href="intro.html#Iglesias2011">Iglesias2011</a>, <a class="el" href="intro.html#Allauzen2014">Allauzen2014</a>]). Therefore, we then typically rescore the pruned output FSA with a stronger language model.</p>
 <p>This whole setup can be accomplished in one single command as follows: </p>
-<pre class="fragment">&gt; hifst.${TGTBINMK}.bin --config=configs/CF.hiero.pdt &amp;&gt; log/log.hiero.pdt
+<pre class="fragment">::&gt; hifst.${TGTBINMK}.bin --config=configs/CF.hiero.pdt &amp;&gt; log/log.hiero.pdt
 </pre><p>Please see the config file for the parameters needed, along with explanatory comments.</p>
 <p>In this particular example, the output 1-best for the first two sentences is identical to the baseline Hiero case (with translation via RTN replacement followed by composition). However, the output lattices differ as they contain different hypotheses (due to the different pruning strategy).</p>
 <h1><a class="anchor" id="pda_rtns"></a>
@@ -64,7 +64,7 @@ Recursive Transition Networks</h1>
 <p>As already discussed with respect to <a class="el" href="basictrans.html#lpruning">Inadmissible Pruning</a>, HiFST generates an initial representation of the space of translation in the form of an RTN, which is then transformed either to WFSAs or to PDAs using the <a class="el" href="intro.html#OpenFst">OpenFst</a> <a href="http://openfst.org/twiki/bin/view/FST/ReplaceDoc">Replace</a> operation prior to application of the language model.</p>
 <p>HiFST can save the RTNs to disk, and the language model application and shortest path operations can be carried out using the <a class="el" href="intro.html#OpenFst">OpenFst</a> command line tools.</p>
 <p>For example, consider generation of the baseline lattices with the Shallow-1 translation grammar and the 4-gram language model. The command can be re-run, but with added instructions to save the RTNs to disk: </p>
-<pre class="fragment">&gt; hifst.${TGTBINMK}.bin --config=configs/CF.baseline --hifst.writertn=output/exp.baseline/rtn/?/%%rtn_label%%.fst --grammar.storentorder=output/exp.baseline/rtn/ntmap  --hifst.rtnopt=yes &amp;&gt; log/log.baseline.rtn
+<pre class="fragment">::&gt; hifst.${TGTBINMK}.bin --config=configs/CF.baseline --hifst.writertn=output/exp.baseline/rtn/?/%%rtn_label%%.fst --grammar.storentorder=output/exp.baseline/rtn/ntmap  --hifst.rtnopt=yes &amp;&gt; log/log.baseline.rtn
 </pre><p>The RTNs are written to the directory <code>output/exp.baseline/rtn/*</code> as </p>
 <pre class="fragment">&gt; ls output/exp.baseline/rtn/1/
 1001000007.fst  1003001002.fst  1003003000.fst  1003004001.fst  1003006000.fst  1004002000.fst  1004005000.fst
@@ -154,22 +154,22 @@ Expansion: Translation by Composition of PDAs and WFSAs followed by Pruned Expan
 <p>As explained in the example of <a class="el" href="pda.html">Translation with Push-Down Automata</a>, this process is done by the decoder in one go. For explanatory reasons, here we reproduce it externally for one sentence via the command line.</p>
 <p>(Note: as of March 2014 we have not managed to make the OpenFST PDT command line operations work well with our lexicographic library, so the standard tropical semirring must be used in this example. This makes it slightly more complex than it should be, but we believe it is useful to understand HiPDT anyway)</p>
 <p>First, we dump the RTN for the full hiero grammar as follows: </p>
-<pre class="fragment">&gt; hifst.${TGTBINMK}.bin --config=configs/CF.hiero --hifst.writertn=output/exp.hiero/rtn/?/%%rtn_label%%.fst --grammar.storentorder=output/exp.hiero/rtn/ntmap --hifst.rtnopt=yes &amp;&gt; log/log.hiero.rtn
+<pre class="fragment">::&gt; hifst.${TGTBINMK}.bin --config=configs/CF.hiero --hifst.writertn=output/exp.hiero/rtn/?/%%rtn_label%%.fst --grammar.storentorder=output/exp.hiero/rtn/ntmap --hifst.rtnopt=yes &amp;&gt; log/log.hiero.rtn
 </pre><p>Then, we ensure that the RTN files are in the tropical semiring: </p>
-<pre class="fragment">&gt; mkdir -p output/exp.hiero/rtn-tp/1 output/exp.hiero/rtn-tp/2
-&gt; pushd output/exp.hiero/rtn/ ; for f in ?/100*.fst; do cat $f | lexmap.${TGTBINMK}.bin --action=lex2std &gt; ../rtn-tp/$f; done; popd
+<pre class="fragment">::&gt; mkdir -p output/exp.hiero/rtn-tp/1 output/exp.hiero/rtn-tp/2
+::&gt; pushd output/exp.hiero/rtn/ ; for f in ?/100*.fst; do cat $f | lexmap.${TGTBINMK}.bin --action=lex2std &gt; ../rtn-tp/$f; done; popd
 </pre><p>The PDT is then created as follows: </p>
-<pre class="fragment">&gt; for f in 1 2; do pdtreplace --pdt_parentheses=output/exp.hiero/rtn-tp/$f/parens.txt `ls output/exp.hiero/rtn-tp/$f/1*.fst | sed 's,\(.*\)/\(.*\).fst,\1/\2.fst \2,'` &gt; output/exp.hiero/rtn-tp/$f/T.pdt; done
+<pre class="fragment">::&gt; for f in 1 2; do pdtreplace --pdt_parentheses=output/exp.hiero/rtn-tp/$f/parens.txt `ls output/exp.hiero/rtn-tp/$f/1*.fst | sed 's,\(.*\)/\(.*\).fst,\1/\2.fst \2,'` &gt; output/exp.hiero/rtn-tp/$f/T.pdt; done
 </pre><p>where the `pdt_parentheses' option indicates that the open/close parentheses symbols are to be stored into a file. This is used later in order to expand the PDA to an FSA.</p>
 <p>Then the PDA is composed with the weak language model. This is done via the standard composition algorithm, but making sure that open/close parentheses symbols are treated as epsilons by the composition algorithm. To accomplish this, their respective output symbols need to be relabel to 0 before applying the LM: </p>
-<pre class="fragment">&gt; for f in 1 2; do cat output/exp.hiero/rtn-tp/1/parens.txt | tr '\t' '\n' | sed 's/$/\t0/' &gt; output/exp.hiero/rtn-tp/$f/parens-to-epsilon.txt ;
-&gt; cat output/exp.hiero/rtn-tp/$f/T.pdt | fstrelabel -relabel_opairs=output/exp.hiero/rtn-tp/$f/parens-to-epsilon.txt &gt; output/exp.hiero/rtn-tp/$f/Tb.pdt
-&gt; applylm.${TGTBINMK}.bin --lm.load=M/lm.4g.eprnd.mmap --lattice.load=output/exp.hiero/rtn-tp/$f/Tb.pdt --lattice.store=output/exp.hiero/rtn-tp/$f/TG.pdt ;
-&gt; done
+<pre class="fragment">::&gt; for f in 1 2; do cat output/exp.hiero/rtn-tp/1/parens.txt | tr '\t' '\n' | sed 's/$/\t0/' &gt; output/exp.hiero/rtn-tp/$f/parens-to-epsilon.txt ;
+::&gt; cat output/exp.hiero/rtn-tp/$f/T.pdt | fstrelabel -relabel_opairs=output/exp.hiero/rtn-tp/$f/parens-to-epsilon.txt &gt; output/exp.hiero/rtn-tp/$f/Tb.pdt
+::&gt; applylm.${TGTBINMK}.bin --lm.load=M/lm.4g.eprnd.mmap --lattice.load=output/exp.hiero/rtn-tp/$f/Tb.pdt --lattice.store=output/exp.hiero/rtn-tp/$f/TG.pdt ;
+::&gt; done
 </pre><p>Then the resulting PDT is expanded into an FSA while applying a pruning weight of 9: </p>
-<pre class="fragment">&gt; for f in 1 2; do fstproject output/exp.hiero/rtn-tp/$f/TG.pdt | pdtexpand --pdt_parentheses=output/exp.hiero/rtn-tp/$f/parens.txt --weight=9 &gt; output/exp.hiero/rtn-tp/$f/TG.fst ; done
+<pre class="fragment">::&gt; for f in 1 2; do fstproject output/exp.hiero/rtn-tp/$f/TG.pdt | pdtexpand --pdt_parentheses=output/exp.hiero/rtn-tp/$f/parens.txt --weight=9 &gt; output/exp.hiero/rtn-tp/$f/TG.fst ; done
 </pre><p>Finally, the weak LM is removed and the full LM is applied: </p>
-<pre class="fragment">&gt; for f in 1 2; do applylm.${TGTBINMK}.bin --lm.load=M/lm.4g.eprnd.mmap --lm.featureweights=-1 --lattice.load=output/exp.hiero/rtn-tp/$f/TG.fst --lattice.store=output/exp.hiero/rtn-tp/$f/TG-nolm.fst ; applylm.${TGTBINMK}.bin --lm.load=M/lm.4g.mmap --lattice.load=output/exp.hiero/rtn-tp/$f/TG-nolm.fst --lattice.store=output/exp.hiero/rtn-tp/$f/TG-final.fst ; done
+<pre class="fragment">::&gt; for f in 1 2; do applylm.${TGTBINMK}.bin --lm.load=M/lm.4g.eprnd.mmap --lm.featureweights=-1 --lattice.load=output/exp.hiero/rtn-tp/$f/TG.fst --lattice.store=output/exp.hiero/rtn-tp/$f/TG-nolm.fst ; applylm.${TGTBINMK}.bin --lm.load=M/lm.4g.mmap --lattice.load=output/exp.hiero/rtn-tp/$f/TG-nolm.fst --lattice.store=output/exp.hiero/rtn-tp/$f/TG-final.fst ; done
 </pre><p>The final FSA that results from this process (<code>output/exp.hiero/rtn-tp/1/TG-final.fst</code>) should be equivalent to the one obtained by HiPDT (<code>output/exp.hiero.pdt/LATS/1.fst.gz</code>) except for numerical differences. Their 1-best hypothesis can be obtained as follows: </p>
 <pre class="fragment">&gt; zcat output/exp.hiero.pdt/LATS/1.fst.gz | printstrings.${TGTBINMK}.bin --semiring=lexstdarc -w -m wmaps/wmt13.en.wmap 2&gt;/dev/null
 &lt;s&gt; the republican strategy of resistance to the renewal of obama 's election &lt;/s&gt;  55.2515,-11.6445
@@ -180,7 +180,7 @@ Expansion: Translation by Composition of PDAs and WFSAs followed by Pruned Expan
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Wed Feb 18 2015 21:05:10 for Cambridge SMT System by
+    <li class="footer">Generated on Wed Mar 25 2015 16:17:22 for Cambridge SMT System by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.6 </li>
   </ul>

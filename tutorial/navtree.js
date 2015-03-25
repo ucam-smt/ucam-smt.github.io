@@ -8,7 +8,7 @@ var NAVTREE =
         [ "CUED SMT System Descriptions", "intro.html#Refs_systems", null ],
         [ "OpenFST and Related Modelling Techniques", "intro.html#Refs_fsts", null ],
         [ "Lattice Minimum Bayes Risk Decoding using WFSAs", "intro.html#Refs_lmbr", null ],
-        [ "Lattice Mert", "intro.html#lmert_refs", null ],
+        [ "Mert", "intro.html#lmert_refs", null ],
         [ "[HiFST Rule Extraction]", "intro.html#rulextract_refs", null ],
         [ "Language Modelling Toolkits", "intro.html#othertools", null ]
       ] ]
@@ -77,6 +77,12 @@ var NAVTREE =
       [ "Replacement: Translation by Converting RTNs to WFSAs", "pda.html#pda_replace", null ],
       [ "Composition and Shortest Path", "pda.html#rtn_lm_app", null ],
       [ "Expansion: Translation by Composition of PDAs and WFSAs followed by Pruned Expansion", "pda.html#pda_expand", null ]
+    ] ],
+    [ "Multi-dimensional MERT", "rsearch.html", [
+      [ "Step 1. Feature Projection", "rsearch.html#affine_project", null ],
+      [ "Step 2. Convex Hulls of Projected Features", "rsearch.html#convex_hull", null ],
+      [ "Step 3. Reverse Search", "rsearch.html#reverse_search_op", null ],
+      [ "Step 4. Reranking", "rsearch.html#reverse_search_reranking", null ]
     ] ],
     [ "Rule Extraction", "rulextract.html", [
       [ "Getting started", "rulextract.html#rulextract_start_reminder", null ],
@@ -157,8 +163,8 @@ var NAVTREEINDEX =
 "globals_func_p.html",
 "main_8alilats2splats_8init__param__options_8hpp.html#a3f338db23b7acf0b96e95cbfaf29041a",
 "range_8hpp.html#a843d6e7b2f08d907e1cbfa3fe73bd532",
-"structgoogletesting_1_1DataForStats.html#a22faf9774b9a5f6515f11196860ace6b",
-"task_8cykparser_8hpp.html"
+"structfst_1_1VectorToStd.html#ae76e23932579a4d64d9111debd5e51dd",
+"task_8applylm_8hpp.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
