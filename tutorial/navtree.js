@@ -9,7 +9,7 @@ var NAVTREE =
         [ "OpenFST and Related Modelling Techniques", "intro.html#Refs_fsts", null ],
         [ "Lattice Minimum Bayes Risk Decoding using WFSAs", "intro.html#Refs_lmbr", null ],
         [ "Mert", "intro.html#lmert_refs", null ],
-        [ "[HiFST Rule Extraction]", "intro.html#rulextract_refs", null ],
+        [ "HiFST Rule Extraction", "intro.html#rulextract_refs", null ],
         [ "Language Modelling Toolkits", "intro.html#othertools", null ]
       ] ]
     ] ],
@@ -60,7 +60,7 @@ var NAVTREE =
         [ "Step 2. Guided Translation / Forced Alignment", "basictrans.html#lmert_veclats", null ],
         [ "Step 3. WFSAs with Unweighted Feature Vectors", "basictrans.html#lmert_alilats", null ],
         [ "Step 4. LMERT", "basictrans.html#lmert_lmert", null ],
-        [ "References and De/Tokenization", "basictrans.html#lmert_references", null ]
+        [ "BLEU, References, and De/Tokenization", "basictrans.html#lmert_references", null ]
       ] ],
       [ "Tropical Sparse Tuple Semiring", "basictrans.html#lmert_veclats_tst", null ],
       [ "Source Sentence Chopping", "basictrans.html#chopping", [
@@ -72,11 +72,12 @@ var NAVTREE =
       [ "FST-based True Casing", "basictrans.html#true_casing", null ],
       [ "Client-Server Mode (Experimental)", "basictrans.html#server", null ]
     ] ],
-    [ "Translation with Push-Down Automata", "pda.html", [
-      [ "Recursive Transition Networks", "pda.html#pda_rtns", null ],
-      [ "Replacement: Translation by Converting RTNs to WFSAs", "pda.html#pda_replace", null ],
-      [ "Composition and Shortest Path", "pda.html#rtn_lm_app", null ],
-      [ "Expansion: Translation by Composition of PDAs and WFSAs followed by Pruned Expansion", "pda.html#pda_expand", null ]
+    [ "RTNs and PDAs", "pda.html", [
+      [ "Generating RTNs", "pda.html#pda_rtns", null ],
+      [ "Translation by RTN Expansion to WFSAs", "pda.html#pda_rtn_expansion", [
+        [ "Applying the LM to the WFSA", "pda.html#rtn_lm_app", null ]
+      ] ],
+      [ "Translation by PDA Pruned Expansion", "pda.html#pda_pda_expand", null ]
     ] ],
     [ "Multi-dimensional MERT", "rsearch.html", [
       [ "Step 1. Feature Projection", "rsearch.html#affine_project", null ],
@@ -116,55 +117,13 @@ var NAVTREE =
         [ "NiuTrans", "appendices.html#gext_niutrans", null ]
       ] ],
       [ "Translation Grammar Pruning", "appendices.html#grammarpruning", null ]
-    ] ],
-    [ "Namespaces", null, [
-      [ "Namespace List", "namespaces.html", "namespaces" ],
-      [ "Namespace Members", "namespacemembers.html", [
-        [ "All", "namespacemembers.html", "namespacemembers_dup" ],
-        [ "Functions", "namespacemembers_func.html", null ],
-        [ "Variables", "namespacemembers_vars.html", null ],
-        [ "Typedefs", "namespacemembers_type.html", null ]
-      ] ]
-    ] ],
-    [ "Classes", null, [
-      [ "Class List", "annotated.html", "annotated" ],
-      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
-      [ "Class Members", "functions.html", [
-        [ "All", "functions.html", "functions_dup" ],
-        [ "Functions", "functions_func.html", "functions_func" ],
-        [ "Variables", "functions_vars.html", "functions_vars" ],
-        [ "Typedefs", "functions_type.html", null ],
-        [ "Related Functions", "functions_rela.html", null ]
-      ] ]
-    ] ],
-    [ "Files", null, [
-      [ "File List", "files.html", "files" ],
-      [ "File Members", "globals.html", [
-        [ "All", "globals.html", "globals_dup" ],
-        [ "Functions", "globals_func.html", "globals_func" ],
-        [ "Variables", "globals_vars.html", null ],
-        [ "Typedefs", "globals_type.html", null ],
-        [ "Macros", "globals_defs.html", null ]
-      ] ]
     ] ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"AlignmentAndFeatureMap_8java.html",
-"Source2TargetProbability_8java_source.html",
-"classOptimizer.html#a6a70c93c80808489657b66b7ecc4c927",
-"classucam_1_1fsttools_1_1LoadWordMapTask.html#ab198b80e7722f263e7a2714bf3b05ac3",
-"classucam_1_1hifst_1_1SingleThreadedHifstTask.html#a7713b351737539a7bc8c16510997d81c",
-"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html#a760463c9540b43a60cd993a77d1262e5",
-"constants-fsttools_8hpp.html#af335785054a853b268cda52d8a084ab7",
-"fstutils_8extractngrams_8hpp.html#a0ea721f75905cb03f7ba9cf61ef7a377",
-"globals_func_p.html",
-"main_8alilats2splats_8init__param__options_8hpp.html#a3f338db23b7acf0b96e95cbfaf29041a",
-"range_8hpp.html#a843d6e7b2f08d907e1cbfa3fe73bd532",
-"structfst_1_1VectorToStd.html#ae76e23932579a4d64d9111debd5e51dd",
-"task_8applylm_8hpp.html"
+"appendices.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
