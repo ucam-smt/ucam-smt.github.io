@@ -81,51 +81,59 @@ $(document).ready(function(){initNavTree('multithreading_8hpp_source.html','');}
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;  std::size_t numthreads_;</div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; <span class="keyword">public</span>:</div>
-<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="classucam_1_1util_1_1TrivialThreadPool.html#a0dd37b3338d92bcdd3f84213728feafd">   42</a></span>&#160;  <a class="code" href="classucam_1_1util_1_1TrivialThreadPool.html#a0dd37b3338d92bcdd3f84213728feafd">TrivialThreadPool</a> ( std::size_t n ) :</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    numthreads_ ( n &gt; boost::thread::hardware_concurrency() ?</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                  boost::thread::hardware_concurrency() : n ),</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    service_ ( numthreads_ ),</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    work_ ( new boost::asio::io_service::work ( service_ ) )</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;  {</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="comment">//    LINFO ( &quot;Creating &quot; &lt;&lt; numthreads_ &lt;&lt; &quot; threads&quot; );</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="custom__assert_8hpp.html#a9c40815aec8dd07daee741da5b494a35">USER_CHECK</a> ( numthreads_ &gt; 0, <span class="stringliteral">&quot;Number of threads has to be greater than 0!&quot;</span> );</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordflow">for</span> ( std::size_t i = 0; i &lt; numthreads_; i++ )</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;      pool_.create_thread ( boost::bind ( &amp;<a class="code" href="countstrings_8main_8cpp.html#a8a1dda39bc667a5a75d4be44f9b24403">boost::asio::io_service::run</a>,</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                                          &amp;service_ ) );</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;  }</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;</div>
-<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="classucam_1_1util_1_1TrivialThreadPool.html#ae659bf9645c15fe559f0ed53b27fea69">   56</a></span>&#160;  <a class="code" href="classucam_1_1util_1_1TrivialThreadPool.html#ae659bf9645c15fe559f0ed53b27fea69">~TrivialThreadPool</a>() {</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="comment">//    LINFO ( &quot;Finishing threads...&quot; );</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    work_.reset();</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    pool_.join_all();</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;  }</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> F&gt;</div>
-<div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="classucam_1_1util_1_1TrivialThreadPool.html#aef4a4473aedeb57df718e5525fb25851">   63</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classucam_1_1util_1_1TrivialThreadPool.html#aef4a4473aedeb57df718e5525fb25851">operator() </a>( <a class="code" href="function-weight_8h.html#a235326e4f3e7608a031ab8d6d8688e4e">F</a> task ) {</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    service_.post ( task );</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;  }</div>
+<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="classucam_1_1util_1_1TrivialThreadPool.html#a0dd37b3338d92bcdd3f84213728feafd">   42</a></span>&#160;  <a class="code" href="classucam_1_1util_1_1TrivialThreadPool.html#a0dd37b3338d92bcdd3f84213728feafd">TrivialThreadPool</a> ( std::size_t n )</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    : numthreads_( n &gt; boost::thread::hardware_concurrency()</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                   ? boost::thread::hardware_concurrency() : n )</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    , service_ ( numthreads_ )</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    , work_ ( new boost::asio::io_service::work ( service_ ) )</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;  {</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="code" href="custom__assert_8hpp.html#a9c40815aec8dd07daee741da5b494a35">USER_CHECK</a> ( numthreads_ &gt; 0</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;                 , <span class="stringliteral">&quot;Number of threads has to be greater than 0!&quot;</span> );</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordflow">for</span> ( std::size_t i = 0; i &lt; numthreads_; i++ )</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;      pool_.create_thread ( boost::bind ( &amp;<a class="code" href="countstrings_8main_8cpp.html#a8a1dda39bc667a5a75d4be44f9b24403">boost::asio::io_service::run</a>,</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                                          &amp;service_ ) );</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;  }</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;</div>
+<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="classucam_1_1util_1_1TrivialThreadPool.html#ae659bf9645c15fe559f0ed53b27fea69">   55</a></span>&#160;  <a class="code" href="classucam_1_1util_1_1TrivialThreadPool.html#ae659bf9645c15fe559f0ed53b27fea69">~TrivialThreadPool</a>() {</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    work_.reset();</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    pool_.join_all();</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;  }</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> F&gt;</div>
+<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="classucam_1_1util_1_1TrivialThreadPool.html#aef4a4473aedeb57df718e5525fb25851">   61</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classucam_1_1util_1_1TrivialThreadPool.html#aef4a4473aedeb57df718e5525fb25851">operator() </a>( <a class="code" href="function-weight_8h.html#a235326e4f3e7608a031ab8d6d8688e4e">F</a> task ) {</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    service_.post ( task );</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;  }</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;};</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;};</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;} <span class="comment">// end namespaces</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="structucam_1_1util_1_1NoThreadPool.html">   72</a></span>&#160; <span class="keyword">struct </span><a class="code" href="structucam_1_1util_1_1NoThreadPool.html">NoThreadPool</a> {</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> F&gt;</div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="structucam_1_1util_1_1NoThreadPool.html#a0add97d81e9a17f50c6ff855f5343f2a">   74</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="structucam_1_1util_1_1NoThreadPool.html#a0add97d81e9a17f50c6ff855f5343f2a">operator() </a>(<a class="code" href="function-weight_8h.html#a235326e4f3e7608a031ab8d6d8688e4e">F</a> &amp;task) {</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    task();</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;  }</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;};</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;}</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;} <span class="comment">// end namespaces</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="ttc" id="classucam_1_1util_1_1TrivialThreadPool_html_a0dd37b3338d92bcdd3f84213728feafd"><div class="ttname"><a href="classucam_1_1util_1_1TrivialThreadPool.html#a0dd37b3338d92bcdd3f84213728feafd">ucam::util::TrivialThreadPool::TrivialThreadPool</a></div><div class="ttdeci">TrivialThreadPool(std::size_t n)</div><div class="ttdef"><b>Definition:</b> <a href="multithreading_8hpp_source.html#l00042">multithreading.hpp:42</a></div></div>
-<div class="ttc" id="classucam_1_1util_1_1TrivialThreadPool_html_aef4a4473aedeb57df718e5525fb25851"><div class="ttname"><a href="classucam_1_1util_1_1TrivialThreadPool.html#aef4a4473aedeb57df718e5525fb25851">ucam::util::TrivialThreadPool::operator()</a></div><div class="ttdeci">void operator()(F task)</div><div class="ttdef"><b>Definition:</b> <a href="multithreading_8hpp_source.html#l00063">multithreading.hpp:63</a></div></div>
+<div class="ttc" id="classucam_1_1util_1_1TrivialThreadPool_html_aef4a4473aedeb57df718e5525fb25851"><div class="ttname"><a href="classucam_1_1util_1_1TrivialThreadPool.html#aef4a4473aedeb57df718e5525fb25851">ucam::util::TrivialThreadPool::operator()</a></div><div class="ttdeci">void operator()(F task)</div><div class="ttdef"><b>Definition:</b> <a href="multithreading_8hpp_source.html#l00061">multithreading.hpp:61</a></div></div>
 <div class="ttc" id="countstrings_8main_8cpp_html_a8a1dda39bc667a5a75d4be44f9b24403"><div class="ttname"><a href="countstrings_8main_8cpp.html#a8a1dda39bc667a5a75d4be44f9b24403">run</a></div><div class="ttdeci">void run(ucam::util::RegistryPO const &amp;rg)</div><div class="ttdef"><b>Definition:</b> <a href="countstrings_8main_8cpp_source.html#l00047">countstrings.main.cpp:47</a></div></div>
 <div class="ttc" id="function-weight_8h_html_a235326e4f3e7608a031ab8d6d8688e4e"><div class="ttname"><a href="function-weight_8h.html#a235326e4f3e7608a031ab8d6d8688e4e">F</a></div><div class="ttdeci">double F</div><div class="ttdef"><b>Definition:</b> <a href="function-weight_8h_source.html#l00026">function-weight.h:26</a></div></div>
 <div class="ttc" id="classucam_1_1util_1_1TrivialThreadPool_html"><div class="ttname"><a href="classucam_1_1util_1_1TrivialThreadPool.html">ucam::util::TrivialThreadPool</a></div><div class="ttdoc">Trivial implementation of a threadpool based on boost::asio methods When initiated, creates a threadpool of n threads (n &lt;= number of cpus). Jobs should be submitted with the templated operator(). When the object is deleted it will wait for all threads to finish. </div><div class="ttdef"><b>Definition:</b> <a href="multithreading_8hpp_source.html#l00033">multithreading.hpp:33</a></div></div>
+<div class="ttc" id="structucam_1_1util_1_1NoThreadPool_html"><div class="ttname"><a href="structucam_1_1util_1_1NoThreadPool.html">ucam::util::NoThreadPool</a></div><div class="ttdoc">Trivial struct that can replace seamlessly the threadpool for single threaded executions. </div><div class="ttdef"><b>Definition:</b> <a href="multithreading_8hpp_source.html#l00072">multithreading.hpp:72</a></div></div>
 <div class="ttc" id="custom__assert_8hpp_html_a9c40815aec8dd07daee741da5b494a35"><div class="ttname"><a href="custom__assert_8hpp.html#a9c40815aec8dd07daee741da5b494a35">USER_CHECK</a></div><div class="ttdeci">#define USER_CHECK(exp, comment)</div><div class="ttdoc">Tests whether exp is true. If not, comment is printed and program ends. </div><div class="ttdef"><b>Definition:</b> <a href="custom__assert_8hpp_source.html#l00041">custom_assert.hpp:41</a></div></div>
-<div class="ttc" id="classucam_1_1util_1_1TrivialThreadPool_html_ae659bf9645c15fe559f0ed53b27fea69"><div class="ttname"><a href="classucam_1_1util_1_1TrivialThreadPool.html#ae659bf9645c15fe559f0ed53b27fea69">ucam::util::TrivialThreadPool::~TrivialThreadPool</a></div><div class="ttdeci">~TrivialThreadPool()</div><div class="ttdef"><b>Definition:</b> <a href="multithreading_8hpp_source.html#l00056">multithreading.hpp:56</a></div></div>
+<div class="ttc" id="classucam_1_1util_1_1TrivialThreadPool_html_ae659bf9645c15fe559f0ed53b27fea69"><div class="ttname"><a href="classucam_1_1util_1_1TrivialThreadPool.html#ae659bf9645c15fe559f0ed53b27fea69">ucam::util::TrivialThreadPool::~TrivialThreadPool</a></div><div class="ttdeci">~TrivialThreadPool()</div><div class="ttdef"><b>Definition:</b> <a href="multithreading_8hpp_source.html#l00055">multithreading.hpp:55</a></div></div>
+<div class="ttc" id="structucam_1_1util_1_1NoThreadPool_html_a0add97d81e9a17f50c6ff855f5343f2a"><div class="ttname"><a href="structucam_1_1util_1_1NoThreadPool.html#a0add97d81e9a17f50c6ff855f5343f2a">ucam::util::NoThreadPool::operator()</a></div><div class="ttdeci">void operator()(F &amp;task)</div><div class="ttdef"><b>Definition:</b> <a href="multithreading_8hpp_source.html#l00074">multithreading.hpp:74</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_e9f33eee9d5bec09897754871c4882b0.html">ucam-smt</a></li><li class="navelem"><a class="el" href="dir_32c4699cf433091df15305ee78a31f94.html">cpp</a></li><li class="navelem"><a class="el" href="dir_c6a234471579a3dadb934e2273a7892b.html">include</a></li><li class="navelem"><a class="el" href="multithreading_8hpp.html">multithreading.hpp</a></li>
-    <li class="footer">Generated on Wed Mar 25 2015 16:16:53 for Cambridge SMT System by
+    <li class="navelem"><a class="el" href="dir_3c8324b7794b53f9c270ddcac45ac656.html">ucam-smt</a></li><li class="navelem"><a class="el" href="dir_0a58f0a8108659e94b8072f37a06ffad.html">cpp</a></li><li class="navelem"><a class="el" href="dir_eb07ad0042ed8677f94b3f178bdbc352.html">include</a></li><li class="navelem"><a class="el" href="multithreading_8hpp.html">multithreading.hpp</a></li>
+    <li class="footer">Generated on Sat Sep 19 2015 19:03:11 for Cambridge SMT System by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.6 </li>
   </ul>

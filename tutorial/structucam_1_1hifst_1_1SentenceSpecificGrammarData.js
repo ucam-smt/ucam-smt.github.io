@@ -3,6 +3,7 @@ var structucam_1_1hifst_1_1SentenceSpecificGrammarData =
     [ "SentenceSpecificGrammarData", "structucam_1_1hifst_1_1SentenceSpecificGrammarData.html#aace4f56ed5e683a15b291a52816a6c8d", null ],
     [ "getIdx", "structucam_1_1hifst_1_1SentenceSpecificGrammarData.html#a2fc3d2a4a3e496daa204d078b1010667", null ],
     [ "getLHS", "structucam_1_1hifst_1_1SentenceSpecificGrammarData.html#a9a063ea537c9b5d02685969dc369a01c", null ],
+    [ "getLinks", "structucam_1_1hifst_1_1SentenceSpecificGrammarData.html#a5f11ba36ac2c4bf74d015d2b1eb1ac7f", null ],
     [ "getMappings", "structucam_1_1hifst_1_1SentenceSpecificGrammarData.html#aa251678f01ec03a4cf92e0c63b6c77ce", null ],
     [ "getRHSSource", "structucam_1_1hifst_1_1SentenceSpecificGrammarData.html#ae74770d71aa0d8519e8df51303890042", null ],
     [ "getRHSSource", "structucam_1_1hifst_1_1SentenceSpecificGrammarData.html#a7483aa3e0afc8caf3e626b032bde71ba", null ],

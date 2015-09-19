@@ -86,6 +86,7 @@ var files =
     [ "data.lmbr.hpp", "data_8lmbr_8hpp.html", "data_8lmbr_8hpp" ],
     [ "data.ssgrammar.hpp", "data_8ssgrammar_8hpp.html", "data_8ssgrammar_8hpp" ],
     [ "data.stats.hpp", "data_8stats_8hpp.html", [
+      [ "SpeedStatsData", "structucam_1_1fsttools_1_1SpeedStatsData.html", "structucam_1_1fsttools_1_1SpeedStatsData" ],
       [ "StatsData", "structucam_1_1fsttools_1_1StatsData.html", "structucam_1_1fsttools_1_1StatsData" ]
     ] ],
     [ "DebugMert.cpp", "DebugMert_8cpp.html", null ],
@@ -96,6 +97,7 @@ var files =
     [ "defs.grammar.hpp", "defs_8grammar_8hpp.html", "defs_8grammar_8hpp" ],
     [ "defs.ssgrammar.hpp", "defs_8ssgrammar_8hpp.html", "defs_8ssgrammar_8hpp" ],
     [ "disambig.main.cpp", "disambig_8main_8cpp.html", "disambig_8main_8cpp" ],
+    [ "disambignffst.main.cpp", "disambignffst_8main_8cpp.html", "disambignffst_8main_8cpp" ],
     [ "EnumRuleType.java", "EnumRuleType_8java.html", [
       [ "EnumRuleType", "enumuk_1_1ac_1_1cam_1_1eng_1_1rulebuilding_1_1features_1_1EnumRuleType.html", "enumuk_1_1ac_1_1cam_1_1eng_1_1rulebuilding_1_1features_1_1EnumRuleType" ]
     ] ],
@@ -117,12 +119,7 @@ var files =
     ] ],
     [ "fstio.gtest.cpp", "fstio_8gtest_8cpp.html", "fstio_8gtest_8cpp" ],
     [ "fstio.hpp", "fstio_8hpp.html", "fstio_8hpp" ],
-    [ "fstutils.applylmonthefly.hpp", "fstutils_8applylmonthefly_8hpp.html", [
-      [ "StateHandler", "structfst_1_1StateHandler.html", "structfst_1_1StateHandler" ],
-      [ "StateHandler< lm::np::State >", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4.html", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4" ],
-      [ "ApplyLanguageModelOnTheFlyInterface", "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html", "structfst_1_1ApplyLanguageModelOnTheFlyInterface" ],
-      [ "ApplyLanguageModelOnTheFly", "classfst_1_1ApplyLanguageModelOnTheFly.html", "classfst_1_1ApplyLanguageModelOnTheFly" ]
-    ] ],
+    [ "fstutils.applylmonthefly.hpp", "fstutils_8applylmonthefly_8hpp.html", "fstutils_8applylmonthefly_8hpp" ],
     [ "fstutils.extractngrams.hpp", "fstutils_8extractngrams_8hpp.html", "fstutils_8extractngrams_8hpp" ],
     [ "fstutils.ftcompose.hpp", "fstutils_8ftcompose_8hpp.html", "fstutils_8ftcompose_8hpp" ],
     [ "fstutils.gtest.cpp", "fstutils_8gtest_8cpp.html", "fstutils_8gtest_8cpp" ],
@@ -141,6 +138,7 @@ var files =
       [ "MultiUnionRational", "classfst_1_1MultiUnionRational.html", "classfst_1_1MultiUnionRational" ],
       [ "MultiUnionReplace", "classfst_1_1MultiUnionReplace.html", "classfst_1_1MultiUnionReplace" ]
     ] ],
+    [ "fstutils.topofeatures.hpp", "fstutils_8topofeatures_8hpp.html", "fstutils_8topofeatures_8hpp" ],
     [ "function-weight.cpp", "function-weight_8cpp.html", "function-weight_8cpp" ],
     [ "function-weight.h", "function-weight_8h.html", "function-weight_8h" ],
     [ "global_decls.hpp", "global__decls_8hpp.html", "global__decls_8hpp" ],
@@ -208,10 +206,7 @@ var files =
     [ "logger.hpp", "logger_8hpp.html", "logger_8hpp" ],
     [ "logger.openfstglog.hpp", "logger_8openfstglog_8hpp.html", "logger_8openfstglog_8hpp" ],
     [ "main-run.alilats2splats.hpp", "main-run_8alilats2splats_8hpp.html", "main-run_8alilats2splats_8hpp" ],
-    [ "main-run.applylm.hpp", "main-run_8applylm_8hpp.html", [
-      [ "SingleThreadedApplyLanguageModelTask", "classucam_1_1fsttools_1_1SingleThreadedApplyLanguageModelTask.html", "classucam_1_1fsttools_1_1SingleThreadedApplyLanguageModelTask" ],
-      [ "MultiThreadedApplyLanguageModelTask", "classucam_1_1fsttools_1_1MultiThreadedApplyLanguageModelTask.html", "classucam_1_1fsttools_1_1MultiThreadedApplyLanguageModelTask" ]
-    ] ],
+    [ "main-run.applylm.hpp", "main-run_8applylm_8hpp.html", "main-run_8applylm_8hpp" ],
     [ "main-run.createssgrammar.hpp", "main-run_8createssgrammar_8hpp.html", "main-run_8createssgrammar_8hpp" ],
     [ "main-run.hifst-client.hpp", "main-run_8hifst-client_8hpp.html", [
       [ "SingleThreadedHifstClientTask", "classucam_1_1hifst_1_1SingleThreadedHifstClientTask.html", "classucam_1_1hifst_1_1SingleThreadedHifstClientTask" ]
@@ -242,6 +237,8 @@ var files =
     [ "main.custom_assert.hpp", "main_8custom__assert_8hpp.html", null ],
     [ "main.disambig.hpp", "main_8disambig_8hpp.html", "main_8disambig_8hpp" ],
     [ "main.disambig.init_param_options.hpp", "main_8disambig_8init__param__options_8hpp.html", "main_8disambig_8init__param__options_8hpp" ],
+    [ "main.disambignffst.hpp", "main_8disambignffst_8hpp.html", null ],
+    [ "main.disambignffst.init_param_options.hpp", "main_8disambignffst_8init__param__options_8hpp.html", "main_8disambignffst_8init__param__options_8hpp" ],
     [ "main.gtest.hifst.cpp", "main_8gtest_8hifst_8cpp.html", "main_8gtest_8hifst_8cpp" ],
     [ "main.hifst-client.hpp", "main_8hifst-client_8hpp.html", null ],
     [ "main.hifst-client.init_param_options.hpp", "main_8hifst-client_8init__param__options_8hpp.html", "main_8hifst-client_8init__param__options_8hpp" ],
@@ -286,7 +283,8 @@ var files =
     [ "multithreading.gtest.cpp", "multithreading_8gtest_8cpp.html", "multithreading_8gtest_8cpp" ],
     [ "multithreading.helpers.hpp", "multithreading_8helpers_8hpp.html", "multithreading_8helpers_8hpp" ],
     [ "multithreading.hpp", "multithreading_8hpp.html", [
-      [ "TrivialThreadPool", "classucam_1_1util_1_1TrivialThreadPool.html", "classucam_1_1util_1_1TrivialThreadPool" ]
+      [ "TrivialThreadPool", "classucam_1_1util_1_1TrivialThreadPool.html", "classucam_1_1util_1_1TrivialThreadPool" ],
+      [ "NoThreadPool", "structucam_1_1util_1_1NoThreadPool.html", "structucam_1_1util_1_1NoThreadPool" ]
     ] ],
     [ "openfst.h", "openfst_8h.html", null ],
     [ "openfstversion.hpp", "openfstversion_8hpp.html", "openfstversion_8hpp" ],
@@ -380,7 +378,8 @@ var files =
       [ "TargetFeatureList", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1TargetFeatureList.html", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1TargetFeatureList" ]
     ] ],
     [ "task.applylm.hpp", "task_8applylm_8hpp.html", [
-      [ "ApplyLanguageModelTask", "classucam_1_1fsttools_1_1ApplyLanguageModelTask.html", "classucam_1_1fsttools_1_1ApplyLanguageModelTask" ]
+      [ "ApplyLanguageModelTask", "classucam_1_1fsttools_1_1ApplyLanguageModelTask.html", "classucam_1_1fsttools_1_1ApplyLanguageModelTask" ],
+      [ "ApplyBiLMTask", "classucam_1_1fsttools_1_1ApplyBiLMTask.html", "classucam_1_1fsttools_1_1ApplyBiLMTask" ]
     ] ],
     [ "task.applylm.kenlmtype.hpp", "task_8applylm_8kenlmtype_8hpp.html", "task_8applylm_8kenlmtype_8hpp" ],
     [ "task.cykparser.hpp", "task_8cykparser_8hpp.html", "task_8cykparser_8hpp" ],
@@ -469,6 +468,9 @@ var files =
     ] ],
     [ "task.stats.hpp", "task_8stats_8hpp.html", [
       [ "SpeedStatsTask", "classucam_1_1fsttools_1_1SpeedStatsTask.html", "classucam_1_1fsttools_1_1SpeedStatsTask" ]
+    ] ],
+    [ "task.tunewpwrite.hpp", "task_8tunewpwrite_8hpp.html", [
+      [ "TuneWpWriteFstTask", "classucam_1_1fsttools_1_1TuneWpWriteFstTask.html", "classucam_1_1fsttools_1_1TuneWpWriteFstTask" ]
     ] ],
     [ "task.writefst.hpp", "task_8writefst_8hpp.html", [
       [ "WriteFstTask", "classucam_1_1fsttools_1_1WriteFstTask.html", "classucam_1_1fsttools_1_1WriteFstTask" ]

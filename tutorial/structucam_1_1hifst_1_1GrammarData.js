@@ -4,6 +4,7 @@ var structucam_1_1hifst_1_1GrammarData =
     [ "~GrammarData", "structucam_1_1hifst_1_1GrammarData.html#aaa038d1e8a24de68cbfd5b3ff160c528", null ],
     [ "getIdx", "structucam_1_1hifst_1_1GrammarData.html#a3e08646b9b374a12caf9123877fc0653", null ],
     [ "getLHS", "structucam_1_1hifst_1_1GrammarData.html#aa1a8af50dea1af8ddcfa66485214ac39", null ],
+    [ "getLinks", "structucam_1_1hifst_1_1GrammarData.html#a716b247fcfc84bd669adec8fcf35ac0b", null ],
     [ "getMappings", "structucam_1_1hifst_1_1GrammarData.html#aedbb12acdb0b8eee047c0ca71b466987", null ],
     [ "getRHSSource", "structucam_1_1hifst_1_1GrammarData.html#a7a57d446bf9d6b48a3d780eea41e6287", null ],
     [ "getRHSSource", "structucam_1_1hifst_1_1GrammarData.html#a66fb505d25c4199403273c0634f35672", null ],

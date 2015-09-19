@@ -15,6 +15,7 @@ var annotated =
     [ "DataForSentenceSpecificGrammarTask", "structDataForSentenceSpecificGrammarTask.html", "structDataForSentenceSpecificGrammarTask" ],
     [ "DebugMertAlgorithm", "classDebugMertAlgorithm.html", "classDebugMertAlgorithm" ],
     [ "Directions", "classDirections.html", "classDirections" ],
+    [ "DisambigFunctor", "structDisambigFunctor.html", "structDisambigFunctor" ],
     [ "ErrorSurface", "classErrorSurface.html", "classErrorSurface" ],
     [ "FunctionArc", "structFunctionArc.html", "structFunctionArc" ],
     [ "FunctionToStdMapper", "classFunctionToStdMapper.html", "classFunctionToStdMapper" ],

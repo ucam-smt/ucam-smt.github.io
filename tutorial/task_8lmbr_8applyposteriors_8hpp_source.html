@@ -200,91 +200,92 @@ $(document).ready(function(){initNavTree('task_8lmbr_8applyposteriors_8hpp_sourc
 <div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    initializeStateMap();</div>
 <div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    fst::VectorFst&lt;fst::StdArc&gt;* fsttmp = fsthyp.Copy();</div>
 <div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> n = maxorder_; n &gt;= minorder_; --n) {</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;      <span class="keywordflow">if</span> (hs_ngrams_[n].size() &gt; 0) {</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        applyPosteriorsEx (fsttmp, n);</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;      }</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    }</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="keywordflow">return</span> fsttmp;</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;  }</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;  fst::VectorFst&lt;fst::StdArc&gt;* makeUnigramPosteriorsFST() {</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    fst::VectorFst&lt;fst::StdArc&gt;* fst = <span class="keyword">new</span> fst::VectorFst&lt;fst::StdArc&gt;;</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    fst::StdArc::StateId startState = fst-&gt;AddState();</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    fst-&gt;SetStart (startState);</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="keywordflow">for</span> (NGramList::const_iterator it = hs_ngrams_[1].begin();</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;         it != hs_ngrams_[1].end(); ++it) {</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;      <a class="code" href="namespacefst.html#aefb200c9e2c1543b1bdb2c9b12b8652d">fst::NGram</a> w = it-&gt;first;</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;      fst::StdArc::Weight p = 0;</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;      <span class="keywordflow">if</span> (posteriors_.find (w) != posteriors_.end() ) p = posteriors_[w][0][0] *</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;            theta_</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;            (1).Value();</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;      fst-&gt;AddArc (startState, fst::StdArc (w[0], w[0], p, startState) );</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    }</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    fst-&gt;SetFinal (startState, fst::StdArc::Weight::One() );</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <a class="code" href="logger_8boost__log_8hpp.html#adf127ca2262cc160830da49c37d04e85">LINFO</a> (std::setw (6) &lt;&lt; hs_ngrams_[1].size() &lt;&lt; <span class="stringliteral">&quot; 1-ngram gain(s) applied&quot;</span>);</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="keywordflow">return</span> fst;</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;  }</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;  fst::VectorFst&lt;fst::StdArc&gt;* makePosteriorsFST (<span class="keyword">const</span> <span class="keywordtype">unsigned</span> n) {</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <span class="keywordflow">if</span> (n == 1) {</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;      <span class="keywordflow">return</span> makeUnigramPosteriorsFST();</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    }</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    fst::VectorFst&lt;fst::StdArc&gt;* fst = <span class="keyword">new</span> fst::VectorFst&lt;fst::StdArc&gt;;</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    fst::StdArc::StateId startState = fst-&gt;AddState();</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    fst-&gt;SetStart (startState);</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    <span class="keywordflow">for</span> (NGramList::const_iterator it = hs_ngrams_[n].begin();</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;         it != hs_ngrams_[n].end(); ++it) {</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;      <a class="code" href="namespacefst.html#aefb200c9e2c1543b1bdb2c9b12b8652d">fst::NGram</a> h = it-&gt;first;</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;      <span class="comment">//      h.pop_back();</span></div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;      h.resize (h.size() - 1);</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;      <span class="keywordflow">if</span> (GetState (h) == -1) {</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        MakeHistory (fst, h);</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;      }</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    }</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <span class="keywordflow">for</span> (NGramList::const_iterator it = hs_ngrams_[n].begin();</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;         it != hs_ngrams_[n].end(); ++it) {</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;      <a class="code" href="namespacefst.html#aefb200c9e2c1543b1bdb2c9b12b8652d">fst::NGram</a> w = it-&gt;first;</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;      <a class="code" href="namespacefst.html#aefb200c9e2c1543b1bdb2c9b12b8652d">fst::NGram</a> h, t;</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;      h.assign ( w.begin(), w.end() - 1);</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;      t.assign ( w.begin() + 1, w.end() );</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;      fst::StdArc::StateId src = GetState (h);</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;      fst::StdArc::StateId trg = GetState (t);</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;      <span class="keywordflow">if</span> (trg == -1) {</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        trg = fst-&gt;AddState();</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        fst-&gt;SetFinal (trg,</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                       fst::StdArc::Weight::One() ); <span class="comment">//Gonzalo: Set all states to final.</span></div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        statemapper[t] = trg;</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;      }</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;      WordId wid = t[t.size() - 1];</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;      fst::StdArc::Weight p = 0;</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;      <span class="keywordflow">if</span> (posteriors_.find (w) != posteriors_.end() ) p = posteriors_[w][0][0] *</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            theta_</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            (n).Value();</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;      fst-&gt;AddArc (src, fst::StdArc (wid, wid, p, trg) );</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;      fst-&gt;SetFinal (trg, fst::StdArc::Weight::One() );</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    }</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    <a class="code" href="logger_8boost__log_8hpp.html#adf127ca2262cc160830da49c37d04e85">LINFO</a> (std::setw (6) &lt;&lt; hs_ngrams_[n].size() &lt;&lt; <span class="stringliteral">&quot; &quot;</span> &lt;&lt; n &lt;&lt;</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;           <span class="stringliteral">&quot;-ngram gain(s) applied&quot;</span>);</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    <span class="keywordflow">return</span> fst;</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;  }</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;  <span class="keywordtype">void</span> MakeHistory (fst::VectorFst&lt;fst::StdArc&gt;* fst, <span class="keyword">const</span> <a class="code" href="namespacefst.html#aefb200c9e2c1543b1bdb2c9b12b8652d">fst::NGram</a>&amp; h) {</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    fst::StdArc::StateId src = fst-&gt;Start();</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    fst::StdArc::StateId trg;</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    <span class="keywordflow">for</span> (fst::NGram::const_iterator it = h.begin(); it != h.end(); ++it) {</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;      WordId wid = *it;</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;      trg = fst-&gt;AddState();</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;      fst-&gt;AddArc (src, fst::StdArc (wid, wid, fst::StdArc::Weight::One(), trg) );</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;      src = trg;</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    }</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    statemapper[h] = trg;</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;  }</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;};</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;}</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;} <span class="comment">// end namespaces</span></div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;<span class="preprocessor">#endif //TASK_LMBR_APPLYPOSTERIORS</span></div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;      <span class="keywordflow">if</span> (hs_ngrams_.size() &gt; n</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;          &amp;&amp; hs_ngrams_[n].size() &gt; 0) {</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        applyPosteriorsEx (fsttmp, n);</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;      }</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    }</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="keywordflow">return</span> fsttmp;</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;  }</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;  fst::VectorFst&lt;fst::StdArc&gt;* makeUnigramPosteriorsFST() {</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    fst::VectorFst&lt;fst::StdArc&gt;* fst = <span class="keyword">new</span> fst::VectorFst&lt;fst::StdArc&gt;;</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    fst::StdArc::StateId startState = fst-&gt;AddState();</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    fst-&gt;SetStart (startState);</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <span class="keywordflow">for</span> (NGramList::const_iterator it = hs_ngrams_[1].begin();</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;         it != hs_ngrams_[1].end(); ++it) {</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;      <a class="code" href="namespacefst.html#aefb200c9e2c1543b1bdb2c9b12b8652d">fst::NGram</a> w = it-&gt;first;</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;      fst::StdArc::Weight p = 0;</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;      <span class="keywordflow">if</span> (posteriors_.find (w) != posteriors_.end() ) p = posteriors_[w][0][0] *</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;            theta_</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;            (1).Value();</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;      fst-&gt;AddArc (startState, fst::StdArc (w[0], w[0], p, startState) );</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    }</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    fst-&gt;SetFinal (startState, fst::StdArc::Weight::One() );</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <a class="code" href="logger_8boost__log_8hpp.html#adf127ca2262cc160830da49c37d04e85">LINFO</a> (std::setw (6) &lt;&lt; hs_ngrams_[1].size() &lt;&lt; <span class="stringliteral">&quot; 1-ngram gain(s) applied&quot;</span>);</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keywordflow">return</span> fst;</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;  }</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;  fst::VectorFst&lt;fst::StdArc&gt;* makePosteriorsFST (<span class="keyword">const</span> <span class="keywordtype">unsigned</span> n) {</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <span class="keywordflow">if</span> (n == 1) {</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;      <span class="keywordflow">return</span> makeUnigramPosteriorsFST();</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    }</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    fst::VectorFst&lt;fst::StdArc&gt;* fst = <span class="keyword">new</span> fst::VectorFst&lt;fst::StdArc&gt;;</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    fst::StdArc::StateId startState = fst-&gt;AddState();</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    fst-&gt;SetStart (startState);</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    <span class="keywordflow">for</span> (NGramList::const_iterator it = hs_ngrams_[n].begin();</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;         it != hs_ngrams_[n].end(); ++it) {</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;      <a class="code" href="namespacefst.html#aefb200c9e2c1543b1bdb2c9b12b8652d">fst::NGram</a> h = it-&gt;first;</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;      <span class="comment">//      h.pop_back();</span></div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;      h.resize (h.size() - 1);</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;      <span class="keywordflow">if</span> (GetState (h) == -1) {</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        MakeHistory (fst, h);</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;      }</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    }</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <span class="keywordflow">for</span> (NGramList::const_iterator it = hs_ngrams_[n].begin();</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;         it != hs_ngrams_[n].end(); ++it) {</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;      <a class="code" href="namespacefst.html#aefb200c9e2c1543b1bdb2c9b12b8652d">fst::NGram</a> w = it-&gt;first;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;      <a class="code" href="namespacefst.html#aefb200c9e2c1543b1bdb2c9b12b8652d">fst::NGram</a> h, t;</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;      h.assign ( w.begin(), w.end() - 1);</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;      t.assign ( w.begin() + 1, w.end() );</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;      fst::StdArc::StateId src = GetState (h);</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;      fst::StdArc::StateId trg = GetState (t);</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;      <span class="keywordflow">if</span> (trg == -1) {</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        trg = fst-&gt;AddState();</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        fst-&gt;SetFinal (trg,</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;                       fst::StdArc::Weight::One() ); <span class="comment">//Gonzalo: Set all states to final.</span></div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        statemapper[t] = trg;</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;      }</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;      WordId wid = t[t.size() - 1];</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;      fst::StdArc::Weight p = 0;</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;      <span class="keywordflow">if</span> (posteriors_.find (w) != posteriors_.end() ) p = posteriors_[w][0][0] *</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            theta_</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;            (n).Value();</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;      fst-&gt;AddArc (src, fst::StdArc (wid, wid, p, trg) );</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;      fst-&gt;SetFinal (trg, fst::StdArc::Weight::One() );</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    }</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <a class="code" href="logger_8boost__log_8hpp.html#adf127ca2262cc160830da49c37d04e85">LINFO</a> (std::setw (6) &lt;&lt; hs_ngrams_[n].size() &lt;&lt; <span class="stringliteral">&quot; &quot;</span> &lt;&lt; n &lt;&lt;</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;           <span class="stringliteral">&quot;-ngram gain(s) applied&quot;</span>);</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    <span class="keywordflow">return</span> fst;</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;  }</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;  <span class="keywordtype">void</span> MakeHistory (fst::VectorFst&lt;fst::StdArc&gt;* fst, <span class="keyword">const</span> <a class="code" href="namespacefst.html#aefb200c9e2c1543b1bdb2c9b12b8652d">fst::NGram</a>&amp; h) {</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    fst::StdArc::StateId src = fst-&gt;Start();</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    fst::StdArc::StateId trg;</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    <span class="keywordflow">for</span> (fst::NGram::const_iterator it = h.begin(); it != h.end(); ++it) {</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;      WordId wid = *it;</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;      trg = fst-&gt;AddState();</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;      fst-&gt;AddArc (src, fst::StdArc (wid, wid, fst::StdArc::Weight::One(), trg) );</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;      src = trg;</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    }</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    statemapper[h] = trg;</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;  }</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;};</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;}</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;} <span class="comment">// end namespaces</span></div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;<span class="preprocessor">#endif //TASK_LMBR_APPLYPOSTERIORS</span></div>
 <div class="ttc" id="classucam_1_1lmbr_1_1Theta_html_a04a58530868c81f16261b2238b1d2a4d"><div class="ttname"><a href="classucam_1_1lmbr_1_1Theta.html#a04a58530868c81f16261b2238b1d2a4d">ucam::lmbr::Theta::Theta</a></div><div class="ttdeci">Theta(unsigned minorder=1, unsigned maxorder=4)</div><div class="ttdef"><b>Definition:</b> <a href="task_8lmbr_8applyposteriors_8hpp_source.html#l00035">task.lmbr.applyposteriors.hpp:35</a></div></div>
 <div class="ttc" id="namespaceucam_1_1lmbr_html_a52b2dc7def97377eb2d349ce015b7ac3"><div class="ttname"><a href="namespaceucam_1_1lmbr.html#a52b2dc7def97377eb2d349ce015b7ac3">ucam::lmbr::Wlist</a></div><div class="ttdeci">unordered_set&lt; fst::WordId &gt; Wlist</div><div class="ttdef"><b>Definition:</b> <a href="data_8lmbr_8hpp_source.html#l00025">data.lmbr.hpp:25</a></div></div>
 <div class="ttc" id="logger_8boost__log_8hpp_html_adf127ca2262cc160830da49c37d04e85"><div class="ttname"><a href="logger_8boost__log_8hpp.html#adf127ca2262cc160830da49c37d04e85">LINFO</a></div><div class="ttdeci">#define LINFO(msg)</div><div class="ttdef"><b>Definition:</b> <a href="logger_8boost__log_8hpp_source.html#l00078">logger.boost_log.hpp:78</a></div></div>
@@ -307,8 +308,8 @@ $(document).ready(function(){initNavTree('task_8lmbr_8applyposteriors_8hpp_sourc
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_e9f33eee9d5bec09897754871c4882b0.html">ucam-smt</a></li><li class="navelem"><a class="el" href="dir_32c4699cf433091df15305ee78a31f94.html">cpp</a></li><li class="navelem"><a class="el" href="dir_b9f30803d2914b3de1828f065ddda48e.html">hifst</a></li><li class="navelem"><a class="el" href="dir_c680175b92ec77d9e4bc5506abc2a94d.html">include</a></li><li class="navelem"><a class="el" href="task_8lmbr_8applyposteriors_8hpp.html">task.lmbr.applyposteriors.hpp</a></li>
-    <li class="footer">Generated on Wed Mar 25 2015 16:16:55 for Cambridge SMT System by
+    <li class="navelem"><a class="el" href="dir_3c8324b7794b53f9c270ddcac45ac656.html">ucam-smt</a></li><li class="navelem"><a class="el" href="dir_0a58f0a8108659e94b8072f37a06ffad.html">cpp</a></li><li class="navelem"><a class="el" href="dir_3058c51fd376996f9d2697931d84806c.html">hifst</a></li><li class="navelem"><a class="el" href="dir_afa8869e137f43278221681235a24b56.html">include</a></li><li class="navelem"><a class="el" href="task_8lmbr_8applyposteriors_8hpp.html">task.lmbr.applyposteriors.hpp</a></li>
+    <li class="footer">Generated on Sat Sep 19 2015 19:03:12 for Cambridge SMT System by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.6 </li>
   </ul>

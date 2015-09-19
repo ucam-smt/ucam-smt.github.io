@@ -9,6 +9,7 @@ var namespaceucam_1_1util =
     [ "Runner2", "classucam_1_1util_1_1Runner2.html", "classucam_1_1util_1_1Runner2" ],
     [ "Runner3", "classucam_1_1util_1_1Runner3.html", "classucam_1_1util_1_1Runner3" ],
     [ "TrivialThreadPool", "classucam_1_1util_1_1TrivialThreadPool.html", "classucam_1_1util_1_1TrivialThreadPool" ],
+    [ "NoThreadPool", "structucam_1_1util_1_1NoThreadPool.html", "structucam_1_1util_1_1NoThreadPool" ],
     [ "ParamsInit", "structucam_1_1util_1_1ParamsInit.html", "structucam_1_1util_1_1ParamsInit" ],
     [ "NumberRangeInterface", "classucam_1_1util_1_1NumberRangeInterface.html", "classucam_1_1util_1_1NumberRangeInterface" ],
     [ "NumberRange", "classucam_1_1util_1_1NumberRange.html", "classucam_1_1util_1_1NumberRange" ],

@@ -10,7 +10,9 @@ var NAVTREE =
         [ "Lattice Minimum Bayes Risk Decoding using WFSAs", "intro.html#Refs_lmbr", null ],
         [ "Mert", "intro.html#lmert_refs", null ],
         [ "HiFST Rule Extraction", "intro.html#rulextract_refs", null ],
-        [ "Language Modelling Toolkits", "intro.html#othertools", null ]
+        [ "Non-functional FST disambiguation", "intro.html#nffstdisambig_refs", null ],
+        [ "Rescoring with Bilingual Neural Network Models", "intro.html#bilingualmodel_refs", null ],
+        [ "Language Modelling Toolkits and Other Tools", "intro.html#othertools", null ]
       ] ]
     ] ],
     [ "Installation", "build.html", [
@@ -110,6 +112,8 @@ var NAVTREE =
         [ "Adding a MapReduce Feature", "rulextract.html#mapreduce_feature", null ]
       ] ]
     ] ],
+    [ "Rescoring with Bilingual Neural Network Models", "bilm.html", null ],
+    [ "Non-functional WFST Disambiguation", "nfdisambiguation.html", null ],
     [ "Appendices", "appendices.html", [
       [ "Using Grammars From Open Source SMT Systems", "appendices.html#gext", [
         [ "Moses", "appendices.html#gext_moses", null ],
@@ -117,13 +121,56 @@ var NAVTREE =
         [ "NiuTrans", "appendices.html#gext_niutrans", null ]
       ] ],
       [ "Translation Grammar Pruning", "appendices.html#grammarpruning", null ]
+    ] ],
+    [ "Namespaces", null, [
+      [ "Namespace List", "namespaces.html", "namespaces" ],
+      [ "Namespace Members", "namespacemembers.html", [
+        [ "All", "namespacemembers.html", "namespacemembers_dup" ],
+        [ "Functions", "namespacemembers_func.html", null ],
+        [ "Variables", "namespacemembers_vars.html", null ],
+        [ "Typedefs", "namespacemembers_type.html", null ]
+      ] ]
+    ] ],
+    [ "Classes", null, [
+      [ "Class List", "annotated.html", "annotated" ],
+      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
+      [ "Class Members", "functions.html", [
+        [ "All", "functions.html", "functions_dup" ],
+        [ "Functions", "functions_func.html", "functions_func" ],
+        [ "Variables", "functions_vars.html", "functions_vars" ],
+        [ "Typedefs", "functions_type.html", null ],
+        [ "Related Functions", "functions_rela.html", null ]
+      ] ]
+    ] ],
+    [ "Files", null, [
+      [ "File List", "files.html", "files" ],
+      [ "File Members", "globals.html", [
+        [ "All", "globals.html", "globals_dup" ],
+        [ "Functions", "globals_func.html", "globals_func" ],
+        [ "Variables", "globals_vars.html", null ],
+        [ "Typedefs", "globals_type.html", null ],
+        [ "Macros", "globals_defs.html", null ]
+      ] ]
     ] ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"appendices.html"
+"AlignmentAndFeatureMap_8java.html",
+"Source2TargetProbability_8java_source.html",
+"classOptimizer.html#a5088b5ce9b43cec09b0efc5e4a20eba7",
+"classucam_1_1fsttools_1_1FeatureTracker.html#ac3e07c876b765cb8a85699aec61e0ddf",
+"classucam_1_1hifst_1_1ReferenceFilterTask.html#a06cc462ddd20ef979d19d07950f178c9",
+"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Alignment.html",
+"constants-fsttools_8hpp.html#a262140539a78410140b0c879d39890a3",
+"enumuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1MapReduceFeature.html#a253a5d80590576310ecdc71253e265cd",
+"global__decls_8hpp.html#a3bf4402b9e2ae88e4462c3689f5d22b8",
+"lmbr_8gtest_8cpp.html#a14b30d3aafdbb934f1c83822063b8141",
+"namespaceuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes.html",
+"structfst_1_1GetWeight.html#a61c50ecca76d7ebc732ac72b5d9d0604",
+"structucam_1_1fsttools_1_1StateHandler.html",
+"task_8loadlm_8hpp.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
