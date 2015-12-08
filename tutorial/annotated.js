@@ -2,7 +2,6 @@ var annotated =
 [
     [ "fst", "namespacefst.html", "namespacefst" ],
     [ "googletesting", "namespacegoogletesting.html", "namespacegoogletesting" ],
-    [ "HifstConstants", "namespaceHifstConstants.html", null ],
     [ "lm", "namespacelm.html", "namespacelm" ],
     [ "mertfst", "namespacemertfst.html", "namespacemertfst" ],
     [ "ucam", "namespaceucam.html", "namespaceucam" ],

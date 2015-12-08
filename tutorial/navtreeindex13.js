@@ -1,17 +1,5 @@
 var NAVTREEINDEX13 =
 {
-"task_8loadlm_8hpp.html":[12,0,248],
-"task_8loadlm_8hpp.html#a83594398c26029ccd4c69e7c7e16fa5c":[12,0,248,2],
-"task_8loadlm_8hpp_source.html":[12,0,248],
-"task_8loadsparseweightflowerfst_8hpp.html":[12,0,249],
-"task_8loadsparseweightflowerfst_8hpp_source.html":[12,0,249],
-"task_8loadunimap_8hpp.html":[12,0,250],
-"task_8loadunimap_8hpp_source.html":[12,0,250],
-"task_8loadwordmap_8hpp.html":[12,0,251],
-"task_8loadwordmap_8hpp_source.html":[12,0,251],
-"task_8optimizefst_8hpp.html":[12,0,252],
-"task_8optimizefst_8hpp_source.html":[12,0,252],
-"task_8patternstoinstances_8hpp.html":[12,0,253],
 "task_8patternstoinstances_8hpp_source.html":[12,0,253],
 "task_8postpro_8hpp.html":[12,0,254],
 "task_8postpro_8hpp_source.html":[12,0,254],

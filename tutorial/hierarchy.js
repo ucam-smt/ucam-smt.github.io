@@ -5,6 +5,7 @@ var hierarchy =
     [ "fst::AE< T, std::vector< T > >", "structfst_1_1AE_3_01T_00_01std_1_1vector_3_01T_01_4_01_4.html", null ],
     [ "fst::AE< T, TropicalSparseTupleWeight< T > >", "structfst_1_1AE_3_01T_00_01TropicalSparseTupleWeight_3_01T_01_4_01_4.html", null ],
     [ "uk.ac.cam.eng.extraction.datatypes.Alignment", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Alignment.html", null ],
+    [ "uk.ac.cam.eng.extraction.hadoop.datatypes.AlignmentAndFeatureMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentAndFeatureMap.html", null ],
     [ "ucam::hifst::AlilatsToSparseWeightLatsData< ArcT >", "classucam_1_1hifst_1_1AlilatsToSparseWeightLatsData.html", null ],
     [ "fst::ApplyLanguageModelOnTheFlyInterface< ArcT >", "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html", null ],
     [ "fst::ApplyLanguageModelOnTheFlyInterface< Arc >", "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html", [
@@ -129,8 +130,8 @@ var hierarchy =
     [ "MERT", "structMERT.html", null ],
     [ "MertEnvelope", "classMertEnvelope.html", null ],
     [ "ucam::lmert::MertEnvelope< Arc >", "classucam_1_1lmert_1_1MertEnvelope.html", null ],
-    [ "MertLattice", "classMertLattice.html", null ],
     [ "ucam::lmert::MertLattice< Arc >", "classucam_1_1lmert_1_1MertLattice.html", null ],
+    [ "MertLattice", "classMertLattice.html", null ],
     [ "ucam::lmert::MertLatticeWrap< Arc >", "classucam_1_1lmert_1_1MertLatticeWrap.html", null ],
     [ "MertLine", "classMertLine.html", null ],
     [ "ucam::lmert::MertLine< Arc >", "classucam_1_1lmert_1_1MertLine.html", null ],
@@ -159,10 +160,7 @@ var hierarchy =
     ] ],
     [ "OptimizeTask< Algo, ErrorSurface >", "classOptimizeTask.html", null ],
     [ "ucam::util::oszfstream", "classucam_1_1util_1_1oszfstream.html", null ],
-    [ "uk.ac.cam.eng.util.Pair< T, U >", "classuk_1_1ac_1_1cam_1_1eng_1_1util_1_1Pair_3_01T_00_01U_01_4.html", null ],
-    [ "PairWritable", null, [
-      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.AlignmentAndFeatureMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentAndFeatureMap.html", null ]
-    ] ],
+    [ "uk.ac.cam.eng.util.Pair< T, U >", "classuk_1_1ac_1_1cam_1_1eng_1_1util_1_1Pair.html", null ],
     [ "ParamsConfig", "classParamsConfig.html", null ],
     [ "ucam::util::ParamsInit< T >", "structucam_1_1util_1_1ParamsInit.html", null ],
     [ "fst::ParamsInit< T >", "structfst_1_1ParamsInit.html", null ],
@@ -205,10 +203,10 @@ var hierarchy =
     [ "fst::Scale< typename KenLMModelT::State >", "structfst_1_1Scale.html", null ],
     [ "fst::ScaleWeight< Arc >", "structfst_1_1ScaleWeight.html", null ],
     [ "fst::ScaleWeight< LexStdArc >", "structfst_1_1ScaleWeight_3_01LexStdArc_01_4.html", null ],
+    [ "fst::Scorer< StateT, KenLMModelT, IdBridgeT, HackScoreT >", "structfst_1_1Scorer.html", null ],
     [ "Scorer", "classScorer.html", [
       [ "ScorerImpl< RefData >", "classScorerImpl.html", null ]
     ] ],
-    [ "fst::Scorer< StateT, KenLMModelT, IdBridgeT, HackScoreT >", "structfst_1_1Scorer.html", null ],
     [ "fst::Scorer< lm::np::State, lm::np::Model, IdBridgeT, HackScoreT >", "structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html", null ],
     [ "uk.ac.cam.eng.extraction.datatypes.Sentence", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Sentence.html", null ],
     [ "uk.ac.cam.eng.extraction.datatypes.SentencePair", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1SentencePair.html", null ],
@@ -222,8 +220,8 @@ var hierarchy =
       [ "fst::TropicalSparseTupleWeight< T >", "classfst_1_1TropicalSparseTupleWeight.html", null ]
     ] ],
     [ "ucam::fsttools::SpeedStatsData", "structucam_1_1fsttools_1_1SpeedStatsData.html", null ],
-    [ "fst::StateHandler< StateT >", "structfst_1_1StateHandler.html", null ],
     [ "ucam::fsttools::StateHandler", "structucam_1_1fsttools_1_1StateHandler.html", null ],
+    [ "fst::StateHandler< StateT >", "structfst_1_1StateHandler.html", null ],
     [ "fst::StateHandler< lm::np::State >", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4.html", null ],
     [ "fst::StateHandler< typename KenLMModelT::State >", "structfst_1_1StateHandler.html", null ],
     [ "ucam::fsttools::StatsData", "structucam_1_1fsttools_1_1StatsData.html", null ],
@@ -300,8 +298,8 @@ var hierarchy =
     [ "ucam::fsttools::TopoFeaturesHelper< ActionT >", "structucam_1_1fsttools_1_1TopoFeaturesHelper.html", null ],
     [ "ucam::util::TrivialThreadPool", "classucam_1_1util_1_1TrivialThreadPool.html", null ],
     [ "uk.ac.cam.eng.extraction.hadoop.features.lexical.TTableClient", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1lexical_1_1TTableClient.html", null ],
-    [ "ucam::fsttools::TuneSet< Arc >", "classucam_1_1fsttools_1_1TuneSet.html", null ],
     [ "TuneSet", "classTuneSet.html", null ],
+    [ "ucam::fsttools::TuneSet< Arc >", "classucam_1_1fsttools_1_1TuneSet.html", null ],
     [ "TuneWpMain< Arc >", "classTuneWpMain.html", null ],
     [ "unary_function", null, [
       [ "hashfvecint64", "classhashfvecint64.html", null ],

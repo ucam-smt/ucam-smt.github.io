@@ -69,6 +69,7 @@ var constants_fsttools_8hpp =
     [ "kUseBilingualModel", "constants-fsttools_8hpp.html#afc7066bc0290b3ff97406fc71a630793", null ],
     [ "kUseBilingualModelSourceSentenceFile", "constants-fsttools_8hpp.html#abce7a5db2264e58d3618f18810353451", null ],
     [ "kUseBilingualModelSourceSize", "constants-fsttools_8hpp.html#aa97107b568a9cfdb0a5100da557246e6", null ],
+    [ "kUseOpenFst", "constants-fsttools_8hpp.html#ab00200e0653baafe4877d68c90ea9a8a", null ],
     [ "kUserWpRange", "constants-fsttools_8hpp.html#a0213e1582abcb60810715d836adc5531", null ],
     [ "kWeight", "constants-fsttools_8hpp.html#a6d8afcf8df23243b8b4c549a797bf0c6", null ],
     [ "kWeightExtended", "constants-fsttools_8hpp.html#af35d41e6c5e01f56badda0e06defe79b", null ],

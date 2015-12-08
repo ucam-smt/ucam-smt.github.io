@@ -1,7 +1,7 @@
 var classucam_1_1util_1_1oszfstream =
 [
     [ "CoutType", "classucam_1_1util_1_1oszfstream.html#acfda492bc653ebe20c64676027e3f20c", null ],
-    [ "StandardEndLine", "classucam_1_1util_1_1oszfstream.html#a5dda52d933432843853e3888a9fd1967", null ],
+    [ "StandardEndLine", "classucam_1_1util_1_1oszfstream.html#a3d5bd8c5d107751e131674207cb3d6c5", null ],
     [ "oszfstream", "classucam_1_1util_1_1oszfstream.html#ad80512cf6d3a03052e06c3ca1d4e30d2", null ],
     [ "oszfstream", "classucam_1_1util_1_1oszfstream.html#aea398e22a78c0b60c9e834a16e5563e9", null ],
     [ "~oszfstream", "classucam_1_1util_1_1oszfstream.html#ac40221e9bbc94ed152cb9ee302e223d6", null ],

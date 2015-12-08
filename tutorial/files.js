@@ -291,7 +291,7 @@ var files =
     [ "Optimize.cpp", "Optimize_8cpp.html", "Optimize_8cpp" ],
     [ "Optimize.h", "Optimize_8h.html", "Optimize_8h" ],
     [ "Pair.java", "Pair_8java.html", [
-      [ "Pair< T, U >", "classuk_1_1ac_1_1cam_1_1eng_1_1util_1_1Pair_3_01T_00_01U_01_4.html", "classuk_1_1ac_1_1cam_1_1eng_1_1util_1_1Pair_3_01T_00_01U_01_4" ]
+      [ "Pair", "classuk_1_1ac_1_1cam_1_1eng_1_1util_1_1Pair.html", "classuk_1_1ac_1_1cam_1_1eng_1_1util_1_1Pair" ]
     ] ],
     [ "PairWritable.java", "PairWritable_8java.html", null ],
     [ "params.h", "params_8h.html", "params_8h" ],

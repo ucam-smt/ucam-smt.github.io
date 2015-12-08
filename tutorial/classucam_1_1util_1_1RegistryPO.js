@@ -2,7 +2,7 @@ var classucam_1_1util_1_1RegistryPO =
 [
     [ "RegistryPO", "classucam_1_1util_1_1RegistryPO.html#a5a2197cd695445fe40fc88a4ea6f2b4e", null ],
     [ "RegistryPO", "classucam_1_1util_1_1RegistryPO.html#a8e9b2e813370e825099aa25107d36eac", null ],
-    [ "RegistryPO", "classucam_1_1util_1_1RegistryPO.html#a853327ee439ec796292df4d5e8079dfd", null ],
+    [ "RegistryPO", "classucam_1_1util_1_1RegistryPO.html#a77622e8d3d5beccda2602a925d149931", null ],
     [ "dump", "classucam_1_1util_1_1RegistryPO.html#a9b0659fe0a40ca1804c7b483d4445581", null ],
     [ "exists", "classucam_1_1util_1_1RegistryPO.html#a72d753211a30f0a1720a52e609780b37", null ],
     [ "get", "classucam_1_1util_1_1RegistryPO.html#ab0608436641ce579fbfe53480df0d5af", null ],

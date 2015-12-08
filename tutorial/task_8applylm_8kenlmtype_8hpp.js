@@ -1,5 +1,5 @@
 var task_8applylm_8kenlmtype_8hpp =
 [
-    [ "assignKenLmHandler", "task_8applylm_8kenlmtype_8hpp.html#aec69d646718aec156ec7af6bd294947b", null ],
-    [ "assignKenLmHandlerBilingual", "task_8applylm_8kenlmtype_8hpp.html#aa5d38a4641c09d35291724e7df55ee77", null ]
+    [ "assignKenLmHandler", "task_8applylm_8kenlmtype_8hpp.html#a65078e7c146ce87240572cca24b93183", null ],
+    [ "assignKenLmHandlerBilingual", "task_8applylm_8kenlmtype_8hpp.html#a5d185a6be8fa10bfd81cb3071a97897d", null ]
 ];
