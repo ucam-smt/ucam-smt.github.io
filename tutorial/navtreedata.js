@@ -12,6 +12,7 @@ var NAVTREE =
         [ "HiFST Rule Extraction", "intro.html#rulextract_refs", null ],
         [ "Non-functional FST disambiguation", "intro.html#nffstdisambig_refs", null ],
         [ "Rescoring with Bilingual Neural Network Models", "intro.html#bilingualmodel_refs", null ],
+        [ "Neural Machine Translation", "intro.html#nmt_refs", null ],
         [ "Language Modelling Toolkits and Other Tools", "intro.html#othertools", null ]
       ] ]
     ] ],
@@ -98,6 +99,10 @@ var NAVTREE =
       [ "Configuration", "rulextract.html#rulextract_configuration_overview", null ]
     ] ],
     [ "Rescoring with Bilingual Neural Network Models", "bilm.html", null ],
+    [ "Neural Machine Translation", "nmt.html", [
+      [ "Lattice Rescoring with NMT", "nmt.html#lattice_rescoring", null ],
+      [ "Combination via Edit Distance Transducer (WMT'16 Submission)", "nmt.html#edit_distance_based", null ]
+    ] ],
     [ "Non-functional WFST Disambiguation", "nfdisambiguation.html", null ],
     [ "Appendices", "appendices.html", [
       [ "Using Grammars From Open Source SMT Systems", "appendices.html#gext", [
@@ -106,56 +111,13 @@ var NAVTREE =
         [ "NiuTrans", "appendices.html#gext_niutrans", null ]
       ] ],
       [ "Translation Grammar Pruning", "appendices.html#grammarpruning", null ]
-    ] ],
-    [ "Namespaces", null, [
-      [ "Namespace List", "namespaces.html", "namespaces" ],
-      [ "Namespace Members", "namespacemembers.html", [
-        [ "All", "namespacemembers.html", "namespacemembers_dup" ],
-        [ "Functions", "namespacemembers_func.html", null ],
-        [ "Variables", "namespacemembers_vars.html", null ],
-        [ "Typedefs", "namespacemembers_type.html", null ]
-      ] ]
-    ] ],
-    [ "Classes", null, [
-      [ "Class List", "annotated.html", "annotated" ],
-      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
-      [ "Class Members", "functions.html", [
-        [ "All", "functions.html", "functions_dup" ],
-        [ "Functions", "functions_func.html", "functions_func" ],
-        [ "Variables", "functions_vars.html", "functions_vars" ],
-        [ "Typedefs", "functions_type.html", null ],
-        [ "Related Functions", "functions_rela.html", null ]
-      ] ]
-    ] ],
-    [ "Files", null, [
-      [ "File List", "files.html", "files" ],
-      [ "File Members", "globals.html", [
-        [ "All", "globals.html", "globals_dup" ],
-        [ "Functions", "globals_func.html", "globals_func" ],
-        [ "Variables", "globals_vars.html", null ],
-        [ "Typedefs", "globals_type.html", null ],
-        [ "Macros", "globals_defs.html", null ]
-      ] ]
     ] ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"AlignmentAndFeatureMap_8java.html",
-"Source2TargetProbability_8java_source.html",
-"classOptimizer.html#a5088b5ce9b43cec09b0efc5e4a20eba7",
-"classucam_1_1fsttools_1_1FeatureTracker.html#ac3e07c876b765cb8a85699aec61e0ddf",
-"classucam_1_1hifst_1_1ReferenceFilterTask.html#a06cc462ddd20ef979d19d07950f178c9",
-"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Alignment.html",
-"constants-fsttools_8hpp.html#a262140539a78410140b0c879d39890a3",
-"enumuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1MapReduceFeature.html",
-"global__decls_8hpp.html#a349dad5e520932e840e6f8fc806bd94d",
-"lmbr_8gtest_8cpp.html#a00a2224d6982001100e8fa801d21b17a",
-"namespaceuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes.html",
-"structfst_1_1Hyp.html#a2b784fd9f4396c7453236992c3315db8",
-"structucam_1_1fsttools_1_1StateHandler.html#af7bd43cf4ec778ccb001520204521f60",
-"task_8patternstoinstances_8hpp_source.html"
+"appendices.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
