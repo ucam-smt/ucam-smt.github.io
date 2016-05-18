@@ -1,0 +1,761 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.decoding.decoder &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.decoding.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.decoding.decoder</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.decoding.decoder</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains high level decoder algorithms such as greedy,</span>
+<span class="sd">A*, beam search, or depth first search schemes. Note that all decoders</span>
+<span class="sd">are implemented in a monotonic left-to-right way which works well in</span>
+<span class="sd">the predictors paradigm. If we use features which do not have natural</span>
+<span class="sd">left-to-right semantics, we</span>
+
+<span class="sd">* Restrict it to a accept/not-accept decision or</span>
+<span class="sd">* Change it s.t. it does have left-to-right semantics</span>
+
+<span class="sd">For example, to use synchronous grammars, we could</span>
+
+<span class="sd">* Keep track of all parse trees which match the partial prefix </span>
+<span class="sd">  sequence</span>
+<span class="sd">* Transform the grammar into Greibach normal form</span>
+
+<span class="sd">The reason for this design decision is the emphasis on NMT: The neural </span>
+<span class="sd">decoder decodes the sequence from left to right, all other features</span>
+<span class="sd">(i.e. predictors) are conceptually rather guiding the neural decoding. </span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">heapq</span> <span class="kn">import</span> <span class="n">heappush</span><span class="p">,</span> <span class="n">heappop</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Decoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding</span> <span class="kn">import</span> <span class="n">core</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+
+<span class="n">NEG_INF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Hypothesis"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.Hypothesis">[docs]</a><span class="k">class</span> <span class="nc">Hypothesis</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Complete translation hypotheses are represented by an instance</span>
+<span class="sd">    of this class. We store the produced sentence, the combined score,</span>
+<span class="sd">    and a score breakdown to the separate predictor scores.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trgt_sentence</span><span class="p">,</span> <span class="n">total_score</span><span class="p">,</span> <span class="n">score_breakdown</span> <span class="o">=</span> <span class="p">[]):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new full hypothesis.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trgt_sentence (list): List of target word ids without &lt;S&gt; </span>
+<span class="sd">                                  or &lt;/S&gt; which make up the target </span>
+<span class="sd">                                  sentence</span>
+<span class="sd">            total_score (float): combined total score of this hypo</span>
+<span class="sd">            score_breakdown (list): Predictor score breakdown for each</span>
+<span class="sd">                                    target token in ``trgt_sentence``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="n">trgt_sentence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span> <span class="o">=</span> <span class="n">total_score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="n">score_breakdown</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a string representation of this hypothesis.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> (</span><span class="si">%f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">),</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PartialHypothesis"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.PartialHypothesis">[docs]</a><span class="k">class</span> <span class="nc">PartialHypothesis</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Represents a partial hypothesis in various decoders. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_states</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new partial hypothesis with zero score and empty</span>
+<span class="sd">        translation prefix.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            initial_states: Initial predictor states</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="n">initial_states</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
+    
+<div class="viewcode-block" id="PartialHypothesis.get_last_word"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.PartialHypothesis.get_last_word">[docs]</a>    <span class="k">def</span> <span class="nf">get_last_word</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the last word in the translation prefix. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="PartialHypothesis.generate_full_hypothesis"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.PartialHypothesis.generate_full_hypothesis">[docs]</a>    <span class="k">def</span> <span class="nf">generate_full_hypothesis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a ``Hypothesis`` instance from this hypothesis. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Hypothesis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="PartialHypothesis.expand"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.PartialHypothesis.expand">[docs]</a>    <span class="k">def</span> <span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">,</span> <span class="n">new_states</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new partial hypothesis adding a new word to the</span>
+<span class="sd">        translation prefix with given probability and updates the</span>
+<span class="sd">        stored predictor states.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): New word to add to the translation prefix</span>
+<span class="sd">            new_states (object): Predictor states after consuming</span>
+<span class="sd">                                 ``word``</span>
+<span class="sd">            score (float): Word log probability which is to be added</span>
+<span class="sd">                           to the total hypothesis score</span>
+<span class="sd">            score_breakdown (list): Predictor score breakdown for</span>
+<span class="sd">                                    the new word</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hypo</span> <span class="o">=</span> <span class="n">PartialHypothesis</span><span class="p">(</span><span class="n">new_states</span><span class="p">)</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">+</span> <span class="n">score</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">+</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">add_score_breakdown</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hypo</span></div>
+    
+<div class="viewcode-block" id="PartialHypothesis.cheap_expand"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.PartialHypothesis.cheap_expand">[docs]</a>    <span class="k">def</span> <span class="nf">cheap_expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new partial hypothesis adding a new word to the</span>
+<span class="sd">        translation prefix with given probability. Does NOT update the</span>
+<span class="sd">        predictor states but adds a flag which signals that the last </span>
+<span class="sd">        word in this hypothesis has not been consumed yet by the </span>
+<span class="sd">        predictors. This can save memory because we can reuse the </span>
+<span class="sd">        current state for many hypothesis. It also saves computation</span>
+<span class="sd">        as we do not consume words which are then discarded anyway by</span>
+<span class="sd">        the search procedure.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): New word to add to the translation prefix</span>
+<span class="sd">            score (float): Word log probability which is to be added</span>
+<span class="sd">                           to the total hypothesis score</span>
+<span class="sd">            score_breakdown (list): Predictor score breakdown for</span>
+<span class="sd">                                    the new word</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hypo</span> <span class="o">=</span> <span class="n">PartialHypothesis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">)</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">+</span> <span class="n">score</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">+</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="n">word</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">add_score_breakdown</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hypo</span></div>
+
+<div class="viewcode-block" id="PartialHypothesis.add_score_breakdown"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.PartialHypothesis.add_score_breakdown">[docs]</a>    <span class="k">def</span> <span class="nf">add_score_breakdown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">added_scores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper function for adding the word level score breakdowns</span>
+<span class="sd">        for the newly added word to the hypothesis score breakdown.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">added_scores</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="GreedyDecoder"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.GreedyDecoder">[docs]</a><span class="k">class</span> <span class="nc">GreedyDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The greedy decoder does not revise decisions and therefore does</span>
+<span class="sd">    not have to maintain predictor states. Therefore, this </span>
+<span class="sd">    implementation is particularly simple and can be used as template</span>
+<span class="sd">    for more complex decoders. The greedy decoder can be imitated with</span>
+<span class="sd">    the ``BeamDecoder`` with beam size 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">closed_vocab_norm</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the greedy decoder. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GreedyDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">closed_vocab_norm</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="GreedyDecoder.decode"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.GreedyDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decode a single source sentence in a greedy way: Always take</span>
+<span class="sd">        the highest scoring word as next word and proceed to the next</span>
+<span class="sd">        position. This makes it possible to decode without using the </span>
+<span class="sd">        predictors ``get_state()`` and ``set_state()`` methods as we</span>
+<span class="sd">        do not have to keep track of predictor states.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): List of source word ids without &lt;S&gt; or</span>
+<span class="sd">                                 &lt;/S&gt; which make up the source sentence</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. A list of a single best ``Hypothesis`` instance.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="n">trgt_sentence</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">score_breakdown</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">trgt_word</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">while</span> <span class="n">trgt_word</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+            <span class="n">posterior</span><span class="p">,</span><span class="n">breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+            <span class="n">trgt_word</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+            <span class="n">score</span> <span class="o">+=</span> <span class="n">posterior</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span>
+            <span class="n">trgt_sentence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trgt_word</span><span class="p">)</span>
+            <span class="n">score_breakdown</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">trgt_word</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">Hypothesis</span><span class="p">(</span><span class="n">trgt_sentence</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">)]</span></div></div>
+        
+
+<div class="viewcode-block" id="DFSDecoder"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.DFSDecoder">[docs]</a><span class="k">class</span> <span class="nc">DFSDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This decoder implements depth first search without using</span>
+<span class="sd">    heuristics. This is the most efficient search algorithm for </span>
+<span class="sd">    complete enumeration of the search space as it minimizes the </span>
+<span class="sd">    number of ``get_state()`` and ``set_state()`` calls. Note that</span>
+<span class="sd">    this DFS implementation has no cycle detection, i.e. if the search</span>
+<span class="sd">    space has cycles this decoder may run into an infinite loop.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">closed_vocab_norm</span><span class="p">,</span>
+                 <span class="n">early_stopping</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+                 <span class="n">max_expansions</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates new DFS decoder instance.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            closed_vocab_norm (int): Defines the normalization behavior</span>
+<span class="sd">                                     for closed vocabulary predictor</span>
+<span class="sd">                                     scores. See the documentation to</span>
+<span class="sd">                                     the ``CLOSED_VOCAB_SCORE_NORM_*``</span>
+<span class="sd">                                     variables for more information</span>
+<span class="sd">            early_stopping (bool): Enable safe (admissible) branch</span>
+<span class="sd">                                   pruning if the accumulated score</span>
+<span class="sd">                                   is already worse than the currently</span>
+<span class="sd">                                   best complete score. Do not use if</span>
+<span class="sd">                                   scores can be positive</span>
+<span class="sd">            max_expansions (int): Maximum number of node expansions for</span>
+<span class="sd">                                  inadmissible pruning.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DFSDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">closed_vocab_norm</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">early_stopping</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions</span> <span class="o">=</span> <span class="mi">1000000</span> <span class="k">if</span> <span class="n">max_expansions</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">max_expansions</span>
+    
+    <span class="k">def</span> <span class="nf">_dfs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partial_hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursive function for doing dfs. Note that we do not keep</span>
+<span class="sd">        track of the predictor states inside ``partial_hypo``, because </span>
+<span class="sd">        at each call of ``_dfs`` the current predictor states are equal</span>
+<span class="sd">        to the hypo predictor states.</span>
+<span class="sd">        ATTENTION: Early stopping plus DFS produces wrong results if </span>
+<span class="sd">        you have positive scores!</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            partial_hypo (PartialHypothesis): Partial hypothesis </span>
+<span class="sd">                                              generated so far. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Expand: best_score: </span><span class="si">%f</span><span class="s2"> partial_score: </span><span class="si">%f</span><span class="s2"> sentence: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+                      <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">,</span>
+                       <span class="n">partial_hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                       <span class="n">partial_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">partial_hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">partial_hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">,</span> <span class="n">partial_hypo</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions</span><span class="p">:</span> <span class="c1"># pruning</span>
+            <span class="k">return</span>
+        <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># deep copy only if necessary</span>
+            <span class="n">pred_states</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())</span> 
+        <span class="n">reload_states</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">trgt_word</span><span class="p">,</span><span class="n">score</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">posterior</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span>
+                                      <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+                                      <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">reload_states</span><span class="p">:</span> <span class="c1"># TODO: save one deepcopy (in last iteration)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">pred_states</span><span class="p">))</span>
+            <span class="n">new_hypo</span> <span class="o">=</span>  <span class="n">partial_hypo</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">trgt_word</span><span class="p">,</span>
+                                            <span class="bp">None</span><span class="p">,</span> <span class="c1"># Do not store states</span>
+                                            <span class="n">score</span><span class="p">,</span>
+                                            <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping</span> <span class="ow">or</span> <span class="n">new_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">trgt_word</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dfs</span><span class="p">(</span><span class="n">new_hypo</span><span class="p">)</span>
+            <span class="n">reload_states</span> <span class="o">=</span> <span class="bp">True</span>
+    
+<div class="viewcode-block" id="DFSDecoder.decode"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.DFSDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes a single source sentence using depth first search.</span>
+<span class="sd">        If ``max_expansions`` equals 0, this corresponds to exhaustive</span>
+<span class="sd">        search for the globally best scoring hypothesis. Note that with</span>
+<span class="sd">        ``early_stopping`` enabled, the returned set of hypothesis are</span>
+<span class="sd">        not necessarily the global n-best hypotheses. To create an </span>
+<span class="sd">        exact n-best list, disable both ``max_expansions`` and </span>
+<span class="sd">        ``early_stopping`` in the constructor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): List of source word ids without &lt;S&gt; or</span>
+<span class="sd">                                 &lt;/S&gt; which make up the source sentence</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. A list of ``Hypothesis`` instances ordered by their</span>
+<span class="sd">            score. If ``max_expansions`` equals 0, the first element</span>
+<span class="sd">            holds the global best scoring hypothesis</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="n">NEG_INF</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dfs</span><span class="p">(</span><span class="n">PartialHypothesis</span><span class="p">())</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="p">,</span>
+                      <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">hypo</span><span class="p">:</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span>
+                      <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="BeamDecoder"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.BeamDecoder">[docs]</a><span class="k">class</span> <span class="nc">BeamDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This decoder implements beam search without heuristics. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">closed_vocab_norm</span><span class="p">,</span> <span class="n">beam_size</span><span class="p">,</span> <span class="n">early_stopping</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new beam decoder instance</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            closed_vocab_norm (int): Defines the normalization behavior</span>
+<span class="sd">                                     for closed vocabulary predictor</span>
+<span class="sd">                                     scores. See the documentation to</span>
+<span class="sd">                                     the ``CLOSED_VOCAB_SCORE_NORM_*``</span>
+<span class="sd">                                     variables for more information</span>
+<span class="sd">            beam_size (int): Absolute beam size. A beam of 12 means</span>
+<span class="sd">                             that we keep track of 12 active hypothesis</span>
+<span class="sd">            early_stopping (bool): If true, we stop when the best</span>
+<span class="sd">                                   scoring hypothesis ends with &lt;/S&gt;.</span>
+<span class="sd">                                   If false, we stop when all hypotheses</span>
+<span class="sd">                                   end with &lt;/S&gt;. Enable if you are</span>
+<span class="sd">                                   only interested in the single best</span>
+<span class="sd">                                   decoding result. If you want to </span>
+<span class="sd">                                   create full 12-best lists, disable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">closed_vocab_norm</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span> <span class="o">=</span> <span class="n">beam_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_best_eos</span> <span class="k">if</span> <span class="n">early_stopping</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_eos</span>
+
+    <span class="k">def</span> <span class="nf">_best_eos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the best hypothesis ends with &lt;/S&gt;&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">hypos</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span>
+
+    <span class="k">def</span> <span class="nf">_all_eos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the all hypotheses end with &lt;/S&gt;&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    
+<div class="viewcode-block" id="BeamDecoder.decode"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.BeamDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes a single source sentence using beam search. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">PartialHypothesis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())]</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span><span class="p">(</span><span class="n">hypos</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">it</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">):</span> <span class="c1"># prevent infinite loops</span>
+                <span class="k">break</span>
+            <span class="n">it</span> <span class="o">=</span> <span class="n">it</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">next_scores</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                    <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+                    <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+                    <span class="k">continue</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># Consume if cheap expand</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
+                <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+                <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
+                <span class="n">top</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">top</span><span class="p">:</span>
+                    <span class="n">next_hypo</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">cheap_expand</span><span class="p">(</span><span class="n">trgt_word</span><span class="p">,</span>
+                                                  <span class="n">posterior</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">],</span>
+                                                  <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">])</span>
+                    <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+                    <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_hypo</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+            <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">next_hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> 
+                        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">next_scores</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:]]</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypos</span><span class="p">[</span><span class="o">-</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">()</span> 
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hypos</span><span class="p">))</span> 
+                     <span class="k">if</span> <span class="n">hypos</span><span class="p">[</span><span class="o">-</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No complete hypotheses found for </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">src_sentence</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">hypos</span><span class="p">[</span><span class="o">-</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">()</span> 
+                        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hypos</span><span class="p">))]</span>
+        <span class="k">return</span> <span class="n">ret</span></div></div>
+
+
+<div class="viewcode-block" id="AstarDecoder"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.AstarDecoder">[docs]</a><span class="k">class</span> <span class="nc">AstarDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This decoder implements A*. For heuristics, see the the </span>
+<span class="sd">    ``decoding.core`` module for interfaces and the general handling of</span>
+<span class="sd">    heuristics, and the ``decoding.heuristics`` package for heuristic</span>
+<span class="sd">    implementations. This A* implementation does not have a &#39;closed</span>
+<span class="sd">    set&#39;, i.e. we do not keep track of already visited states. Make </span>
+<span class="sd">    sure that your search space is acyclic (normally it is unless you</span>
+<span class="sd">    decode on cyclic lattices with the fst predictor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">closed_vocab_norm</span><span class="p">,</span> <span class="n">capacity</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">nbest</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new A* decoder instance</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            closed_vocab_norm (int): Defines the normalization behavior</span>
+<span class="sd">                                     for closed vocabulary predictor</span>
+<span class="sd">                                     scores. See the documentation to</span>
+<span class="sd">                                     the ``CLOSED_VOCAB_SCORE_NORM_*``</span>
+<span class="sd">                                     variables for more information</span>
+<span class="sd">            capacity (int): If positive, defines the maximum size of</span>
+<span class="sd">                            the priority queue. This can be used to</span>
+<span class="sd">                            introduce some pruning. If 0, we use a</span>
+<span class="sd">                            PQ with unlimited capacity.</span>
+<span class="sd">            nbest (int): If this is set to a positive value, we do not</span>
+<span class="sd">                         stop decoding at the first complete path, but</span>
+<span class="sd">                         continue search until we collected this many</span>
+<span class="sd">                         complete hypothesis. With an admissible</span>
+<span class="sd">                         heuristic, this will yield an exact n-best</span>
+<span class="sd">                         list.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AstarDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">closed_vocab_norm</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nbest</span> <span class="o">=</span> <span class="n">nbest</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">capacity</span>
+
+<div class="viewcode-block" id="AstarDecoder.decode"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.AstarDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes a single source sentence using A* search. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="n">open_set</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">heappush</span><span class="p">(</span><span class="n">open_set</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span>
+                            <span class="n">PartialHypothesis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())))</span>
+        <span class="k">while</span> <span class="n">open_set</span><span class="p">:</span>
+            <span class="n">c</span><span class="p">,</span><span class="n">hypo</span> <span class="o">=</span> <span class="n">heappop</span><span class="p">(</span><span class="n">open_set</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Expand; estimated cost: </span><span class="si">%f</span><span class="s2"> score: </span><span class="si">%f</span><span class="s2"> sentence: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> 
+                         <span class="p">(</span><span class="o">-</span><span class="n">c</span><span class="p">,</span><span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="c1"># Found best hypothesis</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbest</span><span class="p">:</span> <span class="c1"># return if we have enough hypos</span>
+                    <span class="k">return</span> <span class="n">ret</span>
+                <span class="k">continue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># Consume if cheap expand</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
+            <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+            <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">:</span> <span class="c1"># Estimate future cost, add to heap</span>
+                <span class="n">next_hypo</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">cheap_expand</span><span class="p">(</span><span class="n">trgt_word</span><span class="p">,</span> <span class="n">posterior</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">],</span>
+                                                  <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">])</span>
+                <span class="n">combined_score</span> <span class="o">=</span> <span class="n">next_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span>
+                                                                    <span class="n">next_hypo</span><span class="p">)</span>
+                <span class="n">heappush</span><span class="p">(</span><span class="n">open_set</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="n">combined_score</span><span class="p">,</span> <span class="n">next_hypo</span><span class="p">))</span>
+            <span class="c1"># Limit heap capacity</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">open_set</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">capacity</span><span class="p">:</span>
+                <span class="n">new_open_set</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">capacity</span><span class="p">):</span>
+                    <span class="n">heappush</span><span class="p">(</span><span class="n">new_open_set</span><span class="p">,</span> <span class="n">heappop</span><span class="p">(</span><span class="n">open_set</span><span class="p">))</span>
+                <span class="n">open_set</span> <span class="o">=</span> <span class="n">new_open_set</span>
+        <span class="k">return</span> <span class="n">ret</span></div></div>
+
+
+<div class="viewcode-block" id="RestartingChild"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.RestartingChild">[docs]</a><span class="k">class</span> <span class="nc">RestartingChild</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper class for ``RestartingDecoder``` representing a child</span>
+<span class="sd">    object in the search tree. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new child instance &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word</span> <span class="o">=</span> <span class="n">word</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="n">score_breakdown</span></div>
+
+
+<div class="viewcode-block" id="RestartingNode"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.RestartingNode">[docs]</a><span class="k">class</span> <span class="nc">RestartingNode</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper class for ``RestartingDecoder``` representing a node</span>
+<span class="sd">    in the search tree. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">,</span> <span class="n">children</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new node instance &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypo</span> <span class="o">=</span> <span class="n">hypo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="n">children</span></div>
+    
+    
+<div class="viewcode-block" id="RestartingDecoder"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.RestartingDecoder">[docs]</a><span class="k">class</span> <span class="nc">RestartingDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This decoder first creates a path to the final node greedily.</span>
+<span class="sd">    Then, it looks for the node on this path with the smallest </span>
+<span class="sd">    difference between best and second best child, and restarts greedy </span>
+<span class="sd">    decoding from this point. In order to do so, it maintains a </span>
+<span class="sd">    priority queue of all visited nodes, which is ordered by the </span>
+<span class="sd">    difference between the worst expanded child and the best unexpanded</span>
+<span class="sd">    one. If this queue is empty, we have visited the best path. This </span>
+<span class="sd">    algorithm is similar to DFS but does not backtrace to the last call</span>
+<span class="sd">    of the recursive function but to the one which is most promising.</span>
+<span class="sd">    </span>
+<span class="sd">    Note that this algorithm is exact. It tries to exploit the problem</span>
+<span class="sd">    characteristics of NMT search: Reloading predictor states can be</span>
+<span class="sd">    expensive, node expansion is even more expensive but for free from</span>
+<span class="sd">    visited nodes, and there is no good admissible heuristic.</span>
+<span class="sd">    </span>
+<span class="sd">    Note2: Does not work properly if predictor scores can be positive </span>
+<span class="sd">    because of admissible pruning</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">closed_vocab_norm</span><span class="p">,</span> <span class="n">max_expansions</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates new Restarting decoder instance.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            closed_vocab_norm (int): Defines the normalization behavior</span>
+<span class="sd">                                     for closed vocabulary predictor</span>
+<span class="sd">                                     scores. See the documentation to</span>
+<span class="sd">                                     the ``CLOSED_VOCAB_SCORE_NORM_*``</span>
+<span class="sd">                                     variables for more information</span>
+<span class="sd">            max_expansions (int): Maximum number of node expansions for</span>
+<span class="sd">                                  inadmissible pruning.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RestartingDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">closed_vocab_norm</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions</span> <span class="o">=</span> <span class="mi">1000000</span> <span class="k">if</span> <span class="n">max_expansions</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">max_expansions</span>
+    
+<div class="viewcode-block" id="RestartingDecoder.greedy_decode"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.RestartingDecoder.greedy_decode">[docs]</a>    <span class="k">def</span> <span class="nf">greedy_decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper function for greedy decoding from a certain point in</span>
+<span class="sd">        the search tree.&quot;&quot;&quot;</span>
+        <span class="n">best_word</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">prev_hypo</span> <span class="o">=</span> <span class="n">hypo</span>
+        <span class="k">while</span> <span class="n">best_word</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">best_word</span><span class="p">)</span>
+            <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">best_word</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+            <span class="n">best_word_score</span> <span class="o">=</span> <span class="n">posterior</span><span class="p">[</span><span class="n">best_word</span><span class="p">]</span>
+            <span class="n">new_hypo</span> <span class="o">=</span> <span class="n">prev_hypo</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">best_word</span><span class="p">,</span>
+                                        <span class="bp">None</span><span class="p">,</span>
+                                        <span class="n">best_word_score</span><span class="p">,</span>
+                                        <span class="n">score_breakdown</span><span class="p">[</span><span class="n">best_word</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">new_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span> <span class="c1"># Admissible pruning</span>
+                <span class="k">return</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Expanded hypo: score=</span><span class="si">%f</span><span class="s2"> prefix=</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                                                    <span class="n">new_hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                                                    <span class="n">new_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">posterior</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">best_word</span><span class="p">)</span>
+                <span class="n">children</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">RestartingChild</span><span class="p">(</span><span class="n">w</span><span class="p">,</span>
+                                                   <span class="n">posterior</span><span class="p">[</span><span class="n">w</span><span class="p">],</span>
+                                                   <span class="n">score_breakdown</span><span class="p">[</span><span class="n">w</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">prev_hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())</span>
+                <span class="n">heappush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">,</span>
+                         <span class="p">(</span><span class="n">best_word_score</span><span class="o">-</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                          <span class="n">RestartingNode</span><span class="p">(</span><span class="n">prev_hypo</span><span class="p">,</span> <span class="n">children</span><span class="p">)))</span>
+            <span class="n">prev_hypo</span> <span class="o">=</span> <span class="n">new_hypo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prev_hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">,</span> <span class="n">prev_hypo</span><span class="o">.</span><span class="n">score</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="RestartingDecoder.create_initial_node"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.RestartingDecoder.create_initial_node">[docs]</a>    <span class="k">def</span> <span class="nf">create_initial_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create the root node for the search tree. &quot;&quot;&quot;</span>
+        <span class="n">init_hypo</span> <span class="o">=</span> <span class="n">PartialHypothesis</span><span class="p">()</span>
+        <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">RestartingChild</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">posterior</span><span class="p">[</span><span class="n">w</span><span class="p">],</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="n">w</span><span class="p">])</span>
+                            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">],</span>
+                          <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">init_hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
+        <span class="n">heappush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">RestartingNode</span><span class="p">(</span><span class="n">init_hypo</span><span class="p">,</span> <span class="n">children</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="RestartingDecoder.decode"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.RestartingDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes a single source sentence using Restarting search. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="n">NEG_INF</span>
+        <span class="c1"># First, create a RestartingNode object for the initial state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_initial_node</span><span class="p">()</span>
+        <span class="c1"># Then, restart from open nodes until the heap is empty</span>
+        <span class="k">while</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span>
+               <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions</span><span class="p">):</span>
+            <span class="n">_</span><span class="p">,</span><span class="n">node</span> <span class="o">=</span> <span class="n">heappop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">)</span>
+            <span class="n">best_child</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">new_hypo</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">hypo</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">best_child</span><span class="o">.</span><span class="n">word</span><span class="p">,</span>
+                                        <span class="bp">None</span><span class="p">,</span>
+                                        <span class="n">best_child</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                                        <span class="n">best_child</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">new_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span> <span class="c1"># Admissible pruning</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Best score: </span><span class="si">%f</span><span class="s2">. Restart from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                                                    <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">,</span>
+                                                    <span class="n">new_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span> <span class="c1"># Still has children -&gt; back to heap</span>
+                    <span class="n">heappush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">,</span>
+                            <span class="p">(</span><span class="n">best_child</span><span class="o">.</span><span class="n">score</span><span class="o">-</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">node</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span>
+                                                <span class="n">node</span><span class="o">.</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span> <span class="c1"># No need to copy, don&#39;t put back to heap</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">greedy_decode</span><span class="p">(</span><span class="n">new_hypo</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="p">,</span>
+                      <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">hypo</span><span class="p">:</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span>
+                      <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

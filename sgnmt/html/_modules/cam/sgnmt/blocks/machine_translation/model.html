@@ -1,0 +1,420 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.blocks.machine_translation.model &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../../index.html"/> 
+
+  
+  <script src="../../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../cam.sgnmt.predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../cam.sgnmt.decoding.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../publications.html">Publications</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.blocks.machine_translation.model</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.blocks.machine_translation.model</h1><div class="highlight"><pre>
+<span></span>
+<span class="kn">from</span> <span class="nn">theano</span> <span class="kn">import</span> <span class="n">tensor</span>
+<span class="kn">from</span> <span class="nn">toolz</span> <span class="kn">import</span> <span class="n">merge</span>
+
+<span class="kn">from</span> <span class="nn">blocks.bricks</span> <span class="kn">import</span> <span class="p">(</span><span class="n">Tanh</span><span class="p">,</span> <span class="n">Maxout</span><span class="p">,</span> <span class="n">Linear</span><span class="p">,</span> <span class="n">FeedforwardSequence</span><span class="p">,</span>
+                           <span class="n">Bias</span><span class="p">,</span> <span class="n">Initializable</span><span class="p">,</span> <span class="n">MLP</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks.attention</span> <span class="kn">import</span> <span class="n">SequenceContentAttention</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks.base</span> <span class="kn">import</span> <span class="n">application</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks.lookup</span> <span class="kn">import</span> <span class="n">LookupTable</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks.parallel</span> <span class="kn">import</span> <span class="n">Fork</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks.recurrent</span> <span class="kn">import</span> <span class="n">GatedRecurrent</span><span class="p">,</span> <span class="n">Bidirectional</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks.sequence_generators</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">LookupFeedback</span><span class="p">,</span> <span class="n">Readout</span><span class="p">,</span> <span class="n">SoftmaxEmitter</span><span class="p">,</span>
+    <span class="n">SequenceGenerator</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">blocks.roles</span> <span class="kn">import</span> <span class="n">add_role</span><span class="p">,</span> <span class="n">WEIGHT</span>
+<span class="kn">from</span> <span class="nn">blocks.utils</span> <span class="kn">import</span> <span class="n">shared_floatx_nans</span>
+
+<span class="kn">from</span> <span class="nn">picklable_itertools.extras</span> <span class="kn">import</span> <span class="n">equizip</span>
+
+
+<span class="c1"># Helper class</span>
+<div class="viewcode-block" id="InitializableFeedforwardSequence"><a class="viewcode-back" href="../../../../../cam.sgnmt.blocks.machine_translation.html#cam.sgnmt.blocks.machine_translation.model.InitializableFeedforwardSequence">[docs]</a><span class="k">class</span> <span class="nc">InitializableFeedforwardSequence</span><span class="p">(</span><span class="n">FeedforwardSequence</span><span class="p">,</span> <span class="n">Initializable</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="LookupFeedbackWMT15"><a class="viewcode-back" href="../../../../../cam.sgnmt.blocks.machine_translation.html#cam.sgnmt.blocks.machine_translation.model.LookupFeedbackWMT15">[docs]</a><span class="k">class</span> <span class="nc">LookupFeedbackWMT15</span><span class="p">(</span><span class="n">LookupFeedback</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Zero-out initial readout feedback by checking its value.&quot;&quot;&quot;</span>
+
+    <span class="nd">@application</span>
+    <span class="k">def</span> <span class="nf">feedback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">==</span> <span class="mi">0</span>
+
+        <span class="n">shp</span> <span class="o">=</span> <span class="p">[</span><span class="n">outputs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">ndim</span><span class="p">)]</span>
+        <span class="n">outputs_flat</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">outputs_flat_zeros</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="n">outputs_flat</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                                           <span class="n">outputs_flat</span><span class="p">)</span>
+
+        <span class="n">lookup_flat</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span>
+            <span class="n">outputs_flat</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="n">tensor</span><span class="o">.</span><span class="n">alloc</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">outputs_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">feedback_dim</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">outputs_flat_zeros</span><span class="p">))</span>
+        <span class="n">lookup</span> <span class="o">=</span> <span class="n">lookup_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shp</span><span class="o">+</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">feedback_dim</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">lookup</span></div>
+
+
+<div class="viewcode-block" id="BidirectionalWMT15"><a class="viewcode-back" href="../../../../../cam.sgnmt.blocks.machine_translation.html#cam.sgnmt.blocks.machine_translation.model.BidirectionalWMT15">[docs]</a><span class="k">class</span> <span class="nc">BidirectionalWMT15</span><span class="p">(</span><span class="n">Bidirectional</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wrap two Gated Recurrents each having separate parameters.&quot;&quot;&quot;</span>
+
+    <span class="nd">@application</span>
+    <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">forward_dict</span><span class="p">,</span> <span class="n">backward_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Applies forward and backward networks and concatenates outputs.&quot;&quot;&quot;</span>
+        <span class="n">forward</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">as_list</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">**</span><span class="n">forward_dict</span><span class="p">)</span>
+        <span class="n">backward</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">as_list</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                           <span class="o">**</span><span class="n">backward_dict</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">tensor</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">f</span><span class="p">,</span> <span class="n">b</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">f</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">equizip</span><span class="p">(</span><span class="n">forward</span><span class="p">,</span> <span class="n">backward</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="BidirectionalEncoder"><a class="viewcode-back" href="../../../../../cam.sgnmt.blocks.machine_translation.html#cam.sgnmt.blocks.machine_translation.model.BidirectionalEncoder">[docs]</a><span class="k">class</span> <span class="nc">BidirectionalEncoder</span><span class="p">(</span><span class="n">Initializable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Encoder of RNNsearch model.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">embedding_dim</span><span class="p">,</span> <span class="n">state_dim</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BidirectionalEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="n">vocab_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_dim</span> <span class="o">=</span> <span class="n">embedding_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_dim</span> <span class="o">=</span> <span class="n">state_dim</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span> <span class="o">=</span> <span class="n">LookupTable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;embeddings&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bidir</span> <span class="o">=</span> <span class="n">BidirectionalWMT15</span><span class="p">(</span>
+            <span class="n">GatedRecurrent</span><span class="p">(</span><span class="n">activation</span><span class="o">=</span><span class="n">Tanh</span><span class="p">(),</span> <span class="n">dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fwd_fork</span> <span class="o">=</span> <span class="n">Fork</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bidir</span><span class="o">.</span><span class="n">prototype</span><span class="o">.</span><span class="n">apply</span><span class="o">.</span><span class="n">sequences</span>
+             <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;mask&#39;</span><span class="p">],</span> <span class="n">prototype</span><span class="o">=</span><span class="n">Linear</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;fwd_fork&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">back_fork</span> <span class="o">=</span> <span class="n">Fork</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bidir</span><span class="o">.</span><span class="n">prototype</span><span class="o">.</span><span class="n">apply</span><span class="o">.</span><span class="n">sequences</span>
+             <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;mask&#39;</span><span class="p">],</span> <span class="n">prototype</span><span class="o">=</span><span class="n">Linear</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;back_fork&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">lookup</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bidir</span><span class="p">,</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">fwd_fork</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">back_fork</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_push_allocation_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_dim</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fwd_fork</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fwd_fork</span><span class="o">.</span><span class="n">output_dims</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bidir</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_dim</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                                     <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fwd_fork</span><span class="o">.</span><span class="n">output_names</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">back_fork</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">back_fork</span><span class="o">.</span><span class="n">output_dims</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bidir</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_dim</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                                      <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">back_fork</span><span class="o">.</span><span class="n">output_names</span><span class="p">]</span>
+
+    <span class="nd">@application</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;source_sentence&#39;</span><span class="p">,</span> <span class="s1">&#39;source_sentence_mask&#39;</span><span class="p">],</span>
+                 <span class="n">outputs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;representation&#39;</span><span class="p">])</span>
+    <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_sentence</span><span class="p">,</span> <span class="n">source_sentence_mask</span><span class="p">):</span>
+        <span class="c1"># Time as first dimension</span>
+        <span class="n">source_sentence</span> <span class="o">=</span> <span class="n">source_sentence</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">source_sentence_mask</span> <span class="o">=</span> <span class="n">source_sentence_mask</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">source_sentence</span><span class="p">)</span>
+
+        <span class="n">representation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bidir</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+            <span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fwd_fork</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">as_dict</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                  <span class="p">{</span><span class="s1">&#39;mask&#39;</span><span class="p">:</span> <span class="n">source_sentence_mask</span><span class="p">}),</span>
+            <span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">back_fork</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">as_dict</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                  <span class="p">{</span><span class="s1">&#39;mask&#39;</span><span class="p">:</span> <span class="n">source_sentence_mask</span><span class="p">})</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">representation</span></div>
+
+
+<div class="viewcode-block" id="GRUInitialState"><a class="viewcode-back" href="../../../../../cam.sgnmt.blocks.machine_translation.html#cam.sgnmt.blocks.machine_translation.model.GRUInitialState">[docs]</a><span class="k">class</span> <span class="nc">GRUInitialState</span><span class="p">(</span><span class="n">GatedRecurrent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gated Recurrent with special initial state.</span>
+
+<span class="sd">    Initial state of Gated Recurrent is set by an MLP that conditions on the</span>
+<span class="sd">    last hidden state of the bidirectional encoder, applies an affine</span>
+<span class="sd">    transformation followed by a tanh non-linearity to set initial state.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attended_dim</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GRUInitialState</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attended_dim</span> <span class="o">=</span> <span class="n">attended_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_transformer</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span><span class="n">activations</span><span class="o">=</span><span class="p">[</span><span class="n">Tanh</span><span class="p">()],</span>
+                                       <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="n">attended_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">],</span>
+                                       <span class="n">name</span><span class="o">=</span><span class="s1">&#39;state_initializer&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_transformer</span><span class="p">)</span>
+
+    <span class="nd">@application</span>
+    <span class="k">def</span> <span class="nf">initial_states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">attended</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;attended&#39;</span><span class="p">]</span>
+        <span class="n">initial_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_transformer</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+            <span class="n">attended</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">attended_dim</span><span class="p">:])</span>
+        <span class="k">return</span> <span class="n">initial_state</span>
+
+    <span class="k">def</span> <span class="nf">_allocate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shared_floatx_nans</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s1">&#39;state_to_state&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shared_floatx_nans</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s1">&#39;state_to_gates&#39;</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                <span class="n">add_role</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">WEIGHT</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Decoder"><a class="viewcode-back" href="../../../../../cam.sgnmt.blocks.machine_translation.html#cam.sgnmt.blocks.machine_translation.model.Decoder">[docs]</a><span class="k">class</span> <span class="nc">Decoder</span><span class="p">(</span><span class="n">Initializable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Decoder of RNNsearch model.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">embedding_dim</span><span class="p">,</span> <span class="n">state_dim</span><span class="p">,</span>
+                 <span class="n">representation_dim</span><span class="p">,</span> <span class="n">theano_seed</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Decoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="n">vocab_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_dim</span> <span class="o">=</span> <span class="n">embedding_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_dim</span> <span class="o">=</span> <span class="n">state_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">representation_dim</span> <span class="o">=</span> <span class="n">representation_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theano_seed</span> <span class="o">=</span> <span class="n">theano_seed</span>
+
+        <span class="c1"># Initialize gru with special initial state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transition</span> <span class="o">=</span> <span class="n">GRUInitialState</span><span class="p">(</span>
+            <span class="n">attended_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span>
+            <span class="n">activation</span><span class="o">=</span><span class="n">Tanh</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;decoder&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Initialize the attention mechanism</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attention</span> <span class="o">=</span> <span class="n">SequenceContentAttention</span><span class="p">(</span>
+            <span class="n">state_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="o">.</span><span class="n">apply</span><span class="o">.</span><span class="n">states</span><span class="p">,</span>
+            <span class="n">attended_dim</span><span class="o">=</span><span class="n">representation_dim</span><span class="p">,</span>
+            <span class="n">match_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Initialize the readout, note that SoftmaxEmitter emits -1 for</span>
+        <span class="c1"># initial outputs which is used by LookupFeedBackWMT15</span>
+        <span class="n">readout</span> <span class="o">=</span> <span class="n">Readout</span><span class="p">(</span>
+            <span class="n">source_names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">,</span> <span class="s1">&#39;feedback&#39;</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="o">.</span><span class="n">take_glimpses</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+            <span class="n">readout_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span>
+            <span class="n">emitter</span><span class="o">=</span><span class="n">SoftmaxEmitter</span><span class="p">(</span><span class="n">initial_output</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">theano_seed</span><span class="o">=</span><span class="n">theano_seed</span><span class="p">),</span>
+            <span class="n">feedback_brick</span><span class="o">=</span><span class="n">LookupFeedbackWMT15</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">embedding_dim</span><span class="p">),</span>
+            <span class="n">post_merge</span><span class="o">=</span><span class="n">InitializableFeedforwardSequence</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">Bias</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;maxout_bias&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
+                 <span class="n">Maxout</span><span class="p">(</span><span class="n">num_pieces</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;maxout&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
+                 <span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">state_dim</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">output_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">,</span>
+                        <span class="n">use_bias</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;softmax0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
+                 <span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;softmax1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">]),</span>
+            <span class="n">merged_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">)</span>
+
+        <span class="c1"># Build sequence generator accordingly</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence_generator</span> <span class="o">=</span> <span class="n">SequenceGenerator</span><span class="p">(</span>
+            <span class="n">readout</span><span class="o">=</span><span class="n">readout</span><span class="p">,</span>
+            <span class="n">transition</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="p">,</span>
+            <span class="n">attention</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">,</span>
+            <span class="n">fork</span><span class="o">=</span><span class="n">Fork</span><span class="p">([</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="o">.</span><span class="n">apply</span><span class="o">.</span><span class="n">sequences</span>
+                       <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;mask&#39;</span><span class="p">],</span> <span class="n">prototype</span><span class="o">=</span><span class="n">Linear</span><span class="p">())</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence_generator</span><span class="p">]</span>
+
+    <span class="nd">@application</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;representation&#39;</span><span class="p">,</span> <span class="s1">&#39;source_sentence_mask&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;target_sentence_mask&#39;</span><span class="p">,</span> <span class="s1">&#39;target_sentence&#39;</span><span class="p">],</span>
+                 <span class="n">outputs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;cost&#39;</span><span class="p">])</span>
+    <span class="k">def</span> <span class="nf">cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">representation</span><span class="p">,</span> <span class="n">source_sentence_mask</span><span class="p">,</span>
+             <span class="n">target_sentence</span><span class="p">,</span> <span class="n">target_sentence_mask</span><span class="p">):</span>
+
+        <span class="n">source_sentence_mask</span> <span class="o">=</span> <span class="n">source_sentence_mask</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">target_sentence</span> <span class="o">=</span> <span class="n">target_sentence</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">target_sentence_mask</span> <span class="o">=</span> <span class="n">target_sentence_mask</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="c1"># Get the cost matrix</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence_generator</span><span class="o">.</span><span class="n">cost_matrix</span><span class="p">(</span><span class="o">**</span><span class="p">{</span>
+            <span class="s1">&#39;mask&#39;</span><span class="p">:</span> <span class="n">target_sentence_mask</span><span class="p">,</span>
+            <span class="s1">&#39;outputs&#39;</span><span class="p">:</span> <span class="n">target_sentence</span><span class="p">,</span>
+            <span class="s1">&#39;attended&#39;</span><span class="p">:</span> <span class="n">representation</span><span class="p">,</span>
+            <span class="s1">&#39;attended_mask&#39;</span><span class="p">:</span> <span class="n">source_sentence_mask</span><span class="p">}</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">cost</span> <span class="o">*</span> <span class="n">target_sentence_mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> \
+            <span class="n">target_sentence_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="nd">@application</span>
+    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_sentence</span><span class="p">,</span> <span class="n">representation</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence_generator</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+            <span class="n">n_steps</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">source_sentence</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">source_sentence</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">attended</span><span class="o">=</span><span class="n">representation</span><span class="p">,</span>
+            <span class="n">attended_mask</span><span class="o">=</span><span class="n">tensor</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">source_sentence</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

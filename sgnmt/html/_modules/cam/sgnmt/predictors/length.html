@@ -1,0 +1,420 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.length &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.decoding.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.length</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.length</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains predictors that deal wit the length of the</span>
+<span class="sd">target sentence. The ``NBLengthPredictor`` assumes a negative binomial</span>
+<span class="sd">distribution on the target sentence lengths, where the parameters r and</span>
+<span class="sd">p are linear combinations of features extracted from the source </span>
+<span class="sd">sentence. The ``WordCountPredictor`` adds the number of words as cost,</span>
+<span class="sd">which can be used to prevent hypotheses from getting to short when </span>
+<span class="sd">using a language model.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">gammaln</span>
+<span class="kn">from</span> <span class="nn">scipy.misc</span> <span class="kn">import</span> <span class="n">logsumexp</span>
+
+
+<span class="n">NEG_INF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
+
+
+<span class="n">NUM_FEATURES</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">EPS_R</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">;</span>
+<span class="n">EPS_P</span> <span class="o">=</span> <span class="mf">0.00001</span><span class="p">;</span>
+
+
+<div class="viewcode-block" id="NBLengthPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor">[docs]</a><span class="k">class</span> <span class="nc">NBLengthPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor assumes that target sentence lengths are </span>
+<span class="sd">    distributed according a negative binomial distribution with </span>
+<span class="sd">    parameters r,p. r is linear in features, p is the logistic of a</span>
+<span class="sd">    linear function over the features. Weights can be trained using </span>
+<span class="sd">    the Matlab script ``estimate_length_model.m`` </span>
+<span class="sd">    </span>
+<span class="sd">    Let w be the model_weights. All features are extracted from the</span>
+<span class="sd">    src sentence::</span>
+<span class="sd">    </span>
+<span class="sd">      r = w0 * #char</span>
+<span class="sd">      + w1 * #words</span>
+<span class="sd">      + w2 * #punctuation</span>
+<span class="sd">      + w3 * #char/#words</span>
+<span class="sd">      + w4 * #punct/#words</span>
+<span class="sd">      + w10</span>
+<span class="sd">      </span>
+<span class="sd">      p = logistic(w5 * #char</span>
+<span class="sd">      + w6 * #words</span>
+<span class="sd">      + w7 * #punctuation</span>
+<span class="sd">      + w8 * #char/#words</span>
+<span class="sd">      + w9 * #punct/#words</span>
+<span class="sd">      + w11)</span>
+<span class="sd">      </span>
+<span class="sd">      target_length ~ NB(r,p)</span>
+<span class="sd">      </span>
+<span class="sd">    The biases w10 and w11 are optional.</span>
+<span class="sd">    </span>
+<span class="sd">    The predictor predicts EOS with NB(#consumed_words,r,p)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text_file</span><span class="p">,</span> <span class="n">model_weights</span><span class="p">,</span> <span class="n">use_point_probs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new target sentence length model predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            text_file (string): Path to the text file with the </span>
+<span class="sd">                                unindexed source sentences, i.e. not</span>
+<span class="sd">                                using word ids</span>
+<span class="sd">            model_weights (list): Weights w0 to w11 of the length </span>
+<span class="sd">                                  model. See class docstring for more</span>
+<span class="sd">                                  information</span>
+<span class="sd">            use_point_probs (bool): Use point estimates for EOS token,</span>
+<span class="sd">                                    0.0 otherwise </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NBLengthPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_point_probs</span> <span class="o">=</span> <span class="n">use_point_probs</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_weights</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="o">*</span><span class="n">NUM_FEATURES</span><span class="p">:</span> <span class="c1"># add biases</span>
+            <span class="n">model_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="n">model_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_weights</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="o">*</span><span class="n">NUM_FEATURES</span><span class="o">+</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Number of length model weights has to be </span><span class="si">%d</span><span class="s2"> or </span><span class="si">%d</span><span class="s2">&quot;</span>
+                    <span class="o">%</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">NUM_FEATURES</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">NUM_FEATURES</span><span class="o">+</span><span class="mi">2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_weights</span> <span class="o">=</span> <span class="n">model_weights</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">NUM_FEATURES</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">model_weights</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_weights</span> <span class="o">=</span> <span class="n">model_weights</span><span class="p">[</span><span class="n">NUM_FEATURES</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">NUM_FEATURES</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">model_weights</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_features</span><span class="p">(</span><span class="n">text_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span> 
+
+    <span class="k">def</span> <span class="nf">_extract_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract all features from the source sentences. &quot;&quot;&quot;</span>
+        <span class="n">feats</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">feats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_analyse_sentence</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">feats</span>
+    
+    <span class="k">def</span> <span class="nf">_analyse_sentence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract features for a single source sentence.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            sentence (string): Source sentence string</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            5-tuple of features as described in the class docstring</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_char</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.0</span>
+        <span class="n">n_words</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentence</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="o">+</span> <span class="mf">0.0</span>
+        <span class="n">n_punct</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">sentence</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="s2">&quot;,.:;-&quot;</span><span class="p">])</span> <span class="o">+</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">n_char</span><span class="p">,</span> <span class="n">n_words</span><span class="p">,</span> <span class="n">n_punct</span><span class="p">,</span> <span class="n">n_char</span><span class="o">/</span><span class="n">n_words</span><span class="p">,</span> <span class="n">n_punct</span><span class="o">/</span><span class="n">n_words</span><span class="p">]</span>
+        
+<div class="viewcode-block" id="NBLengthPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If we use point estimates, return 0 (=1). Otherwise, return</span>
+<span class="sd">        the 1-p(EOS), with p(EOS) fetched from ``posterior``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_point_probs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">posterior</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]))</span></div>
+    
+<div class="viewcode-block" id="NBLengthPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a dictionary with single entry for EOS. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="n">NEG_INF</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_eos_prob</span><span class="p">()}</span></div>
+    
+    <span class="k">def</span> <span class="nf">_get_eos_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get loglikelihood according cur_p, cur_r, and n_consumed &quot;&quot;&quot;</span>
+        <span class="n">eos_point_prob</span> <span class="o">=</span> <span class="n">gammaln</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_r</span><span class="p">)</span> \
+            <span class="o">-</span> <span class="n">gammaln</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> \
+            <span class="o">-</span> <span class="n">gammaln</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_r</span><span class="p">)</span> \
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_p</span><span class="p">)</span> \
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_p</span><span class="p">);</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_point_probs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">eos_point_prob</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eos_point_prob</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">eos_point_prob</span>
+        <span class="c1"># bypass utils.log_sum because we always want to use logsumexp here </span>
+        <span class="n">prev_sum</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span><span class="p">]))</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eos_point_prob</span><span class="p">)</span>
+        <span class="c1"># Desired prob is eos_point_prob / (1-last_eos_probs_sum)</span>
+        <span class="k">return</span> <span class="n">eos_point_prob</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">prev_sum</span><span class="p">))</span>
+    
+<div class="viewcode-block" id="NBLengthPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract features for the source sentence. Note that this</span>
+<span class="sd">        method does not use ``src_sentence`` as we need the string</span>
+<span class="sd">        representation of the source sentence to extract features.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">feat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_features</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_r</span>  <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">EPS_R</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_weights</span><span class="p">));</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_weights</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">p</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_p</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">EPS_P</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">EPS_P</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span> <span class="o">=</span> <span class="p">[]</span></div>
+    
+<div class="viewcode-block" id="NBLengthPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Increases the current history length</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">+</span> <span class="mi">1</span></div>
+    
+<div class="viewcode-block" id="NBLengthPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;State consists of the number of consumed words, and the</span>
+<span class="sd">        accumulator for previous EOS probability estimates if we </span>
+<span class="sd">        don&#39;t use point estimates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span></div>
+    
+<div class="viewcode-block" id="NBLengthPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the predictor state &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="NBLengthPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+
+
+
+<div class="viewcode-block" id="WordCountPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.WordCountPredictor">[docs]</a><span class="k">class</span> <span class="nc">WordCountPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor adds the number of words as feature &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WordCountPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        
+<div class="viewcode-block" id="WordCountPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Always returns 0 (= log 1) &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">0.0</span></div>
+    
+<div class="viewcode-block" id="WordCountPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set score for EOS to the number of consumed words &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">}</span></div>
+    
+<div class="viewcode-block" id="WordCountPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Resets the internal counter for consumed words.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span></div>
+    
+<div class="viewcode-block" id="WordCountPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Increases word counter by one.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">+</span> <span class="mi">1</span></div>
+    
+<div class="viewcode-block" id="WordCountPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the number of consumed words &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span></div>
+    
+<div class="viewcode-block" id="WordCountPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the number of consumed words &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="WordCountPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

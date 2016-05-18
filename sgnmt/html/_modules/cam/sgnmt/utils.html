@@ -1,0 +1,421 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.utils &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.decoding.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../publications.html">Publications</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.utils</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This file contains common basic functionality which can be used from</span>
+<span class="sd">anywhere. This includes the definition of reserved word indices, some</span>
+<span class="sd">mathematical functions, and helper functions to deal with the small</span>
+<span class="sd">quirks python sometimes has.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">scipy.misc</span> <span class="kn">import</span> <span class="n">logsumexp</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+
+<span class="c1"># Reserved IDs</span>
+
+
+<span class="n">PAD_ID</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="sd">&quot;&quot;&quot; Reserved word ID for padding. Relict from the TensorFlow </span>
+<span class="sd">implementation. &quot;&quot;&quot;</span>
+
+
+<span class="n">GO_ID</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="sd">&quot;&quot;&quot; Reserved word ID for the start-of-sentence symbol. &quot;&quot;&quot;</span>
+
+
+<span class="n">EOS_ID</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="sd">&quot;&quot;&quot; Reserved word ID for the end-of-sentence symbol. &quot;&quot;&quot;</span>
+
+
+<span class="n">UNK_ID</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="sd">&quot;&quot;&quot; Reserved word ID for the unknown word (UNK). &quot;&quot;&quot;</span>
+
+
+<span class="n">NOTAPPLICABLE_ID</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="sd">&quot;&quot;&quot; Reserved word ID which is currently not used. &quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="switch_to_old_indexing"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.switch_to_old_indexing">[docs]</a><span class="k">def</span> <span class="nf">switch_to_old_indexing</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Calling this method overrides the global definitions of the </span>
+<span class="sd">    reserved  word ids ``PAD_ID``, ``GO_ID``, ``EOS_ID``, and ``UNK_ID``</span>
+<span class="sd">    with the old scheme. The old scheme is used in older NMT models, </span>
+<span class="sd">    and is legacy from TensorFlow. &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">PAD_ID</span>
+    <span class="k">global</span> <span class="n">GO_ID</span>
+    <span class="k">global</span> <span class="n">EOS_ID</span>
+    <span class="k">global</span> <span class="n">UNK_ID</span>
+    <span class="n">PAD_ID</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">GO_ID</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">EOS_ID</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">UNK_ID</span> <span class="o">=</span> <span class="mi">3</span></div>
+
+
+<span class="c1"># Log summation</span>
+
+
+<div class="viewcode-block" id="log_sum_tropical_semiring"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.log_sum_tropical_semiring">[docs]</a><span class="k">def</span> <span class="nf">log_sum_tropical_semiring</span><span class="p">(</span><span class="n">vals</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Approximates summation in log space with the max.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        vals  (set): List or set of numerical values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="log_sum_log_semiring"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.log_sum_log_semiring">[docs]</a><span class="k">def</span> <span class="nf">log_sum_log_semiring</span><span class="p">(</span><span class="n">vals</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Uses the ``logsumexp`` function in scipy to calculate the log of</span>
+<span class="sd">    the sum of a set of log values.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        vals  (set): List or set of numerical values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">]))</span></div>
+
+
+<span class="c1">#log_sum = log_sum_log_semiring</span>
+<span class="n">log_sum</span> <span class="o">=</span> <span class="n">log_sum_log_semiring</span>
+<span class="sd">&quot;&quot;&quot;Defines which log summation function to use. &quot;&quot;&quot;</span>
+
+
+<span class="c1"># Maximum functions</span>
+
+<div class="viewcode-block" id="argmax_n"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.argmax_n">[docs]</a><span class="k">def</span> <span class="nf">argmax_n</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get indices of the ``n`` maximum entries in ``arr``. The </span>
+<span class="sd">    parameter ``arr`` can be a dictionary. The returned index set is </span>
+<span class="sd">    not guaranteed to be sorted.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        arr (list,array,dict):  Set of numerical values</span>
+<span class="sd">        n  (int):  Number of values to retrieve</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        List of indices or keys of the ``n`` maximum entries in ``arr``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">arr</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)[:</span><span class="n">n</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argpartition</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="o">-</span><span class="n">n</span><span class="p">)[</span><span class="o">-</span><span class="n">n</span><span class="p">:]</span></div>
+
+
+<div class="viewcode-block" id="argmax"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.argmax">[docs]</a><span class="k">def</span> <span class="nf">argmax</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the index of the maximum entry in ``arr``. The parameter can</span>
+<span class="sd">    be a dictionary.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        arr (list,array,dict):  Set of numerical values</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Index or key of the maximum entry in ``arr``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span></div>
+
+
+<span class="c1"># Functions for common access to numpy arrays, lists, and dicts</span>
+    
+
+<div class="viewcode-block" id="common_viewkeys"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.common_viewkeys">[docs]</a><span class="k">def</span> <span class="nf">common_viewkeys</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Can be used to iterate over the keys or indices of a mapping.</span>
+<span class="sd">    Works with numpy arrays, lists, and dicts. Code taken from</span>
+<span class="sd">    http://stackoverflow.com/questions/12325608/iterate-over-a-dict-or-list-in-python</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">viewkeys</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="common_iterable"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.common_iterable">[docs]</a><span class="k">def</span> <span class="nf">common_iterable</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Can be used to iterate over the key-value pairs of a mapping.</span>
+<span class="sd">    Works with numpy arrays, lists, and dicts. Code taken from</span>
+<span class="sd">    http://stackoverflow.com/questions/12325608/iterate-over-a-dict-or-list-in-python</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">index</span><span class="p">,</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="common_get"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.common_get">[docs]</a><span class="k">def</span> <span class="nf">common_get</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Can be used to access an element via the index or key.</span>
+<span class="sd">    Works with numpy arrays, lists, and dicts.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        ``obj`` (list,array,dict):  Mapping</span>
+<span class="sd">        ``key`` (int): Index or key of the element to retrieve</span>
+<span class="sd">        ``default`` (object): Default return value if ``key`` not found</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        ``obj[key]`` if ``key`` in ``obj``, otherwise ``default``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">if</span> <span class="n">key</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">else</span> <span class="n">default</span></div>
+
+<div class="viewcode-block" id="common_contains"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.common_contains">[docs]</a><span class="k">def</span> <span class="nf">common_contains</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks the existence of a key or index in a mapping.</span>
+<span class="sd">    Works with numpy arrays, lists, and dicts.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        ``obj`` (list,array,dict):  Mapping</span>
+<span class="sd">        ``key`` (int): Index or key of the element to retrieve</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        ``True`` if ``key`` in ``obj``, otherwise ``False``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">obj</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">key</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+
+
+<span class="c1"># Basic Trie implementation</span>
+
+
+<div class="viewcode-block" id="SimpleNode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.SimpleNode">[docs]</a><span class="k">class</span> <span class="nc">SimpleNode</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Helper class representing a node in a ``SimpleTrie`` &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates an empty node without children. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># outgoing edges with terminal symbols</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">element</span> <span class="o">=</span> <span class="bp">None</span> <span class="c1"># Elements stored at this node</span></div>
+
+
+<div class="viewcode-block" id="SimpleTrie"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.SimpleTrie">[docs]</a><span class="k">class</span> <span class="nc">SimpleTrie</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This is a very simple Trie implementation. It is simpler than </span>
+<span class="sd">    the one in ``cam.sgnmt.predictors.grammar`` because it does not </span>
+<span class="sd">    support non-terminals or removal. The only supported operations are</span>
+<span class="sd">    ``add`` and ``get``, but those are implemented very efficiently. </span>
+<span class="sd">    For many applications (e.g. the cache in the greedy heuristic) this</span>
+<span class="sd">    is already enough.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates an empty Trie data structure. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">SimpleNode</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">_get_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the ```SimpleNode``` for the given sequence ``seq``. If</span>
+<span class="sd">        the path for ``seq`` does not exist yet in the Trie, add it and</span>
+<span class="sd">        return a reference to the newly created node. &quot;&quot;&quot;</span>
+        <span class="n">cur_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span>
+        <span class="k">for</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="n">cur_node</span><span class="o">.</span><span class="n">edges</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+                <span class="n">children</span><span class="p">[</span><span class="n">token_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">SimpleNode</span><span class="p">()</span>
+            <span class="n">cur_node</span> <span class="o">=</span> <span class="n">children</span><span class="p">[</span><span class="n">token_id</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">cur_node</span>
+    
+<div class="viewcode-block" id="SimpleTrie.add"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.SimpleTrie.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add an element to the Trie for the key ``seq``. If ``seq`` </span>
+<span class="sd">        already exists, override.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            seq (list): Key</span>
+<span class="sd">            element (object): The object to store for key ``seq``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_node</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span><span class="o">.</span><span class="n">element</span> <span class="o">=</span> <span class="n">element</span></div>
+        
+<div class="viewcode-block" id="SimpleTrie.get"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.SimpleTrie.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve the element for a key ``seq``. If the key does not</span>
+<span class="sd">        exist, return ``None``. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span><span class="o">.</span><span class="n">element</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

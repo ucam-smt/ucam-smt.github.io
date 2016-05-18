@@ -111,13 +111,56 @@ var NAVTREE =
         [ "NiuTrans", "appendices.html#gext_niutrans", null ]
       ] ],
       [ "Translation Grammar Pruning", "appendices.html#grammarpruning", null ]
+    ] ],
+    [ "Namespaces", null, [
+      [ "Namespace List", "namespaces.html", "namespaces" ],
+      [ "Namespace Members", "namespacemembers.html", [
+        [ "All", "namespacemembers.html", "namespacemembers_dup" ],
+        [ "Functions", "namespacemembers_func.html", null ],
+        [ "Variables", "namespacemembers_vars.html", null ],
+        [ "Typedefs", "namespacemembers_type.html", null ]
+      ] ]
+    ] ],
+    [ "Classes", "annotated.html", [
+      [ "Class List", "annotated.html", "annotated_dup" ],
+      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
+      [ "Class Members", "functions.html", [
+        [ "All", "functions.html", "functions_dup" ],
+        [ "Functions", "functions_func.html", "functions_func" ],
+        [ "Variables", "functions_vars.html", "functions_vars" ],
+        [ "Typedefs", "functions_type.html", null ],
+        [ "Related Functions", "functions_rela.html", null ]
+      ] ]
+    ] ],
+    [ "Files", null, [
+      [ "File List", "files.html", "files" ],
+      [ "File Members", "globals.html", [
+        [ "All", "globals.html", "globals_dup" ],
+        [ "Functions", "globals_func.html", "globals_func" ],
+        [ "Variables", "globals_vars.html", null ],
+        [ "Typedefs", "globals_type.html", null ],
+        [ "Macros", "globals_defs.html", null ]
+      ] ]
     ] ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"appendices.html"
+"AlignmentCountMapWritable_8java.html",
+"Util_8java_source.html",
+"classRandomOptimizer.html#ad69ca704d2b3c5d84fa42a478f2bde71",
+"classucam_1_1fsttools_1_1LoadWordMapTask.html#a8af4247c077b2b083e2528f2f586804e",
+"classucam_1_1hifst_1_1SingleThreadedHifstClientTask.html",
+"classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1ProvenanceCountMap.html#a8248f4ebf9e3cc01f078ed2e3aa8bc9a",
+"constants-hifst_8hpp.html#a50112095393a9a1e834550bffa452718",
+"fstutils_8gtest_8cpp.html#a811c927c4c8c224625a108de10e6571c",
+"globals_o.html",
+"main_8applylm_8init__param__options_8hpp_source.html",
+"range_8hpp.html#a0f3e5526599d1173525dfb4c9e605c1a",
+"structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html#a362fa2a45c32f16f64ae399b744378bb",
+"structucam_1_1hifst_1_1MakeWeightHifstLocalLm_3_01TupleArc32_01_4.html#a14a11cabadf2ef2d5bf98f3eb19941eb",
+"weights_8gtest_8cpp.html#a486cccb7b6143a50014a9e2ee447c72b"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

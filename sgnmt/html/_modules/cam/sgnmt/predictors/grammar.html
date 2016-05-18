@@ -1,0 +1,1124 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.grammar &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.decoding.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.grammar</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.grammar</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains everything related to the hiero predictor. This</span>
+<span class="sd">predictor allows applying rules from a syntactical SMT system directly</span>
+<span class="sd">in SGNMT. The main interface is ``RuleXtractPredictor`` which can be </span>
+<span class="sd">used like other predictors during decoding. </span>
+<span class="sd">The Hiero predictor follows are the LRHiero implementation from </span>
+
+<span class="sd">https://github.com/sfu-natlang/lrhiero</span>
+
+<span class="sd">  Efficient Left-to-Right Hierarchical Phrase-based Translation with </span>
+<span class="sd">  Improved Reordering. </span>
+<span class="sd">  Maryam Siahbani, Baskaran Sankaran and Anoop Sarkar. </span>
+<span class="sd">  EMNLP 2013. Oct 18-21, 2013. Seattle, USA.</span>
+
+<span class="sd">However, note that we modified the code to </span>
+<span class="sd">a) deal with an arbitrary number of non-terminals</span>
+<span class="sd">b) work with ruleXtract</span>
+<span class="sd">c) allow spurious ambiguity</span>
+
+<span class="sd">ATTENTION: This implementation is experimental!!</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="c1">#from lrhiero import settings</span>
+<span class="c1">#from lrhiero.phraseTable import PhraseTable</span>
+<span class="c1">#from lrhiero.lattice import Lattice</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+
+<div class="viewcode-block" id="Cell"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Cell">[docs]</a><span class="k">class</span> <span class="nc">Cell</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Comparable to a CYK cell: A set of hypotheses. If duplicates are</span>
+<span class="sd">    added, we do hypo combination by combining the costs and retraining</span>
+<span class="sd">    only one of them. Internally, the hypotheses are stored in a list</span>
+<span class="sd">    sorted by the sum of the translation prefix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">init_hypo</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new ``Cell`` with only one hypothesis.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            init_hypo (LRHieroHypothesis): Initial hypothesis</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">init_hypo</span><span class="p">]</span> <span class="k">if</span> <span class="n">init_hypo</span> <span class="k">else</span> <span class="p">[]</span>
+    
+<div class="viewcode-block" id="Cell.findIdx"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Cell.findIdx">[docs]</a>    <span class="k">def</span> <span class="nf">findIdx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find index of first element with given key. If there is no</span>
+<span class="sd">        such key, return last element with largest key smaller than key</span>
+<span class="sd">        This is a recursive function which only searches in the </span>
+<span class="sd">        interval [a,b]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="n">a</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">a</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="p">(</span><span class="n">b</span><span class="o">-</span><span class="n">a</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">idx_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">key</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">&gt;</span> <span class="n">idx_key</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">findIdx</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># key &lt;= idx_key</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">findIdx</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Cell.add"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Cell.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a new hypothesis to the cell. If an equivalent </span>
+<span class="sd">        hypothesis already exists, combine both hypotheses.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypo (LRHieroHypothesis): Hypothesis to add under the key</span>
+<span class="sd">                                      ``hypo.key``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_hypos</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findIdx</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n_hypos</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="n">n_hypos</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="n">hypo</span><span class="o">.</span><span class="n">key</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hypo</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span> <span class="c1"># Hypo combination</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">cost</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>
+                <span class="c1">#print(&quot;HYPO COMBINATION&quot;)</span>
+                <span class="k">return</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">hypo</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Cell.filter"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Cell.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">symb</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove all hypotheses which do not have ``symb`` at ``pos``</span>
+<span class="sd">        in their ``trgt_prefix``. Breaks if ``pos`` is out of range for</span>
+<span class="sd">        some ``trgt_prefix``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypo</span> <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span> <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_prefix</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">==</span> <span class="n">symb</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="Cell.pop"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Cell.pop">[docs]</a>    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Removes a hypothesis from the cell.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            LRHieroHypothesis. The removed hypothesis</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span></div>
+    
+    <span class="k">def</span> <span class="nf">__nonzero__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Cell is zero if its empty. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">True</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span> <span class="k">else</span> <span class="bp">False</span></div>
+
+
+<div class="viewcode-block" id="Node"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Represents a node in the Trie. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">terminal_edges</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># outgoing edges with terminal symbols</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nonterminal_edges</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># outgoing edges with non-terminal symbols</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">elements</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># rules at this node</span></div>
+    
+        
+<div class="viewcode-block" id="Trie"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Trie">[docs]</a><span class="k">class</span> <span class="nc">Trie</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This trie implementation allows matching NT symbols with arbitrary </span>
+<span class="sd">    symbol sequences with certain lengths when searching.</span>
+<span class="sd">    Note: This trie does not implement edge collapsing - each edge is</span>
+<span class="sd">    labeled with exactly one word</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">span_len_range</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates an empty trie data structure.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            span_len_range (tuple): minimum and maximum span lengths</span>
+<span class="sd">                                    for non-terminal symbols</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">Node</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span> <span class="o">=</span> <span class="n">span_len_range</span> <span class="c1"># Explicitly no deep copy</span>
+    
+    <span class="k">def</span> <span class="nf">_get_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Search for the node in the data structure which matches the</span>
+<span class="sd">        key ``seq``. This allows for non-terminals in ``seq`` which</span>
+<span class="sd">        are marked with negative IDs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cur_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span>
+        <span class="k">for</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="n">cur_node</span><span class="o">.</span><span class="n">terminal_edges</span>
+            <span class="k">if</span> <span class="n">token_id</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">children</span> <span class="o">=</span> <span class="n">cur_node</span><span class="o">.</span><span class="n">nonterminal_edges</span>
+                <span class="n">token_id</span> <span class="o">=</span> <span class="o">-</span><span class="n">token_id</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+                <span class="n">children</span><span class="p">[</span><span class="n">token_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">Node</span><span class="p">()</span>
+            <span class="n">cur_node</span> <span class="o">=</span> <span class="n">children</span><span class="p">[</span><span class="n">token_id</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">cur_node</span>
+    
+<div class="viewcode-block" id="Trie.add"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Trie.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add an element to the trie data structure. The key sequence</span>
+<span class="sd">        ``seq`` can contain non-terminals with negative IDs. If a</span>
+<span class="sd">        element with the same key already exists in the data structure,</span>
+<span class="sd">        we do not delete it but store both items.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            seq (list): Sequence of terminals and non-terminals used as</span>
+<span class="sd">                        key in the trie</span>
+<span class="sd">            element (object): Object to associate with ``seq``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_node</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">element</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Trie.replace"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Trie.replace">[docs]</a>    <span class="k">def</span> <span class="nf">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Replaces all elements stored at a ``seq`` with a new single</span>
+<span class="sd">        element ``element``. This is equivalent to first removing all</span>
+<span class="sd">        items with key ``seq``, and then add the new element with</span>
+<span class="sd">        ``add(seq, element)``</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            seq (list): Sequence of terminals and non-terminals used as</span>
+<span class="sd">                        key in the trie</span>
+<span class="sd">            element (object): Object to associate with ``seq``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_node</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span><span class="o">.</span><span class="n">elements</span> <span class="o">=</span> <span class="p">[</span><span class="n">element</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="Trie.get_all_elements"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Trie.get_all_elements">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve all elements stored in the trie &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_elements_recursive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">)</span></div>
+    
+    <span class="k">def</span> <span class="nf">_get_all_elements_recursive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursive helper function for ``get_all_elements`` which</span>
+<span class="sd">        traverses the trie ignoring the arc labels.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">els</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">elements</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">nonterminal_edges</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">els</span> <span class="o">=</span> <span class="n">els</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_elements_recursive</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">terminal_edges</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">els</span> <span class="o">=</span> <span class="n">els</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_elements_recursive</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">els</span>
+    
+<div class="viewcode-block" id="Trie.get_elements"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Trie.get_elements">[docs]</a>    <span class="k">def</span> <span class="nf">get_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get all elements (e.g. rules) which match the given sequence</span>
+<span class="sd">        of source tokens.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            seq (list): Sequence of terminals and non-terminals used as</span>
+<span class="sd">                        key in the trie</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            two dicts: ``(rules, nt_span_lens)``. The first dictionary</span>
+<span class="sd">            contains all applying rules. ``nt_span_lens`` lists the </span>
+<span class="sd">            number of symbols each of the NTs on the source side </span>
+<span class="sd">            covers. Make sure that ``self.span_len_range`` is updated</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">matching_elements</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">matching_nt_span_lens</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_elements_recursive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">matching_elements</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_nt_span_lens</span><span class="p">)</span></div>
+    
+    <span class="k">def</span> <span class="nf">_get_elements_recursive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">,</span> <span class="n">nt_span_lens</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursive helper function for ``get_elements``. Fills up the</span>
+<span class="sd">        ``matching_elements`` variable. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">src_seq</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">rule</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">elements</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">rule</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_elements</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">matching_elements</span><span class="p">[</span><span class="n">rule</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">rule</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">matching_nt_span_lens</span><span class="p">[</span><span class="n">rule</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">matching_nt_span_lens</span><span class="p">[</span><span class="n">rule</span><span class="o">.</span><span class="n">id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nt_span_lens</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">token_id</span> <span class="o">=</span> <span class="n">src_seq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">terminal_edges</span><span class="p">:</span> <span class="c1"># Exact matches</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_elements_recursive</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">terminal_edges</span><span class="p">[</span><span class="n">token_id</span><span class="p">],</span>
+                                         <span class="n">src_seq</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                                         <span class="n">nt_span_lens</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">nt_id</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">nonterminal_edges</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="p">(</span><span class="n">min_span_len</span><span class="p">,</span> <span class="n">max_span_len</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span>
+            <span class="n">max_span_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src_seq</span><span class="p">),</span> <span class="n">max_span_len</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">span_len</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">min_span_len</span><span class="p">,</span> <span class="n">max_span_len</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_get_elements_recursive</span><span class="p">(</span><span class="n">child</span><span class="p">,</span>
+                                             <span class="n">src_seq</span><span class="p">[</span><span class="n">span_len</span><span class="p">:],</span>
+                                             <span class="n">nt_span_lens</span> <span class="o">+</span> <span class="p">[</span><span class="n">span_len</span><span class="p">])</span></div>
+        
+
+<div class="viewcode-block" id="Span"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Span">[docs]</a><span class="k">class</span> <span class="nc">Span</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Span is defined by the start and end position and the </span>
+<span class="sd">    corresponding sequence of terminal and non-terminal symbols p. </span>
+<span class="sd">    Normally, p is just a single NT symbol. However, if there is </span>
+<span class="sd">    ambiguity with how to apply a rule to a span (e.g. </span>
+<span class="sd">    rule X -&gt; X the X to span foo the bar the baz) we allow to resolve</span>
+<span class="sd">    them later on demand. In this case, p = X the X</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">borders</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fully initializes a new ``Span`` instance.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            p (list): See class docstring for ``Span``</span>
+<span class="sd">            borders (tuple): (begin, end) with begin inclusive and end</span>
+<span class="sd">                             exclusive</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">borders</span> <span class="o">=</span> <span class="n">borders</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a string representation of the span/ &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">:</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">borders</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Two spans are equivalent if ``p`` and ``borders`` match, and</span>
+<span class="sd">        if ``trgt_src_map`` matches in case they are defined.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">map_match</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">map_match</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_src_map</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">trgt_src_map</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">map_match</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">p</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">borders</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">borders</span> <span class="ow">and</span> <span class="n">map_match</span></div>
+
+
+<div class="viewcode-block" id="LRHieroHypothesis"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.LRHieroHypothesis">[docs]</a><span class="k">class</span> <span class="nc">LRHieroHypothesis</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Represents a LRHiero hypothesis, which is defined by the </span>
+<span class="sd">    accumulated cost, the target prefix, and open source spans.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trgt_prefix</span><span class="p">,</span> <span class="n">spans</span><span class="p">,</span> <span class="n">cost</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new LRHiero hypothesis</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trgt_prefix (list): Target side translation prefix, i.e.</span>
+<span class="sd">                                the partial target sentence which is</span>
+<span class="sd">                                translated so far</span>
+<span class="sd">            spans (list): List of spans which are not covered yet, in </span>
+<span class="sd">                          left-to-right order on target side</span>
+<span class="sd">            cost (float): Cost of this partial hypothesis</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_prefix</span> <span class="o">=</span> <span class="n">trgt_prefix</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">spans</span> <span class="o">=</span> <span class="n">spans</span> <span class="c1"># </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">cost</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">key</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">trgt_prefix</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="LRHieroHypothesis.is_final"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.LRHieroHypothesis.is_final">[docs]</a>    <span class="k">def</span> <span class="nf">is_final</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if this hypothesis has no open spans &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spans</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span></div>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a string representation of the hypothesis &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trgt_prefix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spans</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;True if translation prefix and set of spans are equal &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_prefix</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">trgt_prefix</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">spans</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">spans</span></div>
+
+
+<div class="viewcode-block" id="Rule"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.Rule">[docs]</a><span class="k">class</span> <span class="nc">Rule</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A rule consists of ``rhs_src`` and ``rhs_trgt``, both are </span>
+<span class="sd">    sequences of integers. NTs are indicated with negative sign. The </span>
+<span class="sd">    ``trgt_src_map`` defines which NT on the target side belongs to </span>
+<span class="sd">    which NT on the source side.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">last_id</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># Used for assigning unique rule indices</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs_src</span><span class="p">,</span> <span class="n">rhs_trgt</span><span class="p">,</span> <span class="n">trgt_src_map</span><span class="p">,</span> <span class="n">cost</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new rule.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            rhs_src (list): Source on the right hand side of the rule</span>
+<span class="sd">            rhs_trgt (list): Target on the right hand side of the rule</span>
+<span class="sd">            trgt_src_map (dict): Defines which NT on the target side</span>
+<span class="sd">                                 belongs to which NT on the source side</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rhs_src</span> <span class="o">=</span> <span class="n">rhs_src</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rhs_trgt</span> <span class="o">=</span> <span class="n">rhs_trgt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_src_map</span> <span class="o">=</span> <span class="n">trgt_src_map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">cost</span>
+        <span class="n">Rule</span><span class="o">.</span><span class="n">last_id</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">Rule</span><span class="o">.</span><span class="n">last_id</span> 
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a string representation of the rule. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> (</span><span class="si">%d</span><span class="s2">): &lt; </span><span class="si">%s</span><span class="s2"> , </span><span class="si">%s</span><span class="s2"> &gt; (</span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">cost</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">rhs_src</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">rhs_trgt</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">trgt_src_map</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RuleSet"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleSet">[docs]</a><span class="k">class</span> <span class="nc">RuleSet</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This class stores the set of rules and provides efficient retrieval and</span>
+<span class="sd">    matching functionality</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        
+    <span class="n">INF</span> <span class="o">=</span> <span class="mi">10000</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes the set by setting up the trie data structure </span>
+<span class="sd">        for storing the rules.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Note: NT ids start with 1, so we need to add dummy element to lists</span>
+        <span class="c1"># Stores minimum and maximum length of each span under non-terminal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span> 
+        <span class="c1"># Productions. Maps LHS to rule object.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tries</span> <span class="o">=</span> <span class="p">[</span><span class="n">Trie</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="p">)]</span>
+        <span class="c1"># Maps non-terminal to its NT id (not to be confused with word ids!) </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nt2id</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dummy&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;^[^0-9]+&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range_updated</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c1"># Number of parsed but discarded rules (because not in GNF)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_discarded</span> <span class="o">=</span> <span class="mi">0</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_rules</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># Number of rules</span>
+    
+<div class="viewcode-block" id="RuleSet.update_span_len_range"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleSet.update_span_len_range">[docs]</a>    <span class="k">def</span> <span class="nf">update_span_len_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method updates the ``span_len_range`` variable by </span>
+<span class="sd">        finding boundaries for the spans each non terminal can cover. </span>
+<span class="sd">        This is done iteratively: First, guess the range for each NT to</span>
+<span class="sd">        (0, inf). Then, iterate through all rules for a specific NT and</span>
+<span class="sd">        adjust the boundaries given the ranges for all other NTs. Do </span>
+<span class="sd">        this until ranges do not change anymore. This is an expensive </span>
+<span class="sd">        operation should be done after adding all rules. Note also that</span>
+<span class="sd">        the tries store a reference to ``self.span_len_range``, i.e. </span>
+<span class="sd">        the variable is propagated to all tries automatically.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Build a list of multipliers for each rule for each NT</span>
+        <span class="n">n_nt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tries</span><span class="p">)</span>
+        <span class="n">multipliers</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="c1"># with dummy element at index 0</span>
+        <span class="n">ranges</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span> <span class="c1"># Guardian for lexical counts</span>
+        <span class="n">empty_src_side</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">nt_id</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_nt</span><span class="p">):</span>
+            <span class="c1"># We&#39;ll use it as normal trie here without NT matching</span>
+            <span class="n">multis</span> <span class="o">=</span> <span class="n">Trie</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="p">)</span> 
+            <span class="k">for</span> <span class="n">rule</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tries</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span><span class="o">.</span><span class="n">get_all_elements</span><span class="p">():</span>
+                <span class="n">multiplier</span> <span class="o">=</span> <span class="n">n_nt</span> <span class="o">*</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">rule</span><span class="o">.</span><span class="n">rhs_src</span><span class="p">:</span>
+                    <span class="n">empty_src_side</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="c1"># lexical counts are stored at index 0</span>
+                <span class="k">for</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">rule</span><span class="o">.</span><span class="n">rhs_src</span><span class="p">:</span> 
+                    <span class="n">multiplier</span><span class="p">[</span><span class="mi">0</span> <span class="k">if</span> <span class="n">token_id</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="o">-</span><span class="n">token_id</span><span class="p">)]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">multis</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">multiplier</span><span class="p">,</span> <span class="n">multiplier</span><span class="p">)</span> <span class="c1"># Add if not there yet</span>
+            <span class="n">multipliers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">multis</span><span class="o">.</span><span class="n">get_all_elements</span><span class="p">())</span>
+            <span class="n">ranges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">RuleSet</span><span class="o">.</span><span class="n">INF</span><span class="p">))</span>
+        <span class="c1"># No production goes to &lt;eps&gt;: minimum length is 1</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">empty_src_side</span><span class="p">:</span> 
+            <span class="c1"># cannot be inferred sometimes by the while loop below</span>
+            <span class="n">ranges</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="n">RuleSet</span><span class="o">.</span><span class="n">INF</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">]</span> 
+        <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">while</span> <span class="n">changed</span><span class="p">:</span>
+            <span class="n">changed</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">for</span> <span class="n">nt_id</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_nt</span><span class="p">):</span>
+                <span class="p">(</span><span class="n">old_min_len</span><span class="p">,</span> <span class="n">old_max_len</span><span class="p">)</span> <span class="o">=</span> <span class="n">ranges</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">old_min_len</span> <span class="o">==</span> <span class="n">old_max_len</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">min_len</span> <span class="o">=</span> <span class="n">RuleSet</span><span class="o">.</span><span class="n">INF</span>
+                <span class="n">max_len</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">multiplier</span> <span class="ow">in</span> <span class="n">multipliers</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]:</span>
+                    <span class="n">min_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">min_len</span><span class="p">,</span> 
+                                  <span class="nb">sum</span><span class="p">([</span><span class="n">ranges</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">w</span> 
+                                        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">multiplier</span><span class="p">)]))</span>
+                    <span class="n">max_len</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_len</span><span class="p">,</span>
+                                  <span class="nb">sum</span><span class="p">([</span><span class="n">ranges</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">w</span> 
+                                        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">multiplier</span><span class="p">)]))</span>
+                <span class="n">max_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_len</span><span class="p">,</span> <span class="n">RuleSet</span><span class="o">.</span><span class="n">INF</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">min_len</span> <span class="o">!=</span> <span class="n">old_min_len</span> <span class="ow">or</span> <span class="n">max_len</span> <span class="o">!=</span> <span class="n">old_max_len</span><span class="p">:</span>
+                    <span class="n">ranges</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">min_len</span><span class="p">,</span> <span class="n">max_len</span><span class="p">)</span>
+                    <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">for</span> <span class="n">nt_id</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_nt</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Range for non-terminal </span><span class="si">%d</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nt_id</span><span class="p">,</span>
+                                                            <span class="n">ranges</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">ranges</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range_updated</span> <span class="o">=</span> <span class="bp">True</span></div>
+        
+<div class="viewcode-block" id="RuleSet.expand_hypo"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleSet.expand_hypo">[docs]</a>    <span class="k">def</span> <span class="nf">expand_hypo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Similar to ``getSpanRules()`` and ``GrowHypothesis()`` in </span>
+<span class="sd">        Alg. 1 in (Siahbani, 2013) combined. Gets all rules which match</span>
+<span class="sd">        the given span. </span>
+<span class="sd">        </span>
+<span class="sd">        * If the p parameter of the span is a single non-terminal, we </span>
+<span class="sd">          return hypotheses resulting from productions of this non-</span>
+<span class="sd">          terminal. Note that rules might be applicable in many different</span>
+<span class="sd">          ways: X-&gt; A the B can be applied to foo the bar the baz in two </span>
+<span class="sd">          ways. In this case, we add the translation prefix, but leave the</span>
+<span class="sd">          borders of the span untouched, and change the ``p`` value to </span>
+<span class="sd">          ``thr rhs`` of the production (i.e. &quot;A the B&quot;). If p consists</span>
+<span class="sd">          of multiple characters, the spans store the minimum and maximum</span>
+<span class="sd">          *length*, not the begin and end since the exact begin and end</span>
+<span class="sd">          positions are variable.</span>
+<span class="sd">        * If the p parameter of the span has length &gt; 1, we return a </span>
+<span class="sd">          set of hypotheses in which the first subspan has a single NT</span>
+<span class="sd">          as p parameter.</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        Through this contract we can e.g. handle spurious ambiguity, if </span>
+<span class="sd">        two NT are on the source side. However, resolving this </span>
+<span class="sd">        ambiguity is implemented in a lazy fashion: we delay fixing the </span>
+<span class="sd">        span boundaries until we need to expand the hypothesis once </span>
+<span class="sd">        more, and then we fix only the first boundaries for the first </span>
+<span class="sd">        span.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypo (LRHieroHypothesis): Hypothesis to expand</span>
+<span class="sd">            src_seq (list): Source sequence to match</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range_updated</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_span_len_range</span><span class="p">()</span>
+        
+        <span class="n">span</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">spans</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_hypo_single_p</span><span class="p">(</span><span class="n">hypo</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_hypo_multi_p</span><span class="p">(</span><span class="n">hypo</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">)</span></div>
+    
+    <span class="k">def</span> <span class="nf">_expand_hypo_single_p</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper function for ``expand_hypo`` if p has length 1 &quot;&quot;&quot;</span>
+        <span class="n">base_spans</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">spans</span> 
+        <span class="p">(</span><span class="n">begin</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span> <span class="o">=</span> <span class="n">span</span><span class="o">.</span><span class="n">borders</span>
+        <span class="p">(</span><span class="n">rules</span><span class="p">,</span> <span class="n">nt_span_lens</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tries</span><span class="p">[</span><span class="o">-</span><span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">get_elements</span><span class="p">(</span>
+                                                            <span class="n">src_seq</span><span class="p">[</span><span class="n">begin</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+        <span class="n">new_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">rule_id</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">:</span>
+            <span class="n">rule</span> <span class="o">=</span> <span class="n">rules</span><span class="p">[</span><span class="n">rule_id</span><span class="p">]</span>
+            <span class="n">span_lens</span> <span class="o">=</span> <span class="n">nt_span_lens</span><span class="p">[</span><span class="n">rule_id</span><span class="p">]</span>
+            <span class="n">trgt_prefix</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">rule</span><span class="o">.</span><span class="n">rhs_trgt</span> <span class="k">if</span> <span class="n">word</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">span_lens</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># Phew, rule application not ambiguous</span>
+                <span class="n">src_sorted_spans</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">cur_pos</span> <span class="o">=</span> <span class="n">begin</span>
+                <span class="n">cur_idx</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">span_len</span> <span class="ow">in</span> <span class="n">span_lens</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="k">while</span> <span class="n">rule</span><span class="o">.</span><span class="n">rhs_src</span><span class="p">[</span><span class="n">cur_idx</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">cur_pos</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">cur_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">src_sorted_spans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Span</span><span class="p">([</span><span class="n">rule</span><span class="o">.</span><span class="n">rhs_src</span><span class="p">[</span><span class="n">cur_idx</span><span class="p">]],</span>
+                                                 <span class="p">(</span><span class="n">cur_pos</span><span class="p">,</span>
+                                                  <span class="n">cur_pos</span> <span class="o">+</span> <span class="n">span_len</span><span class="p">)))</span>
+                    <span class="n">cur_pos</span> <span class="o">+=</span> <span class="n">span_len</span>
+                    <span class="n">cur_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">spans</span> <span class="o">=</span> <span class="p">[</span><span class="n">src_sorted_spans</span><span class="p">[</span><span class="n">src_pos</span><span class="p">]</span> 
+                                <span class="k">for</span> <span class="n">src_pos</span> <span class="ow">in</span> <span class="n">rule</span><span class="o">.</span><span class="n">trgt_src_map</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># Ambiguity. Set p to rhs(src)</span>
+                <span class="c1">#print(&quot;AMBIGUITY!&quot;)</span>
+                <span class="n">span</span> <span class="o">=</span> <span class="n">Span</span><span class="p">(</span><span class="n">rule</span><span class="o">.</span><span class="n">rhs_src</span><span class="p">,</span> <span class="p">(</span><span class="n">begin</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+                <span class="c1"># Gonna need trgt_src_map in expand_hypo_multi_p</span>
+                <span class="n">span</span><span class="o">.</span><span class="n">trgt_src_map</span> <span class="o">=</span> <span class="n">rule</span><span class="o">.</span><span class="n">trgt_src_map</span> 
+                <span class="n">spans</span> <span class="o">=</span> <span class="p">[</span><span class="n">span</span><span class="p">]</span>
+            <span class="n">new_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LRHieroHypothesis</span><span class="p">(</span>
+                                    <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_prefix</span> <span class="o">+</span> <span class="n">trgt_prefix</span><span class="p">,</span>
+                                    <span class="n">spans</span> <span class="o">+</span> <span class="n">base_spans</span><span class="p">,</span>
+                                    <span class="n">rule</span><span class="o">.</span><span class="n">cost</span> <span class="o">+</span> <span class="n">hypo</span><span class="o">.</span><span class="n">cost</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">new_hypos</span>
+    
+    <span class="k">def</span> <span class="nf">_expand_hypo_multi_p</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method creates hypotheses where p of the first span is</span>
+<span class="sd">        a single non-terminal. We try to resolve as least ambiguity as </span>
+<span class="sd">        possible, i.e. to return hypotheses with as many spans with </span>
+<span class="sd">        multi-symbol p as possible. We can leave ambiguity unresolved </span>
+<span class="sd">        as long as a *continuous* sequence on the source side is mapped</span>
+<span class="sd">        to a *continuous* sequence on the target side, as long as both </span>
+<span class="sd">        do not contain the very first span of the root span according</span>
+<span class="sd">        to target side ordering.&quot;&quot;&quot;</span>
+        <span class="c1"># Check terminal postfix in p if there is any, and remove it</span>
+        <span class="n">span_from</span><span class="p">,</span> <span class="n">span_to</span> <span class="o">=</span> <span class="n">span</span><span class="o">.</span><span class="n">borders</span>
+        <span class="n">term_postfix_len</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">))</span> 
+                                        <span class="k">if</span> <span class="n">el</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">))</span>
+        <span class="c1">#print(&quot;term_postfix_len: %d &quot; % term_postfix_len)</span>
+        <span class="k">if</span> <span class="n">term_postfix_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="o">-</span><span class="n">term_postfix_len</span><span class="p">:]</span> <span class="o">==</span> <span class="n">src_seq</span><span class="p">[</span>
+                                            <span class="n">span_to</span><span class="o">-</span><span class="n">term_postfix_len</span><span class="p">:</span><span class="n">span_to</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="p">[]</span> 
+            <span class="n">span_to</span> <span class="o">-=</span> <span class="n">term_postfix_len</span>
+            <span class="n">span</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">)</span><span class="o">-</span><span class="n">term_postfix_len</span><span class="p">]</span>
+            <span class="n">span</span><span class="o">.</span><span class="n">borders</span> <span class="o">=</span> <span class="p">(</span><span class="n">span_from</span><span class="p">,</span> <span class="n">span_to</span><span class="p">)</span>
+        <span class="c1"># trivial case: p contains no NTs</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">span</span><span class="o">.</span><span class="n">p</span> <span class="ow">and</span> <span class="n">span_to</span> <span class="o">-</span> <span class="n">span_from</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
+            <span class="k">return</span> <span class="p">[</span><span class="n">hypo</span><span class="p">]</span> <span class="c1"># We return the original hypo because p matched span</span>
+        <span class="c1"># First, create spans array containing all new sub-spans retaining as</span>
+        <span class="c1"># much ambiguity as possible - borders store min and max span len</span>
+        <span class="n">minmax_spans</span><span class="p">,</span> <span class="n">trgt_src_map</span><span class="p">,</span> <span class="n">prefixes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factorize_first_nt</span><span class="p">(</span><span class="n">span</span><span class="p">)</span>
+        <span class="n">src_trgt_map</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">trgt_src_map</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trgt_src_map</span><span class="p">):</span>
+            <span class="n">src_trgt_map</span><span class="p">[</span><span class="n">val</span><span class="p">]</span><span class="o">=</span> <span class="n">idx</span> 
+        
+        <span class="c1">#print(&quot;MINMAX SPANS: %s&quot; % minmax_spans)</span>
+        <span class="c1">#print(&quot;new TRGT SRC MAP: %s&quot; % trgt_src_map)</span>
+        <span class="c1">#print(&quot;span_len_sum: %d&quot; % (span_to - span_from))</span>
+        <span class="c1">#print(&quot;prefixes: %s&quot; % prefixes)</span>
+        <span class="c1"># Then, get all applicable combinations of sub spans with concrete </span>
+        <span class="c1"># begin and end</span>
+        <span class="n">spans_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_spans_from_minmax_recursive</span><span class="p">(</span>
+                                <span class="n">minmax_spans</span><span class="p">,</span> 
+                                <span class="n">prefixes</span><span class="p">,</span>
+                                <span class="n">src_trgt_map</span><span class="p">,</span>
+                                <span class="n">span_to</span> <span class="o">-</span> <span class="n">span_from</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">,</span> <span class="n">span_from</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">new_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">base_spans</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">spans</span>
+        <span class="k">for</span> <span class="n">src_ordered_spans</span> <span class="ow">in</span> <span class="n">spans_list</span><span class="p">:</span>
+            <span class="n">new_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LRHieroHypothesis</span><span class="p">(</span>
+                <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_prefix</span><span class="p">,</span>
+                <span class="p">[</span><span class="n">src_ordered_spans</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> 
+                    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">trgt_src_map</span><span class="p">]</span> <span class="o">+</span> <span class="n">base_spans</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">cost</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">new_hypos</span>
+    
+    <span class="k">def</span> <span class="nf">_get_spans_from_minmax_recursive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                         <span class="n">minmax_spans</span><span class="p">,</span>
+                                         <span class="n">prefixes</span><span class="p">,</span>
+                                         <span class="n">src_trgt_map</span><span class="p">,</span> 
+                                         <span class="n">span_len_sum</span><span class="p">,</span>
+                                         <span class="n">src_seq</span><span class="p">,</span>
+                                         <span class="n">src_idx</span><span class="p">,</span>
+                                         <span class="n">span_idx</span><span class="p">,</span>
+                                         <span class="n">previous_spans</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursive helper function to get concrete spans</span>
+<span class="sd">        from minmax spans</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="c1"># Frist check prefix</span>
+        <span class="n">pref</span> <span class="o">=</span> <span class="n">prefixes</span><span class="p">[</span><span class="n">src_trgt_map</span><span class="p">[</span><span class="n">span_idx</span><span class="p">]]</span>
+        <span class="n">pref_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pref</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pref</span> <span class="o">==</span> <span class="n">src_seq</span><span class="p">[</span><span class="n">src_idx</span><span class="p">:</span><span class="n">src_idx</span><span class="o">+</span><span class="n">pref_len</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">src_idx</span> <span class="o">+=</span> <span class="n">pref_len</span> 
+        <span class="n">span_len_sum</span> <span class="o">-=</span> <span class="n">pref_len</span>
+        <span class="n">minmax_span</span> <span class="o">=</span> <span class="n">minmax_spans</span><span class="p">[</span><span class="n">src_trgt_map</span><span class="p">[</span><span class="n">span_idx</span><span class="p">]]</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">minmax_span</span><span class="o">.</span><span class="n">p</span>
+        <span class="k">if</span> <span class="n">span_idx</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_trgt_map</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># At last span</span>
+            <span class="n">span</span> <span class="o">=</span> <span class="n">Span</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="n">src_idx</span><span class="p">,</span> <span class="n">src_idx</span><span class="o">+</span><span class="n">span_len_sum</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">span</span><span class="o">.</span><span class="n">trgt_src_map</span> <span class="o">=</span> <span class="n">minmax_span</span><span class="o">.</span><span class="n">trgt_src_map</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">span_len_sum</span> <span class="o">&gt;=</span> <span class="n">minmax_span</span><span class="o">.</span><span class="n">borders</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> 
+                    <span class="ow">and</span> <span class="n">span_len_sum</span> <span class="o">&lt;=</span> <span class="n">minmax_span</span><span class="o">.</span><span class="n">borders</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_compatible</span><span class="p">(</span>
+                                    <span class="n">p</span><span class="p">,</span>
+                                    <span class="n">src_seq</span><span class="p">[</span><span class="n">src_idx</span><span class="p">:</span><span class="n">src_idx</span><span class="o">+</span><span class="n">span_len_sum</span><span class="p">])):</span>
+                <span class="k">return</span> <span class="p">[</span><span class="n">previous_spans</span> <span class="o">+</span> <span class="p">[</span><span class="n">Span</span><span class="p">(</span><span class="n">p</span><span class="p">,</span>
+                                               <span class="p">(</span><span class="n">src_idx</span><span class="p">,</span>
+                                                <span class="n">src_idx</span><span class="o">+</span><span class="n">span_len_sum</span><span class="p">))]]</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">min_len</span><span class="p">,</span> <span class="n">max_len</span> <span class="o">=</span> <span class="n">minmax_span</span><span class="o">.</span><span class="n">borders</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">min</span><span class="p">(</span><span class="n">span_len_sum</span><span class="p">,</span>
+                                                           <span class="n">minmax_span</span><span class="o">.</span><span class="n">borders</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">span_len</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">min_len</span><span class="p">,</span> <span class="n">max_len</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_compatible</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">[</span><span class="n">src_idx</span><span class="p">:</span><span class="n">src_idx</span><span class="o">+</span><span class="n">span_len</span><span class="p">]):</span>
+                    <span class="n">span</span> <span class="o">=</span> <span class="n">Span</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="n">src_idx</span><span class="p">,</span> <span class="n">src_idx</span><span class="o">+</span><span class="n">span_len</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">span</span><span class="o">.</span><span class="n">trgt_src_map</span> <span class="o">=</span> <span class="n">minmax_span</span><span class="o">.</span><span class="n">trgt_src_map</span>
+                    <span class="n">ret</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_spans_from_minmax_recursive</span><span class="p">(</span>
+                                                    <span class="n">minmax_spans</span><span class="p">,</span>
+                                                    <span class="n">prefixes</span><span class="p">,</span>
+                                                    <span class="n">src_trgt_map</span><span class="p">,</span>
+                                                    <span class="n">span_len_sum</span><span class="o">-</span><span class="n">span_len</span><span class="p">,</span>
+                                                    <span class="n">src_seq</span><span class="p">,</span>
+                                                    <span class="n">src_idx</span><span class="o">+</span><span class="n">span_len</span><span class="p">,</span>
+                                                    <span class="n">span_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                                                    <span class="n">previous_spans</span> <span class="o">+</span> <span class="p">[</span><span class="n">span</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">ret</span> 
+    
+    <span class="k">def</span> <span class="nf">_is_compatible</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Checks if terminals in p can be matched in ``src_seq`` &quot;&quot;&quot;</span>
+        <span class="n">src_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">symb</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">symb</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># search for it in src_seq</span>
+                <span class="k">if</span> <span class="n">src_idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_seq</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+                <span class="k">while</span> <span class="n">src_seq</span><span class="p">[</span><span class="n">src_idx</span><span class="p">]</span> <span class="o">!=</span> <span class="n">symb</span><span class="p">:</span>
+                    <span class="n">src_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">src_idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_seq</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="bp">False</span>
+                <span class="n">src_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">True</span>         
+        
+    <span class="k">def</span> <span class="nf">_factorize_first_nt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">span</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Given span must have multi-symbol p. Returns a set of spans</span>
+<span class="sd">        which can replace the given span if the first non-terminal</span>
+<span class="sd">        (according target side ordering) is to be isolated. Borders of </span>
+<span class="sd">        returned span objects stand for minimum and maximum span </span>
+<span class="sd">        lengths</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#print(&quot;FACTORIZE SPAN %s Target source map:&quot; % span)</span>
+        <span class="c1">#print(span.trgt_src_map)</span>
+        <span class="n">p_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">p_nts</span> <span class="o">=</span> <span class="p">[</span><span class="n">symb</span> <span class="k">for</span> <span class="n">symb</span> <span class="ow">in</span> <span class="n">span</span><span class="o">.</span><span class="n">p</span> <span class="k">if</span> <span class="n">symb</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">p_nt_pos</span> <span class="o">=</span> <span class="p">[</span><span class="n">pos</span> <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">symb</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">)</span> <span class="k">if</span> <span class="n">symb</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">first_nt</span> <span class="o">=</span> <span class="o">-</span><span class="n">p_nts</span><span class="p">[</span><span class="n">span</span><span class="o">.</span><span class="n">trgt_src_map</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">first_span</span> <span class="o">=</span> <span class="n">Span</span><span class="p">([</span><span class="o">-</span><span class="n">first_nt</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="p">[</span><span class="n">first_nt</span><span class="p">])</span>
+        <span class="n">spans</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_span</span><span class="p">]</span>
+        <span class="n">trgt_idx</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1"># number of non-terminals</span>
+        <span class="n">n_nt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">span</span><span class="o">.</span><span class="n">trgt_src_map</span><span class="p">)</span> 
+        <span class="c1"># trgt_src map describing the ordering of the newly created spans</span>
+        <span class="n">new_trgt_src_map</span> <span class="o">=</span> <span class="p">[</span><span class="n">span</span><span class="o">.</span><span class="n">trgt_src_map</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="c1"># Stores parts of p which are covered by spans </span>
+        <span class="n">p_covered</span> <span class="o">=</span> <span class="p">[</span><span class="n">RuleSet</span><span class="o">.</span><span class="n">INF</span><span class="p">]</span> <span class="o">*</span> <span class="n">p_len</span> 
+        <span class="n">p_covered</span><span class="p">[</span><span class="n">p_nt_pos</span><span class="p">[</span><span class="n">span</span><span class="o">.</span><span class="n">trgt_src_map</span><span class="p">[</span><span class="mi">0</span><span class="p">]]]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">trgt_idx</span> <span class="o">&lt;</span> <span class="n">n_nt</span><span class="p">:</span>
+            <span class="n">span_min_len</span><span class="p">,</span> <span class="n">span_max_len</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">from_src_pos</span><span class="p">,</span> <span class="n">to_src_pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">RuleSet</span><span class="o">.</span><span class="n">INF</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">from_src_idx</span><span class="p">,</span> <span class="n">to_src_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">RuleSet</span><span class="o">.</span><span class="n">INF</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">new_internal_trgt_src_map</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">src_idx</span> <span class="o">=</span> <span class="n">span</span><span class="o">.</span><span class="n">trgt_src_map</span><span class="p">[</span><span class="n">trgt_idx</span><span class="p">]</span>
+                <span class="n">new_internal_trgt_src_map</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">src_idx</span><span class="p">)</span>
+                <span class="n">nt</span> <span class="o">=</span> <span class="o">-</span><span class="n">p_nts</span><span class="p">[</span><span class="n">src_idx</span><span class="p">]</span>
+                <span class="n">nt_min_len</span><span class="p">,</span> <span class="n">nt_max_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="p">[</span><span class="n">nt</span><span class="p">]</span>
+                <span class="n">span_min_len</span><span class="p">,</span> <span class="n">span_max_len</span> <span class="o">=</span> <span class="p">(</span><span class="n">span_min_len</span> <span class="o">+</span> <span class="n">nt_min_len</span><span class="p">,</span>
+                                              <span class="n">span_max_len</span> <span class="o">+</span> <span class="n">nt_max_len</span><span class="p">)</span>
+                <span class="n">src_pos</span> <span class="o">=</span> <span class="n">p_nt_pos</span><span class="p">[</span><span class="n">src_idx</span><span class="p">]</span>
+                <span class="n">from_src_pos</span><span class="p">,</span> <span class="n">to_src_pos</span> <span class="o">=</span> <span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">from_src_pos</span><span class="p">,</span> <span class="n">src_pos</span><span class="p">),</span>
+                                            <span class="nb">max</span><span class="p">(</span><span class="n">to_src_pos</span><span class="p">,</span> <span class="n">src_pos</span><span class="p">))</span>
+                <span class="n">from_src_idx</span><span class="p">,</span> <span class="n">to_src_idx</span> <span class="o">=</span> <span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">from_src_idx</span><span class="p">,</span> <span class="n">src_idx</span><span class="p">),</span>
+                                            <span class="nb">max</span><span class="p">(</span><span class="n">to_src_idx</span><span class="p">,</span> <span class="n">src_idx</span><span class="p">))</span>
+                
+                <span class="n">trgt_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">trgt_idx</span> <span class="o">&gt;=</span> <span class="n">n_nt</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="n">src_idx</span> <span class="o">=</span> <span class="n">span</span><span class="o">.</span><span class="n">trgt_src_map</span><span class="p">[</span><span class="n">trgt_idx</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">src_idx</span> <span class="o">&lt;</span> <span class="n">from_src_idx</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">src_idx</span> <span class="o">&gt;</span> <span class="n">to_src_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="c1"># len of p - no. of NT</span>
+            <span class="n">n_terminals</span> <span class="o">=</span> <span class="n">to_src_pos</span><span class="o">+</span><span class="mi">1</span><span class="o">-</span><span class="n">from_src_pos</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">new_internal_trgt_src_map</span><span class="p">)</span> 
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">from_src_pos</span><span class="p">,</span><span class="n">to_src_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">p_covered</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">spans</span><span class="p">)</span>
+            <span class="n">new_span</span> <span class="o">=</span> <span class="n">Span</span><span class="p">(</span><span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">from_src_pos</span><span class="p">:</span><span class="n">to_src_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span>
+                            <span class="p">(</span><span class="n">span_min_len</span><span class="o">+</span><span class="n">n_terminals</span><span class="p">,</span>
+                             <span class="nb">min</span><span class="p">(</span><span class="n">span_max_len</span><span class="o">+</span><span class="n">n_terminals</span><span class="p">,</span> <span class="n">RuleSet</span><span class="o">.</span><span class="n">INF</span><span class="p">)))</span>
+            <span class="n">new_span</span><span class="o">.</span><span class="n">trgt_src_map</span> <span class="o">=</span> <span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="n">from_src_idx</span> 
+                                        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">new_internal_trgt_src_map</span><span class="p">]</span>
+            <span class="n">spans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_span</span><span class="p">)</span>
+            <span class="n">new_trgt_src_map</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">from_src_idx</span><span class="p">)</span>
+        <span class="c1">#print(&quot;p_covered: %s&quot; % p_covered)</span>
+        <span class="c1"># Create prefix array using p_covered</span>
+        <span class="n">prefixes</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">spans</span><span class="p">]</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">p_len</span><span class="p">:</span>
+            <span class="n">prefix_len</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="n">i</span><span class="o">+</span><span class="n">prefix_len</span> <span class="o">&lt;</span> <span class="n">p_len</span> <span class="ow">and</span> <span class="n">p_covered</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">prefix_len</span><span class="p">]</span> <span class="o">==</span> <span class="n">RuleSet</span><span class="o">.</span><span class="n">INF</span><span class="p">:</span>
+                <span class="n">prefix_len</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">+</span><span class="n">prefix_len</span> <span class="o">&lt;</span> <span class="n">p_len</span><span class="p">:</span>
+                <span class="n">prefixes</span><span class="p">[</span><span class="n">p_covered</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">prefix_len</span><span class="p">]]</span> <span class="o">=</span> <span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">prefix_len</span><span class="p">]</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="n">prefix_len</span><span class="o">+</span><span class="mi">1</span> 
+        <span class="c1"># new_trgt_src_map still stores source indices (with holes). Remove </span>
+        <span class="c1"># holes s.t. it is compatible with the created spans list</span>
+        <span class="k">return</span> <span class="n">spans</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_holes_in_list</span><span class="p">(</span><span class="n">new_trgt_src_map</span><span class="p">),</span> <span class="n">prefixes</span>
+    
+    <span class="k">def</span> <span class="nf">_remove_holes_in_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l</span><span class="p">):</span>
+        <span class="c1"># could also use dictionary here, but holes are rather small</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">l</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> 
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">l</span><span class="p">)):</span>
+            <span class="n">d</span><span class="p">[</span><span class="n">val</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="n">val</span><span class="p">]</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">l</span><span class="p">]</span>
+        
+    <span class="k">def</span> <span class="nf">_get_nt_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nt_name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">nt_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nt2id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nt2id</span><span class="p">[</span><span class="n">nt_name</span><span class="p">]</span>
+        <span class="c1"># Introduce new NT id</span>
+        <span class="n">nt_id</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tries</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Trie</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nt2id</span><span class="p">[</span><span class="n">nt_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">nt_id</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Found new non-terminal symbol </span><span class="si">%s</span><span class="s2"> (id: </span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nt_name</span><span class="p">,</span>
+                                                                    <span class="n">nt_id</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">RuleSet</span><span class="o">.</span><span class="n">INF</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">nt_id</span>
+        
+<div class="viewcode-block" id="RuleSet.create_rule"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleSet.create_rule">[docs]</a>    <span class="k">def</span> <span class="nf">create_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs_src</span><span class="p">,</span> <span class="n">rhs_trgt</span><span class="p">,</span> <span class="n">weight</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a rule object (factory method)</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            rhs_src (list): String sequence describing the source of </span>
+<span class="sd">                            the right-hand-side of the rule</span>
+<span class="sd">            rhs_trgt (list): String sequence describing the target of </span>
+<span class="sd">                             the right-hand-side of the rule</span>
+<span class="sd">            weight (float): Rule weight</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            ``Rule`` or ``None`` if something went wrong</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">src_seq</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">nt_pos</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">nt_ids</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">rhs_src</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                <span class="n">src_seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">token</span> <span class="o">==</span> <span class="s2">&quot;&lt;oov&gt;&quot;</span><span class="p">:</span>
+                <span class="n">src_seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+                <span class="n">nt_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_nt_id</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">())</span>
+                <span class="n">src_seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="n">nt_id</span><span class="p">)</span>
+                <span class="n">nt_pos</span><span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nt_pos</span><span class="p">)</span>
+                <span class="n">nt_ids</span><span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="n">nt_id</span>
+        <span class="n">trgt_seq</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">trgt_src_map</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">nt_seen</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">rhs_trgt</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">token</span> <span class="o">==</span> <span class="s2">&quot;&lt;oov&gt;&quot;</span><span class="p">:</span>
+                <span class="n">token</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">token</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                <span class="n">trgt_src_map</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nt_pos</span><span class="p">[</span><span class="n">token</span><span class="p">])</span>
+                <span class="n">trgt_seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="n">nt_ids</span><span class="p">[</span><span class="n">token</span><span class="p">])</span>
+                <span class="n">nt_seen</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">nt_seen</span><span class="p">:</span>
+                <span class="n">trgt_seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_discarded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_discarded</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">Rule</span><span class="p">(</span><span class="n">src_seq</span><span class="p">,</span> <span class="n">trgt_seq</span><span class="p">,</span> <span class="n">trgt_src_map</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span></div>
+                
+        
+<div class="viewcode-block" id="RuleSet.parse"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleSet.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">feature_weights</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse a line in a rule file from ruleXtract and add the rule</span>
+<span class="sd">        to the set.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            line (string). Line in the rules file</span>
+<span class="sd">            feature_weights (list). Feature weights to compute the rule</span>
+<span class="sd">                                    score or ``None`` to use uniform</span>
+<span class="sd">                                    weights</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stripped</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">stripped</span> <span class="ow">or</span> <span class="n">stripped</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;#&#39;</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">stripped</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span> <span class="c1"># Do not complain.. maybe empty line</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Parsing error in rule file: less than four columns&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span> <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">:]]</span>
+            <span class="k">if</span> <span class="n">feature_weights</span><span class="p">:</span>
+                <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">*</span><span class="n">w</span> <span class="k">for</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">feature_weights</span><span class="p">)]</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Parsing error in rule file: non-numeric weights&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">rule</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_rule</span><span class="p">(</span>
+                        <span class="p">[]</span> <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;&lt;dr&gt;&quot;</span> <span class="k">else</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">),</span>
+                        <span class="p">[]</span> <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;&lt;dr&gt;&quot;</span> <span class="k">else</span> <span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">),</span>
+                        <span class="n">weight</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rule</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_rules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_rules</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tries</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_nt_id</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rule</span><span class="o">.</span><span class="n">rhs_src</span><span class="p">,</span> <span class="n">rule</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range_updated</span> <span class="o">=</span> <span class="bp">False</span></div></div>
+        
+
+<div class="viewcode-block" id="RuleXtractPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleXtractPredictor">[docs]</a><span class="k">class</span> <span class="nc">RuleXtractPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Predictor based on ruleXtract rules. Bins are organized </span>
+<span class="sd">    according the number of target words. We assume that no rule </span>
+<span class="sd">    produces the empty word on the source side (but possibly on the </span>
+<span class="sd">    target side). Hypotheses are produced iteratively s.t. the </span>
+<span class="sd">    following invariant holds: The bins contain a set of (partial) </span>
+<span class="sd">    hypotheses from which we can derive all full hypotheses which are </span>
+<span class="sd">    consistent with the current target prefix (i.e. the prefix of the</span>
+<span class="sd">    target sentence which has already been translated). This set is</span>
+<span class="sd">    updated when calling either consume_word or predict_next: consume\_</span>
+<span class="sd">    word deletes all hypotheses which become inconsistent with the new </span>
+<span class="sd">    word. ``predict_next`` requires all hypotheses to have a target\_</span>
+<span class="sd">    prefix length of at least one plus the number of consumed words. </span>
+<span class="sd">    Therefore, ``predict_next`` expands hypotheses as long as they are</span>
+<span class="sd">    shorter. This fits nicely with grouping hypotheses in bins of same</span>
+<span class="sd">    target prefix length: we expand until all low rank bins are empty. </span>
+<span class="sd">    We predict the next target word by using the cost of the best </span>
+<span class="sd">    hypothesis with the word at the right position. </span>
+<span class="sd">    </span>
+<span class="sd">    Note that this predictor is similar to the decoding algorithm in</span>
+<span class="sd">    </span>
+<span class="sd">      Efficient Left-to-Right Hierarchical Phrase-based Translation with</span>
+<span class="sd">      Improved Reordering. </span>
+<span class="sd">      Maryam Siahbani, Baskaran Sankaran and Anoop Sarkar. </span>
+<span class="sd">      EMNLP 2013. Oct 18-21, 2013. Seattle, USA.</span>
+<span class="sd">    </span>
+<span class="sd">    without cube pruning, but it is extended to an arbitrary number of</span>
+<span class="sd">    non-terminals as produced with ruleXtract.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ruleXtract_path</span><span class="p">,</span> <span class="n">use_weights</span><span class="p">,</span> <span class="n">feature_weights</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new hiero predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            ruleXtract_path (string): Path to the rules file</span>
+<span class="sd">            use_weights (bool): If false, set all hypothesis scores </span>
+<span class="sd">                                uniformly to 0 (= log 1). If true,</span>
+<span class="sd">                                use the rule weights to compute</span>
+<span class="sd">                                hypothesis scores</span>
+<span class="sd">            feature_weights (list): Rule feature weights to compute</span>
+<span class="sd">                                    the rule scores. If this is none</span>
+<span class="sd">                                    we use uniform weights</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RuleXtractPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_weights</span> <span class="o">=</span> <span class="n">use_weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rules</span> <span class="o">=</span> <span class="n">RuleSet</span><span class="p">()</span>
+        <span class="k">with</span> <span class="p">(</span><span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">ruleXtract_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">ruleXtract_path</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span> <span class="o">==</span> <span class="s1">&#39;.gz&#39;</span> 
+                                         <span class="k">else</span> <span class="nb">open</span><span class="p">(</span><span class="n">ruleXtract_path</span><span class="p">))</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rules</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">feature_weights</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rules</span><span class="o">.</span><span class="n">update_span_len_range</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> rules loaded (</span><span class="si">%d</span><span class="s2"> discarded because not in GNF)&quot;</span> <span class="o">%</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rules</span><span class="o">.</span><span class="n">n_rules</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rules</span><span class="o">.</span><span class="n">n_discarded</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;S&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rules</span><span class="o">.</span><span class="n">nt2id</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;No rule with start symbol S found!&quot;</span><span class="p">)</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_nt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rules</span><span class="o">.</span><span class="n">nt2id</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="RuleXtractPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleXtractPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns negative infinity if the posterior is not empty as</span>
+<span class="sd">        words outside the grammar are not possible according this</span>
+<span class="sd">        predictor. If ``posterior`` is empty, return 0 (= log 1)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span> </div>
+    
+<div class="viewcode-block" id="RuleXtractPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleXtractPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;For predicting the distribution of the next target tokens, </span>
+<span class="sd">        we need to empty the stack with the current history length</span>
+<span class="sd">        by expanding all hypotheses on it. Then, all hypotheses are</span>
+<span class="sd">        in larger bins, i.e. have a longer target prefix than the</span>
+<span class="sd">        current history. Thus, we can look up the possible next words</span>
+<span class="sd">        by iterating through all active hypotheses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If there are still partial hypotheses...</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">):</span>
+            <span class="c1">#print(&quot;CURRENT STACK: %d&quot; % self.n_consumed)</span>
+            <span class="c1"># empty stack with n_consumed trgt_prefix length</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]:</span>
+                <span class="n">hypo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="c1">#print(&quot;EXPAND: %s&quot; % hypo)</span>
+                <span class="n">new_hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rules</span><span class="o">.</span><span class="n">expand_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_seq</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">new_hypo</span> <span class="ow">in</span> <span class="n">new_hypos</span><span class="p">:</span>
+                    <span class="n">n_covered</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_hypo</span><span class="o">.</span><span class="n">trgt_prefix</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">new_hypo</span><span class="o">.</span><span class="n">is_final</span><span class="p">():</span>
+                        <span class="c1">#print(&quot;FOUND FINAL HYPOTHESIS: %s&quot; % new_hypo)</span>
+                        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">n_covered</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Cell</span><span class="p">())</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">[</span><span class="n">n_covered</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_hypo</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">n_covered</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Cell</span><span class="p">())</span>
+                        <span class="c1">#print(&quot;ADD TO STACK %d: %s&quot; % (n_covered, new_hypo))</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="n">n_covered</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_hypo</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_posterior</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="RuleXtractPredictor.build_posterior"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleXtractPredictor.build_posterior">[docs]</a>    <span class="k">def</span> <span class="nf">build_posterior</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We need to scan all hypotheses in ``self.stacks`` and add up</span>
+<span class="sd">        scores grouped by the symbol at the n_consumed+1-th position.</span>
+<span class="sd">        Then, we add end-of-sentence probability by checking </span>
+<span class="sd">        ``self.finals[n_consumed]``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">stack_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="n">stack_idx</span><span class="p">]</span><span class="o">.</span><span class="n">hypos</span><span class="p">:</span>
+                <span class="n">symb</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_prefix</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span>
+                <span class="n">posterior</span><span class="p">[</span><span class="n">symb</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">symb</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">hypo</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]:</span>
+            <span class="n">posterior</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">hypo</span><span class="o">.</span><span class="n">cost</span>
+                            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span><span class="o">.</span><span class="n">hypos</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">posterior</span></div>
+    
+<div class="viewcode-block" id="RuleXtractPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleXtractPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Delete all bins and add the initial cell to the first bin &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_seq</span> <span class="o">=</span> <span class="n">src_sentence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_seq</span><span class="p">)</span>
+        <span class="n">span</span> <span class="o">=</span> <span class="n">Span</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">start_nt</span><span class="p">],</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_len</span><span class="p">))</span>
+        <span class="n">init_hypo</span> <span class="o">=</span> <span class="n">LRHieroHypothesis</span><span class="p">([],</span> <span class="p">[</span><span class="n">span</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span> <span class="o">=</span> <span class="p">[</span><span class="n">Cell</span><span class="p">(</span><span class="n">init_hypo</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finals</span> <span class="o">=</span> <span class="p">[]</span></div>
+    
+<div class="viewcode-block" id="RuleXtractPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleXtractPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove all hypotheses with translation prefixes which do not</span>
+<span class="sd">        match ``word``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">stack_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="n">stack_idx</span><span class="p">]</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span> <span class="n">word</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">stack_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">[</span><span class="n">stack_idx</span><span class="p">]</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span> <span class="n">word</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">):</span>
+            <span class="c1"># Empty this entry, not needed anymore</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span> <span class="o">=</span> <span class="n">Cell</span><span class="p">()</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">+</span> <span class="mi">1</span></div>
+    
+<div class="viewcode-block" id="RuleXtractPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleXtractPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Predictor state consists of the stacks, the completed </span>
+<span class="sd">        hypotheses, and the number of consumed words. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span></div>
+    
+<div class="viewcode-block" id="RuleXtractPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleXtractPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the predictor state. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="RuleXtractPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.grammar.RuleXtractPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty the stack and delete history. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

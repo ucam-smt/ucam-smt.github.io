@@ -1,0 +1,287 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.ngram &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.decoding.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.ngram</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.ngram</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains predictors for n-gram (Kneser-Ney) language</span>
+<span class="sd">modeling. This is a ``UnboundedVocabularyPredictor`` as the vocabulary</span>
+<span class="sd">size ngram models normally do not permit complete enumeration of the</span>
+<span class="sd">posterior.</span>
+
+<span class="sd">This module is based on the swig-srilm package.</span>
+
+<span class="sd">https://github.com/desilinguist/swig-srilm</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">UnboundedVocabularyPredictor</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">srilm</span> <span class="kn">import</span> <span class="n">readLM</span><span class="p">,</span> <span class="n">initLM</span><span class="p">,</span> <span class="n">getNgramProb</span> <span class="c1"># requires swig-srilm</span>
+
+
+<div class="viewcode-block" id="SRILMPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.ngram.SRILMPredictor">[docs]</a><span class="k">class</span> <span class="nc">SRILMPredictor</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;SRILM predictor based on swig </span>
+<span class="sd">    https://github.com/desilinguist/swig-srilm</span>
+<span class="sd">    </span>
+<span class="sd">    The predictor state is described by the n-gram history. The language</span>
+<span class="sd">    model has to use word indices rather than the string word </span>
+<span class="sd">    representations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">ngram_order</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new n-gram language model predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            path (string): Path to the ARPA language model file</span>
+<span class="sd">            ngram_order (int): Order of the language model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SRILMPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history_len</span> <span class="o">=</span> <span class="n">ngram_order</span><span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span> <span class="o">=</span> <span class="n">initLM</span><span class="p">(</span><span class="n">ngram_order</span><span class="p">)</span>
+        <span class="n">readLM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="SRILMPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.ngram.SRILMPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes the history with the start-of-sentence symbol.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&lt;s&gt;&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_len</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">[]</span></div>
+    
+<div class="viewcode-block" id="SRILMPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.ngram.SRILMPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Score the set of target words with the n-gram language </span>
+<span class="sd">        model given the current history</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            words (list): Set of words to score</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dict. Language model scores for the words in ``words``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">)</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="n">w</span><span class="p">:</span> <span class="n">getNgramProb</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">,</span>
+                        <span class="n">prefix</span> <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;&lt;/s&gt;&quot;</span> <span class="k">if</span> <span class="n">w</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)),</span>
+                        <span class="n">order</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">}</span> 
+        <span class="k">return</span> <span class="n">ret</span></div>
+    
+        
+<div class="viewcode-block" id="SRILMPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.ngram.SRILMPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use the probability for &#39;&lt;unk&gt;&#39; in the language model &quot;&quot;&quot;</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">getNgramProb</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">,</span>
+                            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> &lt;unk&gt;&quot;</span> <span class="o">%</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">),</span>
+                            <span class="n">order</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="SRILMPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.ngram.SRILMPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extends the current history by ``word`` &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_len</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">word</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="SRILMPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.ngram.SRILMPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the current n-gram history &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span></div>
+    
+<div class="viewcode-block" id="SRILMPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.ngram.SRILMPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets the current n-gram history &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="SRILMPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.ngram.SRILMPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Resets the current history to &lt;S&gt; &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&lt;s&gt;&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_len</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">[]</span></div></div>
+        
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

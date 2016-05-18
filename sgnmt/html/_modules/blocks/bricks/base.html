@@ -1,0 +1,1153 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>blocks.bricks.base &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.decoding.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../publications.html">Publications</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>blocks.bricks.base</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for blocks.bricks.base</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
+<span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">attrgetter</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">MethodType</span>
+
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">from</span> <span class="nn">six</span> <span class="kn">import</span> <span class="n">add_metaclass</span>
+<span class="kn">from</span> <span class="nn">theano</span> <span class="kn">import</span> <span class="n">tensor</span>
+<span class="kn">from</span> <span class="nn">theano.gof</span> <span class="kn">import</span> <span class="n">Variable</span>
+
+<span class="kn">from</span> <span class="nn">blocks.graph</span> <span class="kn">import</span> <span class="n">add_annotation</span><span class="p">,</span> <span class="n">Annotation</span>
+<span class="kn">from</span> <span class="nn">blocks.roles</span> <span class="kn">import</span> <span class="n">add_role</span><span class="p">,</span> <span class="n">PARAMETER</span><span class="p">,</span> <span class="n">INPUT</span><span class="p">,</span> <span class="n">OUTPUT</span>
+<span class="kn">from</span> <span class="nn">blocks.utils</span> <span class="kn">import</span> <span class="n">dict_union</span><span class="p">,</span> <span class="n">pack</span><span class="p">,</span> <span class="n">repr_attrs</span><span class="p">,</span> <span class="n">reraise_as</span><span class="p">,</span> <span class="n">unpack</span>
+<span class="kn">from</span> <span class="nn">blocks.utils.containers</span> <span class="kn">import</span> <span class="n">AnnotatingList</span>
+
+
+<span class="k">def</span> <span class="nf">create_unbound_method</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">cls</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create an unbounded method from a function and a class.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    See https://bitbucket.org/gutworth/six/pull-request/64.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">six</span><span class="o">.</span><span class="n">PY2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">MethodType</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">six</span><span class="o">.</span><span class="n">PY3</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">func</span>
+
+<span class="c1"># Rename built-in property to avoid conflict with Application.property</span>
+<span class="n">property_</span> <span class="o">=</span> <span class="nb">property</span>
+
+
+<span class="k">class</span> <span class="nc">Parameters</span><span class="p">(</span><span class="n">AnnotatingList</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds the PARAMETER role to parameters automatically.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brick</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">brick</span> <span class="o">=</span> <span class="n">brick</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Parameters</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_setitem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Variable</span><span class="p">):</span>
+            <span class="n">add_role</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">PARAMETER</span><span class="p">)</span>
+            <span class="n">add_annotation</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">brick</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Children</span><span class="p">(</span><span class="n">AnnotatingList</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds the brick to the list of parents of its children.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brick</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">brick</span> <span class="o">=</span> <span class="n">brick</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Children</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_setitem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">value</span><span class="o">.</span><span class="n">parents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">brick</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_delitem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">child</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_items</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">child</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">parents</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">brick</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Application</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An application method belonging to a particular type of brick.</span>
+
+<span class="sd">    The application methods of each :class:`Brick` class are automatically</span>
+<span class="sd">    replaced by an instance of :class:`Application`. This allows us to</span>
+<span class="sd">    store metadata about particular application methods (such as their in-</span>
+<span class="sd">    and outputs) easily.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    application : callable</span>
+<span class="sd">        The original (unbounded) application function defined on the</span>
+<span class="sd">        :class:`Brick`.</span>
+<span class="sd">    delegate_function : callable</span>
+<span class="sd">        A function that takes a :class:`Brick` instance as an argument and</span>
+<span class="sd">        returns a :class:`BoundApplication` object to which attribute</span>
+<span class="sd">        requests should be routed.</span>
+<span class="sd">    properties : :obj:`dict` (:obj:`str`, :obj:`callable`)</span>
+<span class="sd">        A dictionary of property getters that should be called when an</span>
+<span class="sd">        attribute with the given name is requested.</span>
+<span class="sd">    instances : :obj:`dict` (:class:`Brick`, :class:`BoundApplication`)</span>
+<span class="sd">        A record of bound application instances created by the descriptor</span>
+<span class="sd">        protocol.</span>
+<span class="sd">    call_stack : :obj:`list` of :class:`Brick`</span>
+<span class="sd">        The call stack of brick application methods. Used to check whether</span>
+<span class="sd">        the current call was made by a parent brick.</span>
+<span class="sd">    brick : type</span>
+<span class="sd">        The brick class to which this instance belongs.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If a brick&#39;s application method is applied by another brick which</span>
+<span class="sd">        does not list the former as a child.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If the application method&#39;s inputs and/or outputs don&#39;t match with</span>
+<span class="sd">        the function signature or the values returned (respectively).</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    When a :class:`Brick` is instantiated and its application method (i.e.</span>
+<span class="sd">    an instance of this class) requested, the descriptor protocol (through</span>
+<span class="sd">    the :meth:`__get__` method) automatically instantiates a</span>
+<span class="sd">    :class:`BoundApplication` class and returns this. This bound</span>
+<span class="sd">    application class can be used to store application information</span>
+<span class="sd">    particular to a brick instance. Any attributes unknown to the bounded</span>
+<span class="sd">    application are automatically routed to the application that</span>
+<span class="sd">    instantiated it.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">call_stack</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">application_function</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">=</span> <span class="n">application_function</span><span class="o">.</span><span class="n">__doc__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_application_function</span> <span class="o">=</span> <span class="n">application_function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">application_name</span> <span class="o">=</span> <span class="n">application_function</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delegate_function</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">application_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_application_function&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_application_function</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">brick</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">application_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decorator to make application properties.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            The name the property should take.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; class Foo(Brick):</span>
+<span class="sd">        ...     @application</span>
+<span class="sd">        ...     def apply(self, x):</span>
+<span class="sd">        ...         return x + 1</span>
+<span class="sd">        ...</span>
+<span class="sd">        ...     @apply.property(&#39;inputs&#39;)</span>
+<span class="sd">        ...     def apply_inputs(self):</span>
+<span class="sd">        ...         return [&#39;foo&#39;, &#39;bar&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; foo = Foo()</span>
+<span class="sd">        &gt;&gt;&gt; foo.apply.inputs</span>
+<span class="sd">        [&#39;foo&#39;, &#39;bar&#39;]</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+
+        <span class="k">def</span> <span class="nf">wrap_property</span><span class="p">(</span><span class="n">application_property</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">application_property</span><span class="o">.</span><span class="n">__name__</span>
+            <span class="k">return</span> <span class="n">application_property</span>
+        <span class="k">return</span> <span class="n">wrap_property</span>
+
+    <span class="k">def</span> <span class="nf">delegate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decorator to assign a delegate application.</span>
+
+<span class="sd">        An application method can assign a delegate application. Whenever</span>
+<span class="sd">        an attribute is not available, it will be requested from the</span>
+<span class="sd">        delegate instead.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; class Foo(Brick):</span>
+<span class="sd">        ...     @application(outputs=[&#39;baz&#39;])</span>
+<span class="sd">        ...     def apply(self, x):</span>
+<span class="sd">        ...         return x + 1</span>
+<span class="sd">        ...</span>
+<span class="sd">        ...     @apply.property(&#39;inputs&#39;)</span>
+<span class="sd">        ...     def apply_inputs(self):</span>
+<span class="sd">        ...         return [&#39;foo&#39;, &#39;bar&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; class Bar(Brick):</span>
+<span class="sd">        ...     def __init__(self, foo):</span>
+<span class="sd">        ...         self.foo = foo</span>
+<span class="sd">        ...</span>
+<span class="sd">        ...     @application(outputs=[&#39;foo&#39;])</span>
+<span class="sd">        ...     def apply(self, x):</span>
+<span class="sd">        ...         return x + 1</span>
+<span class="sd">        ...</span>
+<span class="sd">        ...     @apply.delegate</span>
+<span class="sd">        ...     def apply_delegate(self):</span>
+<span class="sd">        ...         return self.foo.apply</span>
+<span class="sd">        &gt;&gt;&gt; foo = Foo()</span>
+<span class="sd">        &gt;&gt;&gt; bar = Bar(foo)</span>
+<span class="sd">        &gt;&gt;&gt; bar.apply.outputs</span>
+<span class="sd">        [&#39;foo&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; bar.apply.inputs</span>
+<span class="sd">        [&#39;foo&#39;, &#39;bar&#39;]</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delegate_function</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="k">return</span> <span class="n">f</span>
+
+    <span class="k">def</span> <span class="nf">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">owner</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Instantiate :class:`BoundApplication` for each :class:`Brick`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">instance</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s2">&quot;_bound_applications&quot;</span><span class="p">):</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">_bound_applications</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;{}.{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">brick</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">application_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">instance</span><span class="o">.</span><span class="n">_bound_applications</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
+            <span class="n">key</span><span class="p">,</span> <span class="n">BoundApplication</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="c1"># Mimic behavior of properties</span>
+        <span class="k">if</span> <span class="s1">&#39;properties&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">property</span><span class="p">(</span><span class="n">create_unbound_method</span><span class="p">(</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">name</span><span class="p">]),</span> <span class="bp">self</span><span class="o">.</span><span class="n">brick</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span>
+
+    <span class="k">def</span> <span class="nf">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="c1"># Mimic behavior of read-only properties</span>
+        <span class="k">if</span> <span class="s1">&#39;properties&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;can&#39;t set attribute&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Application</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__setattr__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property_</span>
+    <span class="k">def</span> <span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span>
+
+    <span class="nd">@inputs.setter</span>
+    <span class="k">def</span> <span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+        <span class="n">args_names</span><span class="p">,</span> <span class="n">varargs_name</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">application_function</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">input_</span> <span class="ow">in</span> <span class="n">args_names</span> <span class="o">+</span> <span class="p">[</span><span class="n">varargs_name</span><span class="p">]</span> <span class="k">for</span> <span class="n">input_</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unexpected inputs&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span> <span class="o">=</span> <span class="n">inputs</span>
+
+    <span class="nd">@property_</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">application_name</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brick</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">brick</span><span class="p">,</span> <span class="n">Brick</span><span class="p">)</span> <span class="ow">and</span> <span class="n">six</span><span class="o">.</span><span class="n">PY2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span>
+        <span class="n">bound_application</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get__</span><span class="p">(</span><span class="n">brick</span><span class="p">,</span> <span class="n">brick</span><span class="o">.</span><span class="n">__class__</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">bound_application</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bound_application</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">as_dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;as_dict&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="n">as_list</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;as_list&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">as_list</span> <span class="ow">and</span> <span class="n">as_dict</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+
+        <span class="n">brick</span> <span class="o">=</span> <span class="n">bound_application</span><span class="o">.</span><span class="n">brick</span>
+
+        <span class="c1"># Find the names of the inputs to the application method</span>
+        <span class="n">args_names</span><span class="p">,</span> <span class="n">varargs_name</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">application_function</span><span class="p">)</span>
+        <span class="n">args_names</span> <span class="o">=</span> <span class="n">args_names</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="c1"># Construct the ApplicationCall, used to store data in for this call</span>
+        <span class="n">call</span> <span class="o">=</span> <span class="n">ApplicationCall</span><span class="p">(</span><span class="n">bound_application</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;application&#39;</span> <span class="ow">in</span> <span class="n">args_names</span><span class="p">:</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">args_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;application&#39;</span><span class="p">),</span> <span class="n">bound_application</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;application_call&#39;</span> <span class="ow">in</span> <span class="n">args_names</span><span class="p">:</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">args_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;application_call&#39;</span><span class="p">),</span> <span class="n">call</span><span class="p">)</span>
+
+        <span class="c1"># Allocate before applying, and optionally initialize</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">brick</span><span class="o">.</span><span class="n">allocated</span><span class="p">:</span>
+            <span class="n">brick</span><span class="o">.</span><span class="n">allocate</span><span class="p">()</span>
+
+        <span class="c1"># Annotate all the input variables which are Theano variables</span>
+        <span class="k">def</span> <span class="nf">copy_and_tag</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Helper method to copy a variable and annotate it.&quot;&quot;&quot;</span>
+            <span class="n">copy</span> <span class="o">=</span> <span class="n">variable</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="c1"># Theano name</span>
+            <span class="n">copy</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">_variable_name</span><span class="p">(</span><span class="n">brick</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="n">add_annotation</span><span class="p">(</span><span class="n">copy</span><span class="p">,</span> <span class="n">brick</span><span class="p">)</span>
+            <span class="n">add_annotation</span><span class="p">(</span><span class="n">copy</span><span class="p">,</span> <span class="n">call</span><span class="p">)</span>
+            <span class="c1"># Blocks name</span>
+            <span class="n">copy</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="n">add_role</span><span class="p">(</span><span class="n">copy</span><span class="p">,</span> <span class="n">role</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">copy</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">input_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">tensor</span><span class="o">.</span><span class="n">Variable</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">args_names</span><span class="p">):</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">args_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;{}_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">varargs_name</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">args_names</span><span class="p">))</span>
+                <span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy_and_tag</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">INPUT</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">input_</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">tensor</span><span class="o">.</span><span class="n">Variable</span><span class="p">):</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy_and_tag</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">INPUT</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Run the application method on the annotated variables</span>
+        <span class="n">last_brick</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_stack</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">last_brick</span> <span class="ow">and</span> <span class="n">brick</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">last_brick</span> <span class="ow">and</span>
+                <span class="n">brick</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">last_brick</span><span class="o">.</span><span class="n">children</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Brick &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">call_stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39; tries &#39;</span>
+                             <span class="s1">&#39;to call brick &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">brick</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; which &#39;</span>
+                             <span class="s1">&#39;is not in the list of its children. This could &#39;</span>
+                             <span class="s1">&#39;be caused because an @application decorator is &#39;</span>
+                             <span class="s1">&#39;missing.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">brick</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">application_function</span><span class="p">(</span><span class="n">brick</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">pack</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">call_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+        <span class="c1"># Rename and annotate output variables</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">output</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">outputs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">tensor</span><span class="o">.</span><span class="n">Variable</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">bound_application</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;output_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                    <span class="n">reraise_as</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unexpected outputs&quot;</span><span class="p">))</span>
+                <span class="c1"># TODO Tag with dimensions, axes, etc. for error-checking</span>
+                <span class="n">outputs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy_and_tag</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                          <span class="n">OUTPUT</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Return values</span>
+        <span class="k">if</span> <span class="n">as_list</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">outputs</span>
+        <span class="k">if</span> <span class="n">as_dict</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">bound_application</span><span class="o">.</span><span class="n">outputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">unpack</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+
+    <span class="c1"># Application instances are used instead of usual methods in bricks.</span>
+    <span class="c1"># The usual methods are not pickled per-se, similarly to classes</span>
+    <span class="c1"># and modules. Instead, a reference to the method is put into the pickle.</span>
+    <span class="c1"># Here, we ensure the same behaviour for Application instances.</span>
+    <span class="k">def</span> <span class="nf">__reduce__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">getattr</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">brick</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">application_name</span><span class="p">))</span>
+
+
+<span class="k">class</span> <span class="nc">BoundApplication</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An application method bound to a :class:`Brick` instance.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">application</span><span class="p">,</span> <span class="n">brick</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">application</span> <span class="o">=</span> <span class="n">application</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">brick</span> <span class="o">=</span> <span class="n">brick</span>
+
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="c1"># Prevent infinite loops</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;application&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span>
+        <span class="c1"># These always belong to the parent (the unbound application)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;delegate_function&#39;</span><span class="p">,</span> <span class="s1">&#39;properties&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="o">.</span><span class="n">brick</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">name</span><span class="p">])(</span><span class="bp">self</span><span class="o">.</span><span class="n">brick</span><span class="p">)</span>
+        <span class="c1"># First try the parent (i.e. class level), before trying the delegate</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">delegate_function</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">brick</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">delegate_function</span><span class="p">)(),</span>
+                               <span class="n">name</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">rename_function</span><span class="p">(</span><span class="n">function</span><span class="p">,</span> <span class="n">new_name</span><span class="p">):</span>
+    <span class="n">old_name</span> <span class="o">=</span> <span class="n">function</span><span class="o">.</span><span class="n">__name__</span>
+    <span class="n">function</span><span class="o">.</span><span class="n">__name__</span> <span class="o">=</span> <span class="n">new_name</span>
+    <span class="k">if</span> <span class="n">six</span><span class="o">.</span><span class="n">PY3</span><span class="p">:</span>
+        <span class="n">function</span><span class="o">.</span><span class="n">__qualname__</span> <span class="o">=</span> \
+            <span class="n">function</span><span class="o">.</span><span class="n">__qualname__</span><span class="p">[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">old_name</span><span class="p">)]</span> <span class="o">+</span> <span class="n">new_name</span>
+    <span class="k">return</span> <span class="n">function</span>
+
+
+<span class="k">class</span> <span class="nc">_Brick</span><span class="p">(</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Metaclass which attaches brick instances to the applications.</span>
+
+<span class="sd">    In addition picklability of :class:`Application` objects is ensured.</span>
+<span class="sd">    This means that :class:`Application` objects can not be added to a</span>
+<span class="sd">    brick class after it is created. To allow adding application methods</span>
+<span class="sd">    programatically, the following hook is supported: the class namespace</span>
+<span class="sd">    is searched for `decorators` attribute, which can contain a</span>
+<span class="sd">    list of functions to be applied to the namespace of the class being</span>
+<span class="sd">    created. These functions can arbitratily modify this namespace.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
+        <span class="n">decorators</span> <span class="o">=</span> <span class="n">namespace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;decorators&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">for</span> <span class="n">decorator</span> <span class="ow">in</span> <span class="n">decorators</span><span class="p">:</span>
+            <span class="n">decorator</span><span class="p">(</span><span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">namespace</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">Application</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">hasattr</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="s1">&#39;_application_function&#39;</span><span class="p">)):</span>
+                <span class="n">namespace</span><span class="p">[</span><span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">attr</span><span class="o">.</span><span class="n">application_name</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">rename_function</span><span class="p">(</span><span class="n">attr</span><span class="o">.</span><span class="n">_application_function</span><span class="p">,</span>
+                                    <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">attr</span><span class="o">.</span><span class="n">application_name</span><span class="p">)</span>
+                <span class="k">del</span> <span class="n">attr</span><span class="o">.</span><span class="n">_application_function</span>
+        <span class="n">brick</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">_Brick</span><span class="p">,</span> <span class="n">mcs</span><span class="p">)</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">namespace</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">Application</span><span class="p">):</span>
+                <span class="n">attr</span><span class="o">.</span><span class="n">brick</span> <span class="o">=</span> <span class="n">brick</span>
+        <span class="k">return</span> <span class="n">brick</span>
+
+
+<span class="nd">@add_metaclass</span><span class="p">(</span><span class="n">_Brick</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Brick</span><span class="p">(</span><span class="n">Annotation</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A brick encapsulates Theano operations with parameters.</span>
+
+<span class="sd">    A brick goes through the following stages:</span>
+
+<span class="sd">    1. Construction: The call to :meth:`__init__` constructs a</span>
+<span class="sd">       :class:`Brick` instance with a name and creates any child bricks as</span>
+<span class="sd">       well.</span>
+<span class="sd">    2. Allocation of parameters:</span>
+
+<span class="sd">       a) Allocation configuration of children: The</span>
+<span class="sd">          :meth:`push_allocation_config` method configures any children of</span>
+<span class="sd">          this block.</span>
+<span class="sd">       b) Allocation: The :meth:`allocate` method allocates the shared</span>
+<span class="sd">          Theano variables required for the parameters. Also allocates</span>
+<span class="sd">          parameters for all children.</span>
+
+<span class="sd">    3. The following can be done in either order:</span>
+
+<span class="sd">       a) Application: By applying the brick to a set of Theano</span>
+<span class="sd">          variables a part of the computational graph of the final model is</span>
+<span class="sd">          constructed.</span>
+<span class="sd">       b) The initialization of parameters:</span>
+
+<span class="sd">          1. Initialization configuration of children: The</span>
+<span class="sd">             :meth:`push_initialization_config` method configures any</span>
+<span class="sd">             children of this block.</span>
+<span class="sd">          2. Initialization: This sets the initial values of the</span>
+<span class="sd">             parameters by a call to :meth:`initialize`, which is needed</span>
+<span class="sd">             to call the final compiled Theano function.  Also initializes</span>
+<span class="sd">             all children.</span>
+
+<span class="sd">    Not all stages need to be called explicitly. Step 3(a) will</span>
+<span class="sd">    automatically allocate the parameters if needed. Similarly, step</span>
+<span class="sd">    3(b.2) and 2(b) will automatically perform steps 3(b.1) and 2(a) if</span>
+<span class="sd">    needed. They only need to be called separately if greater control is</span>
+<span class="sd">    required. The only two methods which always need to be called are an</span>
+<span class="sd">    application method to construct the computational graph, and the</span>
+<span class="sd">    :meth:`initialize` method in order to initialize the parameters.</span>
+
+<span class="sd">    At each different stage, a brick might need a certain set of</span>
+<span class="sd">    configuration settings. All of these settings can be passed to the</span>
+<span class="sd">    :meth:`__init__` constructor. However, by default many bricks support</span>
+<span class="sd">    *lazy initialization*. This means that the configuration settings can</span>
+<span class="sd">    be set later.</span>
+
+<span class="sd">    .. note::</span>
+
+<span class="sd">       Some arguments to :meth:`__init__` are *always* required, even when</span>
+<span class="sd">       lazy initialization is enabled. Other arguments must be given before</span>
+<span class="sd">       calling :meth:`allocate`, while others yet only need to be given in</span>
+<span class="sd">       order to call :meth:`initialize`. Always read the documentation of</span>
+<span class="sd">       each brick carefully.</span>
+
+<span class="sd">    Lazy initialization can be turned off by setting ``Brick.lazy =</span>
+<span class="sd">    False``. In this case, there is no need to call :meth:`initialize`</span>
+<span class="sd">    manually anymore, but all the configuration must be passed to the</span>
+<span class="sd">    :meth:`__init__` method.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str, optional</span>
+<span class="sd">        The name of this brick. This can be used to filter the application</span>
+<span class="sd">        of certain modifications by brick names. By default, the brick</span>
+<span class="sd">        receives the name of its class (lowercased).</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        The name of this brick.</span>
+<span class="sd">    print_shapes : bool</span>
+<span class="sd">        ``False`` by default. If ``True`` it logs the shapes of all the</span>
+<span class="sd">        input and output variables, which can be useful for debugging.</span>
+<span class="sd">    parameters : list of :class:`~tensor.TensorSharedVariable` and ``None``</span>
+<span class="sd">        After calling the :meth:`allocate` method this attribute will be</span>
+<span class="sd">        populated with the shared variables storing this brick&#39;s</span>
+<span class="sd">        parameters. Allows for ``None`` so that parameters can always be</span>
+<span class="sd">        accessed at the same index, even if some parameters are only</span>
+<span class="sd">        defined given a particular configuration.</span>
+<span class="sd">    children : list of bricks</span>
+<span class="sd">        The children of this brick.</span>
+<span class="sd">    allocated : bool</span>
+<span class="sd">        ``False`` if :meth:`allocate` has not been called yet. ``True``</span>
+<span class="sd">        otherwise.</span>
+<span class="sd">    initialized : bool</span>
+<span class="sd">        ``False`` if :meth:`allocate` has not been called yet. ``True``</span>
+<span class="sd">        otherwise.</span>
+<span class="sd">    allocation_config_pushed : bool</span>
+<span class="sd">        ``False`` if :meth:`allocate` or :meth:`push_allocation_config`</span>
+<span class="sd">        hasn&#39;t been called yet. ``True`` otherwise.</span>
+<span class="sd">    initialization_config_pushed : bool</span>
+<span class="sd">        ``False`` if :meth:`initialize` or</span>
+<span class="sd">        :meth:`push_initialization_config` hasn&#39;t been called yet. ``True``</span>
+<span class="sd">        otherwise.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    To provide support for lazy initialization, apply the :meth:`lazy`</span>
+<span class="sd">    decorator to the :meth:`__init__` method.</span>
+
+<span class="sd">    Brick implementations *must* call the :meth:`__init__` constructor of</span>
+<span class="sd">    their parent using `super(BlockImplementation,</span>
+<span class="sd">    self).__init__(**kwargs)` at the *beginning* of the overriding</span>
+<span class="sd">    `__init__`.</span>
+
+<span class="sd">    The methods :meth:`_allocate` and :meth:`_initialize` need to be</span>
+<span class="sd">    overridden if the brick needs to allocate shared variables and</span>
+<span class="sd">    initialize their values in order to function.</span>
+
+<span class="sd">    A brick can have any number of methods which apply the brick on Theano</span>
+<span class="sd">    variables. These methods should be decorated with the</span>
+<span class="sd">    :func:`application` decorator.</span>
+
+<span class="sd">    If a brick has children, they must be listed in the :attr:`children`</span>
+<span class="sd">    attribute. Moreover, if the brick wants to control the configuration of</span>
+<span class="sd">    its children, the :meth:`_push_allocation_config` and</span>
+<span class="sd">    :meth:`_push_initialization_config` methods need to be overridden.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Most bricks have lazy initialization enabled.</span>
+
+<span class="sd">    &gt;&gt;&gt; import theano</span>
+<span class="sd">    &gt;&gt;&gt; from blocks.initialization import IsotropicGaussian, Constant</span>
+<span class="sd">    &gt;&gt;&gt; from blocks.bricks import Linear</span>
+<span class="sd">    &gt;&gt;&gt; linear = Linear(input_dim=5, output_dim=3,</span>
+<span class="sd">    ...                 weights_init=IsotropicGaussian(),</span>
+<span class="sd">    ...                 biases_init=Constant(0))</span>
+<span class="sd">    &gt;&gt;&gt; x = theano.tensor.vector()</span>
+<span class="sd">    &gt;&gt;&gt; linear.apply(x)  # Calls linear.allocate() automatically</span>
+<span class="sd">    linear_apply_output</span>
+<span class="sd">    &gt;&gt;&gt; linear.initialize()  # Initializes the weight matrix</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#: See :attr:`Brick.print_shapes`</span>
+    <span class="n">print_shapes</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">children</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="n">children</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parents</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">allocated</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allocation_config_pushed</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialization_config_pushed</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Brick</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">repr_attrs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span>
+
+    <span class="nd">@parameters.setter</span>
+    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_children</span>
+
+    <span class="nd">@children.setter</span>
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_children</span> <span class="o">=</span> <span class="n">Children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">allocate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Allocate shared variables for parameters.</span>
+
+<span class="sd">        Based on the current configuration of this :class:`Brick` create</span>
+<span class="sd">        Theano shared variables to store the parameters.  After allocation,</span>
+<span class="sd">        parameters are accessible through the :attr:`parameters` attribute.</span>
+
+<span class="sd">        This method calls the :meth:`allocate` method of all children</span>
+<span class="sd">        first, allowing the :meth:`_allocate` method to override the</span>
+<span class="sd">        parameters of the children if needed.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the configuration of this brick is insufficient to determine</span>
+<span class="sd">            the number of parameters or their dimensionality to be</span>
+<span class="sd">            initialized.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        This method sets the :attr:`parameters` attribute to an empty list.</span>
+<span class="sd">        This is in order to ensure that calls to this method completely</span>
+<span class="sd">        reset the parameters.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;allocation_args&#39;</span><span class="p">):</span>
+            <span class="n">missing_config</span> <span class="o">=</span> <span class="p">[</span><span class="n">arg</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">allocation_args</span>
+                              <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span> <span class="ow">is</span> <span class="n">NoneAllocation</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">missing_config</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;allocation config not set: &#39;</span>
+                                 <span class="s1">&#39;{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_config</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allocation_config_pushed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">push_allocation_config</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">allocate</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_allocate</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allocated</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">_allocate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Brick implementation of parameter initialization.</span>
+
+<span class="sd">        Implement this if your brick needs to allocate its parameters.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">           This method should never be called directly. Call</span>
+<span class="sd">           :meth:`initialize` instead.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize parameters.</span>
+
+<span class="sd">        Intialize parameters, such as weight matrices and biases.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        If the brick has not allocated its parameters yet, this method will</span>
+<span class="sd">        call the :meth:`allocate` method in order to do so.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;initialization_args&#39;</span><span class="p">):</span>
+            <span class="n">missing_config</span> <span class="o">=</span> <span class="p">[</span><span class="n">arg</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialization_args</span>
+                              <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span> <span class="ow">is</span> <span class="n">NoneInitialization</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">missing_config</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;initialization config not set: &#39;</span>
+                                 <span class="s1">&#39;{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_config</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allocated</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">allocate</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialization_config_pushed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">push_initialization_config</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialize</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">_initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Brick implementation of parameter initialization.</span>
+
+<span class="sd">        Implement this if your brick needs to initialize its parameters.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">           This method should never be called directly. Call</span>
+<span class="sd">           :meth:`initialize` instead.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">push_allocation_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Push the configuration for allocation to child bricks.</span>
+
+<span class="sd">        Bricks can configure their children, based on their own current</span>
+<span class="sd">        configuration. This will be automatically done by a call to</span>
+<span class="sd">        :meth:`allocate`, but if you want to override the configuration of</span>
+<span class="sd">        child bricks manually, then you can call this function manually.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_push_allocation_config</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allocation_config_pushed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">push_allocation_config</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">allocation_config_pushed</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">raise</span>
+
+    <span class="k">def</span> <span class="nf">_push_allocation_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Brick implementation of configuring child before allocation.</span>
+
+<span class="sd">        Implement this if your brick needs to set the configuration of its</span>
+<span class="sd">        children before allocation.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">           This method should never be called directly. Call</span>
+<span class="sd">           :meth:`push_allocation_config` instead.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">push_initialization_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Push the configuration for initialization to child bricks.</span>
+
+<span class="sd">        Bricks can configure their children, based on their own current</span>
+<span class="sd">        configuration. This will be automatically done by a call to</span>
+<span class="sd">        :meth:`initialize`, but if you want to override the configuration</span>
+<span class="sd">        of child bricks manually, then you can call this function manually.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_push_initialization_config</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialization_config_pushed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">push_initialization_config</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">initialization_config_pushed</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">raise</span>
+
+    <span class="k">def</span> <span class="nf">_push_initialization_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Brick implementation of configuring child before initialization.</span>
+
+<span class="sd">        Implement this if your brick needs to set the configuration of its</span>
+<span class="sd">        children before initialization.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">           This method should never be called directly. Call</span>
+<span class="sd">           :meth:`push_initialization_config` instead.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">get_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get dimension of an input/output variable of a brick.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            The name of the variable.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No dimension information for {} available&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">get_dims</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get list of dimensions for a set of input/output variables.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        names : list</span>
+<span class="sd">            The variable names.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dims : list</span>
+<span class="sd">            The dimensions of the sources.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_dim</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get_unique_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns unique path to this brick in the application graph.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+            <span class="n">parent</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">attrgetter</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">parent</span><span class="o">.</span><span class="n">get_unique_path</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">args_to_kwargs</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+    <span class="n">arg_names</span><span class="p">,</span> <span class="n">vararg_names</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">((</span><span class="n">arg_name</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg_name</span><span class="p">,</span> <span class="n">arg</span>
+                <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">arg_names</span> <span class="o">+</span> <span class="p">[</span><span class="n">vararg_names</span><span class="p">],</span> <span class="n">args</span><span class="p">))</span>
+
+
+<span class="k">class</span> <span class="nc">LazyNone</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">__bool__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="n">__nonzero__</span> <span class="o">=</span> <span class="n">__bool__</span>
+
+<span class="n">NoneAllocation</span> <span class="o">=</span> <span class="n">LazyNone</span><span class="p">(</span><span class="s1">&#39;NoneAllocation&#39;</span><span class="p">)</span>
+<span class="n">NoneInitialization</span> <span class="o">=</span> <span class="n">LazyNone</span><span class="p">(</span><span class="s1">&#39;NoneInitialization&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">lazy</span><span class="p">(</span><span class="n">allocation</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">initialization</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Makes the initialization lazy.</span>
+
+<span class="sd">    This decorator allows the user to define positional arguments which</span>
+<span class="sd">    will not be needed until the allocation or initialization stage of the</span>
+<span class="sd">    brick. If these arguments are not passed, it will automatically replace</span>
+<span class="sd">    them with a custom ``None`` object. It is assumed that the missing</span>
+<span class="sd">    arguments can be set after initialization by setting attributes with</span>
+<span class="sd">    the same name.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    allocation : list</span>
+<span class="sd">        A list of argument names that are needed for allocation.</span>
+<span class="sd">    initialization : list</span>
+<span class="sd">        A list of argument names that are needed for initialization.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; class SomeBrick(Brick):</span>
+<span class="sd">    ...     @lazy(allocation=[&#39;a&#39;], initialization=[&#39;b&#39;])</span>
+<span class="sd">    ...     def __init__(self, a, b, c=&#39;c&#39;, d=None):</span>
+<span class="sd">    ...         print(a, b, c, d)</span>
+<span class="sd">    &gt;&gt;&gt; brick = SomeBrick(&#39;a&#39;)</span>
+<span class="sd">    a NoneInitialization c None</span>
+<span class="sd">    &gt;&gt;&gt; brick = SomeBrick(d=&#39;d&#39;, b=&#39;b&#39;)</span>
+<span class="sd">    NoneAllocation b c d</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">allocation</span><span class="p">:</span>
+        <span class="n">allocation</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">initialization</span><span class="p">:</span>
+        <span class="n">initialization</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">lazy_wrapper</span><span class="p">(</span><span class="n">init</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">lazy_init</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="bp">self</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">allocation_args</span> <span class="o">=</span> <span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;allocation_args&#39;</span><span class="p">,</span>
+                                            <span class="p">[])</span> <span class="o">+</span> <span class="n">allocation</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initialization_args</span> <span class="o">=</span> <span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;initialization_args&#39;</span><span class="p">,</span>
+                                                <span class="p">[])</span> <span class="o">+</span> <span class="n">initialization</span><span class="p">)</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="n">dict_union</span><span class="p">(</span><span class="n">args_to_kwargs</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">init</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">allocation_arg</span> <span class="ow">in</span> <span class="n">allocation</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">allocation_arg</span><span class="p">,</span> <span class="n">NoneAllocation</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">initialization_arg</span> <span class="ow">in</span> <span class="n">initialization</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">initialization_arg</span><span class="p">,</span> <span class="n">NoneInitialization</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">init</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">wraps</span><span class="p">(</span><span class="n">init</span><span class="p">)(</span><span class="n">lazy_init</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">lazy_init</span>
+    <span class="k">return</span> <span class="n">lazy_wrapper</span>
+
+
+<span class="k">class</span> <span class="nc">ApplicationCall</span><span class="p">(</span><span class="n">Annotation</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A link between the variable tags and bricks.</span>
+
+<span class="sd">    The application call can be used to attach to an apply call auxiliary</span>
+<span class="sd">    variables (e.g. monitors or regularizers) that do not form part of the</span>
+<span class="sd">    main computation graph.</span>
+
+<span class="sd">    The application call object is created before the call to the</span>
+<span class="sd">    application method and can be accessed by specifying an</span>
+<span class="sd">    application_call argument.</span>
+
+<span class="sd">    Also see :class:`.Annotation`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    application : :class:`BoundApplication` instance</span>
+<span class="sd">        The bound application (i.e. belong to a brick instance) object</span>
+<span class="sd">        being called</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; class Foo(Brick):</span>
+<span class="sd">    ...     @application</span>
+<span class="sd">    ...     def apply(self, x, application_call):</span>
+<span class="sd">    ...         application_call.add_auxiliary_variable(x.mean())</span>
+<span class="sd">    ...         return x + 1</span>
+<span class="sd">    &gt;&gt;&gt; x = tensor.vector()</span>
+<span class="sd">    &gt;&gt;&gt; y = Foo().apply(x)</span>
+<span class="sd">    &gt;&gt;&gt; from blocks.filter import get_application_call</span>
+<span class="sd">    &gt;&gt;&gt; get_application_call(y) # doctest: +ELLIPSIS</span>
+<span class="sd">    &lt;blocks.bricks.base.ApplicationCall object at ...&gt;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">application</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">application</span> <span class="o">=</span> <span class="n">application</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ApplicationCall</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">add_auxiliary_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">roles</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">variable</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">_variable_name</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="o">.</span><span class="n">brick</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="n">variable</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">add_annotation</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="o">.</span><span class="n">brick</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">ApplicationCall</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_auxiliary_variable</span><span class="p">(</span>
+            <span class="n">variable</span><span class="p">,</span> <span class="n">roles</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">application</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;Decorator for methods that apply a brick to inputs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    \*args, optional</span>
+<span class="sd">        The application method to wrap.</span>
+<span class="sd">    \*\*kwargs, optional</span>
+<span class="sd">        Attributes to attach to this application.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This decorator replaces application methods with :class:`Application`</span>
+<span class="sd">    instances. It also sets the attributes given as keyword arguments to</span>
+<span class="sd">    the decorator.</span>
+
+<span class="sd">    Note that this decorator purposely does not wrap the original method</span>
+<span class="sd">    using e.g. :func:`~functools.wraps` or</span>
+<span class="sd">    :func:`~functools.update_wrapper`, since that would make the class</span>
+<span class="sd">    impossible to pickle (see notes at :class:`Application`).</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; class Foo(Brick):</span>
+<span class="sd">    ...     @application(inputs=[&#39;x&#39;], outputs=[&#39;y&#39;])</span>
+<span class="sd">    ...     def apply(self, x):</span>
+<span class="sd">    ...         return x + 1</span>
+<span class="sd">    ...     @application</span>
+<span class="sd">    ...     def other_apply(self, x):</span>
+<span class="sd">    ...         return x - 1</span>
+<span class="sd">    &gt;&gt;&gt; foo = Foo()</span>
+<span class="sd">    &gt;&gt;&gt; Foo.apply.inputs</span>
+<span class="sd">    [&#39;x&#39;]</span>
+<span class="sd">    &gt;&gt;&gt; foo.apply.outputs</span>
+<span class="sd">    [&#39;y&#39;]</span>
+<span class="sd">    &gt;&gt;&gt; Foo.other_apply # doctest: +ELLIPSIS</span>
+<span class="sd">    &lt;blocks.bricks.base.Application object at ...&gt;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">((</span><span class="n">args</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">args</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span>
+    <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+        <span class="n">application_function</span><span class="p">,</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="n">application</span> <span class="o">=</span> <span class="n">Application</span><span class="p">(</span><span class="n">application_function</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">application</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">wrap_application</span><span class="p">(</span><span class="n">application_function</span><span class="p">):</span>
+            <span class="n">application</span> <span class="o">=</span> <span class="n">Application</span><span class="p">(</span><span class="n">application_function</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">application</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">application</span>
+        <span class="k">return</span> <span class="n">wrap_application</span>
+
+
+<span class="k">def</span> <span class="nf">_variable_name</span><span class="p">(</span><span class="n">brick_name</span><span class="p">,</span> <span class="n">application_name</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;{}_{}_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">brick_name</span><span class="p">,</span> <span class="n">application_name</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

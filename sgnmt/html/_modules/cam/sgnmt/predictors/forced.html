@@ -1,0 +1,417 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.forced &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.decoding.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.forced</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.forced</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains predictors for forced decoding. This can be</span>
+<span class="sd">done either with one reference (forced ``ForcedPredictor``), or with</span>
+<span class="sd">multiple references in form of a n-best list (forcedlst </span>
+<span class="sd">``ForcedLstPredictor``). </span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+
+<span class="n">NEG_INF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ForcedPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor">[docs]</a><span class="k">class</span> <span class="nc">ForcedPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor realizes forced decoding. It stores one target</span>
+<span class="sd">    sentence for each source sentence and outputs predictive probability</span>
+<span class="sd">    1 along this path, and 0 otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_test_file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new forced decoding predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trg_test_file (string): Path to the plain text file with </span>
+<span class="sd">                                    the target sentences. Must have the</span>
+<span class="sd">                                    same number of lines as the number</span>
+<span class="sd">                                    of source sentences to decode</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ForcedPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">trg_test_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> 
+                            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span> 
+        
+<div class="viewcode-block" id="ForcedPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns negative infinity unconditionally: Words which are</span>
+<span class="sd">        not in the target sentence have assigned probability 0 by</span>
+<span class="sd">        this predictor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">NEG_INF</span></div>
+    
+<div class="viewcode-block" id="ForcedPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a dictionary with one entry and value 0 (=log 1). The</span>
+<span class="sd">        key is either the next word in the target sentence or (if the</span>
+<span class="sd">        target sentence has no more words) the end-of-sentence symbol.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span></div>
+    
+<div class="viewcode-block" id="ForcedPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fetches the corresponding target sentence and resets the</span>
+<span class="sd">        current history.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list):  Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span></div>
+    
+<div class="viewcode-block" id="ForcedPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If ``word`` matches the target sentence, we increase the</span>
+<span class="sd">        current history by one. Otherwise, we set this predictor in</span>
+<span class="sd">        an invalid state, in which it always predicts &lt;/S&gt;</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): Next word to consume</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span> <span class="o">!=</span> <span class="n">word</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># Mismatch with our target sentence</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">+</span> <span class="mi">1</span></div>
+    
+<div class="viewcode-block" id="ForcedPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;``cur_trg_sentence`` can be changed so its part of the </span>
+<span class="sd">        predictor state</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span></div>
+    
+<div class="viewcode-block" id="ForcedPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the predictor state. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="ForcedPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="ForcedLstPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor">[docs]</a><span class="k">class</span> <span class="nc">ForcedLstPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor can be used for direct n-best list rescoring. In</span>
+<span class="sd">    contrast to the ``ForcedPredictor``, it reads an n-best list in </span>
+<span class="sd">    Moses format and uses its scores as predictive probabilities of the</span>
+<span class="sd">    &lt;/S&gt; symbol. Everywhere else it gives the predictive probability 1 </span>
+<span class="sd">    if the history corresponds to at least one n-best list entry, 0 </span>
+<span class="sd">    otherwise. From the n-best list we use</span>
+<span class="sd">    First column: Sentence id</span>
+<span class="sd">    Second column: Hypothesis in integer format</span>
+<span class="sd">    Last column: score</span>
+<span class="sd">    </span>
+<span class="sd">    Note: Behavior is undefined if you have duplicates in the n-best</span>
+<span class="sd">    list</span>
+<span class="sd">    </span>
+<span class="sd">    TODO: Would be much more efficient to use Tries for </span>
+<span class="sd">    cur_trgt_sentences instead of a flat list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_test_file</span><span class="p">,</span> <span class="n">use_scores</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">feat_name</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new n-best rescoring predictor instance.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trg_test_file (string):  Path to the n-best list</span>
+<span class="sd">            use_scores (bool): Whether to use the scores from the</span>
+<span class="sd">                               n-best list. If false, use uniform</span>
+<span class="sd">                               scores of 0 (=log 1).</span>
+<span class="sd">            feat_name (string): Instead of the combined score in the</span>
+<span class="sd">                                last column of the Moses n-best list,</span>
+<span class="sd">                                we can use one of the sparse features.</span>
+<span class="sd">                                Set this to the name of the feature</span>
+<span class="sd">                                (denoted as &lt;name&gt;= in the n-best list)</span>
+<span class="sd">                                if you wish to do that.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ForcedLstPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">trg_test_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|||&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Malformed line </span><span class="si">%s</span><span class="s2"> in n-best list </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                                        <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                                        <span class="n">trg_test_file</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">use_scores</span><span class="p">:</span>
+                        <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_score</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="n">feat_name</span><span class="p">)</span>
+                    <span class="n">sen_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">sen_id</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+                    <span class="n">sen</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+                    <span class="k">if</span> <span class="n">sen</span> <span class="ow">and</span> <span class="n">sen</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">:</span>
+                        <span class="n">sen</span>  <span class="o">=</span> <span class="n">sen</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                    <span class="k">if</span> <span class="n">sen</span> <span class="ow">and</span> <span class="n">sen</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                        <span class="n">sen</span> <span class="o">=</span> <span class="n">sen</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="n">sen_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">score</span><span class="p">,</span> <span class="n">sen</span><span class="p">))</span>
+        
+    <span class="k">def</span> <span class="nf">_get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parts</span><span class="p">,</span> <span class="n">feat_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the score for a hypothesis.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            parts (list): Parts of the n-best entry (separated by |||</span>
+<span class="sd">                          in the Moses n-best format)</span>
+<span class="sd">            feat_name (string): Name of the sparse feature which should</span>
+<span class="sd">                                be used as score (or None to use the</span>
+<span class="sd">                                combined score)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">feat_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">=&quot;</span> <span class="o">%</span> <span class="n">feat_name</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">feat_name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="n">feat_parts</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">feat_parts</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">feat_parts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">==</span> <span class="n">feat_str</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">feat_parts</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="mf">0.0</span>
+
+<div class="viewcode-block" id="ForcedLstPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return negative infinity unconditionally - words outside the</span>
+<span class="sd">        n-best list are not possible according to this predictor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">NEG_INF</span></div>
+    
+<div class="viewcode-block" id="ForcedLstPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Outputs 0.0 (i.e. prob=1) for all words for which there is </span>
+<span class="sd">        an entry ``in cur_trg_sentences``, and the score in </span>
+<span class="sd">        ``cur_trg_sentences`` if the current history is by itself equal</span>
+<span class="sd">        to an entry in ``cur_trg_sentences``.</span>
+<span class="sd">        </span>
+<span class="sd">        TODO: The implementation here is fairly inefficient as it scans </span>
+<span class="sd">        through all target sentences linearly. Would be better to </span>
+<span class="sd">        organize the target sentences in a Trie</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">hist_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">sen_score</span><span class="p">,</span><span class="n">trg_sentence</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentences</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">trg_sentence</span><span class="p">[:</span><span class="n">hist_len</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">trg_sentence</span><span class="p">)</span> <span class="o">==</span> <span class="n">hist_len</span><span class="p">:</span>
+                    <span class="n">scores</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">sen_score</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">scores</span><span class="p">[</span><span class="n">trg_sentence</span><span class="p">[</span><span class="n">hist_len</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">scores</span></div>
+    
+<div class="viewcode-block" id="ForcedLstPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Resets the history and loads the n-best list entries for the</span>
+<span class="sd">        next source sentence</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentences</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span></div>
+    
+<div class="viewcode-block" id="ForcedLstPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extends the current history by ``word``. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="ForcedLstPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the current history. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span></div>
+    
+<div class="viewcode-block" id="ForcedLstPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets the current history. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="ForcedLstPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -4,8 +4,6 @@ var hierarchy =
     [ "fst::AE< T, std::map< unsigned int, T > >", "structfst_1_1AE_3_01T_00_01std_1_1map_3_01unsigned_01int_00_01T_01_4_01_4.html", null ],
     [ "fst::AE< T, std::vector< T > >", "structfst_1_1AE_3_01T_00_01std_1_1vector_3_01T_01_4_01_4.html", null ],
     [ "fst::AE< T, TropicalSparseTupleWeight< T > >", "structfst_1_1AE_3_01T_00_01TropicalSparseTupleWeight_3_01T_01_4_01_4.html", null ],
-    [ "uk.ac.cam.eng.extraction.datatypes.Alignment", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Alignment.html", null ],
-    [ "uk.ac.cam.eng.extraction.hadoop.datatypes.AlignmentAndFeatureMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentAndFeatureMap.html", null ],
     [ "ucam::hifst::AlilatsToSparseWeightLatsData< ArcT >", "classucam_1_1hifst_1_1AlilatsToSparseWeightLatsData.html", null ],
     [ "fst::ApplyLanguageModelOnTheFlyInterface< ArcT >", "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html", null ],
     [ "fst::ApplyLanguageModelOnTheFlyInterface< Arc >", "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html", [
@@ -18,7 +16,7 @@ var hierarchy =
     [ "ucam::fsttools::BleuScorer", "classucam_1_1fsttools_1_1BleuScorer.html", null ],
     [ "ucam::fsttools::BleuStats", "classucam_1_1fsttools_1_1BleuStats.html", null ],
     [ "BleuStats", "classBleuStats.html", null ],
-    [ "uk.ac.cam.eng.extraction.datatypes.Block", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Block.html", null ],
+    [ "uk.ac.cam.eng.util.CLI", "classuk_1_1ac_1_1cam_1_1eng_1_1util_1_1CLI.html", null ],
     [ "fst::CompareHyp", "classfst_1_1CompareHyp.html", null ],
     [ "ucam::hifst::CompareTool", "classucam_1_1hifst_1_1CompareTool.html", [
       [ "ucam::hifst::PatternCompareTool", "classucam_1_1hifst_1_1PatternCompareTool.html", null ]
@@ -26,6 +24,7 @@ var hierarchy =
     [ "CompositeList", "classCompositeList.html", null ],
     [ "ucam::lmbr::ComputePosteriors", "classucam_1_1lmbr_1_1ComputePosteriors.html", null ],
     [ "ucam::hifst::conditions", "structucam_1_1hifst_1_1conditions.html", null ],
+    [ "uk.ac.cam.eng.extraction.hadoop.util.CopyRecordsForTesting", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1CopyRecordsForTesting.html", null ],
     [ "ucam::hifst::CYKbackpointers", "classucam_1_1hifst_1_1CYKbackpointers.html", null ],
     [ "ucam::hifst::CYKdata", "structucam_1_1hifst_1_1CYKdata.html", null ],
     [ "ucam::hifst::CYKgrid", "classucam_1_1hifst_1_1CYKgrid.html", null ],
@@ -44,7 +43,7 @@ var hierarchy =
     [ "EnumerateVocab", null, [
       [ "lm::HifstEnumerateVocab< WordMapperT >", "classlm_1_1HifstEnumerateVocab.html", null ]
     ] ],
-    [ "uk.ac.cam.eng.rulebuilding.features.EnumRuleType", "enumuk_1_1ac_1_1cam_1_1eng_1_1rulebuilding_1_1features_1_1EnumRuleType.html", null ],
+    [ "uk.ac.cam.eng.rule.retrieval.EnumRuleType", "enumuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1EnumRuleType.html", null ],
     [ "ErrorSurface< RD >", "classErrorSurface.html", null ],
     [ "fst::Expand", "structfst_1_1Expand.html", null ],
     [ "ucam::hifst::ExpandedNumStatesRTN< Arc >", "classucam_1_1hifst_1_1ExpandedNumStatesRTN.html", null ],
@@ -52,7 +51,10 @@ var hierarchy =
     [ "uk.ac.cam.eng.extraction.hadoop.util.ExtractorDataLoader", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1ExtractorDataLoader.html", null ],
     [ "ucam::util::FastForwardRead< StreamT >", "classucam_1_1util_1_1FastForwardRead.html", null ],
     [ "ucam::util::FastForwardRead< ucam::util::iszfstream >", "classucam_1_1util_1_1FastForwardRead.html", null ],
-    [ "uk.ac.cam.eng.rulebuilding.features.FeatureCreator", "classuk_1_1ac_1_1cam_1_1eng_1_1rulebuilding_1_1features_1_1FeatureCreator.html", null ],
+    [ "uk.ac.cam.eng.rule.features.Feature", "enumuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1features_1_1Feature.html", null ],
+    [ "uk.ac.cam.eng.rule.features.FeatureFunctionRegistry", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1features_1_1FeatureFunctionRegistry.html", null ],
+    [ "uk.ac.cam.eng.rule.features.FeatureFunctions", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1features_1_1FeatureFunctions.html", null ],
+    [ "uk.ac.cam.eng.rule.features.FeatureRegistry", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1features_1_1FeatureRegistry.html", null ],
     [ "ucam::fsttools::FeatureTracker", "classucam_1_1fsttools_1_1FeatureTracker.html", null ],
     [ "ucam::fsttools::FeatureTrackerRev", "classucam_1_1fsttools_1_1FeatureTrackerRev.html", null ],
     [ "FunctionArc", "structFunctionArc.html", null ],
@@ -125,13 +127,12 @@ var hierarchy =
     [ "ucam::hifst::ManualReplaceFstByArc< Arc >", "classucam_1_1hifst_1_1ManualReplaceFstByArc.html", null ],
     [ "ucam::fsttools::MapCursor", "structucam_1_1fsttools_1_1MapCursor.html", null ],
     [ "ucam::fsttools::MapCursorRev", "structucam_1_1fsttools_1_1MapCursorRev.html", null ],
-    [ "uk.ac.cam.eng.extraction.hadoop.features.MapReduceFeature", "enumuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1MapReduceFeature.html", null ],
     [ "ucam::fsttools::MergeFeatures", "structucam_1_1fsttools_1_1MergeFeatures.html", null ],
     [ "MERT", "structMERT.html", null ],
     [ "MertEnvelope", "classMertEnvelope.html", null ],
     [ "ucam::lmert::MertEnvelope< Arc >", "classucam_1_1lmert_1_1MertEnvelope.html", null ],
-    [ "ucam::lmert::MertLattice< Arc >", "classucam_1_1lmert_1_1MertLattice.html", null ],
     [ "MertLattice", "classMertLattice.html", null ],
+    [ "ucam::lmert::MertLattice< Arc >", "classucam_1_1lmert_1_1MertLattice.html", null ],
     [ "ucam::lmert::MertLatticeWrap< Arc >", "classucam_1_1lmert_1_1MertLatticeWrap.html", null ],
     [ "MertLine", "classMertLine.html", null ],
     [ "ucam::lmert::MertLine< Arc >", "classucam_1_1lmert_1_1MertLine.html", null ],
@@ -183,11 +184,11 @@ var hierarchy =
     [ "googletesting::RemoveWeight", "structgoogletesting_1_1RemoveWeight.html", null ],
     [ "ucam::hifst::ReplaceFstByArc< Arc >", "classucam_1_1hifst_1_1ReplaceFstByArc.html", null ],
     [ "ucam::hifst::RTN< Arc >", "classucam_1_1hifst_1_1RTN.html", null ],
-    [ "uk.ac.cam.eng.extraction.datatypes.Rule", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Rule.html", null ],
-    [ "uk.ac.cam.eng.extraction.RuleExtractor", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1RuleExtractor.html", null ],
     [ "uk.ac.cam.eng.extraction.RuleExtractorTest", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1RuleExtractorTest.html", null ],
+    [ "uk.ac.cam.eng.rule.filtering.RuleFilter", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1filtering_1_1RuleFilter.html", null ],
     [ "ucam::hifst::RuleIdsToSparseWeightLatsData< KenLMModelT >", "classucam_1_1hifst_1_1RuleIdsToSparseWeightLatsData.html", null ],
     [ "uk.ac.cam.eng.rule.retrieval.RulePattern", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RulePattern.html", null ],
+    [ "uk.ac.cam.eng.rule.retrieval.RuleRetriever", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RuleRetriever.html", null ],
     [ "ucam::hifst::RulesToWeightsMapperObject", "structucam_1_1hifst_1_1RulesToWeightsMapperObject.html", null ],
     [ "RunAlilatsToSplats< DataT, ArcT >", "structRunAlilatsToSplats.html", null ],
     [ "RunApplyLm< DataT, ArcT >", "structRunApplyLm.html", null ],
@@ -208,20 +209,19 @@ var hierarchy =
       [ "ScorerImpl< RefData >", "classScorerImpl.html", null ]
     ] ],
     [ "fst::Scorer< lm::np::State, lm::np::Model, IdBridgeT, HackScoreT >", "structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html", null ],
-    [ "uk.ac.cam.eng.extraction.datatypes.Sentence", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1Sentence.html", null ],
-    [ "uk.ac.cam.eng.extraction.datatypes.SentencePair", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1SentencePair.html", null ],
     [ "ucam::hifst::SentenceSpecificGrammarData", "structucam_1_1hifst_1_1SentenceSpecificGrammarData.html", null ],
     [ "uk.ac.cam.eng.extraction.hadoop.util.SequenceFilePrint", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1SequenceFilePrint.html", null ],
     [ "mertfst::ShortestDistanceOptions< Arc, Queue, ArcFilter >", "structmertfst_1_1ShortestDistanceOptions.html", null ],
     [ "mertfst::ShortestDistanceState< Arc, Queue, ArcFilter >", "classmertfst_1_1ShortestDistanceState.html", null ],
+    [ "uk.ac.cam.eng.rule.retrieval.SidePattern", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1SidePattern.html", null ],
     [ "ucam::util::silent", "classucam_1_1util_1_1silent.html", null ],
     [ "SparsePowerWeight", null, [
       [ "fst::TropicalSparseTupleWeight< T >", "classfst_1_1TropicalSparseTupleWeight.html", null ],
       [ "fst::TropicalSparseTupleWeight< T >", "classfst_1_1TropicalSparseTupleWeight.html", null ]
     ] ],
     [ "ucam::fsttools::SpeedStatsData", "structucam_1_1fsttools_1_1SpeedStatsData.html", null ],
-    [ "ucam::fsttools::StateHandler", "structucam_1_1fsttools_1_1StateHandler.html", null ],
     [ "fst::StateHandler< StateT >", "structfst_1_1StateHandler.html", null ],
+    [ "ucam::fsttools::StateHandler", "structucam_1_1fsttools_1_1StateHandler.html", null ],
     [ "fst::StateHandler< lm::np::State >", "structfst_1_1StateHandler_3_01lm_1_1np_1_1State_01_4.html", null ],
     [ "fst::StateHandler< typename KenLMModelT::State >", "structfst_1_1StateHandler.html", null ],
     [ "ucam::fsttools::StatsData", "structucam_1_1fsttools_1_1StatsData.html", null ],
@@ -293,6 +293,8 @@ var hierarchy =
     [ "Test", null, [
       [ "HifstTest", "classHifstTest.html", null ]
     ] ],
+    [ "uk.ac.cam.eng.util.TestCommandLineInterface", "classuk_1_1ac_1_1cam_1_1eng_1_1util_1_1TestCommandLineInterface.html", null ],
+    [ "uk.ac.cam.eng.rule.features.TestFeatureRegistry", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1features_1_1TestFeatureRegistry.html", null ],
     [ "TGMertAlgorithm< Arc, T >", "classTGMertAlgorithm.html", null ],
     [ "ucam::lmbr::Theta", "classucam_1_1lmbr_1_1Theta.html", null ],
     [ "ucam::fsttools::TopoFeaturesHelper< ActionT >", "structucam_1_1fsttools_1_1TopoFeaturesHelper.html", null ],
@@ -310,8 +312,10 @@ var hierarchy =
     [ "fst::VectorToStd< T >", "structfst_1_1VectorToStd.html", null ],
     [ "ucam::util::WordMapper", "classucam_1_1util_1_1WordMapper.html", null ],
     [ "fst::WordPenaltyMapper< Arc >", "classfst_1_1WordPenaltyMapper.html", null ],
+    [ "ArrayList", null, [
+      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.TargetFeatureList", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1TargetFeatureList.html", null ]
+    ] ],
     [ "ArrayWritable", null, [
-      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.AlignmentWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentWritable.html", null ],
       [ "uk.ac.cam.eng.extraction.hadoop.datatypes.TextArrayWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1TextArrayWritable.html", null ]
     ] ],
     [ "Closeable", null, [
@@ -319,39 +323,38 @@ var hierarchy =
     ] ],
     [ "Configured", null, [
       [ "uk.ac.cam.eng.extraction.hadoop.extraction.ExtractorJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1extraction_1_1ExtractorJob.html", null ],
-      [ "uk.ac.cam.eng.extraction.hadoop.features.lexical.TTableServer", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1lexical_1_1TTableServer.html", null ],
-      [ "uk.ac.cam.eng.extraction.hadoop.features.phrase.Source2TargetJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1Source2TargetJob.html", null ],
-      [ "uk.ac.cam.eng.extraction.hadoop.features.phrase.Target2SourceJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1Target2SourceJob.html", null ],
-      [ "uk.ac.cam.eng.extraction.hadoop.merge.MergeJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1merge_1_1MergeJob.html", null ],
-      [ "uk.ac.cam.eng.rule.retrieval.RuleRetriever", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RuleRetriever.html", null ]
+      [ "uk.ac.cam.eng.extraction.hadoop.features.phrase.PhraseJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1PhraseJob.html", [
+        [ "uk.ac.cam.eng.extraction.hadoop.features.phrase.Source2TargetJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1Source2TargetJob.html", null ],
+        [ "uk.ac.cam.eng.extraction.hadoop.features.phrase.Target2SourceJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1Target2SourceJob.html", null ]
+      ] ],
+      [ "uk.ac.cam.eng.extraction.hadoop.merge.MergeJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1merge_1_1MergeJob.html", null ]
+    ] ],
+    [ "EnumMap", null, [
+      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.FeatureMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1FeatureMap.html", null ]
     ] ],
     [ "FileOutputFormat", null, [
       [ "uk.ac.cam.eng.extraction.hadoop.util.SimpleHFileOutputFormat", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1util_1_1SimpleHFileOutputFormat.html", null ]
     ] ],
-    [ "List", null, [
-      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.TargetFeatureList", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1TargetFeatureList.html", null ]
+    [ "HashMap", null, [
+      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.AlignmentCountMapWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentCountMapWritable.html", null ]
     ] ],
     [ "Map", null, [
-      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.FeatureMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1FeatureMap.html", null ],
-      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.ProvenanceCountMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1ProvenanceCountMap.html", null ]
+      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.ProvenanceCountMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1ProvenanceCountMap.html", null ],
+      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.ProvenanceProbMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1ProvenanceProbMap.html", null ]
     ] ],
     [ "Tool", null, [
       [ "uk.ac.cam.eng.extraction.hadoop.extraction.ExtractorJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1extraction_1_1ExtractorJob.html", null ],
-      [ "uk.ac.cam.eng.extraction.hadoop.features.lexical.TTableServer", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1lexical_1_1TTableServer.html", null ],
-      [ "uk.ac.cam.eng.extraction.hadoop.features.phrase.Source2TargetJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1Source2TargetJob.html", null ],
-      [ "uk.ac.cam.eng.extraction.hadoop.features.phrase.Target2SourceJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1Target2SourceJob.html", null ],
-      [ "uk.ac.cam.eng.extraction.hadoop.merge.MergeJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1merge_1_1MergeJob.html", null ],
-      [ "uk.ac.cam.eng.rule.retrieval.RuleRetriever", "classuk_1_1ac_1_1cam_1_1eng_1_1rule_1_1retrieval_1_1RuleRetriever.html", null ]
+      [ "uk.ac.cam.eng.extraction.hadoop.features.phrase.PhraseJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1features_1_1phrase_1_1PhraseJob.html", null ],
+      [ "uk.ac.cam.eng.extraction.hadoop.merge.MergeJob", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1merge_1_1MergeJob.html", null ]
     ] ],
     [ "Writable", null, [
-      [ "uk.ac.cam.eng.extraction.datatypes.AlignmentLink", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1datatypes_1_1AlignmentLink.html", null ],
+      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.AlignmentCountMapWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1AlignmentCountMapWritable.html", null ],
+      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.ExtractedData", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1ExtractedData.html", null ],
       [ "uk.ac.cam.eng.extraction.hadoop.datatypes.FeatureMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1FeatureMap.html", null ],
       [ "uk.ac.cam.eng.extraction.hadoop.datatypes.ProvenanceCountMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1ProvenanceCountMap.html", null ],
-      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.RuleInfoWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleInfoWritable.html", null ],
+      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.ProvenanceProbMap", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1ProvenanceProbMap.html", null ],
+      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.RuleData", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleData.html", null ],
       [ "uk.ac.cam.eng.extraction.hadoop.datatypes.TargetFeatureList", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1TargetFeatureList.html", null ]
-    ] ],
-    [ "WritableComparable", null, [
-      [ "uk.ac.cam.eng.extraction.hadoop.datatypes.RuleWritable", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1datatypes_1_1RuleWritable.html", null ]
     ] ],
     [ "WritableComparator", null, [
       [ "uk.ac.cam.eng.extraction.hadoop.merge.MergeComparator", "classuk_1_1ac_1_1cam_1_1eng_1_1extraction_1_1hadoop_1_1merge_1_1MergeComparator.html", null ]
