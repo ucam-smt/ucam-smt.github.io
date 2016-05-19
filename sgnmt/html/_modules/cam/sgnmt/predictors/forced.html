@@ -86,10 +86,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.predictors.html">Predictors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.decoding.html">Decoders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
 </ul>
 
             
@@ -149,7 +150,7 @@
 <span class="n">NEG_INF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ForcedPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor">[docs]</a><span class="k">class</span> <span class="nc">ForcedPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor">[docs]</a><span class="k">class</span> <span class="nc">ForcedPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This predictor realizes forced decoding. It stores one target</span>
 <span class="sd">    sentence for each source sentence and outputs predictive probability</span>
 <span class="sd">    1 along this path, and 0 otherwise.</span>
@@ -172,14 +173,14 @@
                             <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span> 
         
-<div class="viewcode-block" id="ForcedPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns negative infinity unconditionally: Words which are</span>
 <span class="sd">        not in the target sentence have assigned probability 0 by</span>
 <span class="sd">        this predictor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">NEG_INF</span></div>
     
-<div class="viewcode-block" id="ForcedPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a dictionary with one entry and value 0 (=log 1). The</span>
 <span class="sd">        key is either the next word in the target sentence or (if the</span>
 <span class="sd">        target sentence has no more words) the end-of-sentence symbol.</span>
@@ -189,7 +190,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span></div>
     
-<div class="viewcode-block" id="ForcedPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fetches the corresponding target sentence and resets the</span>
 <span class="sd">        current history.</span>
 <span class="sd">        </span>
@@ -199,7 +200,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span> 
         <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span></div>
     
-<div class="viewcode-block" id="ForcedPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;If ``word`` matches the target sentence, we increase the</span>
 <span class="sd">        current history by one. Otherwise, we set this predictor in</span>
 <span class="sd">        an invalid state, in which it always predicts &lt;/S&gt;</span>
@@ -213,22 +214,22 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">+</span> <span class="mi">1</span></div>
     
-<div class="viewcode-block" id="ForcedPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;``cur_trg_sentence`` can be changed so its part of the </span>
 <span class="sd">        predictor state</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span></div>
     
-<div class="viewcode-block" id="ForcedPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set the predictor state. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span> <span class="o">=</span> <span class="n">state</span></div>
 
-<div class="viewcode-block" id="ForcedPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
         <span class="k">pass</span></div></div>
 
 
-<div class="viewcode-block" id="ForcedLstPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor">[docs]</a><span class="k">class</span> <span class="nc">ForcedLstPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedLstPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor">[docs]</a><span class="k">class</span> <span class="nc">ForcedLstPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This predictor can be used for direct n-best list rescoring. In</span>
 <span class="sd">    contrast to the ``ForcedPredictor``, it reads an n-best list in </span>
 <span class="sd">    Moses format and uses its scores as predictive probabilities of the</span>
@@ -303,13 +304,13 @@
                 <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">feat_parts</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="mf">0.0</span>
 
-<div class="viewcode-block" id="ForcedLstPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedLstPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return negative infinity unconditionally - words outside the</span>
 <span class="sd">        n-best list are not possible according to this predictor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">NEG_INF</span></div>
     
-<div class="viewcode-block" id="ForcedLstPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedLstPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Outputs 0.0 (i.e. prob=1) for all words for which there is </span>
 <span class="sd">        an entry ``in cur_trg_sentences``, and the score in </span>
 <span class="sd">        ``cur_trg_sentences`` if the current history is by itself equal</span>
@@ -329,7 +330,7 @@
                     <span class="n">scores</span><span class="p">[</span><span class="n">trg_sentence</span><span class="p">[</span><span class="n">hist_len</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="k">return</span> <span class="n">scores</span></div>
     
-<div class="viewcode-block" id="ForcedLstPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedLstPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Resets the history and loads the n-best list entries for the</span>
 <span class="sd">        next source sentence</span>
 <span class="sd">        </span>
@@ -339,19 +340,19 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentences</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span> 
         <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span></div>
     
-<div class="viewcode-block" id="ForcedLstPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedLstPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Extends the current history by ``word``. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="ForcedLstPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedLstPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the current history. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span></div>
     
-<div class="viewcode-block" id="ForcedLstPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedLstPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sets the current history. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="n">state</span></div>
 
-<div class="viewcode-block" id="ForcedLstPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ForcedLstPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
         <span class="k">pass</span></div></div>
 </pre></div>
@@ -365,7 +366,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+        &copy; Copyright 2016, University of Cambridge.
 
     </p>
   </div>

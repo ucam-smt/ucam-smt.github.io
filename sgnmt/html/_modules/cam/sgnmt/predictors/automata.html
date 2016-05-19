@@ -86,10 +86,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.predictors.html">Predictors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.decoding.html">Decoders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
 </ul>
 
             
@@ -166,17 +167,23 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
 
 
-<span class="sd">&quot;&quot;&quot;OpenFST&#39;s reserved ID for epsilon arcs. &quot;&quot;&quot;</span>
 <span class="n">EPS_ID</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="sd">&quot;&quot;&quot;OpenFST&#39;s reserved ID for epsilon arcs. &quot;&quot;&quot;</span>
 
 
 <span class="n">NEG_INF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
 
-<span class="sd">&quot;&quot;&quot;Temporary file name to use if a FST file is zipped. &quot;&quot;&quot;</span>
+
 <span class="n">TMP_FILENAME</span> <span class="o">=</span> <span class="s1">&#39;/tmp/sgnmt.</span><span class="si">%s</span><span class="s1">.fst&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span>
+<span class="sd">&quot;&quot;&quot;Temporary file name to use if a FST file is zipped. &quot;&quot;&quot;</span>
 
 
-<div class="viewcode-block" id="load_fst"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.load_fst">[docs]</a><span class="k">def</span> <span class="nf">load_fst</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<div class="viewcode-block" id="w2f"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.w2f">[docs]</a><span class="k">def</span> <span class="nf">w2f</span><span class="p">(</span><span class="n">fstweight</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts an arc weight to float &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">fstweight</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="load_fst"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.load_fst">[docs]</a><span class="k">def</span> <span class="nf">load_fst</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Loads a FST from the file system using PyFSTs ``read()`` method.</span>
 <span class="sd">    GZipped format is also supported. The arc type must be standard</span>
 <span class="sd">    or log, otherwise PyFST cannot load them.</span>
@@ -196,13 +203,13 @@
             <span class="n">ret</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">Fst</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Read fst from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ret</span>
-    <span class="k">except</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error reading fst from </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
-            <span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> error reading fst from </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+            <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span> <span class="n">path</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
     <span class="k">return</span> <span class="bp">None</span></div>
 
 
-<div class="viewcode-block" id="FstPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.FstPredictor">[docs]</a><span class="k">class</span> <span class="nc">FstPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+<div class="viewcode-block" id="FstPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor">[docs]</a><span class="k">class</span> <span class="nc">FstPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This predictor can read determinized translation lattices. The</span>
 <span class="sd">    predictor state consists of the current node. This is unique as the</span>
 <span class="sd">    lattices are determinized.</span>
@@ -243,7 +250,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">add_bos_to_eos_score</span> <span class="o">=</span> <span class="n">add_bos_to_eos_score</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
         
-<div class="viewcode-block" id="FstPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.FstPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+<div class="viewcode-block" id="FstPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Always returns negative infinity: Words outside the </span>
 <span class="sd">        translation lattice are not possible according to this</span>
 <span class="sd">        predictor.</span>
@@ -253,7 +260,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">NEG_INF</span> </div>
     
-<div class="viewcode-block" id="FstPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.FstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="FstPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Uses the outgoing arcs from the current node to build up the</span>
 <span class="sd">        scores for the next word.</span>
 <span class="sd">        </span>
@@ -264,14 +271,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{}</span>
-        <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span><span class="p">)}</span>
         <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="ow">in</span> <span class="n">scores</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_bos_to_eos_score</span><span class="p">:</span>
             <span class="n">scores</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bos_score</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">finalize_posterior</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">use_weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_scores</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="FstPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.FstPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="FstPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Loads the FST from the file system and consumes the start</span>
 <span class="sd">        of sentence symbol. </span>
 <span class="sd">        </span>
@@ -284,7 +291,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bos_score</span><span class="p">:</span> <span class="c1"># Override None</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bos_score</span> <span class="o">=</span> <span class="mf">0.0</span></div>
     
-<div class="viewcode-block" id="FstPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.FstPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+<div class="viewcode-block" id="FstPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Updates the current node by following the arc labelled with</span>
 <span class="sd">        ``word``. If there is no such arc, we set ``cur_node`` to -1,</span>
 <span class="sd">        indicating that the predictor is in an invalid state. In this</span>
@@ -304,27 +311,27 @@
         <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="n">from_state</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">word</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span></div>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="FstPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.FstPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="FstPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the current node. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span></div>
     
-<div class="viewcode-block" id="FstPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.FstPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<div class="viewcode-block" id="FstPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sets the current node. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="n">state</span></div>
 
-<div class="viewcode-block" id="FstPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.FstPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="FstPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Resets the loaded FST object and current node. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="bp">None</span></div>
     
-<div class="viewcode-block" id="FstPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.FstPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="FstPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a matrix of shortest distances between nodes. &quot;&quot;&quot;</span>
         <span class="c1"># TODO: Update to use OpenFST instead of PyFST</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">shortest_distance</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="FstPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.FstPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+<div class="viewcode-block" id="FstPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;The FST predictor comes with its own heuristic function. We</span>
 <span class="sd">        use the shortest path in the fst as future cost estimator. &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span><span class="p">:</span>
@@ -332,11 +339,11 @@
         <span class="n">last_word</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">last_word</span><span class="p">:</span>
-                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">])</span>
+                <span class="k">return</span> <span class="n">w2f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">])</span>
         <span class="k">return</span> <span class="mf">0.0</span></div></div>
 
 
-<div class="viewcode-block" id="NondeterministicFstPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor">[docs]</a><span class="k">class</span> <span class="nc">NondeterministicFstPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+<div class="viewcode-block" id="NondeterministicFstPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor">[docs]</a><span class="k">class</span> <span class="nc">NondeterministicFstPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This predictor can handle non-deterministic translation </span>
 <span class="sd">    lattices. In contrast to the fst predictor for deterministic</span>
 <span class="sd">    lattices, we store a set of nodes which are all reachable from</span>
@@ -366,7 +373,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="p">[]</span>
         
-<div class="viewcode-block" id="NondeterministicFstPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+<div class="viewcode-block" id="NondeterministicFstPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Always returns negative infinity: Words outside the </span>
 <span class="sd">        translation lattice are not possible according to this</span>
 <span class="sd">        predictor.</span>
@@ -376,7 +383,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">NEG_INF</span> </div>
     
-<div class="viewcode-block" id="NondeterministicFstPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="NondeterministicFstPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Uses the outgoing arcs from all current node to build up the</span>
 <span class="sd">        scores for the next word. This method does not follow epsilon</span>
 <span class="sd">        arcs: ``consume`` updates ``cur_nodes`` such that all reachable</span>
@@ -395,13 +402,13 @@
                 <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">!=</span> <span class="n">EPS_ID</span><span class="p">:</span>
                     <span class="n">scorelst</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">]</span> <span class="o">=</span> <span class="n">scorelst</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">,</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">[</span>
                                         <span class="n">weight</span>
-                                        <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)]</span> 
+                                        <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)]</span> 
         <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> 
                     <span class="k">for</span> <span class="n">word</span><span class="p">,</span><span class="n">weights</span> <span class="ow">in</span> <span class="n">scorelst</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()}</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">finalize_posterior</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">use_weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_scores</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="NondeterministicFstPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="NondeterministicFstPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Loads the FST from the file system and consumes the start</span>
 <span class="sd">        of sentence symbol. </span>
 <span class="sd">        </span>
@@ -412,7 +419,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span><span class="p">)]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="k">else</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="NondeterministicFstPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+<div class="viewcode-block" id="NondeterministicFstPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Updates the current nodes by searching for all nodes which</span>
 <span class="sd">        are reachable from the current nodes by a path consisting of </span>
 <span class="sd">        any number of epsilons and exactly one ``word`` label. If there</span>
@@ -431,7 +438,7 @@
                 <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">word</span><span class="p">:</span>
                     <span class="n">d</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">,</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">[</span>
                                         <span class="n">weight</span>
-                                        <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)]</span>
+                                        <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)]</span>
         <span class="c1"># Add epsilon reachable states</span>
         <span class="n">prev_d</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">prev_d</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
@@ -442,29 +449,29 @@
                     <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">EPS_ID</span><span class="p">:</span>
                         <span class="n">d</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">,</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">[</span>
                                         <span class="n">weight</span>
-                                        <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)]</span>
+                                        <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="p">[(</span><span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">weights</span><span class="p">),</span> <span class="n">n</span><span class="p">)</span> 
                             <span class="k">for</span> <span class="n">n</span><span class="p">,</span><span class="n">weights</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()]</span></div>
     
-<div class="viewcode-block" id="NondeterministicFstPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="NondeterministicFstPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the set of current nodes &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span></div>
     
-<div class="viewcode-block" id="NondeterministicFstPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<div class="viewcode-block" id="NondeterministicFstPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sets the set of current nodes &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="n">state</span></div>
 
-<div class="viewcode-block" id="NondeterministicFstPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="NondeterministicFstPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Resets the FST and empties the set of current nodes &quot;&quot;&quot;</span> 
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="p">[]</span></div>
     
-<div class="viewcode-block" id="NondeterministicFstPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="NondeterministicFstPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a matrix of shortest distances between all nodes &quot;&quot;&quot;</span>
         <span class="c1"># TODO: Update to use OpenFST instead of PyFST</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">shortest_distance</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="NondeterministicFstPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+<div class="viewcode-block" id="NondeterministicFstPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;The FST predictor comes with its own heuristic function. We</span>
 <span class="sd">        use the shortest path in the fst as future cost estimator. &quot;&quot;&quot;</span>
         <span class="n">last_word</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -472,12 +479,12 @@
         <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">arcs</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">last_word</span><span class="p">:</span>
-                    <span class="n">dists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">]))</span>
+                    <span class="n">dists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w2f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">]))</span>
                     <span class="k">break</span>
         <span class="k">return</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">dists</span> <span class="k">else</span> <span class="nb">min</span><span class="p">(</span><span class="n">dists</span><span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="RtnPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor">[docs]</a><span class="k">class</span> <span class="nc">RtnPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor">[docs]</a><span class="k">class</span> <span class="nc">RtnPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Predictor for RTNs (recurrent transition networks). This </span>
 <span class="sd">    predictor assumes a directory structure as produced by HiFST. You </span>
 <span class="sd">    can use this predictor for non-deterministic lattices too. This</span>
@@ -538,7 +545,7 @@
             <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Could not find NT S in ntmap. Assuming its ID 1&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">root_fst_prefix</span> <span class="o">=</span> <span class="s2">&quot;1</span><span class="si">%s</span><span class="s2">000&quot;</span> <span class="o">%</span> <span class="n">start_id</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
         
-<div class="viewcode-block" id="RtnPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Always returns negative infinity: Words outside the </span>
 <span class="sd">        RTN are not possible according to this predictor.</span>
 <span class="sd">        </span>
@@ -547,7 +554,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">NEG_INF</span></div>
     
-<div class="viewcode-block" id="RtnPredictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Loads the root RTN and consumes the start of sentence </span>
 <span class="sd">        symbol.</span>
 <span class="sd">        </span>
@@ -571,15 +578,15 @@
                 <span class="n">file_name</span> <span class="o">=</span> <span class="n">candidates</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">Fst</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span> 
             <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Read (root)fst from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">file_name</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error reading fst from </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
-                <span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> error reading fst from </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+                <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sub_fsts</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="RtnPredictor.expand_rtn"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.expand_rtn">[docs]</a>    <span class="k">def</span> <span class="nf">expand_rtn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor.expand_rtn"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.expand_rtn">[docs]</a>    <span class="k">def</span> <span class="nf">expand_rtn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;This method expands the RTN as far as necessary. This means</span>
 <span class="sd">        that the RTN is expanded s.t. we can build the posterior for </span>
 <span class="sd">        ``cur_history``. In practice, this means that we follow all </span>
@@ -623,7 +630,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="n">tmp</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">minimize</span><span class="p">()</span></div>
     
-<div class="viewcode-block" id="RtnPredictor.add_to_label_fst_map_recursive"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.add_to_label_fst_map_recursive">[docs]</a>    <span class="k">def</span> <span class="nf">add_to_label_fst_map_recursive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+<div class="viewcode-block" id="RtnPredictor.add_to_label_fst_map_recursive"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.add_to_label_fst_map_recursive">[docs]</a>    <span class="k">def</span> <span class="nf">add_to_label_fst_map_recursive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
                                        <span class="n">label_fst_map</span><span class="p">,</span> 
                                        <span class="n">visited_nodes</span><span class="p">,</span> 
                                        <span class="n">root_node</span><span class="p">,</span> 
@@ -648,7 +655,7 @@
             <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;invalid state id </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">root_node</span><span class="p">)</span>
             <span class="k">return</span>
         <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="n">arcs</span><span class="p">:</span>
-            <span class="n">arc_acc_weight</span> <span class="o">=</span> <span class="n">acc_weight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+            <span class="n">arc_acc_weight</span> <span class="o">=</span> <span class="n">acc_weight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">EPS_ID</span><span class="p">:</span> <span class="c1"># Follow epsilon edges</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">add_to_label_fst_map_recursive</span><span class="p">(</span><span class="n">label_fst_map</span><span class="p">,</span>
                                                     <span class="n">visited_nodes</span><span class="p">,</span>
@@ -676,12 +683,12 @@
                 <span class="k">break</span></div>
         
     
-<div class="viewcode-block" id="RtnPredictor.is_nt_label"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.is_nt_label">[docs]</a>    <span class="k">def</span> <span class="nf">is_nt_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor.is_nt_label"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.is_nt_label">[docs]</a>    <span class="k">def</span> <span class="nf">is_nt_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns true if ``label`` is a non-terminal. &quot;&quot;&quot;</span>
         <span class="n">s</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">==</span> <span class="mi">10</span> <span class="ow">and</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;1&#39;</span></div>
 
-<div class="viewcode-block" id="RtnPredictor.get_sub_fst"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.get_sub_fst">[docs]</a>    <span class="k">def</span> <span class="nf">get_sub_fst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fst_id</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor.get_sub_fst"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.get_sub_fst">[docs]</a>    <span class="k">def</span> <span class="nf">get_sub_fst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fst_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Load sub fst from the file system or the cache &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">fst_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_fsts</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_fsts</span><span class="p">[</span><span class="n">fst_id</span><span class="p">]</span>
@@ -693,8 +700,9 @@
             <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Read sub fst from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">sub_fst_path</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">sub_fsts</span><span class="p">[</span><span class="n">fst_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">sub_fst</span>
             <span class="k">return</span> <span class="n">sub_fst</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Could not load sub fst </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">sub_fst_path</span><span class="p">)</span></div>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> error reading sub fst from </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+                <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span> <span class="n">sub_fst_path</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span></div>
         
     <span class="k">def</span> <span class="nf">_add_to_cur_posterior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">weight</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Can be used as ``func`` argument in ``expand_rtn`` to build</span>
@@ -703,7 +711,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_posterior</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">),</span>
                                         <span class="n">weight</span><span class="p">)</span>
     
-<div class="viewcode-block" id="RtnPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Expands RTN as far as possible and uses the outgoing edges </span>
 <span class="sd">        from nodes reachable by the current history to build up</span>
 <span class="sd">        the posterior for the next word. If there are no such nodes</span>
@@ -717,19 +725,19 @@
                                        <span class="bp">self</span><span class="o">.</span><span class="n">use_weights</span><span class="p">,</span>
                                        <span class="bp">self</span><span class="o">.</span><span class="n">normalize_scores</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="RtnPredictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Adds ``word`` to the current history. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="RtnPredictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the current history. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span></div>
     
-<div class="viewcode-block" id="RtnPredictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sets the current history. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span> <span class="o">=</span> <span class="n">state</span></div>
 
-<div class="viewcode-block" id="RtnPredictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="RtnPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Unloads the current RTN &quot;&quot;&quot;</span> 
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="bp">None</span></div></div>
 
@@ -744,7 +752,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+        &copy; Copyright 2016, University of Cambridge.
 
     </p>
   </div>

@@ -85,12 +85,21 @@
             
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pure-nmt-decoding-single">Pure NMT decoding (single)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ensemble-nmt-decoding">Ensemble NMT decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lattice-rescoring-with-nmt-sgnmt">Lattice rescoring with NMT (SGNMT)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#working-with-language-models">Working with language models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-output-files">Creating output files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#distributed-decoding-using-the-grid-engine">Distributed decoding using the Grid Engine</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="command_line.html">Command-line reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cam.sgnmt.predictors.html">Predictors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cam.sgnmt.decoding.html">Decoders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cam.sgnmt.html">All modules</a></li>
 </ul>
 
             
@@ -156,12 +165,164 @@ directory structure is as follows:</p>
 <li><em>./data/</em> contains the source and target sentences for news-test2015 and word maps.</li>
 <li><em>./train/</em> contains the NMT model file <code class="docutils literal"><span class="pre">params.npz</span></code>.</li>
 <li><em>./train2/</em> contains a second NMT model for ensembling.</li>
+<li><em>./lm/</em> contains language model files</li>
 <li><em>./lats/</em> contains the Hiero translation lattices.</li>
 <li><em>./scripts/</em> contains helper scripts for creating lattice directories or applying word maps.</li>
 </ul>
 <p>This structure is indended to be used as starting point for your own experiments.</p>
 <p>The <a class="reference external" href="http://ucam-smt.github.io/tutorial/nmt.html">ucam-smt tutorial</a> explains how to generate translation lattices
 for SGNMT in general.</p>
+<p>For this tutorial, we assume that you set the <code class="docutils literal"><span class="pre">$SGNMT</span></code> environment variable to the location of your SGNMT installation:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ export SGNMT=/path/to/sgnmt
+</pre></div>
+</div>
+<div class="section" id="pure-nmt-decoding-single">
+<h2>Pure NMT decoding (single)<a class="headerlink" href="#pure-nmt-decoding-single" title="Permalink to this headline">¶</a></h2>
+<p>Start the NMT decoder with the following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt --src_test data/test15.ids.en --range 1:1 --src_vocab_size 50003 --trg_vocab_size 50003
+2016-05-19 12:59:07,348 INFO: Creating theano variables
+2016-05-19 12:59:07,350 INFO: Building RNN encoder-decoder
+(...)
+2016-05-19 12:59:21,492 INFO: Loading the model from ./train/params.npz
+(...)
+2016-05-19 12:59:28,028 INFO: Start time: 1463659168.03
+2016-05-19 12:59:28,028 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-19 12:59:59,183 INFO: Decoded (ID: 1): 1511 7 1422 894 30 8 10453
+2016-05-19 12:59:59,183 INFO: Stats (ID: 1): score=-3.700894 num_expansions=85 time=31.15
+2016-05-19 12:59:59,183 INFO: Decoding finished. Time: 31.16
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">--predictors</span> <span class="pre">nmt</span></code> argument tells SGNMT to use the NMT scoring module. The <code class="docutils literal"><span class="pre">--src_test</span></code> option defines the location of the
+source sentences to translate (words are represented by IDs), and <code class="docutils literal"><span class="pre">--range</span> <span class="pre">1:1</span></code> limits the decoding to the first sentence. SGNMT will
+search for NMT model files in the default location <em>./train/</em>. The arguments <code class="docutils literal"><span class="pre">src_vocab_size</span></code> and <code class="docutils literal"><span class="pre">--trg_vocab_size</span></code> specify that the
+NMT model has been trained with vocabulary sizes of 50003. Since we will use the last four options throughout this tutorial, we load them
+from a configuration file instead of adding them separately:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ cat tut.ini
+src_test: data/test15.ids.en
+range: &#39;1:1&#39;
+src_vocab_size: 50003
+trg_vocab_size: 50003
+$ python $SGNMT/decode.py --predictors nmt --config_file tut.ini
+(...)
+2016-05-19 12:59:59,183 INFO: Decoded (ID: 1): 1511 7 1422 894 30 8 10453
+</pre></div>
+</div>
+<p>You can look at our first translation by using the <em>apply_wmap.py</em> script:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ echo &#39;1511 7 1422 894 30 8 10453&#39; | python scripts/apply_wmap.py -m data/wmap.test15.de -d i2s
+Indien und Japan treffen sich in Tokio
+</pre></div>
+</div>
+<p>For single NMT decoding, you have the option to use an optimized version of the beam decoder:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --decoder vanilla --config_file tut.ini
+(...)
+2016-05-19 13:14:27,040 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-19 13:14:34,009 INFO: Decoded (ID: 1): 1511 7 1422 894 30 8 10453
+2016-05-19 13:14:34,009 INFO: Stats (ID: 1): score=-3.700894 num_expansions=120 time=6.97
+2016-05-19 13:14:34,009 INFO: Decoding finished. Time: 6.97
+</pre></div>
+</div>
+<p>However, this decoder bypasses the predictor framework. Therefore, you cannot use it in combination with other
+predictors, e.g. for lattice rescoring or ensembled NMT decoding.</p>
+</div>
+<div class="section" id="ensemble-nmt-decoding">
+<h2>Ensemble NMT decoding<a class="headerlink" href="#ensemble-nmt-decoding" title="Permalink to this headline">¶</a></h2>
+<p>NMT ensembling can be realized by simply adding a second NMT predictor. However, we need to override the NMT configuration
+for the second NMT predictor to load a different NMT model. We can use <code class="docutils literal"><span class="pre">--nmt_config</span></code> for this. Therefore,
+to override the <code class="docutils literal"><span class="pre">saveto</span></code> options which stores the NMT training directory, we add <code class="docutils literal"><span class="pre">--nmt_config</span> <span class="pre">saveto=train2</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,nmt --nmt_config2 saveto=train2 --config_file tut.ini
+(...)
+2016-05-19 13:24:36,060 INFO: Loading the model from ./train/params.npz
+(...)
+2016-05-19 13:24:56,942 INFO: Loading the model from train2/params.npz
+(...)
+2016-05-19 13:25:10,937 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-19 13:25:56,787 INFO: Decoded (ID: 1): 1511 7 1422 894 30 8 10453
+2016-05-19 13:25:56,787 INFO: Stats (ID: 1): score=-6.195214 num_expansions=83 time=45.85
+2016-05-19 13:25:56,787 INFO: Decoding finished. Time: 45.87
+</pre></div>
+</div>
+<p>The first NMT predictor still uses the default NMT training directory location <em>./train/</em>, but the second NMT instance loads the
+NMT model from <em>train2/params.npz</em>.</p>
+</div>
+<div class="section" id="lattice-rescoring-with-nmt-sgnmt">
+<h2>Lattice rescoring with NMT (SGNMT)<a class="headerlink" href="#lattice-rescoring-with-nmt-sgnmt" title="Permalink to this headline">¶</a></h2>
+<p>For restricting NMT to a translation lattice, we need the <em>fst</em> predictor:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,fst --fst_path lats/%d.fst --config_file tut.ini
+(...)
+2016-05-19 15:37:29,601 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-19 15:37:36,437 INFO: Decoded (ID: 1): 1511 7 1422 84829 894 30 8 10453
+2016-05-19 15:37:36,437 INFO: Stats (ID: 1): score=-4.779791 num_expansions=64 time=6.84
+2016-05-19 15:37:36,437 INFO: Decoding finished. Time: 6.84
+
+$ echo &#39;1511 7 1422 84829 894 30 8 10453&#39; | python scripts/apply_wmap.py -m data/wmap.test15.de -d i2s
+Indien und Japan Premierministern treffen sich in Tokio
+</pre></div>
+</div>
+<p>This command loads the determinised lattice <em>./lats/1.fst</em> from the file system and runs the NMT beam search decoder on it. For non-deterministic lattices use
+the <em>nfst</em> predictor instead. Per default, SGNMT ignores the scores in the translation lattices. To change this, use <code class="docutils literal"><span class="pre">--use_fst_weights</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,fst --fst_path lats/%d.fst --use_fst_weights true --predictor_weights 2.7,24.4 --config_file tut.ini
+(...)
+2016-05-19 15:41:19,878 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-19 15:41:28,228 INFO: Decoded (ID: 1): 1511 7 1422 3278 7 2830 894 30 8 10453
+2016-05-19 15:41:28,229 INFO: Stats (ID: 1): score=-50.385922 num_expansions=72 time=8.35
+2016-05-19 15:41:28,229 INFO: Decoding finished. Time: 8.35
+
+$ echo &#39;1511 7 1422 3278 7 2830 894 30 8 10453&#39; | python scripts/apply_wmap.py -m data/wmap.test15.de -d i2s
+Indien und Japan Staats- und Regierungschefs treffen sich in Tokio
+</pre></div>
+</div>
+<p>This command uses <code class="docutils literal"><span class="pre">--predictor_weights</span></code> to weight the NMT scores against the lattice scores (corresponds to the lambdas in the <a class="reference external" href="http://arxiv.org/abs/1605.04569">ACL 2016 paper</a>).</p>
+<p>So far, we applied beam decoding as search strategy. However, the beam decoder introduces search errors. SGNMT supports a variety of decoding strategies such
+as greedy, beam, depth-first search, and A* search. To do an exhaustive search over the lattice, use the depth-first search decoder:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --decoder dfs --predictors nmt,fst --fst_path lats/%d.fst --config_file tut.ini
+(...)
+2016-05-19 15:43:33,713 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-19 15:43:35,926 INFO: Decoded (ID: 1): 1511 7 1422 84829 894 30 8 10453
+2016-05-19 15:43:35,926 INFO: Stats (ID: 1): score=-4.779791 num_expansions=17 time=2.21
+2016-05-19 15:43:35,926 INFO: Decoding finished. Time: 2.21
+</pre></div>
+</div>
+<p>In this case, the exact decoding was very fast because DFS automatically enables admissible pruning of branches in the search tree with accumulated scores
+worse than the current best hypothesis. If we disable this feature with <code class="docutils literal"><span class="pre">--early_stopping</span> <span class="pre">false</span></code>, we see that SGNMT finds the same hypothesis but with
+much more node expansions:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --decoder dfs --early_stopping false --predictors nmt,fst --fst_path lats/%d.fst --config_file tut.ini
+(...)
+2016-05-19 15:44:28,765 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-19 15:45:12,650 INFO: Decoded (ID: 1): 1511 7 1422 84829 894 30 8 10453
+2016-05-19 15:45:12,650 INFO: Stats (ID: 1): score=-4.779791 num_expansions=334 time=43.88
+2016-05-19 15:45:12,650 INFO: Decoding finished. Time: 43.89
+</pre></div>
+</div>
+</div>
+<div class="section" id="working-with-language-models">
+<h2>Working with language models<a class="headerlink" href="#working-with-language-models" title="Permalink to this headline">¶</a></h2>
+<p>Language model scores can be added to the lattices before passing them through to SGNMT. This is the approach we took in the
+<a class="reference external" href="http://arxiv.org/abs/1605.04569">ACL 2016 paper</a>. Alternatively, the nplm predictor can be used directly in SGNMT. A German NPLM model file
+can be found in <em>./lm/nplm</em>. However, this model has been trained with a different word map. Therefore, we add the <em>idxmap</em> wrapper predictor
+to the <em>nplm</em> predictor. This wrapper translates between word indices used by SGNMT, and indices used by the NPLM predictor. The mapping between
+indices is defined with the <code class="docutils literal"><span class="pre">--src_idxmap</span></code> and <code class="docutils literal"><span class="pre">--trg_idxmap</span></code> arguments:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,fst,idxmap_nplm --fst_path lats/%d.fst --nplm_path lm/nplm --src_idxmap data/idxmap.nplm.en --trg_idxmap data/idxmap.nplm.de --config_file tut.ini
+2016-05-19 16:24:47,811 INFO: Start time: 1463671487.81
+2016-05-19 16:24:47,811 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-19 16:24:54,768 INFO: Decoded (ID: 1): 1511 7 1422 84829 8 10453
+2016-05-19 16:24:54,768 INFO: Stats (ID: 1): score=-43.008210 num_expansions=56 time=6.96
+2016-05-19 16:24:54,768 INFO: Decoding finished. Time: 6.96
+
+echo &#39;1511 7 1422 84829 8 10453&#39; | python scripts/apply_wmap.py -m data/wmap.test15.de -d i2s
+Indien und Japan Premierministern in Tokio
+</pre></div>
+</div>
+<p>This results in a translation which is too short, because the language model prefers short hypotheses. To counteract that, adjust the weight between NMT and LM with <code class="docutils literal"><span class="pre">--predictor_weights</span></code>,
+or add a word count feature with the <em>wc</em> predictor. The <em>srilm</em> predictor supports loading Kneser-Ney language models in ARPA format.</p>
+</div>
+<div class="section" id="creating-output-files">
+<h2>Creating output files<a class="headerlink" href="#creating-output-files" title="Permalink to this headline">¶</a></h2>
+<p>TODO</p>
+</div>
+<div class="section" id="distributed-decoding-using-the-grid-engine">
+<h2>Distributed decoding using the Grid Engine<a class="headerlink" href="#distributed-decoding-using-the-grid-engine" title="Permalink to this headline">¶</a></h2>
+<p>TODO</p>
+</div>
 </div>
 
 
@@ -183,7 +344,7 @@ for SGNMT in general.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+        &copy; Copyright 2016, University of Cambridge.
 
     </p>
   </div>

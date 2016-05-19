@@ -86,10 +86,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.predictors.html">Predictors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.decoding.html">Decoders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
 </ul>
 
             
@@ -146,26 +147,26 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.decoder</span> <span class="kn">import</span> <span class="n">GreedyDecoder</span>
 
 
-<div class="viewcode-block" id="PredictorHeuristic"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.PredictorHeuristic">[docs]</a><span class="k">class</span> <span class="nc">PredictorHeuristic</span><span class="p">(</span><span class="n">Heuristic</span><span class="p">):</span>
+<div class="viewcode-block" id="PredictorHeuristic"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.PredictorHeuristic">[docs]</a><span class="k">class</span> <span class="nc">PredictorHeuristic</span><span class="p">(</span><span class="n">Heuristic</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;The predictor heuristic relies on the </span>
 <span class="sd">    ``estimate_future_costs()`` implementation of the predictors. Use</span>
 <span class="sd">    this heuristic to access predictor specific future cost functions,</span>
 <span class="sd">    e.g. shortest path for the fst predictor.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-<div class="viewcode-block" id="PredictorHeuristic.estimate_future_cost"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.PredictorHeuristic.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+<div class="viewcode-block" id="PredictorHeuristic.estimate_future_cost"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.PredictorHeuristic.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the weighted sum of predictor estimates. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Decoder</span><span class="o">.</span><span class="n">combi_arithmetic_unnormalized</span><span class="p">([</span>
                                     <span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span><span class="n">hypo</span><span class="p">),</span> <span class="n">w</span><span class="p">)</span>
                                             <span class="k">for</span> <span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">])</span></div>
     
-<div class="viewcode-block" id="PredictorHeuristic.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.PredictorHeuristic.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="PredictorHeuristic.initialize"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.PredictorHeuristic.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Calls ``initialize_heuristic()`` on all predictors. &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">:</span>
             <span class="n">pred</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="ScorePerWordHeuristic"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.ScorePerWordHeuristic">[docs]</a><span class="k">class</span> <span class="nc">ScorePerWordHeuristic</span><span class="p">(</span><span class="n">Heuristic</span><span class="p">):</span>
+<div class="viewcode-block" id="ScorePerWordHeuristic"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.ScorePerWordHeuristic">[docs]</a><span class="k">class</span> <span class="nc">ScorePerWordHeuristic</span><span class="p">(</span><span class="n">Heuristic</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Using this heuristic results in length normalized scores instead</span>
 <span class="sd">    of the pure sum of predictor scores for a partial hypothesis.</span>
 <span class="sd">    Therefore, it is not a heuristic like in the classical A* sense.</span>
@@ -174,7 +175,7 @@
 <span class="sd">    scores.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-<div class="viewcode-block" id="ScorePerWordHeuristic.estimate_future_cost"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.ScorePerWordHeuristic.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+<div class="viewcode-block" id="ScorePerWordHeuristic.estimate_future_cost"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.ScorePerWordHeuristic.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;A* will put ``cost-score`` on the heap. In order to simulate</span>
 <span class="sd">        length normalized beam search, we want to use ``-score/length``</span>
 <span class="sd">        as partial hypothesis score. Therefore, this method returns</span>
@@ -184,12 +185,12 @@
             <span class="k">return</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">-</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span>
         <span class="k">return</span> <span class="mf">0.0</span></div>
     
-<div class="viewcode-block" id="ScorePerWordHeuristic.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.ScorePerWordHeuristic.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="ScorePerWordHeuristic.initialize"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.ScorePerWordHeuristic.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Empty method.&quot;&quot;&quot;</span>
         <span class="k">pass</span></div></div>
 
 
-<div class="viewcode-block" id="GreedyHeuristic"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic">[docs]</a><span class="k">class</span> <span class="nc">GreedyHeuristic</span><span class="p">(</span><span class="n">Heuristic</span><span class="p">):</span>
+<div class="viewcode-block" id="GreedyHeuristic"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic">[docs]</a><span class="k">class</span> <span class="nc">GreedyHeuristic</span><span class="p">(</span><span class="n">Heuristic</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This heuristic performs greedy decoding to get future cost </span>
 <span class="sd">    estimates. This is expensive but can lead to very close estimates.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -215,18 +216,18 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">GreedyDecoder</span><span class="p">(</span><span class="n">closed_vocab_norm</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">SimpleTrie</span><span class="p">()</span>
         
-<div class="viewcode-block" id="GreedyHeuristic.set_predictors"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.set_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">set_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictors</span><span class="p">):</span>
+<div class="viewcode-block" id="GreedyHeuristic.set_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.set_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">set_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictors</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Override ``Decoder.set_predictors`` to redirect the </span>
 <span class="sd">        predictors to ``self.decoder``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="n">predictors</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="n">predictors</span></div>
     
-<div class="viewcode-block" id="GreedyHeuristic.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="GreedyHeuristic.initialize"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Initialize the cache. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">SimpleTrie</span><span class="p">()</span></div>
     
-<div class="viewcode-block" id="GreedyHeuristic.estimate_future_cost"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+<div class="viewcode-block" id="GreedyHeuristic.estimate_future_cost"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Estimate the future cost by full greedy decoding. If</span>
 <span class="sd">        ``self.cache_estimates`` is enabled, check cache first</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -235,7 +236,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_future_cost_without_cache</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="GreedyHeuristic.estimate_future_cost_with_cache"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.estimate_future_cost_with_cache">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost_with_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+<div class="viewcode-block" id="GreedyHeuristic.estimate_future_cost_with_cache"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.estimate_future_cost_with_cache">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost_with_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Enabled cache... &quot;&quot;&quot;</span>
         <span class="n">cached_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">cached_cost</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
@@ -259,7 +260,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">old_states</span><span class="p">)</span>
         <span class="k">return</span> <span class="o">-</span><span class="nb">sum</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="GreedyHeuristic.estimate_future_cost_without_cache"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.estimate_future_cost_without_cache">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost_without_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+<div class="viewcode-block" id="GreedyHeuristic.estimate_future_cost_without_cache"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.estimate_future_cost_without_cache">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost_without_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Disabled cache... &quot;&quot;&quot;</span>
         <span class="n">old_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">old_states</span><span class="p">))</span>
@@ -285,7 +286,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Felix Stahlberg, University of Cambridge.
+        &copy; Copyright 2016, University of Cambridge.
 
     </p>
   </div>
