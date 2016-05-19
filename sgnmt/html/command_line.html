@@ -155,10 +155,12 @@ overview of available parameters use <code class="docutils literal"><span class=
                  <span class="p">[</span><span class="o">--</span><span class="n">verbosity</span> <span class="p">{</span><span class="n">debug</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">warn</span><span class="p">,</span><span class="n">error</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">min_score</span> <span class="n">MIN_SCORE</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="nb">range</span> <span class="n">RANGE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_test</span> <span class="n">SRC_TEST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">en_test</span> <span class="n">EN_TEST</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">legacy_indexing</span> <span class="n">LEGACY_INDEXING</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">input_method</span> <span class="p">{</span><span class="n">file</span><span class="p">,</span><span class="n">shell</span><span class="p">,</span><span class="n">stdin</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">log_sum</span> <span class="n">LOG_SUM</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">beam</span> <span class="n">BEAM</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">decoder</span> <span class="p">{</span><span class="n">greedy</span><span class="p">,</span><span class="n">beam</span><span class="p">,</span><span class="n">dfs</span><span class="p">,</span><span class="n">restarting</span><span class="p">,</span><span class="n">astar</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">input_method</span> <span class="p">{</span><span class="n">file</span><span class="p">,</span><span class="n">shell</span><span class="p">,</span><span class="n">stdin</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">log_sum</span> <span class="p">{</span><span class="n">tropical</span><span class="p">,</span><span class="n">log</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">beam</span> <span class="n">BEAM</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">decoder</span> <span class="p">{</span><span class="n">greedy</span><span class="p">,</span><span class="n">beam</span><span class="p">,</span><span class="n">dfs</span><span class="p">,</span><span class="n">restarting</span><span class="p">,</span><span class="n">astar</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">max_node_expansions</span> <span class="n">MAX_NODE_EXPANSIONS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">early_stopping</span> <span class="n">EARLY_STOPPING</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nbest</span> <span class="n">NBEST</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">output_fst_unk_id</span> <span class="n">OUTPUT_FST_UNK_ID</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">output_path</span> <span class="n">OUTPUT_PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outputs</span> <span class="n">OUTPUTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">remove_eos</span> <span class="n">REMOVE_EOS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">heuristics</span> <span class="n">HEURISTICS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">heuristic_predictors</span> <span class="n">HEURISTIC_PREDICTORS</span><span class="p">]</span>
@@ -290,17 +292,22 @@ Set this parameter to true to use the old scheme.</td></tr>
 <kbd><span class="option">--input_method=file</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td><p class="first">This parameter controls how the input to GNMT is provided. GNMT supports three modes:
-  &#8216;file&#8217;: Read test sentences from a plain text filespecified by &#8211;src_test.
-  &#8216;shell&#8217;: Start GNMT in an interactive shell.
-  &#8216;stdin&#8217;: Test sentences are read from stdin
+
+* &#8216;file&#8217;: Read test sentences from a plain text filespecified by &#8211;src_test.
+* &#8216;shell&#8217;: Start GNMT in an interactive shell.
+* &#8216;stdin&#8217;: Test sentences are read from stdin
+
 In shell and stdin mode you can change GNMT options on the fly: Beginning a line with the string &#8216;!sgnmt &#8216; signals GNMT directives instead of sentences to translate. E.g. &#8216;!sgnmt config predictor_weights 0.2,0.8&#8217; changes the current predictor weights. &#8216;!sgnmt help&#8217; lists all available directives. Using GNMT directives is particularly useful in combination with MERT to avoid start up times between evaluations. Note that input sentences still have to be written using word ids in all cases.</p>
 <p class="last">Possible choices: file, shell, stdin</p>
 </td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--log_sum=log</span></kbd></td>
-<td>Controls how to compute the sum in the log space, i.e. how to compute log(exp(l1)+exp(l2)) for log values l1,l2.
-  &#8216;tropical&#8217;: approximate with max(l1,l2)
-  &#8216;log&#8217;: Use logsumexp in scipy</td></tr>
+<td><p class="first">Controls how to compute the sum in the log space, i.e. how to compute log(exp(l1)+exp(l2)) for log values l1,l2.
+
+* &#8216;tropical&#8217;: approximate with max(l1,l2)
+* &#8216;log&#8217;: Use logsumexp in scipy</p>
+<p class="last">Possible choices: tropical, log</p>
+</td></tr>
 </tbody>
 </table>
 </dd>
@@ -315,12 +322,13 @@ In shell and stdin mode you can change GNMT options on the fly: Beginning a line
 <tr><td class="option-group">
 <kbd><span class="option">--decoder=beam</span></kbd></td>
 <td><p class="first">Strategy for traversing the search space which is spanned by the predictors.
-  &#8216;greedy&#8217;: Greedy decoding (similar to beam=1)
-  &#8216;beam&#8217;: beam search like in Bahdanau et al, 2015
-  &#8216;dfs&#8217;: Depth-first search. This should be used for exact decoding or the complete enumeration of the search space, but it cannot be used if the search space is too large (like for unrestricted NMT) as it performs exhaustive search. If you have not only negative predictor scores, set &#8211;early_stopping to false.
-  &#8216;restarting&#8217;: Like DFS but with better admissible pruning behavior.
-  &#8216;astar&#8217;: A* search. The heuristic function is configured using the &#8211;heuristics options.
-  &#8216;vanilla&#8217;: Original blocks beam decoder. This bypasses the predictor framework and directly performs pure NMT beam decoding on the GPU. Use this when you do pure NMT decoding as this is usually faster then using a single nmt predictor as the search can be parallelized on the GPU.</p>
+
+* &#8216;greedy&#8217;: Greedy decoding (similar to beam=1)
+* &#8216;beam&#8217;: beam search like in Bahdanau et al, 2015
+* &#8216;dfs&#8217;: Depth-first search. This should be used for exact decoding or the complete enumeration of the search space, but it cannot be used if the search space is too large (like for unrestricted NMT) as it performs exhaustive search. If you have not only negative predictor scores, set &#8211;early_stopping to false.
+* &#8216;restarting&#8217;: Like DFS but with better admissible pruning behavior.
+* &#8216;astar&#8217;: A* search. The heuristic function is configured using the &#8211;heuristics options.
+* &#8216;vanilla&#8217;: Original blocks beam decoder. This bypasses the predictor framework and directly performs pure NMT beam decoding on the GPU. Use this when you do pure NMT decoding as this is usually faster then using a single nmt predictor as the search can be parallelized on the GPU.</p>
 <p class="last">Possible choices: greedy, beam, dfs, restarting, astar</p>
 </td></tr>
 <tr><td class="option-group" colspan="2">
@@ -343,16 +351,22 @@ In shell and stdin mode you can change GNMT options on the fly: Beginning a line
 <kbd><span class="option">--nbest=0</span></kbd></td>
 <td>Maximum number of hypotheses in the output files. Set to 0 to output all hypotheses found by the decoder. If you use the beam or astar decoder, this option is limited by the beam size.</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--output_fst_unk_id=999999998</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>SGNMT uses the ID 0 for UNK. However, this clashes with OpenFST when writing FSTs as OpenFST reserves 0 for epsilon arcs. Therefore, we use this ID for UNK instead. Note that this only applies to output FSTs created by the fst or sfst output handler. Apart from that, UNK is still represented by the ID 0.</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--output_path=gnmt-out.%s</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Path to the output files generated by GNMT. You can use the placeholder %%s for the format specifier</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--outputs=</span></kbd></td>
 <td>Comma separated list of output formats: 
-  &#8216;text&#8217;: First best translations in plain text format
-  &#8216;nbest&#8217;: Moses&#8217; n-best format with separate scores for each predictor.
-  &#8216;fst&#8217;: Translation lattices in OpenFST 1.5 text format with sparse tuple arcs.
-  &#8216;sfst&#8217;: Translation lattices in OpenFST 1.5 text format with standard arcs (i.e. combined scores).
+
+* &#8216;text&#8217;: First best translations in plain text format
+* &#8216;nbest&#8217;: Moses&#8217; n-best format with separate scores for each predictor.
+* &#8216;fst&#8217;: Translation lattices in OpenFST format with sparse tuple arcs.
+* &#8216;sfst&#8217;: Translation lattices in OpenFST format with standard arcs (i.e. combined scores).
+
 The path to the output files can be specified with &#8211;output_path</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--remove_eos=True</span></kbd></td>
@@ -361,9 +375,11 @@ The path to the output files can be specified with &#8211;output_path</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--heuristics=</span></kbd></td>
 <td>Comma-separated list of heuristics to use in heuristic based search like A*.
-  &#8216;predictor&#8217;: Predictor specific heuristics. Some predictors come with own heuristics - e.g. the fst predictor uses the shortest path to the final state. Using &#8216;predictor&#8217; combines the specific heuristics of all selected predictors.
-  &#8216;greedy&#8217;: Do greedy decoding to get the heuristic costs. This is expensive but accurate.
-  &#8216;scoreperword&#8217;: Using this heuristic normalizes the previously accumulated costs by its length. It can be used for beam search with normalized scores, using a capacity (&#8211;beam), no other heuristic, and setting&#8211;decoder to astar.
+
+* &#8216;predictor&#8217;: Predictor specific heuristics. Some predictors come with own heuristics - e.g. the fst predictor uses the shortest path to the final state. Using &#8216;predictor&#8217; combines the specific heuristics of all selected predictors.
+* &#8216;greedy&#8217;: Do greedy decoding to get the heuristic costs. This is expensive but accurate.
+* &#8216;scoreperword&#8217;: Using this heuristic normalizes the previously accumulated costs by its length. It can be used for beam search with normalized scores, using a capacity (&#8211;beam), no other heuristic, and setting&#8211;decoder to astar.
+
 Note that all heuristics are inadmissible, i.e. A* is not guaranteed to find the globally best path.</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--heuristic_predictors=all</span></kbd></td>
@@ -385,30 +401,31 @@ Note that all heuristics are inadmissible, i.e. A* is not guaranteed to find the
 <kbd><span class="option">--predictors=nmt</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Comma separated list of predictors. Predictors are scoring modules which define a distribution over target words given the history and some side information like the source sentence. If vocabulary sizes differ among predictors, we fill in gaps with predictor UNK scores.:
-  &#8216;nmt&#8217;: neural machine translation predictor.
+
+* &#8216;nmt&#8217;: neural machine translation predictor.
          Options: see machine_translation.configurations plus proto, nmt_model_selector, cache_nmt_posteriors.
-  &#8216;srilm&#8217;: n-gram language model.
+* &#8216;srilm&#8217;: n-gram language model.
           Options: srilm_path, srilm_order
-  &#8216;nplm&#8217;: neural n-gram language model (NPLM).
+* &#8216;nplm&#8217;: neural n-gram language model (NPLM).
           Options: nplm_path, normalize_nplm_probs
-  &#8216;forced&#8217;: Forced decoding with one reference
+* &#8216;forced&#8217;: Forced decoding with one reference
             Options: trg_test
-  &#8216;forcedlst&#8217;: Forced decoding with a Moses n-best list (n-best list rescoring)
+* &#8216;forcedlst&#8217;: Forced decoding with a Moses n-best list (n-best list rescoring)
                Options: trg_test, forcedlst_sparse_feat, use_nbest_weights
-  &#8216;fst&#8217;: Deterministic translation lattices
+* &#8216;fst&#8217;: Deterministic translation lattices
          Options: fst_path, use_fst_weights, normalize_fst_weights, fst_to_log, add_fst_bos_to_eos_weight
-  &#8216;nfst&#8217;: Non-deterministic translation lattices
+* &#8216;nfst&#8217;: Non-deterministic translation lattices
           Options: fst_path, use_fst_weights, normalize_fst_weights, fst_to_log, add_fst_bos_to_eos_weight
-  &#8216;rtn&#8217;: Recurrent transition networks as created by HiFST with late expansion.
+* &#8216;rtn&#8217;: Recurrent transition networks as created by HiFST with late expansion.
          Options: rtn_path, use_rtn_weights, minimize_rtns, remove_epsilon_in_rtns, normalize_rtn_weights
-  &#8216;lrhiero&#8217;: Direct Hiero (left-to-right Hiero). This is a EXPERIMENTAL implementation of LRHiero.
+* &#8216;lrhiero&#8217;: Direct Hiero (left-to-right Hiero). This is a EXPERIMENTAL implementation of LRHiero.
              Options: rules_path, grammar_feature_weights, use_grammar_weights
-  &#8216;wc&#8217;: Number of words feature.
+* &#8216;wc&#8217;: Number of words feature.
         Options: no options.
-  &#8216;length&#8217;: Target sentence length model
+* &#8216;length&#8217;: Target sentence length model
             Options: src_test_raw, length_model_weights, use_length_point_probs
 All predictors can be combined with one or more wrapper predictors by adding the wrapper name separated by a _ symbol. Following wrappers are available:
-  &#8216;idxmap&#8217;: Add this wrapper to predictors which use an alternative word map.            Options: src_idxmap, trg_idxmap
+* &#8216;idxmap&#8217;: Add this wrapper to predictors which use an alternative word map.            Options: src_idxmap, trg_idxmap
 
 Note that you can use multiple instances of the same predictor. For example, &#8216;nmt,nmt,nmt&#8217; can be used for ensembling three NMT systems. You can often override parts of the predictor configurations for subsequent predictors by adding the predictor number (e.g. see &#8211;nmt_config2 or &#8211;fst_path2)</td></tr>
 <tr><td class="option-group" colspan="2">
@@ -419,18 +436,20 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--closed_vocabulary_normalization=none</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td><p class="first">This parameter specifies the way closed vocabulary predictors (e.g. NMT) are normalized. Closed vocabulary means that they have a predefined vocabulary. Open vocabulary predictors (e.g. fst) can potentially produce any word, or have a very large vocabulary.
-  &#8216;none&#8217;: Use unmodified scores for closed vocabulary predictors
-  &#8216;exact&#8217;: Renormalize scores depending on the probability mass which they distribute to words outside the vocabulary via the UNK probability.
-  &#8216;reduced&#8217;: Normalize to vocabulary defined by the open vocabulary predictors at each time step.</p>
+
+* &#8216;none&#8217;: Use unmodified scores for closed vocabulary predictors
+* &#8216;exact&#8217;: Renormalize scores depending on the probability mass which they distribute to words outside the vocabulary via the UNK probability.
+* &#8216;reduced&#8217;: Normalize to vocabulary defined by the open vocabulary predictors at each time step.</p>
 <p class="last">Possible choices: none, exact, reduced</p>
 </td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--combination_scheme=sum</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td><p class="first">This parameter controls how the combined hypothesis score is calculated from the predictor scores and weights.
-  &#8216;sum&#8217;: The combined score is the weighted sum of all predictor scores
-  &#8216;length_norm&#8217;: Renormalize scores by the length of hypotheses.
-  &#8216;bayesian&#8217;: Apply the Bayesian LM interpolation scheme from Allauzen and Riley to interpolate the predictor scores</p>
+
+* &#8216;sum&#8217;: The combined score is the weighted sum of all predictor scores
+* &#8216;length_norm&#8217;: Renormalize scores by the length of hypotheses.
+* &#8216;bayesian&#8217;: Apply the Bayesian LM interpolation scheme from Allauzen and Riley to interpolate the predictor scores</p>
 <p class="last">Possible choices: sum, length_norm, bayesian</p>
 </td></tr>
 <tr><td class="option-group" colspan="2">
@@ -457,10 +476,10 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--nmt_model_selector=bleu</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td><p class="first">NMT training normally creates several files in the ./train/ directory from which we can load the NMT model. Possible options:
-  &#8216;params&#8217;: Load parameters from params.npz. This is usually the most recent model.
-  &#8216;bleu&#8217;: Load from the best_bleu_params_* file with the best BLEU score.
-  &#8216;time&#8217;: Load from the most recent best_bleu_params_* file.
-</p>
+
+* &#8216;params&#8217;: Load parameters from params.npz. This is usually the most recent model.
+* &#8216;bleu&#8217;: Load from the best_bleu_params_* file with the best BLEU score.
+* &#8216;time&#8217;: Load from the most recent best_bleu_params_* file.</p>
 <p class="last">Possible choices: params, bleu, time</p>
 </td></tr>
 <tr><td class="option-group" colspan="2">

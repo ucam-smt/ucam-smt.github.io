@@ -1,5 +1,6 @@
 var NAVTREEINDEX12 =
 {
+"structucam_1_1hifst_1_1MakeWeightHifstLocalLm_3_01TupleArc32_01_4.html#a018e3518c10440e3685b1bf5d5a212d0":[12,0,4,1,25,7],
 "structucam_1_1hifst_1_1MakeWeightHifstLocalLm_3_01TupleArc32_01_4.html#a14a11cabadf2ef2d5bf98f3eb19941eb":[12,0,4,1,25,2],
 "structucam_1_1hifst_1_1MakeWeightHifstLocalLm_3_01TupleArc32_01_4.html#a3493d7b683edfc6fb81fe6d6cd9e889c":[12,0,4,1,25,1],
 "structucam_1_1hifst_1_1MakeWeightHifstLocalLm_3_01TupleArc32_01_4.html#a62ef7b86b9124fa389f54d03bbcb56fc":[12,0,4,1,25,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX12 =
 "vecmap_8main_8cpp_source.html":[13,0,269],
 "weights_8gtest_8cpp.html":[13,0,270],
 "weights_8gtest_8cpp.html#a1a19d4054fa07a4182e12434276f26de":[13,0,270,11],
-"weights_8gtest_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627":[13,0,270,0],
-"weights_8gtest_8cpp.html#a43aa8530803ac36516ecf60aab03f51f":[13,0,270,9]
+"weights_8gtest_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627":[13,0,270,0]
 };
