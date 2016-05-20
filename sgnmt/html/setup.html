@@ -154,11 +154,9 @@
 <ul class="simple">
 <li><a class="reference external" href="http://blocks.readthedocs.io/en/latest/">Blocks</a> for neural machine translation support (&gt;=0.1)</li>
 <li><a class="reference external" href="http://openfst.org/">OpenFST</a> for reading and writing FSTs (e.g. translation lattices) (&gt;=1.5.2)</li>
-<li><a class="reference external" href="https://github.com/desilinguist/swig-srilm">srilm-swig</a> for reading ARPA language model files</li>
-<li><a class="reference external" href="http://nlg.isi.edu/software/nplm/">NPLM</a> for using feed-forward neural language models (&gt;=0.3)</li>
+<li>Optional: <a class="reference external" href="https://github.com/desilinguist/swig-srilm">srilm-swig</a> for reading ARPA language model files</li>
+<li>Optional: <a class="reference external" href="http://nlg.isi.edu/software/nplm/">NPLM</a> for using feed-forward neural language models (&gt;=0.3)</li>
 </ul>
-<p>SGNMT does not work without blocks, but the other dependencies can be bypassed by
-commenting out the predictor imports in <code class="docutils literal"><span class="pre">cam.sgnmt.blocks.decode.py</span></code>.</p>
 <div class="section" id="installing-blocks">
 <h3>Installing Blocks<a class="headerlink" href="#installing-blocks" title="Permalink to this headline">¶</a></h3>
 <p>Follow the <a class="reference external" href="http://blocks.readthedocs.io/en/latest/setup.html">instructions</a> in
@@ -170,6 +168,11 @@ the blocks documentation to install the blocks framework and all its dependencie
 </pre></div>
 </div>
 </div>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">Make sure that all dependencies of blocks are updated. On systems where you don&#8217;t have root access,
+use the pip options <code class="docutils literal"><span class="pre">--user</span></code> and <code class="docutils literal"><span class="pre">--force-reinstall</span></code> to install updated packages locally.</p>
+</div>
 </div>
 <div class="section" id="installing-openfst">
 <h3>Installing OpenFST<a class="headerlink" href="#installing-openfst" title="Permalink to this headline">¶</a></h3>
@@ -180,8 +183,12 @@ $ make
 $ make install
 </pre></div>
 </div>
-<p>SGNMT requires OpenFST 1.5.2 because it uses the extended Python support added in this version. For more information
+<p>SGNMT requires OpenFST 1.5.2 because it is based on the extended Python API added in this version. For more information
 see the documentation for the <a class="reference external" href="http://www.openfst.org/twiki/bin/view/FST/PythonExtension">OpenFST Python extension</a>.</p>
+<p>If you wish to use SGNMT in combination with the hierachical phrase-pased SMT system <a class="reference external" href="http://ucam-smt.github.io/">HiFST</a>,
+you can directly use the OpenFST installation under <em>externals/</em> in the HiFST installation directory. This will make
+it possible to create translation lattices with tropicalsparsetuple arcs with SGNMT to keep predictor scores separated
+(see <em>fst</em> output format).</p>
 </div>
 <div class="section" id="installing-srilm">
 <h3>Installing SRILM<a class="headerlink" href="#installing-srilm" title="Permalink to this headline">¶</a></h3>
@@ -214,7 +221,7 @@ is compiled as position independent code using <code class="docutils literal"><s
 <h3>Installing NPLM<a class="headerlink" href="#installing-nplm" title="Permalink to this headline">¶</a></h3>
 <p>Download NPLM from the <a class="reference external" href="http://nlg.isi.edu/software/nplm/">project homepage</a> and install it. You can also
 use the <a class="reference external" href="https://github.com/ucam-smt/nplm">UCAM NPLM fork</a> from Gonzalo Iglesias for threadsafety and efficiency.
-If you are using nplm 0.3 there might be a bug in the Python module that prevents the nplm predictor to read model files.
+If you are using nplm 0.3 there might be a bug in the Python module that prevents the nplm predictor from reading model files.
 Try to replace <em>nplm.py</em> in the <em>python/</em> directory of your NPLM installation with <a class="reference external" href="http:///ucam-smt.io/sgnmt/html/_static/nplm.py">this file</a>.</p>
 </div>
 </div>
@@ -237,9 +244,8 @@ $ python train.py --help
 $ python decode.py --help
 </pre></div>
 </div>
-<p>If you see the help texts for both commands, you are ready for the <a class="reference internal" href="tutorial.html#tutorial-label"><span class="std std-ref">Tutorial</span></a>. If both commands fail, there is probably
-something wrong with your blocks installation. If only <code class="docutils literal"><span class="pre">decode.py</span></code> fails, double-check that OpenFST, SRILM, and NPLM are
-properly installed as described above, and that they are added to your <code class="docutils literal"><span class="pre">PYTHONPATH</span></code>.</p>
+<p>If you see the help texts for both commands, you are ready for the <a class="reference internal" href="tutorial.html#tutorial-label"><span class="std std-ref">Tutorial</span></a>. Otherwise, there is probably
+something wrong with your Blocks or OpenFST installation.</p>
 </div>
 </div>
 

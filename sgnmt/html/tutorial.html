@@ -88,7 +88,8 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#pure-nmt-decoding-single">Pure NMT decoding (single)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ensemble-nmt-decoding">Ensemble NMT decoding</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#lattice-rescoring-with-nmt-sgnmt">Lattice rescoring with NMT (SGNMT)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lattice-rescoring-sgnmt">Lattice rescoring (SGNMT)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#n-best-list-rescoring">N-best list rescoring</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#working-with-language-models">Working with language models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#creating-output-files">Creating output files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#distributed-decoding-using-the-grid-engine">Distributed decoding using the Grid Engine</a></li>
@@ -166,7 +167,8 @@ directory structure is as follows:</p>
 <li><em>./train/</em> contains the NMT model file <code class="docutils literal"><span class="pre">params.npz</span></code>.</li>
 <li><em>./train2/</em> contains a second NMT model for ensembling.</li>
 <li><em>./lm/</em> contains language model files</li>
-<li><em>./lats/</em> contains the Hiero translation lattices.</li>
+<li><em>./hiero/lats/</em> contains the Hiero translation lattices.</li>
+<li><em>./hiero/100best.txt</em> is an n-best list generated with Hiero.</li>
 <li><em>./scripts/</em> contains helper scripts for creating lattice directories or applying word maps.</li>
 </ul>
 <p>This structure is indended to be used as starting point for your own experiments.</p>
@@ -194,7 +196,7 @@ for SGNMT in general.</p>
 </div>
 <p>The <code class="docutils literal"><span class="pre">--predictors</span> <span class="pre">nmt</span></code> argument tells SGNMT to use the NMT scoring module. The <code class="docutils literal"><span class="pre">--src_test</span></code> option defines the location of the
 source sentences to translate (words are represented by IDs), and <code class="docutils literal"><span class="pre">--range</span> <span class="pre">1:1</span></code> limits the decoding to the first sentence. SGNMT will
-search for NMT model files in the default location <em>./train/</em>. The arguments <code class="docutils literal"><span class="pre">src_vocab_size</span></code> and <code class="docutils literal"><span class="pre">--trg_vocab_size</span></code> specify that the
+search for NMT model files in the default location <em>./train/</em>. The arguments <code class="docutils literal"><span class="pre">--src_vocab_size</span></code> and <code class="docutils literal"><span class="pre">--trg_vocab_size</span></code> specify that the
 NMT model has been trained with vocabulary sizes of 50003. Since we will use the last four options throughout this tutorial, we load them
 from a configuration file instead of adding them separately:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span>$ cat tut.ini
@@ -212,7 +214,7 @@ $ python $SGNMT/decode.py --predictors nmt --config_file tut.ini
 Indien und Japan treffen sich in Tokio
 </pre></div>
 </div>
-<p>For single NMT decoding, you have the option to use an optimized version of the beam decoder:</p>
+<p>For single NMT decoding, you have the option to use an optimised version of the beam decoder:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --decoder vanilla --config_file tut.ini
 (...)
 2016-05-19 13:14:27,040 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
@@ -226,9 +228,9 @@ predictors, e.g. for lattice rescoring or ensembled NMT decoding.</p>
 </div>
 <div class="section" id="ensemble-nmt-decoding">
 <h2>Ensemble NMT decoding<a class="headerlink" href="#ensemble-nmt-decoding" title="Permalink to this headline">¶</a></h2>
-<p>NMT ensembling can be realized by simply adding a second NMT predictor. However, we need to override the NMT configuration
-for the second NMT predictor to load a different NMT model. We can use <code class="docutils literal"><span class="pre">--nmt_config</span></code> for this. Therefore,
-to override the <code class="docutils literal"><span class="pre">saveto</span></code> options which stores the NMT training directory, we add <code class="docutils literal"><span class="pre">--nmt_config</span> <span class="pre">saveto=train2</span></code>:</p>
+<p>NMT ensembling can be done by simply adding a second NMT predictor. However, we need to override the NMT configuration
+for the second NMT predictor to load a different NMT model. We can use <code class="docutils literal"><span class="pre">--nmt_config2</span></code> for this. Therefore,
+to override the <code class="docutils literal"><span class="pre">saveto</span></code> options which stores the NMT training directory, we add <code class="docutils literal"><span class="pre">--nmt_config2</span> <span class="pre">saveto=train2</span></code>:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,nmt --nmt_config2 saveto=train2 --config_file tut.ini
 (...)
 2016-05-19 13:24:36,060 INFO: Loading the model from ./train/params.npz
@@ -244,10 +246,10 @@ to override the <code class="docutils literal"><span class="pre">saveto</span></
 <p>The first NMT predictor still uses the default NMT training directory location <em>./train/</em>, but the second NMT instance loads the
 NMT model from <em>train2/params.npz</em>.</p>
 </div>
-<div class="section" id="lattice-rescoring-with-nmt-sgnmt">
-<h2>Lattice rescoring with NMT (SGNMT)<a class="headerlink" href="#lattice-rescoring-with-nmt-sgnmt" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="lattice-rescoring-sgnmt">
+<h2>Lattice rescoring (SGNMT)<a class="headerlink" href="#lattice-rescoring-sgnmt" title="Permalink to this headline">¶</a></h2>
 <p>For restricting NMT to a translation lattice, we need the <em>fst</em> predictor:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,fst --fst_path lats/%d.fst --config_file tut.ini
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,fst --fst_path hiero/lats/%d.fst --config_file tut.ini
 (...)
 2016-05-19 15:37:29,601 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
 2016-05-19 15:37:36,437 INFO: Decoded (ID: 1): 1511 7 1422 84829 894 30 8 10453
@@ -258,9 +260,9 @@ $ echo &#39;1511 7 1422 84829 894 30 8 10453&#39; | python scripts/apply_wmap.py
 Indien und Japan Premierministern treffen sich in Tokio
 </pre></div>
 </div>
-<p>This command loads the determinised lattice <em>./lats/1.fst</em> from the file system and runs the NMT beam search decoder on it. For non-deterministic lattices use
+<p>This command loads the determinised lattice <em>./hiero/lats/1.fst</em> from the file system and runs the NMT beam search decoder on it. For non-deterministic lattices use
 the <em>nfst</em> predictor instead. Per default, SGNMT ignores the scores in the translation lattices. To change this, use <code class="docutils literal"><span class="pre">--use_fst_weights</span></code>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,fst --fst_path lats/%d.fst --use_fst_weights true --predictor_weights 2.7,24.4 --config_file tut.ini
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,fst --fst_path hiero/lats/%d.fst --use_fst_weights true --predictor_weights 2.7,24.4 --config_file tut.ini
 (...)
 2016-05-19 15:41:19,878 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
 2016-05-19 15:41:28,228 INFO: Decoded (ID: 1): 1511 7 1422 3278 7 2830 894 30 8 10453
@@ -274,7 +276,7 @@ Indien und Japan Staats- und Regierungschefs treffen sich in Tokio
 <p>This command uses <code class="docutils literal"><span class="pre">--predictor_weights</span></code> to weight the NMT scores against the lattice scores (corresponds to the lambdas in the <a class="reference external" href="http://arxiv.org/abs/1605.04569">ACL 2016 paper</a>).</p>
 <p>So far, we applied beam decoding as search strategy. However, the beam decoder introduces search errors. SGNMT supports a variety of decoding strategies such
 as greedy, beam, depth-first search, and A* search. To do an exhaustive search over the lattice, use the depth-first search decoder:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --decoder dfs --predictors nmt,fst --fst_path lats/%d.fst --config_file tut.ini
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --decoder dfs --predictors nmt,fst --fst_path hiero/lats/%d.fst --config_file tut.ini
 (...)
 2016-05-19 15:43:33,713 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
 2016-05-19 15:43:35,926 INFO: Decoded (ID: 1): 1511 7 1422 84829 894 30 8 10453
@@ -285,7 +287,7 @@ as greedy, beam, depth-first search, and A* search. To do an exhaustive search o
 <p>In this case, the exact decoding was very fast because DFS automatically enables admissible pruning of branches in the search tree with accumulated scores
 worse than the current best hypothesis. If we disable this feature with <code class="docutils literal"><span class="pre">--early_stopping</span> <span class="pre">false</span></code>, we see that SGNMT finds the same hypothesis but with
 much more node expansions:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --decoder dfs --early_stopping false --predictors nmt,fst --fst_path lats/%d.fst --config_file tut.ini
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --decoder dfs --early_stopping false --predictors nmt,fst --fst_path hiero/lats/%d.fst --config_file tut.ini
 (...)
 2016-05-19 15:44:28,765 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
 2016-05-19 15:45:12,650 INFO: Decoded (ID: 1): 1511 7 1422 84829 894 30 8 10453
@@ -293,6 +295,44 @@ much more node expansions:</p>
 2016-05-19 15:45:12,650 INFO: Decoding finished. Time: 43.89
 </pre></div>
 </div>
+<p>Informed search is implemented by the <em>astar</em> search strategy:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --decoder astar --heuristics predictor --predictors nmt,fst --fst_path hiero/lats/%d.fst --use_fst_weights true --predictor_weights 2.7,24.4 --config_file tut.ini
+(...)
+2016-05-19 18:28:05,618 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-19 18:28:06,897 INFO: Decoded (ID: 1): 1511 7 1422 3278 7 2830 894 30 8 10453
+2016-05-19 18:28:06,898 INFO: Stats (ID: 1): score=-50.385922 num_expansions=11 time=1.28
+2016-05-19 18:28:06,898 INFO: Decoding finished. Time: 1.28
+</pre></div>
+</div>
+<p>The option <code class="docutils literal"><span class="pre">--heuristics</span> <span class="pre">predictor</span></code> enables the predictor specific heuristics. In this example, this uses the shortest distances in the lattice as
+future cost estimates. This is a very weak heuristic as the <em>fst</em> predictor has a small weight, but it already speeds up decoding. Alternatively,
+<code class="docutils literal"><span class="pre">--heuristics</span> <span class="pre">greedy</span></code> performs greedy decoding with all predictors to estimate future cost (expensive but more accurate).</p>
+</div>
+<div class="section" id="n-best-list-rescoring">
+<h2>N-best list rescoring<a class="headerlink" href="#n-best-list-rescoring" title="Permalink to this headline">¶</a></h2>
+<p>The <em>forced</em> predictor implements single best rescoring (i.e. forced decoding). The <code class="docutils literal"><span class="pre">--trg_test</span></code> option needs to point to a plain text file with
+the reference sentences:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,forced --trg_test data/test15.ids.de --config_file tut.ini
+(...)
+2016-05-20 10:21:07,916 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-20 10:21:09,200 INFO: Decoded (ID: 1): 5 3316 7930 7 7312 9864 30 8 10453 4
+2016-05-20 10:21:09,200 INFO: Stats (ID: 1): score=-23.736977 num_expansions=11 time=1.28
+2016-05-20 10:21:09,200 INFO: Decoding finished. Time: 1.28
+</pre></div>
+</div>
+<p>For NMT n-best list rescoring, use the <em>forcedlst</em> predictor:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,forcedlst --decoder dfs --trg_test hiero/100best.txt --config_file tut.ini
+(...)
+2016-05-20 10:46:12,884 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
+2016-05-20 10:46:15,049 INFO: Decoded (ID: 1): 1511 7 1422 84829 894 30 8 10453
+2016-05-20 10:46:15,049 INFO: Stats (ID: 1): score=-4.779791 num_expansions=17 time=2.17
+2016-05-20 10:46:15,049 INFO: Decoding finished. Time: 2.17
+</pre></div>
+</div>
+<p>The n-best list needs to be stored in <a class="reference external" href="http://www.statmt.org/moses/?n=Advanced.Search#ntoc1">Moses format</a>. The <em>dfs</em> decoder efficiently
+traverses the search space spanned by the n-best list by reusing predictor states for the same histories. If you are interested in rescoring
+the full n-best list and not only in the single best translation, use <code class="docutils literal"><span class="pre">--early_stopping</span> <span class="pre">false</span></code>. In order to use the scores provided in the
+n-best list, add <code class="docutils literal"><span class="pre">--use_nbest_weights</span> <span class="pre">true</span></code>.</p>
 </div>
 <div class="section" id="working-with-language-models">
 <h2>Working with language models<a class="headerlink" href="#working-with-language-models" title="Permalink to this headline">¶</a></h2>
@@ -301,7 +341,7 @@ much more node expansions:</p>
 can be found in <em>./lm/nplm</em>. However, this model has been trained with a different word map. Therefore, we add the <em>idxmap</em> wrapper predictor
 to the <em>nplm</em> predictor. This wrapper translates between word indices used by SGNMT, and indices used by the NPLM predictor. The mapping between
 indices is defined with the <code class="docutils literal"><span class="pre">--src_idxmap</span></code> and <code class="docutils literal"><span class="pre">--trg_idxmap</span></code> arguments:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,fst,idxmap_nplm --fst_path lats/%d.fst --nplm_path lm/nplm --src_idxmap data/idxmap.nplm.en --trg_idxmap data/idxmap.nplm.de --config_file tut.ini
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --predictors nmt,fst,idxmap_nplm --fst_path hiero/lats/%d.fst --nplm_path lm/nplm --src_idxmap data/idxmap.nplm.en --trg_idxmap data/idxmap.nplm.de --config_file tut.ini
 2016-05-19 16:24:47,811 INFO: Start time: 1463671487.81
 2016-05-19 16:24:47,811 INFO: Next sentence (ID: 1): 1543 7 1491 1359 1532 692 9 6173
 2016-05-19 16:24:54,768 INFO: Decoded (ID: 1): 1511 7 1422 84829 8 10453
@@ -317,7 +357,54 @@ or add a word count feature with the <em>wc</em> predictor. The <em>srilm</em> p
 </div>
 <div class="section" id="creating-output-files">
 <h2>Creating output files<a class="headerlink" href="#creating-output-files" title="Permalink to this headline">¶</a></h2>
-<p>TODO</p>
+<p>SGNMT supports four different output formats:</p>
+<ul class="simple">
+<li><em>text</em>: Plain text file with the translations</li>
+<li><em>nbest</em>: n-best list in</li>
+<li><em>sfst</em>: OpenFST translation lattices with standard arcs</li>
+<li><em>fst</em>: OpenFST translation lattices with sparse tuple arcs</li>
+</ul>
+<p>They can be activated with <code class="docutils literal"><span class="pre">--outputs</span></code>. For example, this adds NMT scores to the Hiero n-best list <em>hiero/100best.txt</em>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --outputs text,nbest --predictors nmt,forcedlst --use_nbest_weights true --trg_test hiero/100best.txt --decoder dfs --early_stopping false --config_file tut.ini
+(...)
+$ head sgnmt-out.*
+==&gt; sgnmt-out.nbest &lt;==
+0 ||| 1511 7 1422 6284 894 30 8 10453 ||| nmt= -5.695894 forcedlst= 10.681800 ||| 4.985906
+0 ||| 1511 7 1422 3316 894 30 8 10453 ||| nmt= -5.125271 forcedlst= 7.244780 ||| 2.119509
+0 ||| 1511 7 1422 6284 894 8 10453 ||| nmt= -7.310516 forcedlst= 9.359490 ||| 2.048974
+0 ||| 1511 7 1422 84829 894 30 8 10453 ||| nmt= -4.779791 forcedlst= 6.022160 ||| 1.242369
+0 ||| 1511 7 1422 13997 2153 894 30 8 10453 ||| nmt= -9.046590 forcedlst= 9.643540 ||| 0.596950
+0 ||| 1511 7 1422 3278 7 2830 894 30 8 10453 ||| nmt= -11.577704 forcedlst= 11.586500 ||| 0.008796
+0 ||| 1511 7 1422 3316 894 8 10453 ||| nmt= -6.950797 forcedlst= 6.573870 ||| -0.376927
+0 ||| 1511 7 1422 84829 894 8 10453 ||| nmt= -6.364513 forcedlst= 5.350270 ||| -1.014243
+0 ||| 1511 7 1422 2830 894 30 8 10453 ||| nmt= -8.984533 forcedlst= 7.901030 ||| -1.083503
+0 ||| 1511 7 7312 6284 894 30 8 10453 ||| nmt= -7.913851 forcedlst= 5.823900 ||| -2.089951
+
+==&gt; sgnmt-out.text &lt;==
+1511 7 1422 6284 894 30 8 10453
+</pre></div>
+</div>
+<p>The default output path is <em>sgnmt-out.%s</em> (can be changed with <code class="docutils literal"><span class="pre">--output_path</span></code>). The generated n-best file <em>sgnmt-out.nbest</em> does not only show
+the combined score, but also the separated predictor scores. In this case, <em>nmt=</em> contains the NMT log-likelihood, and <em>forcedlst=</em> corresponds
+to the hypothesis score in the Hiero n-best list <em>hiero/100best.txt</em>.</p>
+<p>Simple NMT translation lattices can be generated with the <em>sfst</em> output format:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --outputs sfst --predictors nmt --config_file tut.ini
+(...)
+$ fstprint sgnmt-out.sfst/1.fst | head
+0 1 1 1 3.70089412
+0 10  1 1 4.99342918
+0 18  1 1 5.3186779
+0 26  1 1 5.67907906
+1 2 1511  1511
+2 3 7 7
+3 4 1422  1422
+4 5 894 894
+5 6 30  30
+6 7 8 8
+</pre></div>
+</div>
+<p>If you wish to keep predictor scores separated in the generated lattices, use the <em>fst</em> output format to create lattices with sparse tuple arcs.
+You&#8217;ll need to <a class="reference external" href="http://ucam-smt.github.io/tutorial/build.html">install HiFST</a> to enable support for the tropicalsparsetuple arc type.</p>
 </div>
 <div class="section" id="distributed-decoding-using-the-grid-engine">
 <h2>Distributed decoding using the Grid Engine<a class="headerlink" href="#distributed-decoding-using-the-grid-engine" title="Permalink to this headline">¶</a></h2>

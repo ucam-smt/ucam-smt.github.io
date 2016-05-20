@@ -328,8 +328,7 @@
     
 <div class="viewcode-block" id="FstPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a matrix of shortest distances between nodes. &quot;&quot;&quot;</span>
-        <span class="c1"># TODO: Update to use OpenFST instead of PyFST</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">shortest_distance</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distances</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">shortestdistance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="FstPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;The FST predictor comes with its own heuristic function. We</span>
@@ -468,8 +467,7 @@
     
 <div class="viewcode-block" id="NondeterministicFstPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a matrix of shortest distances between all nodes &quot;&quot;&quot;</span>
-        <span class="c1"># TODO: Update to use OpenFST instead of PyFST</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">shortest_distance</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distances</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">shortestdistance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="NondeterministicFstPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;The FST predictor comes with its own heuristic function. We</span>
@@ -571,6 +569,8 @@
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">candidates</span><span class="p">:</span>
                     <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Could not find root fst in </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> 
                                     <span class="n">search_pattern</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="k">return</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Ambiguous root fst for </span><span class="si">%s</span><span class="s2">. Take the one &quot;</span>
                                  <span class="s2">&quot;with largest span.&quot;</span> <span class="o">%</span> <span class="n">search_pattern</span><span class="p">)</span>
@@ -582,8 +582,9 @@
             <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> error reading fst from </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
                 <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sub_fsts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sub_fsts</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="RtnPredictor.expand_rtn"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.expand_rtn">[docs]</a>    <span class="k">def</span> <span class="nf">expand_rtn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
@@ -594,13 +595,12 @@
 <span class="sd">        the prefix ``cur_history`` in the RTN have at least one more </span>
 <span class="sd">        terminal token. Then, we apply ``func`` to all reachable nodes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># TODO: Update this to make it work with OpenFST instead of PyFST</span>
         <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
         <span class="k">while</span> <span class="n">updated</span><span class="p">:</span>
             <span class="n">updated</span> <span class="o">=</span> <span class="bp">False</span>
             <span class="n">label_fst_map</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">visited_nodes</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arc_sort_output</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcsort</span><span class="p">(</span><span class="n">sort_type</span><span class="o">=</span><span class="s2">&quot;olabel&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_to_label_fst_map_recursive</span><span class="p">(</span><span class="n">label_fst_map</span><span class="p">,</span>
                                                 <span class="p">{},</span>
                                                 <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> 
@@ -610,23 +610,18 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Replace </span><span class="si">%d</span><span class="s2"> NT arcs for history </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
                                                             <span class="nb">len</span><span class="p">(</span><span class="n">label_fst_map</span><span class="p">),</span>
                                                             <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">))</span>
-                <span class="c1"># This requires fiddling around with osyms because pyfst uses</span>
-                <span class="c1"># it for some stupid reason but fst._fst.read doesn&#39;t create </span>
-                <span class="c1"># even a null-object implementation</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">osyms</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">SymbolTable</span><span class="p">()</span>
-                <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">label_fst_map</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">osyms</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">osyms</span><span class="p">[</span><span class="s1">&#39;__ROOT__&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">label_fst_map</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2000000000</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">isyms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">osyms</span>
-                <span class="n">replaced_fst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">label_fst_map</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+                <span class="c1"># First in the list is the root FST and label</span>
+                <span class="n">replaced_fst</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+                        <span class="p">[(</span><span class="nb">len</span><span class="p">(</span><span class="n">label_fst_map</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2000000000</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="p">)]</span> 
+                        <span class="o">+</span> <span class="p">[(</span><span class="n">nt_label</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> 
+                            <span class="k">for</span> <span class="p">(</span><span class="n">nt_label</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="ow">in</span> <span class="n">label_fst_map</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()],</span>
+                        <span class="n">epsilon_on_replace</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="n">replaced_fst</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">osyms</span> <span class="o">=</span> <span class="bp">None</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">isyms</span> <span class="o">=</span> <span class="bp">None</span>
                 <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rmeps</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimize_rtns</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">remove_epsilon</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">rmepsilon</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimize_rtns</span><span class="p">:</span>
-            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">determinize</span><span class="p">()</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">determinize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">determinize</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="n">tmp</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">minimize</span><span class="p">()</span></div>
     
@@ -642,19 +637,13 @@
 <span class="sd">          </span>
 <span class="sd">        Note: visited_nodes is maintained for each history separately</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># TODO: Update this to make it work with OpenFST instead of PyFST</span>
         <span class="k">if</span> <span class="n">root_node</span> <span class="ow">in</span> <span class="n">visited_nodes</span><span class="p">:</span>
             <span class="c1"># This introduces some error as we take the score of the first best</span>
             <span class="c1"># path with a certain history, not the globally best path. For now,</span>
             <span class="c1"># this error should not be significant</span>
             <span class="k">return</span>
         <span class="n">visited_nodes</span><span class="p">[</span><span class="n">root_node</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">arcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="p">[</span><span class="n">root_node</span><span class="p">]</span><span class="o">.</span><span class="n">arcs</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;invalid state id </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">root_node</span><span class="p">)</span>
-            <span class="k">return</span>
-        <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="n">arcs</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="n">root_node</span><span class="p">):</span>
             <span class="n">arc_acc_weight</span> <span class="o">=</span> <span class="n">acc_weight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">EPS_ID</span><span class="p">:</span> <span class="c1"># Follow epsilon edges</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">add_to_label_fst_map_recursive</span><span class="p">(</span><span class="n">label_fst_map</span><span class="p">,</span>
@@ -666,7 +655,7 @@
             <span class="k">elif</span> <span class="ow">not</span> <span class="n">history</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_nt_label</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">):</span> <span class="c1"># Add to label_fst_map</span>
                     <span class="n">replace_label</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">label_fst_map</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2000000000</span>
-                    <span class="n">label_fst_map</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">replace_label</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sub_fst</span><span class="p">(</span>
+                    <span class="n">label_fst_map</span><span class="p">[</span><span class="n">replace_label</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sub_fst</span><span class="p">(</span>
                                                                     <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">)</span>
                     <span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span> <span class="o">=</span> <span class="n">replace_label</span>
                     <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">=</span> <span class="n">replace_label</span>

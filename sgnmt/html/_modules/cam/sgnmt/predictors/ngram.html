@@ -147,10 +147,12 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">UnboundedVocabularyPredictor</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
-<span class="kn">from</span> <span class="nn">srilm</span> <span class="kn">import</span> <span class="n">readLM</span><span class="p">,</span> <span class="n">initLM</span><span class="p">,</span> <span class="n">getNgramProb</span> <span class="c1"># requires swig-srilm</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">srilm</span> <span class="kn">import</span> <span class="n">readLM</span><span class="p">,</span> <span class="n">initLM</span><span class="p">,</span> <span class="n">getNgramProb</span> <span class="c1"># requires swig-srilm</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span> <span class="c1"># Deal with it in decode.py</span>
 
 
 <div class="viewcode-block" id="SRILMPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.SRILMPredictor">[docs]</a><span class="k">class</span> <span class="nc">SRILMPredictor</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
@@ -168,6 +170,9 @@
 <span class="sd">        Args:</span>
 <span class="sd">            path (string): Path to the ARPA language model file</span>
 <span class="sd">            ngram_order (int): Order of the language model</span>
+<span class="sd">            </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            NameError. If srilm-swig is not installed</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">SRILMPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">history_len</span> <span class="o">=</span> <span class="n">ngram_order</span><span class="o">-</span><span class="mi">1</span>
