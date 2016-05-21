@@ -403,12 +403,52 @@ $ fstprint sgnmt-out.sfst/1.fst | head
 6 7 8 8
 </pre></div>
 </div>
-<p>If you wish to keep predictor scores separated in the generated lattices, use the <em>fst</em> output format to create lattices with sparse tuple arcs.
-You&#8217;ll need to <a class="reference external" href="http://ucam-smt.github.io/tutorial/build.html">install HiFST</a> to enable support for the tropicalsparsetuple arc type.</p>
+<p>If you wish to keep predictor scores separated in the generated lattices, use the <em>fst</em> output format to create lattices with
+<a class="reference external" href="http://ucam-smt.github.io/tutorial/basictrans.html#lmert_veclats_tst">sparse tuple arcs</a>.
+You&#8217;ll need to <a class="reference external" href="http://ucam-smt.github.io/tutorial/build.html">install HiFST</a> to enable support for the tropicalsparsetuple arc type:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python $SGNMT/decode.py --outputs fst --predictors nmt,fst --fst_path hiero/lats/%d.fst --use_fst_weights true --predictor_weights 2.7,24.4 --config_file tut.ini
+(...)
+$ TUPLEARC_WEIGHT_VECTOR=2.7,24.4 fstshortestpath sgnmt-out.fst/1.fst | fsttopsort | fstprint
+0 1 1 1
+1 2 1511  1511  0,1,0.420832008,2,0.00846654177
+2 3 7 7 0,1,0.129989997
+3 4 1422  1422  0,1,0.0673521981,2,0.00468987226
+4 5 3278  3278  0,1,9.95738029,2,0.680079401
+5 6 7 7 0,1,0.0128448997
+6 7 2830  2830  0,1,0.0604516007
+7 8 894 894 0,1,0.287970006,2,0.0195894614
+8 9 30  30  0,1,0.173721001,2,0.0528452434
+9 10  8 8 0,1,0.354806006,2,0.000487923622
+10  11  10453 10453 0,1,0.0348698013,2,0.017698925
+11  12  2 2 0,1,0.0774876028
+12
+</pre></div>
+</div>
+<p>The weights in the generated FST correspond to the unweighted predictor scores in order of how they are defined in <code class="docutils literal"><span class="pre">--predictors</span></code>.</p>
 </div>
 <div class="section" id="distributed-decoding-using-the-grid-engine">
 <h2>Distributed decoding using the Grid Engine<a class="headerlink" href="#distributed-decoding-using-the-grid-engine" title="Permalink to this headline">¶</a></h2>
-<p>TODO</p>
+<p>Large decoding jobs can be distributed over multiple nodes with the Grid Engine using the <code class="docutils literal"><span class="pre">--range</span></code> argument. First, we create a configuration file for SGNMT
+which specifies the decoding parameters. Here is a example .ini file for distributing lattice rescoring on the WMT&#8216;15 English-German test set:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ cat scripts/grid/example.ini
+src_test: data/test15.ids.en
+src_vocab_size: 50003
+trg_vocab_size: 50003
+predictors: nmt,fst
+fst_path: hiero/lats/%d.fst
+use_fst_weights: true
+predictor_weights: 2.7,24.4
+</pre></div>
+</div>
+<p>Make sure that the .ini file does not contain <code class="docutils literal"><span class="pre">output_path</span></code> or <code class="docutils literal"><span class="pre">range</span></code>. Next, open <em>scripts/grid/decode_on_grid_cpu_worker.sh</em> and, if
+necessary, change the environment variables PATH, LD_LIBRARY_PATH, and PYTHONPATH as described on the <a class="reference internal" href="setup.html#setup-label"><span class="std std-ref">Installation</span></a> page. Start the
+distributed decoding with the following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ bash scripts/grid/decode_on_grid_cpu.sh 40 1:2169 scripts/grid/example.ini grid-output
+</pre></div>
+</div>
+<p>This will submit an array of 40 jobs to the grid, and each worker calls decode.py with a different <code class="docutils literal"><span class="pre">--range</span></code>. Worker jobs write their
+output files to <em>grid-output/&lt;worker-id&gt;</em>, and their logs to <em>grid-output/logs</em>. When all workers are finished, the combination job
+combines the output files and writes the requested output formats to <em>grid-output/out.%s</em>.</p>
 </div>
 </div>
 
