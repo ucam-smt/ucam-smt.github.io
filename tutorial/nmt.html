@@ -54,13 +54,32 @@ $(document).ready(function(){initNavTree('nmt.html','');});
 <div class="title">Neural Machine Translation </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>This section describes how to prepare lattices and RTNs produced by ucam-smt for our neural machine translation (NMT) tool using them in combination with <a href="http://ucam-smt.github.io/sgnmt/html/">SGNMT tool</a> [<a class="el" href="intro.html#Stahlberg2016">Stahlberg2016</a>] which is an extension of the NMT implementation in the <a href="http://blocks.readthedocs.io/en/latest/">blocks</a> framework. SGNMT supports lattice, RTN, and n-best rescoring with single or ensembled NMT, integration of language models and much more. Examples can be found on the <a href="http://ucam-smt.github.io/sgnmt/html/tutorial.html">SGNMT tutorial page</a>.</p>
+<div class="textblock"><p>This section describes how to prepare lattices and RTNs produced by HiFST for our neural machine translation (NMT) tool <a href="http://ucam-smt.github.io/sgnmt/html/">SGNMT</a> [<a class="el" href="intro.html#Stahlberg2016">Stahlberg2016</a>] which is an extension of the NMT implementation in the <a href="http://blocks.readthedocs.io/en/latest/">Blocks</a> framework. SGNMT supports lattice, RTN, and n-best rescoring with single or ensembled NMT, integration of language models and much more. Examples can be found on the <a href="http://ucam-smt.github.io/sgnmt/html/tutorial.html">SGNMT tutorial page</a>.</p>
 <h1><a class="anchor" id="prepare_lattices"></a>
 Preparing Lattices for SGNMT</h1>
-<p>Coming soon...</p>
+<p>Translation lattices produced by HiFST use the <b>lexicographic semiring of two tropical weights</b> [<a class="el" href="intro.html#Roark2011">Roark2011</a>] (see <a class="el" href="basictrans.html#basic_scores">Lexicographic Semirings: Translation Grammar and Language Model Scores</a>). However, SGNMT requires lattices with standard arcs. HiFST provides the <code>lexmap</code> tool to convert lexicographic to standard arcs. Additionally, we usually apply epsilon removal, determinisation, minimisation, and weight pushing to the translation lattices before passing them through to SGNMT [<a class="el" href="intro.html#Stahlberg2016">Stahlberg2016</a>]. We also map HiFST special symbols to epsilon in order to remove them from the processed lattices. The full pipeline looks like that: </p><pre class="fragment"> &gt; cat hifst_special_symbol_to_eps_map
+ 999999991 0
+ 999999992 0
+ 999999993 0
+ 999999994 0
+ 999999995 0
+ 999999996 0
+ 999999997 0
+ 999999998 0
+ 999999999 0
+ 100000000 0
+ &gt; zcat output/exp.baseline/LATS/1.fst.gz | lexmap.${TGTBINMK}.bin --action=lex2std | \
+                                            fstrelabel -relabel_ipairs=hifst_special_symbol_to_eps_map -relabel_opairs=hifst_special_symbol_to_eps_map | \
+                                            fstrmepsilon | \
+                                            fstdeterminize | \
+                                            fstminimize | \
+                                            fstmap -map_type=to_log | \
+                                            fstpush --push_weights &gt; output/exp.baseline/LATS.sgnmt/1.fst
+</pre><p>The <code>scripts/</code> directory in the <a href="http://ucam-smt.github.io/sgnmt/html/tutorial.html">SGNMT tutorial data</a> contains the script <code>create_fst_directory.sh</code> which prepares a complete HiFST lattice directory for SGNMT.</p>
+<p>Note that for large lattices, determinisation is not possible because <a class="el" href="intro.html#OpenFst">OpenFst</a> <a href="http://www.openfst.org/twiki/bin/view/FST/DeterminizeDoc">Determinize</a> requires too much memory. In this case, you can skip epsilon removal, determinisation, and minimisation, and use SGNMT's <a href="http://ucam-smt.github.io/sgnmt/html/predictors.html">nfst predictor</a>.</p>
 <h1><a class="anchor" id="prepare_rtns"></a>
 Preparing RTNs for SGNMT</h1>
-<p>Coming soon...</p>
+<p>SGNMT supports decoding on the search space spanned by an RTN. Arc expansion (i.e. replacing a non-terminal arc with a FST) is done on-the-fly only if the search algorithm arrives at this arc (late expansion). Like lattices, RTNs need to be converted from the lexicographic semiring using the <code>lexmap</code> tool, but without changing the directory structure. The <code>scripts/</code> directory in the <a href="http://ucam-smt.github.io/sgnmt/html/tutorial.html">SGNMT tutorial data</a> contains the script <code>create_rtn_directory.sh</code> to do that.</p>
 <h1><a class="anchor" id="edit_distance_based"></a>
 Combination via Edit Distance Transducer (WMT'16 Submission)</h1>
 <p>Coming soon... </p>
@@ -69,7 +88,7 @@ Combination via Edit Distance Transducer (WMT'16 Submission)</h1>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Thu May 19 2016 11:47:03 for Cambridge SMT System by
+    <li class="footer">Generated on Wed May 25 2016 10:13:37 for Cambridge SMT System by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.11 </li>
   </ul>
