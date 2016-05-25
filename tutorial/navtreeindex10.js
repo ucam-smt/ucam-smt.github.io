@@ -1,6 +1,5 @@
 var NAVTREEINDEX10 =
 {
-"range_8hpp.html":[13,0,187],
 "range_8hpp.html#a0f3e5526599d1173525dfb4c9e605c1a":[13,0,187,8],
 "range_8hpp.html#a10977183f09bf8f8a6cc4f0f4e6ab5a5":[13,0,187,6],
 "range_8hpp.html#a184f255524e2a67c633ed8ce6e5b3ebc":[13,0,187,10],
@@ -98,8 +97,8 @@ var NAVTREEINDEX10 =
 "structFunctionArc.html#afe5a197dd3915b6ca155862dd7d1ddfa":[12,0,16,7],
 "structHypW.html":[12,0,22],
 "structHypW.html#ac0864834714edb6c72102cf44dbc2053":[12,0,22,0],
-"structHypW.html#ad5667d98f3662edaf93ffdb7a4b418e4":[12,0,22,3],
 "structHypW.html#ad5667d98f3662edaf93ffdb7a4b418e4":[12,0,22,1],
+"structHypW.html#ad5667d98f3662edaf93ffdb7a4b418e4":[12,0,22,3],
 "structHypW.html#ade1477575dddaa9588150783d8cd146d":[12,0,22,2],
 "structLabeledFeature.html":[12,0,25],
 "structLabeledFeature.html#aac3471c50bcd313fc74419ede63ee726":[12,0,25,1],
@@ -144,8 +143,8 @@ var NAVTREEINDEX10 =
 "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html#aa9b71869cf25e7fa6c9a7eb5419ff328":[12,0,0,5,3],
 "structfst_1_1ApplyLanguageModelOnTheFlyInterface.html#ae5a7e5d6bb99e248b7f5fd7d51f5de65":[12,0,0,5,1],
 "structfst_1_1DotProductMap.html":[12,0,0,7],
-"structfst_1_1DotProductMap.html#a862561420dba2a17c86056a933373c3e":[12,0,0,7,3],
 "structfst_1_1DotProductMap.html#a862561420dba2a17c86056a933373c3e":[12,0,0,7,2],
+"structfst_1_1DotProductMap.html#a862561420dba2a17c86056a933373c3e":[12,0,0,7,3],
 "structfst_1_1DotProductMap.html#a8b01faae5e79011b5f2d45d3f7f26916":[12,0,0,7,1],
 "structfst_1_1DotProductMap.html#a8b01faae5e79011b5f2d45d3f7f26916":[12,0,0,7,0],
 "structfst_1_1Expand.html":[12,0,0,8],
@@ -249,5 +248,6 @@ var NAVTREEINDEX10 =
 "structfst_1_1Scorer.html#ab626e61699d8ee8e5be62da78aba81cf":[12,0,0,40,4],
 "structfst_1_1Scorer.html#acb88e86f68092eeabac8473cbb025048":[12,0,0,40,3],
 "structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html":[12,0,0,41],
-"structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html#a17bf814d352896a6aff582731377d474":[12,0,0,41,4]
+"structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html#a17bf814d352896a6aff582731377d474":[12,0,0,41,4],
+"structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html#a32cfff35cc56f2df66729aeb52675e71":[12,0,0,41,1]
 };

@@ -101,8 +101,7 @@ var NAVTREE =
     [ "Rescoring with Bilingual Neural Network Models", "bilm.html", null ],
     [ "Neural Machine Translation", "nmt.html", [
       [ "Preparing Lattices for SGNMT", "nmt.html#prepare_lattices", null ],
-      [ "Preparing RTNs for SGNMT", "nmt.html#prepare_rtns", null ],
-      [ "Combination via Edit Distance Transducer (WMT'16 Submission)", "nmt.html#edit_distance_based", null ]
+      [ "Preparing RTNs for SGNMT", "nmt.html#prepare_rtns", null ]
     ] ],
     [ "Non-functional WFST Disambiguation", "nfdisambiguation.html", null ],
     [ "Appendices", "appendices.html", [
@@ -158,10 +157,10 @@ var NAVTREEINDEX =
 "fstutils_8gtest_8cpp.html#a811c927c4c8c224625a108de10e6571c",
 "globals_o.html",
 "main_8applylm_8init__param__options_8hpp_source.html",
-"range_8hpp.html",
-"structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html#a32cfff35cc56f2df66729aeb52675e71",
-"structucam_1_1hifst_1_1MakeWeightHifstLocalLm_3_01TupleArc32_01_4.html#a018e3518c10440e3685b1bf5d5a212d0",
-"weights_8gtest_8cpp.html#a43aa8530803ac36516ecf60aab03f51f"
+"range_8hpp.html#a0f3e5526599d1173525dfb4c9e605c1a",
+"structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html#a362fa2a45c32f16f64ae399b744378bb",
+"structucam_1_1hifst_1_1MakeWeightHifstLocalLm_3_01TupleArc32_01_4.html#a14a11cabadf2ef2d5bf98f3eb19941eb",
+"weights_8gtest_8cpp.html#a486cccb7b6143a50014a9e2ee447c72b"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

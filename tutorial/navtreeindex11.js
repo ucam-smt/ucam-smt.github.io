@@ -1,6 +1,5 @@
 var NAVTREEINDEX11 =
 {
-"structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html#a32cfff35cc56f2df66729aeb52675e71":[12,0,0,41,1],
 "structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html#a362fa2a45c32f16f64ae399b744378bb":[12,0,0,41,10],
 "structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html#a58654533046422080b1f26f1c0ef75c5":[12,0,0,41,9],
 "structfst_1_1Scorer_3_01lm_1_1np_1_1State_00_01lm_1_1np_1_1Model_00_01IdBridgeT_00_01HackScoreT_01_4.html#a60c3d4a7985e373513d66296b19ebd06":[12,0,0,41,7],
@@ -32,13 +31,13 @@ var NAVTREEINDEX11 =
 "structfst_1_1StdToTropicalSparseMapper.html#a8c98773f8cb74f231bf22b7c79c233e2":[12,0,0,45,1],
 "structfst_1_1StdToTropicalSparseMapper.html#ab74ba0dbdb9f47ff99d2e50d06d28df2":[12,0,0,45,0],
 "structfst_1_1StdToVector.html":[12,0,0,46],
-"structfst_1_1StdToVector.html#a377cfa920440d4c1322525a9fde7b5b2":[12,0,0,46,2],
 "structfst_1_1StdToVector.html#a377cfa920440d4c1322525a9fde7b5b2":[12,0,0,46,3],
+"structfst_1_1StdToVector.html#a377cfa920440d4c1322525a9fde7b5b2":[12,0,0,46,2],
 "structfst_1_1StdToVector.html#ac87b38858c3cfd06f8a2aa062690f8c4":[12,0,0,46,1],
 "structfst_1_1StdToVector.html#ac87b38858c3cfd06f8a2aa062690f8c4":[12,0,0,46,0],
 "structfst_1_1VectorToStd.html":[12,0,0,48],
-"structfst_1_1VectorToStd.html#a476d1b1c36301812ff4c5e3405848400":[12,0,0,48,3],
 "structfst_1_1VectorToStd.html#a476d1b1c36301812ff4c5e3405848400":[12,0,0,48,2],
+"structfst_1_1VectorToStd.html#a476d1b1c36301812ff4c5e3405848400":[12,0,0,48,3],
 "structfst_1_1VectorToStd.html#ae7388ce350b585442330fc015623b2e6":[12,0,0,48,0],
 "structfst_1_1VectorToStd.html#ae76e23932579a4d64d9111debd5e51dd":[12,0,0,48,1],
 "structfst_1_1hypcost.html":[12,0,0,22],
@@ -249,5 +248,6 @@ var NAVTREEINDEX11 =
 "structucam_1_1hifst_1_1MakeWeightHifstLocalLm.html#aca6cdb6b6e8fd3f1145e7c595f917926":[12,0,4,1,23,4],
 "structucam_1_1hifst_1_1MakeWeightHifstLocalLm.html#ad24ca0ea5073f6ec9255f88fd8411d60":[12,0,4,1,23,2],
 "structucam_1_1hifst_1_1MakeWeightHifstLocalLm.html#af4cae611701f2e98d591c3c5e832294e":[12,0,4,1,23,0],
-"structucam_1_1hifst_1_1MakeWeightHifstLocalLm_3_01TupleArc32_01_4.html":[12,0,4,1,25]
+"structucam_1_1hifst_1_1MakeWeightHifstLocalLm_3_01TupleArc32_01_4.html":[12,0,4,1,25],
+"structucam_1_1hifst_1_1MakeWeightHifstLocalLm_3_01TupleArc32_01_4.html#a018e3518c10440e3685b1bf5d5a212d0":[12,0,4,1,25,7]
 };
