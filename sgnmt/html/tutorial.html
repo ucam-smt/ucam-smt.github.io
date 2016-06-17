@@ -86,6 +86,7 @@
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#pure-nmt-decoding-single">Pure NMT decoding (single)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ensemble-nmt-decoding">Ensemble NMT decoding</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#lattice-rescoring-sgnmt">Lattice rescoring (SGNMT)</a></li>
@@ -147,15 +148,10 @@
             
   <div class="section" id="tutorial">
 <span id="tutorial-label"></span><h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This tutorial is currently under development!</p>
-</div>
-<p>This tutorial describes common use cases for SGNMT. Please
-download the <a class="reference external" href="https://www.repository.cam.ac.uk/#will-be-available-soon">WMT&#8216;15 tutorial data</a> archive
-and extract it:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ wget http://example.org/
-$ tar xzf tutorial-ende-wmt15.tar.gz
+<p>This tutorial describes common use cases for SGNMT. The tutorial data is available under the following DOI:</p>
+<p><a class="reference external" href="http://dx.doi.org/10.17863/CAM.282">http://dx.doi.org/10.17863/CAM.282</a></p>
+<p>Please download the archive and extract it:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ tar xzf tutorial-ende-wmt15.tar.gz
 $ cd tutorial-ende-wmt15
 </pre></div>
 </div>
@@ -177,6 +173,17 @@ for SGNMT in general.</p>
 <p>For this tutorial, we assume that you set the <code class="docutils literal"><span class="pre">$SGNMT</span></code> environment variable to the location of your SGNMT installation:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span>$ export SGNMT=/path/to/sgnmt
 </pre></div>
+</div>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The two central concepts in SGNMT are <em>predictors</em> and <em>decoders</em>. <em>Predictors</em> are scoring modules which define scores over
+the target language vocabulary given the current internal predictor state, the history, the source sentence, and external side information.
+Predictors have a strict left-to-right semantic. They can represent translation models like NMT or language models. In a more general sense,
+translation lattices or n-best lists can also be represented in this framework. Predictors can be combined with other predictors to form
+complex decoding tasks.</p>
+<p><em>Decoders</em> are search strategies which traverse the space spanned by the predictors. SGNMT provides implementations of common
+search tree traversal algorithms like beam search. Since decoders differ in runtime complexity and the kind of search errors they make,
+different decoders are appropriate for different predictor constellations.</p>
 </div>
 <div class="section" id="pure-nmt-decoding-single">
 <h2>Pure NMT decoding (single)<a class="headerlink" href="#pure-nmt-decoding-single" title="Permalink to this headline">¶</a></h2>
@@ -337,7 +344,8 @@ n-best list, add <code class="docutils literal"><span class="pre">--use_nbest_we
 <div class="section" id="working-with-language-models">
 <h2>Working with language models<a class="headerlink" href="#working-with-language-models" title="Permalink to this headline">¶</a></h2>
 <p>Language model scores can be added to the lattices before passing them through to SGNMT. This is the approach we took in the
-<a class="reference external" href="http://arxiv.org/abs/1605.04569">ACL 2016 paper</a>. Alternatively, the nplm predictor can be used directly in SGNMT. A German NPLM model file
+<a class="reference external" href="http://arxiv.org/abs/1605.04569">ACL 2016 paper</a>. Alternatively, the nplm predictor can be used directly in SGNMT for incorporating a
+feedforward neural language model trained with <a class="reference external" href="http://nlg.isi.edu/software/nplm/">NPLM</a>. A German NPLM model file
 can be found in <em>./lm/nplm</em>. However, this model has been trained with a different word map. Therefore, we add the <em>idxmap</em> wrapper predictor
 to the <em>nplm</em> predictor. This wrapper translates between word indices used by SGNMT, and indices used by the NPLM predictor. The mapping between
 indices is defined with the <code class="docutils literal"><span class="pre">--src_idxmap</span></code> and <code class="docutils literal"><span class="pre">--trg_idxmap</span></code> arguments:</p>
