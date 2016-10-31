@@ -1,0 +1,1034 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.blocks.stream &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.blocks.stream</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.blocks.stream</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module acts as an replacement of the original ``stream`` module</span>
+<span class="sd">in the Blocks NMT implementation. Some methods are copied over from the </span>
+<span class="sd">Blocks code.</span>
+
+<span class="sd">Additionally, this module contains more advanced data sources such as</span>
+<span class="sd">``ParallelTextFile`` for reading a parallel corpus with random access, </span>
+<span class="sd">and the ``ParallelSourceSwitchDataset`` for integrating reinforcement </span>
+<span class="sd">learning methods into the training process.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">blocks.extensions</span> <span class="kn">import</span> <span class="n">SimpleExtension</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">fuel.transformers</span> <span class="kn">import</span> <span class="n">Padding</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">Popen</span><span class="p">,</span> <span class="n">PIPE</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">fuel.datasets</span> <span class="kn">import</span> <span class="n">Dataset</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.nmt</span> <span class="kn">import</span> <span class="n">get_nmt_model_path_params</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.vanilla_decoder</span> <span class="kn">import</span> <span class="n">BlocksNMTVanillaDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.sparse</span> <span class="kn">import</span> <span class="n">FlatSparseFeatMap</span>
+
+
+<div class="viewcode-block" id="ParallelSource"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ParallelSource">[docs]</a><span class="k">class</span> <span class="nc">ParallelSource</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for sources which can be fed into </span>
+<span class="sd">    ``ParallelSourceSwitchDataset``. These sources always represent an</span>
+<span class="sd">    indexed data set of sentence pairs. This can be either real </span>
+<span class="sd">    parallel training data or synthesized data were only one side is</span>
+<span class="sd">    original text and the other side is artificial (e.g. a dummy token</span>
+<span class="sd">    or back-translated sentences).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="ParallelSource.next"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ParallelSource.next">[docs]</a>    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the next sentence pair.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple. First element is the source sentence, the second is</span>
+<span class="sd">                   the target sentence (list of integers) without &lt;S&gt;</span>
+<span class="sd">                   but with &lt;/S&gt;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="ShuffledParallelSource"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ShuffledParallelSource">[docs]</a><span class="k">class</span> <span class="nc">ShuffledParallelSource</span><span class="p">(</span><span class="n">ParallelSource</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simplest ``ParallelSource`` implementation which allows access</span>
+<span class="sd">    to parallel data in a random order.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentences</span><span class="p">,</span> <span class="n">trg_sentences</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new data source which represents the parallel</span>
+<span class="sd">        text ``src_sentences`` - ``trg_sentences``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentences (list): list of source language sentences</span>
+<span class="sd">            trg_sentences (list): list of target language sentences</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError. If both arguments do not have the same length.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sentences</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trg_sentences</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span> <span class="o">=</span> <span class="n">src_sentences</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span> <span class="o">=</span> <span class="n">trg_sentences</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span> <span class="o">=</span> <span class="n">Reshuffler</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">trg_sentences</span><span class="p">))</span>
+    
+<div class="viewcode-block" id="ShuffledParallelSource.next"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ShuffledParallelSource.next">[docs]</a>    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Emits the sentence pairs in random order.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple. Next sentence pair</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span></div></div>
+
+
+<div class="viewcode-block" id="DummyParallelSource"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.DummyParallelSource">[docs]</a><span class="k">class</span> <span class="nc">DummyParallelSource</span><span class="p">(</span><span class="n">ParallelSource</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Represents monolingual data and uses a dummy token on the</span>
+<span class="sd">    source side to fill in the missing gap.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_token</span><span class="p">,</span> <span class="n">trg_sentences</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new data source which is based on monolingual</span>
+<span class="sd">        target data and uses a dummy token on the source side.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trg_sentences (list): list of target language sentences</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span> <span class="o">=</span> <span class="p">[</span><span class="n">src_token</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span> <span class="o">=</span> <span class="n">trg_sentences</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span> <span class="o">=</span> <span class="n">Reshuffler</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">trg_sentences</span><span class="p">))</span>
+    
+<div class="viewcode-block" id="DummyParallelSource.next"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.DummyParallelSource.next">[docs]</a>    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Emits the target sentences in random order with a dummy</span>
+<span class="sd">        token plus &lt;/S&gt; on the source sentence</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple. Next dummy token - target sentence pair</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span><span class="o">.</span><span class="n">next</span><span class="p">()])</span></div></div>
+
+
+<span class="n">_backtrans_decoder</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="sd">&quot;&quot;&quot;Decoder for backtranslation (needs to be global, otherwise</span>
+<span class="sd">the main loop iteration state cannot be pickled</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BacktranslatedParallelSource"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.BacktranslatedParallelSource">[docs]</a><span class="k">class</span> <span class="nc">BacktranslatedParallelSource</span><span class="p">(</span><span class="n">ParallelSource</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This data source is based on monolingual target data. The source</span>
+<span class="sd">    sentences are translated from the target sentence like described by</span>
+<span class="sd">    Senrich et al., 2015.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">trg_sentences</span><span class="p">,</span> 
+                 <span class="n">nmt_config</span><span class="p">,</span> 
+                 <span class="n">store_trans</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> 
+                 <span class="n">max_same_word</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+                 <span class="n">reload_frequency</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">old_backtrans_src</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new back translating data source.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trg_sentences (list): list of target language sentences</span>
+<span class="sd">            nmt_config (dict): NMT configuration of the back-</span>
+<span class="sd">                               translating NMT system</span>
+<span class="sd">            store_trans (string): Write the back-translated sentences</span>
+<span class="sd">                                  to the file system (append to that </span>
+<span class="sd">                                  file)</span>
+<span class="sd">            max_same_word (float): Used for sanity check of the back</span>
+<span class="sd">                                   translation. If the most frequent</span>
+<span class="sd">                                   word in the backtranslated sentence</span>
+<span class="sd">                                   has relative frequency higher than</span>
+<span class="sd">                                   this, discard this sentence pair</span>
+<span class="sd">            reload_frequency (int): The back-translating NMT model is</span>
+<span class="sd">                                    reloaded every n updates. This is </span>
+<span class="sd">                                    useful if the back-translating NMT</span>
+<span class="sd">                                    system is currently trained by </span>
+<span class="sd">                                    itself with the same policy. This</span>
+<span class="sd">                                    enables us to train two NMT systems</span>
+<span class="sd">                                    in opposite translation directions</span>
+<span class="sd">                                    and benefit from gains in the other</span>
+<span class="sd">                                    system immediately. Set to 0 to</span>
+<span class="sd">                                    disable reloading</span>
+<span class="sd">            old_backtrans_src (OldBacktranslatedParallelSource):</span>
+<span class="sd">                        Instance of ``OldBacktranslatedParallelSource``</span>
+<span class="sd">                        to send the backtranslated sentences to</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span> <span class="o">=</span> <span class="n">trg_sentences</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nmt_config</span> <span class="o">=</span> <span class="n">nmt_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq_len</span> <span class="o">=</span> <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;seq_len&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_file</span> <span class="o">=</span> <span class="n">store_trans</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_same_word</span> <span class="o">=</span> <span class="n">max_same_word</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reload_frequency</span> <span class="o">=</span> <span class="n">reload_frequency</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">old_backtrans_src</span> <span class="o">=</span> <span class="n">old_backtrans_src</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span> <span class="o">=</span> <span class="n">Reshuffler</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">trg_sentences</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_nmt</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="BacktranslatedParallelSource.next"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.BacktranslatedParallelSource.next">[docs]</a>    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Emits the target sentences in random order with the</span>
+<span class="sd">        backtranslated source sentence.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple. synthetic source - target sentence pair</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reload_frequency</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_count</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">reload_frequency</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_load_nmt</span><span class="p">()</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="n">trg_sen</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="c1"># TODO: Should be in conf</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">trg_sen</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_len</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="n">src_sen</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backtranslate</span><span class="p">(</span><span class="n">trg_sen</span><span class="p">)</span>
+        <span class="c1"># Sanity check</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">src_sen</span><span class="p">:</span>
+            <span class="n">counts</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">max_count</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">itervalues</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">max_count</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_same_word</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sen</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Discard back translation </span><span class="si">%s</span><span class="s2"> (max count: </span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                      <span class="n">src_sen</span><span class="p">,</span>
+                      <span class="n">max_count</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">next</span><span class="p">()</span> 
+        <span class="c1"># Write to file</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_file</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> ||| </span><span class="si">%s</span><span class="s2"> ||| </span><span class="si">%s</span><span class="s2"> ||| </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                                     <span class="n">idx</span><span class="p">,</span>
+                                     <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+                                     <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">src_sen</span><span class="p">]),</span>
+                                     <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">trg_sen</span><span class="p">])))</span>
+        <span class="c1"># Send to old backtranslated data source</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_backtrans_src</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">old_backtrans_src</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">src_sen</span><span class="p">,</span> <span class="n">trg_sen</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">src_sen</span><span class="p">,</span> <span class="n">trg_sen</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="BacktranslatedParallelSource.backtranslate"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.BacktranslatedParallelSource.backtranslate">[docs]</a>    <span class="k">def</span> <span class="nf">backtranslate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Translates a sentence from the target language back into the</span>
+<span class="sd">        source language.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trg_sentence (list): Target sentence ending with &lt;/S&gt;</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. Source sentence ending with &lt;/S&gt;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">global</span> <span class="n">_backtrans_decoder</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="n">_backtrans_decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">trg_sentence</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># Without EOS</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hypos</span><span class="p">:</span> <span class="c1"># No translation found, return dummy token</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No back-translation found for </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">trg_sentence</span><span class="p">)</span> 
+            <span class="k">return</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;normalized_bleu&#39;</span><span class="p">]:</span> <span class="c1"># Length normalization</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">/=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+            <span class="n">hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">hypo</span><span class="p">:</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span>
+        <span class="k">return</span> <span class="n">s</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">and</span> <span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="k">else</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>        </div>
+        
+    <span class="k">def</span> <span class="nf">_load_nmt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loads the back-translating NMT model. &quot;&quot;&quot;</span>
+        <span class="k">global</span> <span class="n">_backtrans_decoder</span>
+        <span class="n">_backtrans_decoder</span> <span class="o">=</span> <span class="n">BlocksNMTVanillaDecoder</span><span class="p">(</span>
+                                <span class="n">get_nmt_model_path_params</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nmt_config</span><span class="p">),</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">nmt_config</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="OldBacktranslatedParallelSource"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.OldBacktranslatedParallelSource">[docs]</a><span class="k">class</span> <span class="nc">OldBacktranslatedParallelSource</span><span class="p">(</span><span class="n">ParallelSource</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This ``ParallelSource`` implementation allows access to </span>
+<span class="sd">    sentences which have been translated before. It reads a log file</span>
+<span class="sd">    created by ``BacktranslatedParallelSource`` and yields sentence</span>
+<span class="sd">    pairs from that file. The backtranslating parallel source can add </span>
+<span class="sd">    new sentence pairs with ``add`` which have not been logged in the</span>
+<span class="sd">    file yet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new data source which reads out sentence pairs </span>
+<span class="sd">        from a backtranslation log file</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            log_file (string): Path to the log file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">log_file</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|||&quot;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                            <span class="n">idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> 
+                                            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> 
+                                            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;An </span><span class="si">%s</span><span class="s2"> error has occurred while reading </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> 
+                             <span class="o">%</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">log_file</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span> <span class="o">=</span> <span class="n">Reshuffler</span><span class="p">([</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">()])</span>
+    
+<div class="viewcode-block" id="OldBacktranslatedParallelSource.add"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.OldBacktranslatedParallelSource.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">src_sen</span><span class="p">,</span> <span class="n">trg_sen</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a new backtranslated sentence to this source. If a</span>
+<span class="sd">        sentence pair with the same index already exists, override it.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            idx (int): Index of the sentence pair</span>
+<span class="sd">            src_sen (list): Source sentence with EOS</span>
+<span class="sd">            trg_sen (list): Target sentence with EOS</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">src_sen</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">trg_sen</span></div>
+    
+<div class="viewcode-block" id="OldBacktranslatedParallelSource.next"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.OldBacktranslatedParallelSource.next">[docs]</a>    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Emits the sentence pairs in random order.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple. Next sentence pair</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span></div></div>
+
+
+<div class="viewcode-block" id="MergedParallelSource"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.MergedParallelSource">[docs]</a><span class="k">class</span> <span class="nc">MergedParallelSource</span><span class="p">(</span><span class="n">ParallelSource</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Each time ``next`` is called, we randomly select one of two </span>
+<span class="sd">    parallel sources and pass through the ``next`` request to the </span>
+<span class="sd">    selected one.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src1</span><span class="p">,</span> <span class="n">src2</span><span class="p">,</span> <span class="n">src1prob</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new data source which merges two other sources</span>
+<span class="sd">        by randomly selecting one of them each time ``next`` is called.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src1 (ParallelSource): First parallel source</span>
+<span class="sd">            src2 (ParallelSource): Second parallel source</span>
+<span class="sd">            src1prob (float): Probability of source 1</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src1</span> <span class="o">=</span> <span class="n">src1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src2</span> <span class="o">=</span> <span class="n">src2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src1prob</span> <span class="o">=</span> <span class="n">src1prob</span>
+    
+<div class="viewcode-block" id="MergedParallelSource.next"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.MergedParallelSource.next">[docs]</a>    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Emits the next sentence pair of one of the sources.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple. Next sentence pair</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src1</span> <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">src1prob</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">src2</span>
+        <span class="k">return</span> <span class="n">src</span><span class="o">.</span><span class="n">next</span><span class="p">()</span> </div></div>
+
+
+<span class="n">_current_src_sparse_feat_map</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="n">_current_trg_sparse_feat_map</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="n">_current_parallel_sources</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">_current_controller</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="sd">&quot;&quot;&quot;Pickling makes a lot of things ugly. This is a great example. The</span>
+<span class="sd">sources in ``ParallelSourceSwitchDataset`` store the training data,</span>
+<span class="sd">and adding them to iteration_state leads to very large files and long</span>
+<span class="sd">time to store them during training. Its much better to reload them from</span>
+<span class="sd">the file system each time. ``current_parallel_sources`` stores the</span>
+<span class="sd">reloaded sources. We hack ``__setstate__`` in </span>
+<span class="sd">``ParallelSourceSwitchDataset`` to use this global variable.</span>
+<span class="sd">&quot;&quot;&quot;</span> 
+
+
+<div class="viewcode-block" id="ParallelSourceSwitchDataset"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ParallelSourceSwitchDataset">[docs]</a><span class="k">class</span> <span class="nc">ParallelSourceSwitchDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This bridges the gap between Fuel and the ``ParallelSource``</span>
+<span class="sd">    implementations in this module. This is a Fuel ``Dataset`` which</span>
+<span class="sd">    uses a set of ``ParallelSource`` instances to produce a stream of</span>
+<span class="sd">    sentence pairs. Only one of the parallel sources is active at a</span>
+<span class="sd">    time. The active source can be changed with the </span>
+<span class="sd">    ``set_active_source`` method. This is particular useful in</span>
+<span class="sd">    combination with reinforcement learning policies where switching</span>
+<span class="sd">    the source corresponds to the action the agent takes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">provides_sources</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;source&#39;</span><span class="p">,</span><span class="s1">&#39;target&#39;</span><span class="p">)</span>
+    <span class="n">example_iteration_scheme</span> <span class="o">=</span> <span class="bp">None</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parallel_sources</span><span class="p">,</span>
+                 <span class="n">src_vocab_size</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span>
+                 <span class="n">trg_vocab_size</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span>
+                 <span class="n">src_sparse_feat_map</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> 
+                 <span class="n">trg_sparse_feat_map</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new ``Dataset`` which allows switching between </span>
+<span class="sd">        multiple parallel sources. The first source is activated per</span>
+<span class="sd">        default</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            parallel_sources (list): List of ``ParallelSource`` objects</span>
+<span class="sd">            src_vocab_size (int): Size of source vocabulary</span>
+<span class="sd">            trg_vocab_size (int): Size of target vocabulary</span>
+<span class="sd">            src_sparse_feat_map (SparseFeatMap): Map between words and</span>
+<span class="sd">                                                 their features if you </span>
+<span class="sd">                                                 use sparse vectors.</span>
+<span class="sd">            trg_sparse_feat_map (SparseFeatMap): Map between words and</span>
+<span class="sd">                                                 their features if you </span>
+<span class="sd">                                                 use sparse vectors.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            IndexError. If the list is empty</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ParallelSourceSwitchDataset</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="k">global</span> <span class="n">_current_parallel_sources</span>
+        <span class="k">global</span> <span class="n">_current_src_sparse_feat_map</span><span class="p">,</span> <span class="n">_current_trg_sparse_feat_map</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">parallel_sources</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parallel_sources</span> <span class="o">=</span> <span class="n">parallel_sources</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span> <span class="o">=</span> <span class="n">src_vocab_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span> <span class="o">=</span> <span class="n">trg_vocab_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">active_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sparse_feat_map</span> <span class="o">=</span> <span class="n">src_sparse_feat_map</span> <span class="k">if</span> <span class="n">src_sparse_feat_map</span> \
+                                                       <span class="k">else</span> <span class="n">FlatSparseFeatMap</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span> <span class="o">=</span> <span class="n">trg_sparse_feat_map</span> <span class="k">if</span> <span class="n">trg_sparse_feat_map</span> \
+                                                       <span class="k">else</span> <span class="n">FlatSparseFeatMap</span><span class="p">()</span>
+        <span class="c1"># pickle hacks</span>
+        <span class="n">_current_parallel_sources</span> <span class="o">=</span> <span class="n">parallel_sources</span>
+        <span class="n">_current_src_sparse_feat_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sparse_feat_map</span>
+        <span class="n">_current_trg_sparse_feat_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span> 
+    
+<div class="viewcode-block" id="ParallelSourceSwitchDataset.set_active_idx"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ParallelSourceSwitchDataset.set_active_idx">[docs]</a>    <span class="k">def</span> <span class="nf">set_active_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Activates a new parallel source.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            idx (int): index of the new data source</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            IndexError: if ``idx`` is too large</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">active_idx</span> <span class="o">=</span> <span class="n">idx</span></div>
+    
+<div class="viewcode-block" id="ParallelSourceSwitchDataset.open"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ParallelSourceSwitchDataset.open">[docs]</a>    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Dummy implementation &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="ParallelSourceSwitchDataset.get_data"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ParallelSourceSwitchDataset.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get next data entry from ``active_source``, ignores args.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">request</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">t</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallel_sources</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">active_idx</span><span class="p">]</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_sparse_feat_map</span><span class="o">.</span><span class="n">words2dense</span><span class="p">(</span>
+                                    <span class="n">utils</span><span class="o">.</span><span class="n">oov_to_unk</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span><span class="p">)),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span><span class="o">.</span><span class="n">words2dense</span><span class="p">(</span>
+                                    <span class="n">utils</span><span class="o">.</span><span class="n">oov_to_unk</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span><span class="p">)))</span></div>
+    
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return state values to be pickled.&quot;&quot;&quot;</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;parallel_sources&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;controller&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_current_controller</span><span class="o">.</span><span class="n">__getstate__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">d</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Restore state from the unpickled state values.&quot;&quot;&quot;</span>
+        <span class="k">global</span> <span class="n">_current_controller</span>
+        <span class="k">if</span> <span class="s1">&#39;controller&#39;</span> <span class="ow">in</span> <span class="n">state</span><span class="p">:</span>
+            <span class="n">_current_controller</span><span class="o">.</span><span class="n">__setstate__</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;controller&#39;</span><span class="p">])</span>
+            <span class="k">del</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;controller&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parallel_sources</span> <span class="o">=</span> <span class="n">_current_parallel_sources</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sparse_feat_map</span> <span class="o">=</span> <span class="n">_current_src_sparse_feat_map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span> <span class="o">=</span> <span class="n">_current_trg_sparse_feat_map</span>
+        <span class="n">_current_controller</span><span class="o">.</span><span class="n">switch_dataset</span> <span class="o">=</span> <span class="bp">self</span></div>
+
+
+<span class="n">SWITCH_CONTROLLER_VAL_FILE</span> <span class="o">=</span> <span class="s2">&quot;switch_controller.val.txt&quot;</span>
+<span class="sd">&quot;&quot;&quot;File name for the reference sentences for switch controllers &quot;&quot;&quot;</span> 
+
+
+<div class="viewcode-block" id="SourceSwitchController"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.SourceSwitchController">[docs]</a><span class="k">class</span> <span class="nc">SourceSwitchController</span><span class="p">(</span><span class="n">SimpleExtension</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is a super class for controlling algorithms for </span>
+<span class="sd">    ``ParallelSourceSwitchDataset``. This is hooked into Blocks main</span>
+<span class="sd">    loop as extension. An example of a controller is the EXP3S</span>
+<span class="sd">    algorithm. The attributes are similar to the ones used in the</span>
+<span class="sd">    original ``BleuValidator`` implementation in machine_translation.</span>
+<span class="sd">    sampling. </span>
+<span class="sd">    </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        src_sentence (theano.variable): The Theano variable representing</span>
+<span class="sd">                                        the source sentence in the</span>
+<span class="sd">                                        computational graph</span>
+<span class="sd">        beam_search (BeamSearch): Blocks beam search instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nmt_config</span><span class="p">,</span> <span class="n">switch_dataset</span><span class="p">,</span> <span class="n">part_val_set_size</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Connects a new instance with the switch dataset. Note that</span>
+<span class="sd">        the attributes ``src_sentence`` and ``beam_search`` need to be</span>
+<span class="sd">        set separately.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            nmt_config (dict): NMT configuration array</span>
+<span class="sd">            switch_dataset (ParallelSourceSwitchDataset): The dataset</span>
+<span class="sd">                                                          to control</span>
+<span class="sd">            part_val_set_size (int): Number of sentences to decode for</span>
+<span class="sd">                                     reward calculation</span>
+<span class="sd">            every_n_batches (int): Make a new decision every n batches</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SourceSwitchController</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">global</span> <span class="n">_current_controller</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">switch_dataset</span> <span class="o">=</span> <span class="n">switch_dataset</span>
+        <span class="n">_current_controller</span> <span class="o">=</span> <span class="bp">self</span> <span class="c1"># Pickle hack</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">switch_dataset</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_actions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">switch_dataset</span><span class="o">.</span><span class="n">parallel_sources</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_search</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_sen_idxs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span> <span class="o">=</span> <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;normalized_bleu&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span> <span class="o">=</span> <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;beam_size&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">burn_in</span> <span class="o">=</span> <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;val_burn_in&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_src</span> <span class="o">=</span> <span class="n">load_sentences_from_file</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;val_set&#39;</span><span class="p">],</span> 
+                                                <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;src_vocab_size&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span> <span class="o">=</span> <span class="n">Reshuffler</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_src</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">part_val_set_size</span> <span class="o">=</span> <span class="n">part_val_set_size</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;val_set_grndtruth&#39;</span><span class="p">],</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="c1"># Do not use load_sentences_from_file for ground truth because we</span>
+            <span class="c1"># need strings and do not want to replace UNK tokens</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_trg</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tmp_val_file</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">],</span>
+                                       <span class="n">SWITCH_CONTROLLER_VAL_FILE</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">multibleu_cmd</span> <span class="o">=</span> <span class="p">(</span><span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;bleu_script&#39;</span><span class="p">]</span> <span class="o">%</span> 
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">tmp_val_file</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SourceSwitchController.do"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.SourceSwitchController.do">[docs]</a>    <span class="k">def</span> <span class="nf">do</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which_callback</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method is called every n batches. If we have already</span>
+<span class="sd">        seen ``burn_in`` batches, decode part of the dev set and change</span>
+<span class="sd">        the data source switch if necessary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Track validation burn in</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_loop</span><span class="o">.</span><span class="n">status</span><span class="p">[</span><span class="s1">&#39;iterations_done&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">burn_in</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_sen_idxs</span><span class="p">:</span> <span class="c1"># Calculate reward and process it</span>
+            <span class="c1"># +0.01 avoids division by zero</span>
+            <span class="n">sec</span> <span class="o">=</span> <span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">prev_time</span><span class="p">)</span><span class="o">.</span><span class="n">seconds</span> <span class="o">+</span> <span class="mf">0.01</span>
+            <span class="n">bleu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_bleu</span><span class="p">()</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Absolute BLEU gain since last action: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                                                        <span class="n">bleu</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">prev_bleu</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">process_reward</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prev_bleu</span><span class="p">,</span> <span class="n">bleu</span><span class="p">,</span> <span class="n">sec</span><span class="p">)</span>
+        
+        <span class="c1"># Select new sentences for next comparison</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_sen_idxs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">shuffler</span><span class="o">.</span><span class="n">next</span><span class="p">()</span> 
+                                    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">part_val_set_size</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_tmp_val_file</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prev_bleu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_bleu</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prev_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>  </div>
+        
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="SourceSwitchController.process_reward"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.SourceSwitchController.process_reward">[docs]</a>    <span class="k">def</span> <span class="nf">process_reward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_bleu</span><span class="p">,</span> <span class="n">new_bleu</span><span class="p">,</span> <span class="n">sec</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is a GoF template method. Subclasses implement their</span>
+<span class="sd">        controlling strategy in this method. Actions can be realized</span>
+<span class="sd">        by using ``self.switch_dataset.set_active_idx``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            old_bleu (float): Achieved bleu before the previous action</span>
+<span class="sd">            new_bleu (float): Achieved bleu after the previous action</span>
+<span class="sd">            sec (float): Time in seconds required for the last action</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    
+    <span class="k">def</span> <span class="nf">_create_tmp_val_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates the ground truth file from the current sentence</span>
+<span class="sd">        indices ``self.cur_sen_idxs``. After that, ``_calculate_bleu``</span>
+<span class="sd">        can be called.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tmp_val_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_sen_idxs</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_trg</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+    
+    <span class="k">def</span> <span class="nf">_calculate_bleu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes the current sentences and calculates the BLEU.</span>
+<span class="sd">        Assumes that the file ``tmp_val_file`` is pointing at has been</span>
+<span class="sd">        created already with ``_create_tmp_val_file``.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float. Current BLEU score</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">val_start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">mb_subprocess</span> <span class="o">=</span> <span class="n">Popen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">multibleu_cmd</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">PIPE</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_sen_idxs</span><span class="p">:</span>
+            <span class="n">seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_src</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">input_</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">trans</span><span class="p">,</span> <span class="n">costs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_search</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+                    <span class="n">input_values</span><span class="o">=</span><span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span><span class="p">:</span> <span class="n">input_</span><span class="p">},</span>
+                    <span class="n">max_length</span><span class="o">=</span><span class="mi">3</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">),</span> <span class="n">eol_symbol</span><span class="o">=</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">,</span>
+                    <span class="n">ignore_first_eol</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">:</span> <span class="c1"># normalize costs according to lengths</span>
+                <span class="n">lengths</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">trans</span><span class="p">])</span>
+                <span class="n">costs</span> <span class="o">=</span> <span class="n">costs</span> <span class="o">/</span> <span class="n">lengths</span>
+            <span class="n">best_idx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">costs</span><span class="p">)</span>
+            <span class="n">trans</span> <span class="o">=</span> <span class="n">trans</span><span class="p">[</span><span class="n">best_idx</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">trans</span> <span class="ow">and</span> <span class="n">trans</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                <span class="n">trans</span> <span class="o">=</span> <span class="n">trans</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">trans_out</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">trans</span><span class="p">])</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">trans_out</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">mb_subprocess</span><span class="o">.</span><span class="n">stdin</span><span class="p">)</span>
+            <span class="n">mb_subprocess</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="c1"># send end of file, read output.</span>
+        <span class="n">mb_subprocess</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">stdout</span> <span class="o">=</span> <span class="n">mb_subprocess</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+        <span class="n">mb_subprocess</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">out_parse</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">r&#39;BLEU = [-.0-9]+&#39;</span><span class="p">,</span> <span class="n">stdout</span><span class="p">)</span>
+            <span class="c1"># extract the score</span>
+            <span class="n">bleu_score</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">out_parse</span><span class="o">.</span><span class="n">group</span><span class="p">()[</span><span class="mi">6</span><span class="p">:])</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Decoded partial dev set: bleu=</span><span class="si">%f</span><span class="s2"> time=</span><span class="si">%f</span><span class="s2">&quot;</span>
+                         <span class="o">%</span> <span class="p">(</span><span class="n">bleu_score</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">val_start_time</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Partial BLEU evaluation failed&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bleu_score</span></div>
+
+
+
+
+<div class="viewcode-block" id="load_sentences_from_file"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.load_sentences_from_file">[docs]</a><span class="k">def</span> <span class="nf">load_sentences_from_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads sentences from a plain text file. For each sentence we add</span>
+<span class="sd">    &lt;/S&gt; (but not &lt;S&gt;) as expected by the data stream pipeline. Tokens </span>
+<span class="sd">    larger than ``vocab_size`` are replaced by the UNK id.</span>
+<span class="sd">     </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path(string): Path to the text file</span>
+<span class="sd">        vocab_size(int): Vocabulary size (all tokens larger than</span>
+<span class="sd">                         this are replaced by ``utils.UNK_ID``</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        list. List of list of integers representing the indexed</span>
+<span class="sd">              sentences in the input file.</span>
+<span class="sd">        </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        IOError. If the file could not be read</span>
+<span class="sd">        ValueError. If the text file contains non-integer tokens</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sens</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">sens</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">vocab_size</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> 
+                            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">sens</span></div>
+        
+    
+<div class="viewcode-block" id="Reshuffler"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.Reshuffler">[docs]</a><span class="k">class</span> <span class="nc">Reshuffler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class can be used for reshuffling. Given a range of </span>
+<span class="sd">    integers, it shuffles them and yields the shuffled numbers one by</span>
+<span class="sd">    one. After having shown all numbers once, shuffle again and iterate</span>
+<span class="sd">    through the new list. This assures complete coverage of the data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_idx</span><span class="p">,</span> <span class="n">to_idx</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a new instance. Range boundaries are similar to</span>
+<span class="sd">        ``xrange``. If the first and single argument is a list, it</span>
+<span class="sd">        provides the allowed indices directly</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            from_idx (int or list): Lower bound of integer range </span>
+<span class="sd">                                    (inclusive). If this is a list</span>
+<span class="sd">                                    and the second argument is not</span>
+<span class="sd">                                    provided, this lists all allowed</span>
+<span class="sd">                                    indices</span>
+<span class="sd">            to_idx (int): Upper bound of integer rang (exclusive)</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError. If ``to_idx`` is smaller or equal ``from_idx``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">to_idx</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">from_idx</span><span class="p">,</span> <span class="n">to_idx</span><span class="p">)]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l</span> <span class="o">=</span> <span class="n">from_idx</span> <span class="c1"># from_idx is list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="Reshuffler.next"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.Reshuffler.next">[docs]</a>    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get an integer within the range specified in the constructor.</span>
+<span class="sd">        Numbers will be generated in a random order, but this method</span>
+<span class="sd">        guarantees that all numbers will be visited by this method.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            int. A number in the given range.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">):</span>
+            <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="ParallelTextFile"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ParallelTextFile">[docs]</a><span class="k">class</span> <span class="nc">ParallelTextFile</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This ``Dataset`` implementation is similar to ``TextFile`` in </span>
+<span class="sd">    Fuel but supports random access. This makes it possible to use it</span>
+<span class="sd">    in combination with ``ShuffledExampleScheme`` in fuel. Another</span>
+<span class="sd">    difference is that it directly represents a database of two </span>
+<span class="sd">    text files, i.e. the resulting string does not need to be merged</span>
+<span class="sd">    with another one.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">provides_sources</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;source&#39;</span><span class="p">,</span><span class="s1">&#39;target&#39;</span><span class="p">)</span>
+    <span class="n">example_iteration_scheme</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">src_file</span><span class="p">,</span> 
+                 <span class="n">trgt_file</span><span class="p">,</span> 
+                 <span class="n">src_vocab_size</span><span class="p">,</span> 
+                 <span class="n">trgt_vocab_size</span><span class="p">,</span>
+                 <span class="n">preprocess</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> 
+                 <span class="n">src_sparse_feat_map</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> 
+                 <span class="n">trg_sparse_feat_map</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor like for ``TextFile``&quot;&quot;&quot;</span>
+        <span class="k">global</span> <span class="n">_current_src_sparse_feat_map</span><span class="p">,</span> <span class="n">_current_trg_sparse_feat_map</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ParallelTextFile</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_file</span> <span class="o">=</span> <span class="n">src_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_file</span> <span class="o">=</span> <span class="n">trgt_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span> <span class="o">=</span> <span class="n">src_vocab_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_vocab_size</span> <span class="o">=</span> <span class="n">trgt_vocab_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preprocess</span> <span class="o">=</span> <span class="n">preprocess</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentences</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_examples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_examples</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentences</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sparse_feat_map</span> <span class="o">=</span> <span class="n">src_sparse_feat_map</span> <span class="k">if</span> <span class="n">src_sparse_feat_map</span> \
+                                                       <span class="k">else</span> <span class="n">FlatSparseFeatMap</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span> <span class="o">=</span> <span class="n">trg_sparse_feat_map</span> <span class="k">if</span> <span class="n">trg_sparse_feat_map</span> \
+                                                       <span class="k">else</span> <span class="n">FlatSparseFeatMap</span><span class="p">()</span>
+        <span class="c1"># Pickle hacks</span>
+        <span class="n">_current_src_sparse_feat_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sparse_feat_map</span>
+        <span class="n">_current_trg_sparse_feat_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span> 
+
+<div class="viewcode-block" id="ParallelTextFile.open"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ParallelTextFile.open">[docs]</a>    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Dummy implementation as opening is done in constructor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="ParallelTextFile.get_data"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.ParallelTextFile.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a data entry, which is a pair (tuple) of source and</span>
+<span class="sd">        target sentence. Similarly to ``TextFile`` the sentences are</span>
+<span class="sd">        lists of word ids.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            state (None):  not used</span>
+<span class="sd">            requres (int): Index of the entry to load</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            2-tuple of source and target sentence at given position</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_sparse_feat_map</span><span class="o">.</span><span class="n">words2dense</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_process_sentence</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_sentences</span><span class="p">[</span><span class="n">request</span><span class="p">],</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span><span class="p">)),</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span><span class="o">.</span><span class="n">words2dense</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_process_sentence</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentences</span><span class="p">[</span><span class="n">request</span><span class="p">],</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">trgt_vocab_size</span><span class="p">)))</span></div>
+
+    <span class="k">def</span> <span class="nf">_process_sentence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sentence</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Prepares string representation of sentence for passing </span>
+<span class="sd">        down the data stream&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>
+        <span class="n">ws</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">sentence</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">w</span> <span class="k">if</span> <span class="n">w</span> <span class="o">&lt;</span> <span class="n">vocab</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">ws</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return state values to be pickled.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_file</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trgt_file</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trgt_vocab_size</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">preprocess</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Restore state from the unpickled state values.&quot;&quot;&quot;</span>
+        <span class="p">(</span><span class="n">src_file</span><span class="p">,</span>
+         <span class="n">trgt_file</span><span class="p">,</span>
+         <span class="n">src_vocab_size</span><span class="p">,</span>
+         <span class="n">trgt_vocab_size</span><span class="p">,</span>
+         <span class="n">preprocess</span><span class="p">)</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">src_file</span><span class="p">,</span>
+                      <span class="n">trgt_file</span><span class="p">,</span>
+                      <span class="n">src_vocab_size</span><span class="p">,</span>
+                      <span class="n">trgt_vocab_size</span><span class="p">,</span>
+                      <span class="n">preprocess</span><span class="p">,</span>
+                      <span class="n">_current_src_sparse_feat_map</span><span class="p">,</span>
+                      <span class="n">_current_trg_sparse_feat_map</span><span class="p">)</span></div>
+             
+
+<span class="c1"># Beyond this point is code copied from the machine_translation.stream</span>
+<span class="c1"># module in blocks-examples.</span>
+
+<span class="k">def</span> <span class="nf">_length</span><span class="p">(</span><span class="n">sentence_pair</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Assumes target is the last element in the tuple.</span>
+<span class="sd">    </span>
+<span class="sd">    This method is copied from machine_translation.stream in blocks-examples.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentence_pair</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="PaddingWithEOS"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.PaddingWithEOS">[docs]</a><span class="k">class</span> <span class="nc">PaddingWithEOS</span><span class="p">(</span><span class="n">Padding</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Pads a stream with given end of sequence idx.</span>
+<span class="sd">    </span>
+<span class="sd">    This class is copied from machine_translation.stream in blocks-examples.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_stream</span><span class="p">,</span> <span class="n">eos_idx</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;data_stream&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_stream</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eos_idx</span> <span class="o">=</span> <span class="n">eos_idx</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PaddingWithEOS</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PaddingWithEOS.transform_batch"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.stream.PaddingWithEOS.transform_batch">[docs]</a>    <span class="k">def</span> <span class="nf">transform_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="n">batch_with_masks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">source_batch</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+                <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_stream</span><span class="o">.</span><span class="n">sources</span><span class="p">,</span> <span class="n">batch</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">source</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_sources</span><span class="p">:</span>
+                <span class="n">batch_with_masks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">source_batch</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">shapes</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">source_batch</span><span class="p">]</span>
+            <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">shape</span> <span class="ow">in</span> <span class="n">shapes</span><span class="p">]</span>
+            <span class="n">max_sequence_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lengths</span><span class="p">)</span>
+            <span class="n">rest_shape</span> <span class="o">=</span> <span class="n">shapes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="n">rest_shape</span> <span class="k">for</span> <span class="n">shape</span> <span class="ow">in</span> <span class="n">shapes</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All dimensions except length must be equal&quot;</span><span class="p">)</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">source_batch</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">dtype</span>
+
+            <span class="n">padded_batch</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">source_batch</span><span class="p">),</span> <span class="n">max_sequence_length</span><span class="p">)</span> <span class="o">+</span> <span class="n">rest_shape</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">source_batch</span><span class="p">):</span>
+                <span class="n">padded_batch</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">)]</span> <span class="o">=</span> <span class="n">sample</span>
+            <span class="c1"># fs439: Nasty bug in blocks: If rest_shape is not empty </span>
+            <span class="c1"># padded_batch shape is batch_size x sen_len x rest. The sequence </span>
+            <span class="c1"># generator expects sen_len x batch_size x ... Somewhere between </span>
+            <span class="c1"># sequenceGenerator.cost_matrix and here, the last and first dims </span>
+            <span class="c1"># are shuffled, i.e. if rest_shape is empty we are fine but </span>
+            <span class="c1"># otherwise we need to shuffle here to batch_size x rest x sen_len</span>
+            <span class="c1"># to get the expected behavior</span>
+            <span class="c1"># fs439: TODO works only if len(rest_shape) == 1</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rest_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">padded_batch</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">padded_batch</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">batch_with_masks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">padded_batch</span><span class="p">)</span>
+
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">source_batch</span><span class="p">),</span> <span class="n">max_sequence_length</span><span class="p">),</span>
+                               <span class="bp">self</span><span class="o">.</span><span class="n">mask_dtype</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">sequence_length</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lengths</span><span class="p">):</span>
+                <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:</span><span class="n">sequence_length</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">batch_with_masks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">batch_with_masks</span><span class="p">)</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">_too_long</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filters sequences longer than given sequence length.</span>
+<span class="sd">    </span>
+<span class="sd">    This class is copied from `machine_translation.stream` in </span>
+<span class="sd">    blocks-examples.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq_len</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq_len</span> <span class="o">=</span> <span class="n">seq_len</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sentence_pair</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_len</span>
+                    <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">sentence_pair</span><span class="p">])</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,341 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.misc.unigram &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.misc.unigram</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.misc.unigram</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains classes which are able to store unigram</span>
+<span class="sd">probabilities and potentially collect them by observing a</span>
+<span class="sd">decoder instance. This can be used for heuristics.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Decoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">Observer</span><span class="p">,</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">,</span> \
+    <span class="n">MESSAGE_TYPE_POSTERIOR</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">,</span> <span class="n">MESSAGE_TYPE_FULL_HYPO</span>
+
+
+<div class="viewcode-block" id="UnigramTable"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.UnigramTable">[docs]</a><span class="k">class</span> <span class="nc">UnigramTable</span><span class="p">(</span><span class="n">Observer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A unigram table stores unigram probabilities for a certain</span>
+<span class="sd">    vocabulary. These statistics can be loaded from an external</span>
+<span class="sd">    file (``FileUnigramTable``) or collected during decoding.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a unigram table without entries. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span> <span class="o">=</span> <span class="p">{}</span>
+    
+<div class="viewcode-block" id="UnigramTable.notify"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.UnigramTable.notify">[docs]</a>    <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Unigram tables usually observe the decoder, but some</span>
+<span class="sd">        do not process messages from the decoder. This is an empty</span>
+<span class="sd">        implementation of ``notify`` for those implementations.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="UnigramTable.estimate"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.UnigramTable.estimate">[docs]</a>    <span class="k">def</span> <span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Estimate the unigram score for the given word.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): word ID</span>
+<span class="sd">            default (float): Default value to be returned if ``word``</span>
+<span class="sd">                             cannot be found in the table</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float. Unigram score or ``default`` if ``word`` is not in </span>
+<span class="sd">            table</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="UnigramTable.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.UnigramTable.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is called to reset collected statistics between each</span>
+<span class="sd">        sentence pair.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span> <span class="o">=</span> <span class="p">{}</span></div></div>
+    
+
+<div class="viewcode-block" id="FileUnigramTable"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.FileUnigramTable">[docs]</a><span class="k">class</span> <span class="nc">FileUnigramTable</span><span class="p">(</span><span class="n">UnigramTable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads a unigram table from an external file. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loads the unigram table from ``path``. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FileUnigramTable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">w</span><span class="p">,</span><span class="n">s</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">strip</span><span class="p">())]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    
+<div class="viewcode-block" id="FileUnigramTable.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.FileUnigramTable.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="AllStatsUnigramTable"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.AllStatsUnigramTable">[docs]</a><span class="k">class</span> <span class="nc">AllStatsUnigramTable</span><span class="p">(</span><span class="n">UnigramTable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This unigram table collect statistics from all partial hypos. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to super class constructor. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AllStatsUnigramTable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="AllStatsUnigramTable.notify"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.AllStatsUnigramTable.notify">[docs]</a>    <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update unigram statistics. We assume to observe a Decoder</span>
+<span class="sd">        instance. We update the unigram table if the message type </span>
+<span class="sd">        is ``MESSAGE_TYPE_POSTERIOR``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            message (object): Message from an observable ``Decoder``</span>
+<span class="sd">            message_type (int): Message type</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="k">if</span> <span class="n">message_type</span> <span class="o">==</span> <span class="n">MESSAGE_TYPE_POSTERIOR</span><span class="p">:</span>
+            <span class="n">posterior</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">message</span>
+            <span class="k">for</span> <span class="n">w</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">posterior</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">),</span>
+                                        <span class="n">score</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="FullStatsUnigramTable"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.FullStatsUnigramTable">[docs]</a><span class="k">class</span> <span class="nc">FullStatsUnigramTable</span><span class="p">(</span><span class="n">UnigramTable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This unigram table collect statistics from all full hypos. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to super class constructor. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FullStatsUnigramTable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FullStatsUnigramTable.notify"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.FullStatsUnigramTable.notify">[docs]</a>    <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update unigram statistics. We assume to observe a Decoder</span>
+<span class="sd">        instance. We update the unigram table if the message type </span>
+<span class="sd">        is ``MESSAGE_TYPE_FULL_HYPO``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            message (object): Message from an observable ``Decoder``</span>
+<span class="sd">            message_type (int): Message type</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="k">if</span> <span class="n">message_type</span> <span class="o">==</span> <span class="n">MESSAGE_TYPE_FULL_HYPO</span><span class="p">:</span>
+            <span class="n">breakdowns</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">score_breakdown</span>
+            <span class="k">for</span> <span class="n">pos</span><span class="p">,</span><span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">),</span>
+                        <span class="n">Decoder</span><span class="o">.</span><span class="n">combi_arithmetic_unnormalized</span><span class="p">(</span><span class="n">breakdowns</span><span class="p">[</span><span class="n">pos</span><span class="p">]))</span></div></div>
+                
+                
+<div class="viewcode-block" id="BestStatsUnigramTable"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.BestStatsUnigramTable">[docs]</a><span class="k">class</span> <span class="nc">BestStatsUnigramTable</span><span class="p">(</span><span class="n">UnigramTable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This unigram table collect statistics from the best full hypo. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to super class constructor. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BestStatsUnigramTable</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_hypo_score</span> <span class="o">=</span> <span class="n">NEG_INF</span>
+
+<div class="viewcode-block" id="BestStatsUnigramTable.notify"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.BestStatsUnigramTable.notify">[docs]</a>    <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update unigram statistics. We assume to observe a Decoder</span>
+<span class="sd">        instance. We update the unigram table if the message type </span>
+<span class="sd">        is ``MESSAGE_TYPE_FULL_HYPO``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            message (object): Message from an observable ``Decoder``</span>
+<span class="sd">            message_type (int): Message type</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="k">if</span> <span class="p">(</span><span class="n">message_type</span> <span class="o">==</span> <span class="n">MESSAGE_TYPE_FULL_HYPO</span> 
+                    <span class="ow">and</span> <span class="n">message</span><span class="o">.</span><span class="n">total_score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_hypo_score</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_hypo_score</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">total_score</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">breakdowns</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">score_breakdown</span>
+            <span class="k">for</span> <span class="n">pos</span><span class="p">,</span><span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">Decoder</span><span class="o">.</span><span class="n">combi_arithmetic_unnormalized</span><span class="p">(</span><span class="n">breakdowns</span><span class="p">[</span><span class="n">pos</span><span class="p">])</span></div>
+    
+<div class="viewcode-block" id="BestStatsUnigramTable.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.unigram.BestStatsUnigramTable.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is called to reset collected statistics between each</span>
+<span class="sd">        sentence pair.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_scores</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_hypo_score</span> <span class="o">=</span> <span class="n">NEG_INF</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

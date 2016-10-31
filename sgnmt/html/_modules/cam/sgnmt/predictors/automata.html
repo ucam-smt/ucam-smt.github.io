@@ -145,7 +145,7 @@
 
 <span class="sd">This file includes the fst, nfst, and rtn predictors.</span>
 
-<span class="sd">Note: If we ise arc weights in FSTs, we multiply them by -1 as </span>
+<span class="sd">Note: If we use arc weights in FSTs, we multiply them by -1 as </span>
 <span class="sd">everything in SGNMT is logprob, not -logprob as in FSTs log </span>
 <span class="sd">or tropical semirings. You can disable this behavior with --fst_to_log</span>
 
@@ -159,12 +159,11 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">call</span>
 <span class="kn">from</span> <span class="nn">shutil</span> <span class="kn">import</span> <span class="n">copyfile</span>
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
 
 
 <span class="n">EPS_ID</span> <span class="o">=</span> <span class="mi">0</span>
@@ -219,7 +218,7 @@
                  <span class="n">fst_path</span><span class="p">,</span>
                  <span class="n">use_weights</span><span class="p">,</span>
                  <span class="n">normalize_scores</span><span class="p">,</span>
-                 <span class="n">add_bos_to_eos_score</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+                 <span class="n">skip_bos_weight</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
                  <span class="n">to_log</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new fst predictor.</span>
 <span class="sd">        </span>
@@ -230,12 +229,12 @@
 <span class="sd">            normalize_scores (bool): If true, we normalize the weights</span>
 <span class="sd">                                     on all outgoing arcs such that</span>
 <span class="sd">                                     they sum up to 1</span>
-<span class="sd">            add_bos_to_eos_score (bool): Add the score at the &lt;S&gt; arc</span>
-<span class="sd">                                         to the &lt;/S&gt; arc. This results</span>
-<span class="sd">                                         in scores consistent with </span>
-<span class="sd">                                         OpenFST&#39;s replace operation,</span>
-<span class="sd">                                         as &lt;S&gt; scores are normally</span>
-<span class="sd">                                         ignored by SGNMT.</span>
+<span class="sd">            skip_bos_weight (bool): Add the score at the &lt;S&gt; arc to the</span>
+<span class="sd">                                    &lt;/S&gt; arc if this is false. This results</span>
+<span class="sd">                                    in scores consistent with </span>
+<span class="sd">                                    OpenFST&#39;s replace operation,</span>
+<span class="sd">                                    as &lt;S&gt; scores are normally</span>
+<span class="sd">                                    ignored by SGNMT.</span>
 <span class="sd">            to_log (bool): SGNMT uses normal log probs (scores) while</span>
 <span class="sd">                           arc weights in FSTs normally have cost (i.e.</span>
 <span class="sd">                           neg. log values) semantics. Therefore, if</span>
@@ -247,7 +246,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">use_weights</span> <span class="o">=</span> <span class="n">use_weights</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">normalize_scores</span> <span class="o">=</span> <span class="n">normalize_scores</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">add_bos_to_eos_score</span> <span class="o">=</span> <span class="n">add_bos_to_eos_score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_bos_to_eos_score</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">skip_bos_weight</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
         
 <div class="viewcode-block" id="FstPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
@@ -285,11 +284,17 @@
 <span class="sd">        Args:</span>
 <span class="sd">            src_sentence (list):  Not used</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="n">load_fst</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fst_path</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="n">load_fst</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fst_path</span><span class="p">,</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="k">else</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bos_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bos_score</span><span class="p">:</span> <span class="c1"># Override None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">bos_score</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bos_score</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The lattice for sentence </span><span class="si">%d</span><span class="s2"> does not contain any &quot;</span>
+                         <span class="s2">&quot;valid path. Please double-check that the lattice &quot;</span>
+                         <span class="s2">&quot;is not empty and that paths start with the begin-of-&quot;</span>
+                         <span class="s2">&quot;sentence symbol.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span></div>
     
 <div class="viewcode-block" id="FstPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Updates the current node by following the arc labelled with</span>
@@ -339,7 +344,11 @@
         <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">last_word</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">w2f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">])</span>
-        <span class="k">return</span> <span class="mf">0.0</span></div></div>
+        <span class="k">return</span> <span class="mf">0.0</span></div>
+    
+<div class="viewcode-block" id="FstPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the current node is the same &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
 
 
 <div class="viewcode-block" id="NondeterministicFstPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor">[docs]</a><span class="k">class</span> <span class="nc">NondeterministicFstPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
@@ -349,7 +358,12 @@
 <span class="sd">    the start node through the current history.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fst_path</span><span class="p">,</span> <span class="n">use_weights</span><span class="p">,</span> <span class="n">normalize_scores</span><span class="p">,</span> <span class="n">to_log</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">fst_path</span><span class="p">,</span> 
+                 <span class="n">use_weights</span><span class="p">,</span> 
+                 <span class="n">normalize_scores</span><span class="p">,</span> 
+                 <span class="n">skip_bos_weight</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> 
+                 <span class="n">to_log</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new nfst predictor.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -359,6 +373,8 @@
 <span class="sd">            normalize_scores (bool): If true, we normalize the weights</span>
 <span class="sd">                                     on all outgoing arcs such that</span>
 <span class="sd">                                     they sum up to 1</span>
+<span class="sd">            skip_bos_weight (bool): If true, set weights on &lt;S&gt; arcs</span>
+<span class="sd">                                    to 0 (= log1)</span>
 <span class="sd">            to_log (bool): SGNMT uses normal log probs (scores) while</span>
 <span class="sd">                           arc weights in FSTs normally have cost (i.e.</span>
 <span class="sd">                           neg. log values) semantics. Therefore, if</span>
@@ -367,7 +383,9 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">NondeterministicFstPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fst_path</span> <span class="o">=</span> <span class="n">fst_path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">to_log</span> <span class="k">else</span> <span class="mf">1.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score_max_func</span> <span class="o">=</span> <span class="nb">max</span> <span class="k">if</span> <span class="n">to_log</span> <span class="k">else</span> <span class="nb">min</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_weights</span> <span class="o">=</span> <span class="n">use_weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">skip_bos_weight</span> <span class="o">=</span> <span class="n">skip_bos_weight</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">normalize_scores</span> <span class="o">=</span> <span class="n">normalize_scores</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="p">[]</span>
@@ -395,15 +413,16 @@
 <span class="sd">            together with their scores, or an empty set if we currently</span>
 <span class="sd">            have no active nodes or fst.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">scorelst</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">weight</span><span class="p">,</span><span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="n">node</span><span class="p">):</span> 
                 <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">!=</span> <span class="n">EPS_ID</span><span class="p">:</span>
-                    <span class="n">scorelst</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">]</span> <span class="o">=</span> <span class="n">scorelst</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">,</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">[</span>
-                                        <span class="n">weight</span>
-                                        <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)]</span> 
-        <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> 
-                    <span class="k">for</span> <span class="n">word</span><span class="p">,</span><span class="n">weights</span> <span class="ow">in</span> <span class="n">scorelst</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()}</span>
+                    <span class="n">score</span> <span class="o">=</span> <span class="n">weight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span> 
+                    <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="ow">in</span> <span class="n">scores</span><span class="p">:</span>
+                        <span class="n">scores</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_max_func</span><span class="p">(</span>
+                                        <span class="n">scores</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">],</span> <span class="n">score</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">scores</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span> 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">finalize_posterior</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">use_weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_scores</span><span class="p">)</span></div>
     
@@ -414,9 +433,17 @@
 <span class="sd">        Args:</span>
 <span class="sd">            src_sentence (list):  Not used</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="n">load_fst</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fst_path</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span><span class="p">)]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="k">else</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="n">load_fst</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fst_path</span><span class="p">,</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_follow_eps</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The lattice for sentence </span><span class="si">%d</span><span class="s2"> does not contain any &quot;</span>
+                         <span class="s2">&quot;valid path. Please double-check that the lattice &quot;</span>
+                         <span class="s2">&quot;is not empty and that paths start with the begin-of-&quot;</span>
+                         <span class="s2">&quot;sentence symbol.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span></div>
     
 <div class="viewcode-block" id="NondeterministicFstPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Updates the current nodes by searching for all nodes which</span>
@@ -429,29 +456,52 @@
 <span class="sd">        Args:</span>
 <span class="sd">            word (int): Word on an outgoing arc from the current node</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Add all epsilon reachable states</span>
-        <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">d_unconsumed</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="c1"># Collect distances to nodes reachable by word</span>
         <span class="k">for</span> <span class="n">weight</span><span class="p">,</span><span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">word</span><span class="p">:</span>
-                    <span class="n">d</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">,</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">[</span>
-                                        <span class="n">weight</span>
-                                        <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)]</span>
+                    <span class="n">next_node</span> <span class="o">=</span> <span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span>
+                    <span class="n">next_score</span> <span class="o">=</span> <span class="n">weight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">d_unconsumed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">next_node</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">next_score</span><span class="p">:</span>
+                        <span class="n">d_unconsumed</span><span class="p">[</span><span class="n">next_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">next_score</span>
+        <span class="c1"># Subtract the word score from the last predict_next </span>
+        <span class="n">consumed_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_max_func</span><span class="p">(</span><span class="n">d_unconsumed</span><span class="o">.</span><span class="n">itervalues</span><span class="p">())</span> \
+             <span class="k">if</span> <span class="p">(</span><span class="n">word</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_bos_weight</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.0</span>
         <span class="c1"># Add epsilon reachable states</span>
-        <span class="n">prev_d</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">prev_d</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
-            <span class="n">prev_d</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">node</span><span class="p">,</span><span class="n">weights</span> <span class="ow">in</span> <span class="n">prev_d</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
-                <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
-                    <span class="n">weight</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">EPS_ID</span><span class="p">:</span>
-                        <span class="n">d</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">,</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">[</span>
-                                        <span class="n">weight</span>
-                                        <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="p">[(</span><span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">weights</span><span class="p">),</span> <span class="n">n</span><span class="p">)</span> 
-                            <span class="k">for</span> <span class="n">n</span><span class="p">,</span><span class="n">weights</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()]</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_follow_eps</span><span class="p">({</span><span class="n">node</span><span class="p">:</span> <span class="n">score</span> <span class="o">-</span> <span class="n">consumed_score</span>
+                    <span class="k">for</span> <span class="n">node</span><span class="p">,</span><span class="n">score</span> <span class="ow">in</span> <span class="n">d_unconsumed</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()})</span></div>
     
+    <span class="k">def</span> <span class="nf">_follow_eps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">roots</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;BFS to find nodes reachable from root through eps arcs. This</span>
+<span class="sd">        traversal strategy is efficient if the triangle inquality holds </span>
+<span class="sd">        for weights in the graphs, i.e. for all vertices v1,v2,v3: </span>
+<span class="sd">        (v1,v2),(v2,v3),(v1,v3) in E =&gt; d(v1,v2)+d(v2,v3) &gt;= d(v1,v3).</span>
+<span class="sd">        The method still returns the correct results if the triangle</span>
+<span class="sd">        inequality does not hold, but edges may be traversed multiple</span>
+<span class="sd">        times which makes it more inefficient.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">open_nodes</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">roots</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">visited</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">roots</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">open_nodes</span><span class="p">:</span>
+            <span class="n">next_open</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">node</span><span class="p">,</span><span class="n">score</span> <span class="ow">in</span> <span class="n">open_nodes</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">has_noneps</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">EPS_ID</span><span class="p">:</span>
+                        <span class="n">next_node</span> <span class="o">=</span> <span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span>
+                        <span class="n">next_score</span> <span class="o">=</span> <span class="n">score</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">visited</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">next_node</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">next_score</span><span class="p">:</span>
+                            <span class="n">visited</span><span class="p">[</span><span class="n">next_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">next_score</span>
+                            <span class="n">next_open</span><span class="p">[</span><span class="n">next_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">next_score</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">has_noneps</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">if</span> <span class="n">has_noneps</span><span class="p">:</span>
+                    <span class="n">d</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+            <span class="n">open_nodes</span> <span class="o">=</span> <span class="n">next_open</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="n">weight</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()]</span>
+        
 <div class="viewcode-block" id="NondeterministicFstPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the set of current nodes &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span></div>
@@ -479,7 +529,11 @@
                 <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">last_word</span><span class="p">:</span>
                     <span class="n">dists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w2f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">]))</span>
                     <span class="k">break</span>
-        <span class="k">return</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">dists</span> <span class="k">else</span> <span class="nb">min</span><span class="p">(</span><span class="n">dists</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">dists</span> <span class="k">else</span> <span class="nb">min</span><span class="p">(</span><span class="n">dists</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="NondeterministicFstPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the current nodes are the same &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">n</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span><span class="n">n</span> <span class="ow">in</span> <span class="n">state1</span><span class="p">])</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">n</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span><span class="n">n</span> <span class="ow">in</span> <span class="n">state2</span><span class="p">])</span></div></div>
 
 
 <div class="viewcode-block" id="RtnPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor">[docs]</a><span class="k">class</span> <span class="nc">RtnPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>

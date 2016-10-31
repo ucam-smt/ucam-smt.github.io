@@ -1,0 +1,373 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.blocks.nmt &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.blocks.nmt</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.blocks.nmt</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module is the interface to the blocks NMT implementation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.sparse</span> <span class="kn">import</span> <span class="n">FileBasedFeatMap</span>
+
+
+<span class="n">BLOCKS_AVAILABLE</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">blocks.search</span> <span class="kn">import</span> <span class="n">BeamSearch</span> <span class="c1"># To check if blocks is available</span>
+    
+    <span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.vanilla_decoder</span> <span class="kn">import</span> <span class="n">BlocksNMTVanillaDecoder</span>
+    <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.blocks_nmt</span> <span class="kn">import</span> <span class="n">BlocksNMTPredictor</span>
+    <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.blocks_nmt</span> <span class="kn">import</span> <span class="n">BlocksUnboundedNMTPredictor</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">BLOCKS_AVAILABLE</span> <span class="o">=</span> <span class="bp">False</span> 
+
+
+<span class="k">def</span> <span class="nf">_add_sparse_feat_maps_to_config</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds the sparse feature map instances to the nmt config &quot;&quot;&quot;</span>
+    <span class="n">new_config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">]:</span>
+        <span class="n">new_config</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FileBasedFeatMap</span><span class="p">(</span>
+                                        <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;enc_embed&#39;</span><span class="p">],</span>
+                                        <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]:</span>
+        <span class="n">new_config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FileBasedFeatMap</span><span class="p">(</span>
+                                        <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;dec_embed&#39;</span><span class="p">],</span>
+                                        <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">new_config</span>
+
+
+<div class="viewcode-block" id="blocks_get_nmt_predictor"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.nmt.blocks_get_nmt_predictor">[docs]</a><span class="k">def</span> <span class="nf">blocks_get_nmt_predictor</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">nmt_config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the Blocks NMT predictor. If a target sparse feature map is</span>
+<span class="sd">    used, we create an unbounded vocabulary NMT predictor. Otherwise,</span>
+<span class="sd">    the normal bounded NMT predictor is returned</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        args (object): SGNMT arguments from ``ArgumentParser``</span>
+<span class="sd">        nmt_config (dict): NMT configuration</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Predictor. The NMT predictor</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">BLOCKS_AVAILABLE</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find Blocks!&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">None</span>
+    <span class="n">nmt_config</span> <span class="o">=</span> <span class="n">_add_sparse_feat_maps_to_config</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">BlocksUnboundedNMTPredictor</span><span class="p">(</span>
+                                    <span class="n">get_nmt_model_path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nmt_model_selector</span><span class="p">,</span>
+                                                       <span class="n">nmt_config</span><span class="p">),</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">gnmt_beta</span><span class="p">,</span>
+                                    <span class="n">nmt_config</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">BlocksNMTPredictor</span><span class="p">(</span><span class="n">get_nmt_model_path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nmt_model_selector</span><span class="p">,</span>
+                                                 <span class="n">nmt_config</span><span class="p">),</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">gnmt_beta</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">cache_nmt_posteriors</span><span class="p">,</span>
+                              <span class="n">nmt_config</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="blocks_get_nmt_vanilla_decoder"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.nmt.blocks_get_nmt_vanilla_decoder">[docs]</a><span class="k">def</span> <span class="nf">blocks_get_nmt_vanilla_decoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">nmt_config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the Blocks NMT vanilla decoder.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        args (object): SGNMT arguments from ``ArgumentParser``</span>
+<span class="sd">        nmt_config (dict): NMT configuration</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Predictor. An instance of ``BlocksNMTVanillaDecoder``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">BLOCKS_AVAILABLE</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find Blocks!&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">None</span>
+    <span class="n">nmt_config</span> <span class="o">=</span> <span class="n">_add_sparse_feat_maps_to_config</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">BlocksNMTVanillaDecoder</span><span class="p">(</span><span class="n">get_nmt_model_path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nmt_model_selector</span><span class="p">,</span>
+                                                      <span class="n">nmt_config</span><span class="p">),</span>
+                                   <span class="n">nmt_config</span><span class="p">)</span></div>
+
+
+<span class="n">PARAMS_FILE_NAME</span> <span class="o">=</span> <span class="s1">&#39;params.npz&#39;</span>
+<span class="sd">&quot;&quot;&quot;Name of the default model file (not checkpoints) &quot;&quot;&quot;</span>
+
+
+<span class="n">BEST_BLEU_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;^best_bleu_params_([0-9]+)_BLEU([.0-9]+).npz$&#39;</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;Pattern for checkpoints created in training for model selection &quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="get_nmt_model_path_params"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.nmt.get_nmt_model_path_params">[docs]</a><span class="k">def</span> <span class="nf">get_nmt_model_path_params</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns the path to the params.npz. This file usually contains </span>
+<span class="sd">    the latest model parameters.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        nmt_config (dict):  NMT configuration. We will use the field</span>
+<span class="sd">                            ``saveto`` to get the training directory</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        string. Path to the params.npz</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">],</span> <span class="n">PARAMS_FILE_NAME</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_nmt_model_path_best_bleu"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.nmt.get_nmt_model_path_best_bleu">[docs]</a><span class="k">def</span> <span class="nf">get_nmt_model_path_best_bleu</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns the path to the checkpoint with the best BLEU score. If</span>
+<span class="sd">    no checkpoint can be found, back up to params.npz.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        nmt_config (dict):  NMT configuration. We will use the field</span>
+<span class="sd">                            ``saveto`` to get the training directory</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        string. Path to the checkpoint file with best BLEU score</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">best_model</span> <span class="o">=</span> <span class="n">get_nmt_model_path_params</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">BEST_BLEU_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span> <span class="ow">and</span> <span class="nb">float</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">best</span><span class="p">:</span>
+            <span class="n">best</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">best_model</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">best_model</span></div>
+
+
+<div class="viewcode-block" id="get_nmt_model_path_most_recent"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.nmt.get_nmt_model_path_most_recent">[docs]</a><span class="k">def</span> <span class="nf">get_nmt_model_path_most_recent</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns the path to the most recent checkpoint. If</span>
+<span class="sd">    no checkpoint can be found, back up to params.npz.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        nmt_config (dict):  NMT configuration. We will use the field</span>
+<span class="sd">                            ``saveto`` to get the training directory</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        string. Path to the most recent checkpoint file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">best_model</span> <span class="o">=</span> <span class="n">get_nmt_model_path_params</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">BEST_BLEU_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">best</span><span class="p">:</span>
+            <span class="n">best</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">best_model</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">best_model</span></div>
+
+
+<div class="viewcode-block" id="get_nmt_model_path"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.nmt.get_nmt_model_path">[docs]</a><span class="k">def</span> <span class="nf">get_nmt_model_path</span><span class="p">(</span><span class="n">nmt_model_selector</span><span class="p">,</span> <span class="n">nmt_config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the path to the NMT model according the given NMT config.</span>
+<span class="sd">    This switches between the most recent checkpoint, the best BLEU </span>
+<span class="sd">    checkpoint, or the latest parameters (params.npz). This method</span>
+<span class="sd">    delegates to ``get_nmt_model_path_*``. This</span>
+<span class="sd">    method relies on the global ``args`` variable.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        nmt_model_selector (string): the ``--nmt_model_selector`` arg</span>
+<span class="sd">                                     which defines the policy to decide</span>
+<span class="sd">                                     which NMT model to load (params,</span>
+<span class="sd">                                     bleu, or time)</span>
+<span class="sd">        nmt_config (dict):  NMT configuration, see ``get_nmt_config()``</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        string. Path to the NMT model file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">nmt_model_selector</span> <span class="o">==</span> <span class="s1">&#39;params&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">get_nmt_model_path_params</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">nmt_model_selector</span> <span class="o">==</span> <span class="s1">&#39;bleu&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">get_nmt_model_path_best_bleu</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">nmt_model_selector</span> <span class="o">==</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">get_nmt_model_path_most_recent</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;NMT model selector </span><span class="si">%s</span><span class="s2"> not available. Please double-check &quot;</span>
+                  <span class="s2">&quot;the --nmt_model_selector parameter.&quot;</span> <span class="o">%</span> <span class="n">nmt_model_selector</span><span class="p">)</span></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

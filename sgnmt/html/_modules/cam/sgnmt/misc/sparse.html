@@ -1,0 +1,558 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.misc.sparse &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.misc.sparse</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.misc.sparse</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module adds support for sparse input or output features. In</span>
+<span class="sd">standard NMT we normally use a one-hot-representation, and input and</span>
+<span class="sd">output layers are lookup tables (embedding matrices). SGNMT supports</span>
+<span class="sd">explicit definition of word representations as sparse features, in </span>
+<span class="sd">which more than one neuron can be activated at a time.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.trie</span> <span class="kn">import</span> <span class="n">SimpleTrie</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+
+
+<div class="viewcode-block" id="sparse_euclidean2"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.sparse_euclidean2">[docs]</a><span class="k">def</span> <span class="nf">sparse_euclidean2</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculates the squared Euclidean distance between two sparse </span>
+<span class="sd">    vectors.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        v1 (dict): First sparse vector</span>
+<span class="sd">        v2 (dict): Second sparse vector</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        float. Squared distance between ``v1`` and ``v2``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">v1</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">v</span> <span class="o">-</span> <span class="n">v2</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">d</span> <span class="o">+</span> <span class="n">v</span><span class="o">*</span><span class="n">v</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">d</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="o">*</span><span class="n">v</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">v2</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">d</span></div>
+
+
+<div class="viewcode-block" id="sparse_euclidean"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.sparse_euclidean">[docs]</a><span class="k">def</span> <span class="nf">sparse_euclidean</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculates the Euclidean distance between two sparse </span>
+<span class="sd">    vectors.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        v1 (dict): First sparse vector</span>
+<span class="sd">        v2 (dict): Second sparse vector</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        float. Distance between ``v1`` and ``v2``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sparse_euclidean2</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="dense_euclidean2"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.dense_euclidean2">[docs]</a><span class="k">def</span> <span class="nf">dense_euclidean2</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculates the squared Euclidean distance between two dense </span>
+<span class="sd">    vectors.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        v1 (dict): First dense vector</span>
+<span class="sd">        v2 (dict): Second dense vector</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        float. Squared distance between ``v1`` and ``v2``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">([(</span><span class="n">a</span><span class="o">-</span><span class="n">b</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="o">-</span><span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span><span class="n">v2</span><span class="p">)])</span></div>
+
+
+<div class="viewcode-block" id="dense_euclidean"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.dense_euclidean">[docs]</a><span class="k">def</span> <span class="nf">dense_euclidean</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculates the Euclidean distance between two sparse </span>
+<span class="sd">    vectors.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        v1 (dict): First dense vector</span>
+<span class="sd">        v2 (dict): Second dense vector</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        float. Distance between ``v1`` and ``v2``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dense_euclidean2</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="SparseFeatMap"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap">[docs]</a><span class="k">class</span> <span class="nc">SparseFeatMap</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is the super class for mapping strategies between sparse</span>
+<span class="sd">    feature representations and symbolic word indices. The translation</span>
+<span class="sd">    needs to be implemented in ``sparse2word`` and ``word2sparse``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes this map.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            dim (int): Dimensionality of the feature representation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">null_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="SparseFeatMap.sparse2word"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap.sparse2word">[docs]</a>    <span class="k">def</span> <span class="nf">sparse2word</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the word id for a sparse feature. The sparse feature </span>
+<span class="sd">        format is a list of tuples [(dim1,val1),..,(dimN,valN)]</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            feat (list): Sparse feature to look up</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            int. Word ID of a match for ``feat`` or ``None`` is no</span>
+<span class="sd">                 match could be found</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="SparseFeatMap.word2sparse"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap.word2sparse">[docs]</a>    <span class="k">def</span> <span class="nf">word2sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the sparse feature representation for a word.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): Word ID</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. Sparse feature representation for ``word`` or ``None``</span>
+<span class="sd">                  if the word could not be converted</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    
+<div class="viewcode-block" id="SparseFeatMap.sparse2nwords"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap.sparse2nwords">[docs]</a>    <span class="k">def</span> <span class="nf">sparse2nwords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the n closest words to ``feat``. Subclasses can</span>
+<span class="sd">        implement this method to implement search for words. The </span>
+<span class="sd">        default implementation returns the single best word only.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            feat (list): Sparse feature</span>
+<span class="sd">            n (int): Number of words to retrieve</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list: List of (wordid, distance) tuples with words which</span>
+<span class="sd">                  are close to ``feat``.</span>
+<span class="sd">        </span>
+<span class="sd">        Note:</span>
+<span class="sd">            The default implementation does not use the ``n`` argument</span>
+<span class="sd">            and always returns distance 0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">sparse2word</span><span class="p">(</span><span class="n">feat</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)]</span></div>
+    
+<div class="viewcode-block" id="SparseFeatMap.word2dense"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap.word2dense">[docs]</a>    <span class="k">def</span> <span class="nf">word2dense</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the feature representation in dense format, i.e. a</span>
+<span class="sd">        ``self.dim``-dimensional vector as list.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word(int): Word ID</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. Dense vector corresponding to ``word`` or the null</span>
+<span class="sd">            vector if no representation found</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparse2dense</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">word2sparse</span><span class="p">(</span><span class="n">word</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="SparseFeatMap.words2dense"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap.words2dense">[docs]</a>    <span class="k">def</span> <span class="nf">words2dense</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Applies ``word2dense`` to a word sequence. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">word2dense</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="SparseFeatMap.dense2sparse"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap.dense2sparse">[docs]</a>    <span class="k">def</span> <span class="nf">dense2sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dense</span><span class="p">,</span> <span class="n">eps</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts a dense vector to a sparse vector.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            dense (list): Dense vector (list of length n)</span>
+<span class="sd">            eps (float): Values smaller than this are set to zero</span>
+<span class="sd">                         in the sparse representation</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. List of (dimension, value) tuples (sparse vector)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="n">d</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dense</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="n">eps</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="SparseFeatMap.sparse2dense"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap.sparse2dense">[docs]</a>    <span class="k">def</span> <span class="nf">sparse2dense</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sparse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts a sparse vector to its dense representation.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            sparse (list): Sparse vector (list of tuples)</span>
+<span class="sd">            </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            IndexError. If the input vector exceeds the dimensionality</span>
+<span class="sd">                        of this map</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">vec</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">null_vec</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sparse</span><span class="p">:</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">sparse</span><span class="p">:</span>
+                <span class="n">vec</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">vec</span></div>
+    
+<div class="viewcode-block" id="SparseFeatMap.dense2word"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap.dense2word">[docs]</a>    <span class="k">def</span> <span class="nf">dense2word</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the word id for a dense feature.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            feat (list): Dense feature vector to look up</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            int. Word ID of a match for ``feat`` or ``None`` is no</span>
+<span class="sd">                 match could be found</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparse2word</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dense2sparse</span><span class="p">(</span><span class="n">feat</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="SparseFeatMap.dense2nwords"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap.dense2nwords">[docs]</a>    <span class="k">def</span> <span class="nf">dense2nwords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the n closest words to ``feat``. </span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            feat (list): Dense feature vector</span>
+<span class="sd">            n (int): Number of words to retrieve</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list: List of (wordid, distance) tuples with words which</span>
+<span class="sd">                  are close to ``feat``.</span>
+<span class="sd">        </span>
+<span class="sd">        Note:</span>
+<span class="sd">            The default implementation does not use the ``n`` argument</span>
+<span class="sd">            and always returns distance 0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparse2nwords</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dense2sparse</span><span class="p">(</span><span class="n">feat</span><span class="p">),</span> <span class="n">n</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="SparseFeatMap.dense2words"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap.dense2words">[docs]</a>    <span class="k">def</span> <span class="nf">dense2words</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Applies ``dense2word`` to a sequence. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dense2word</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="FlatSparseFeatMap"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FlatSparseFeatMap">[docs]</a><span class="k">class</span> <span class="nc">FlatSparseFeatMap</span><span class="p">(</span><span class="n">SparseFeatMap</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Can be used as replacement if a ``SparseFeatMap`` is required</span>
+<span class="sd">    but you wish to use flat word ids. It overrides the dense methods</span>
+<span class="sd">    with the identities.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            dim (int): not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FlatSparseFeatMap</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="FlatSparseFeatMap.sparse2word"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FlatSparseFeatMap.sparse2word">[docs]</a>    <span class="k">def</span> <span class="nf">sparse2word</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Raise:</span>
+<span class="sd">            NotImplementedError.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ne">NotImplementedError</span></div>
+    
+<div class="viewcode-block" id="FlatSparseFeatMap.word2sparse"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FlatSparseFeatMap.word2sparse">[docs]</a>    <span class="k">def</span> <span class="nf">word2sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Raise:</span>
+<span class="sd">            NotImplementedError.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ne">NotImplementedError</span></div>
+    
+<div class="viewcode-block" id="FlatSparseFeatMap.word2dense"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FlatSparseFeatMap.word2dense">[docs]</a>    <span class="k">def</span> <span class="nf">word2dense</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Identity. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">word</span></div>
+    
+<div class="viewcode-block" id="FlatSparseFeatMap.words2dense"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FlatSparseFeatMap.words2dense">[docs]</a>    <span class="k">def</span> <span class="nf">words2dense</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Identity. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">seq</span></div>
+    
+<div class="viewcode-block" id="FlatSparseFeatMap.dense2sparse"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FlatSparseFeatMap.dense2sparse">[docs]</a>    <span class="k">def</span> <span class="nf">dense2sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dense</span><span class="p">,</span> <span class="n">eps</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Raise:</span>
+<span class="sd">            NotImplementedError.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ne">NotImplementedError</span></div>
+    
+<div class="viewcode-block" id="FlatSparseFeatMap.sparse2dense"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FlatSparseFeatMap.sparse2dense">[docs]</a>    <span class="k">def</span> <span class="nf">sparse2dense</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sparse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Raise:</span>
+<span class="sd">            NotImplementedError.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ne">NotImplementedError</span></div>
+    
+<div class="viewcode-block" id="FlatSparseFeatMap.dense2word"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FlatSparseFeatMap.dense2word">[docs]</a>    <span class="k">def</span> <span class="nf">dense2word</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Identity. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">feat</span></div></div>
+
+
+<div class="viewcode-block" id="TrivialSparseFeatMap"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.TrivialSparseFeatMap">[docs]</a><span class="k">class</span> <span class="nc">TrivialSparseFeatMap</span><span class="p">(</span><span class="n">SparseFeatMap</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is the null-object (GoF) implementation for</span>
+<span class="sd">    ``SparseFeatMap``. It corresponds to the usual one-hot</span>
+<span class="sd">    representation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to ``SparseFeatMap``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            dim (int): Dimensionality of the feature representation</span>
+<span class="sd">                       (should be the vocabulary size)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TrivialSparseFeatMap</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="TrivialSparseFeatMap.sparse2word"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.TrivialSparseFeatMap.sparse2word">[docs]</a>    <span class="k">def</span> <span class="nf">sparse2word</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns feat[0][0] &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">feat</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="TrivialSparseFeatMap.word2sparse"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.TrivialSparseFeatMap.word2sparse">[docs]</a>    <span class="k">def</span> <span class="nf">word2sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns [(word, 1)] &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="n">word</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span></div></div>
+    
+    
+<div class="viewcode-block" id="FileBasedFeatMap"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FileBasedFeatMap">[docs]</a><span class="k">class</span> <span class="nc">FileBasedFeatMap</span><span class="p">(</span><span class="n">SparseFeatMap</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class loads the mapping from word to sparse feature from</span>
+<span class="sd">    a file (see ``--src_sparse_feat_map`` and ``--trg_sparse_feat_map``)</span>
+<span class="sd">    The mapping from word to feature is a simple dictionary lookup.</span>
+<span class="sd">    </span>
+<span class="sd">    The mapping from feature to word is implemented with a Trie based</span>
+<span class="sd">    nearest neighbor implementation and does not require an exact</span>
+<span class="sd">    match. However, in case of an exact match, is runs linearly in the</span>
+<span class="sd">    number of non-zero entries in the vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loads the feature map from the file system.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            dim (int). Dimensionality of the feature space</span>
+<span class="sd">            path (string). Path to the mapping file</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            IOError. If the file could not be loaded</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FileBasedFeatMap</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f2w</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">w2f</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading sparse feat map from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()):</span>
+                <span class="p">(</span><span class="n">word_str</span><span class="p">,</span> <span class="n">feat_str</span><span class="p">)</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">word</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">word_str</span><span class="p">)</span>
+                <span class="n">feat</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">feat_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+                    <span class="n">d</span><span class="p">,</span><span class="n">v</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">feat</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">w2f</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="n">feat</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loaded </span><span class="si">%d</span><span class="s2"> entries from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w2f</span><span class="p">),</span> <span class="n">path</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_load_f2w</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Building Trie with </span><span class="si">%d</span><span class="s2"> elements for sparse vector lookup&quot;</span>
+                     <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w2f</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f2w</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">w</span><span class="p">,</span><span class="n">f</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w2f</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> 
+                          <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> 
+                          <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+            <span class="c1"># We iterate through the file in reversed ordered such that if </span>
+            <span class="c1"># vector representations clash we keep the first one</span>
+            <span class="c1"># in f2w</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">f2w</span><span class="o">.</span><span class="n">add_sparse</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="FileBasedFeatMap.sparse2word"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FileBasedFeatMap.sparse2word">[docs]</a>    <span class="k">def</span> <span class="nf">sparse2word</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">f2w</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_load_f2w</span><span class="p">()</span>
+        <span class="n">w</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">f2w</span><span class="o">.</span><span class="n">nearest_sparse</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">w</span></div>
+    
+<div class="viewcode-block" id="FileBasedFeatMap.sparse2nwords"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FileBasedFeatMap.sparse2nwords">[docs]</a>    <span class="k">def</span> <span class="nf">sparse2nwords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feat</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">f2w</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_load_f2w</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">f2w</span><span class="o">.</span><span class="n">n_nearest_sparse</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="FileBasedFeatMap.word2sparse"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.FileBasedFeatMap.word2sparse">[docs]</a>    <span class="k">def</span> <span class="nf">word2sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">w2f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

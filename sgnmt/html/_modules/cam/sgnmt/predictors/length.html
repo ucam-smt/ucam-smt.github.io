@@ -148,7 +148,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">math</span>
 
-<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">gammaln</span>
@@ -194,7 +194,7 @@
 <span class="sd">    The predictor predicts EOS with NB(#consumed_words,r,p)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text_file</span><span class="p">,</span> <span class="n">model_weights</span><span class="p">,</span> <span class="n">use_point_probs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text_file</span><span class="p">,</span> <span class="n">model_weights</span><span class="p">,</span> <span class="n">use_point_probs</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new target sentence length model predictor.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -206,9 +206,12 @@
 <span class="sd">                                  information</span>
 <span class="sd">            use_point_probs (bool): Use point estimates for EOS token,</span>
 <span class="sd">                                    0.0 otherwise </span>
+<span class="sd">            offset (int): Subtract this from hypothesis length before</span>
+<span class="sd">                          applying the NB model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">NBLengthPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_point_probs</span> <span class="o">=</span> <span class="n">use_point_probs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">offset</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_weights</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="o">*</span><span class="n">NUM_FEATURES</span><span class="p">:</span> <span class="c1"># add biases</span>
             <span class="n">model_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
             <span class="n">model_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
@@ -247,6 +250,8 @@
 <span class="sd">        the 1-p(EOS), with p(EOS) fetched from ``posterior``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_point_probs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_eos_prob</span>
             <span class="k">return</span> <span class="mf">0.0</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="mf">0.0</span>
@@ -260,13 +265,11 @@
     
     <span class="k">def</span> <span class="nf">_get_eos_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get loglikelihood according cur_p, cur_r, and n_consumed &quot;&quot;&quot;</span>
-        <span class="n">eos_point_prob</span> <span class="o">=</span> <span class="n">gammaln</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_r</span><span class="p">)</span> \
-            <span class="o">-</span> <span class="n">gammaln</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> \
-            <span class="o">-</span> <span class="n">gammaln</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_r</span><span class="p">)</span> \
-            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_p</span><span class="p">)</span> \
-            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_p</span><span class="p">);</span>
+        <span class="n">eos_point_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_eos_point_prob</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span>
+                                              <span class="mi">1</span><span class="p">,</span> 
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">))</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_point_probs</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">eos_point_prob</span>
+            <span class="k">return</span> <span class="n">eos_point_prob</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_eos_prob</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eos_point_prob</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">eos_point_prob</span>
@@ -275,6 +278,26 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eos_point_prob</span><span class="p">)</span>
         <span class="c1"># Desired prob is eos_point_prob / (1-last_eos_probs_sum)</span>
         <span class="k">return</span> <span class="n">eos_point_prob</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">prev_sum</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">_get_eos_point_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">gammaln</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_r</span><span class="p">)</span> \
+                <span class="o">-</span> <span class="n">gammaln</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> \
+                <span class="o">-</span> <span class="n">gammaln</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_r</span><span class="p">)</span> \
+                <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_p</span><span class="p">)</span> \
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_p</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_get_max_eos_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the maximum loglikelihood according cur_p, cur_r </span>
+<span class="sd">        TODO: replace this brute force impl. with something smarter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">max_prob</span> <span class="o">=</span> <span class="n">NEG_INF</span>
+        <span class="n">n_prob</span> <span class="o">=</span> <span class="n">max_prob</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">n_prob</span> <span class="o">==</span> <span class="n">max_prob</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">n_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_eos_point_prob</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="n">max_prob</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_prob</span><span class="p">,</span> <span class="n">n_prob</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">max_prob</span>
     
 <div class="viewcode-block" id="NBLengthPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Extract features for the source sentence. Note that this</span>
@@ -290,7 +313,9 @@
         <span class="n">p</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">p</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_p</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">EPS_P</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">EPS_P</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span> <span class="o">=</span> <span class="p">[]</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prev_eos_probs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_point_probs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_eos_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_max_eos_prob</span><span class="p">()</span></div>
     
 <div class="viewcode-block" id="NBLengthPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Increases the current history length</span>
@@ -313,33 +338,123 @@
 
 <div class="viewcode-block" id="NBLengthPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div></div>
-
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="NBLengthPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NBLengthPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the number of consumed words is the same &quot;&quot;&quot;</span>
+        <span class="n">n1</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">state1</span>
+        <span class="n">n2</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">state2</span>
+        <span class="k">return</span> <span class="n">n1</span> <span class="o">==</span> <span class="n">n2</span></div></div>
 
 
 <div class="viewcode-block" id="WordCountPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor">[docs]</a><span class="k">class</span> <span class="nc">WordCountPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;This predictor adds the number of words as feature &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;This predictor adds the number of words as feature. &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new word count predictor instance.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): If this is non-negative we count only the</span>
+<span class="sd">                        number of the specified word. If its</span>
+<span class="sd">                        negative, count all words</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">WordCountPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span> <span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="mf">0.0</span> 
         
 <div class="viewcode-block" id="WordCountPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Always returns 0 (= log 1) &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="mf">0.0</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span></div>
     
 <div class="viewcode-block" id="WordCountPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set score for EOS to the number of consumed words &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">}</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span></div>
     
 <div class="viewcode-block" id="WordCountPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Resets the internal counter for consumed words.</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            src_sentence (list): Not used</span>
+        <span class="sd">&quot;&quot;&quot;Empty</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span></div>
+        <span class="k">pass</span></div>
     
 <div class="viewcode-block" id="WordCountPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="WordCountPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">True</span></div>
+    
+<div class="viewcode-block" id="WordCountPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="WordCountPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="WordCountPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">True</span></div></div>
+
+
+<div class="viewcode-block" id="ExternalLengthPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.ExternalLengthPredictor">[docs]</a><span class="k">class</span> <span class="nc">ExternalLengthPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor loads the distribution over target sentence</span>
+<span class="sd">    lengths from an external file. The file contains blank separated</span>
+<span class="sd">    length:score pairs in each line which define the length </span>
+<span class="sd">    distribution. The predictor adds the specified scores directly</span>
+<span class="sd">    to the EOS score.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a external length distribution predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            path (string): Path to the file with target sentence length</span>
+<span class="sd">                           distributions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ExternalLengthPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_lengths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+                    <span class="n">length</span><span class="p">,</span><span class="n">score</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+                    <span class="n">scores</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">length</span><span class="p">)]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trg_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="ExternalLengthPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.ExternalLengthPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns 0=log 1 if the partial hypothesis does not exceed</span>
+<span class="sd">        max length. Otherwise, predict next returns an empty set,</span>
+<span class="sd">        and we set everything else to -inf.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">NEG_INF</span></div>
+    
+<div class="viewcode-block" id="ExternalLengthPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.ExternalLengthPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a dictionary with one entry and value 0 (=log 1). The</span>
+<span class="sd">        key is either the next word in the target sentence or (if the</span>
+<span class="sd">        target sentence has no more words) the end-of-sentence symbol.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_scores</span><span class="p">:</span> 
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_scores</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="n">NEG_INF</span><span class="p">}</span> </div>
+    
+<div class="viewcode-block" id="ExternalLengthPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.ExternalLengthPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fetches the corresponding target sentence length </span>
+<span class="sd">        distribution and resets the word counter.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list):  Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_lengths</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_scores</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="ExternalLengthPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.ExternalLengthPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Increases word counter by one.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -347,17 +462,22 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">+</span> <span class="mi">1</span></div>
     
-<div class="viewcode-block" id="WordCountPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ExternalLengthPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.ExternalLengthPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the number of consumed words &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span></div>
     
-<div class="viewcode-block" id="WordCountPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<div class="viewcode-block" id="ExternalLengthPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.ExternalLengthPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set the number of consumed words &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="n">state</span></div>
 
-<div class="viewcode-block" id="WordCountPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ExternalLengthPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.ExternalLengthPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div></div>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="ExternalLengthPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.ExternalLengthPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the number of consumed words is the same &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+    
 </pre></div>
 
            </div>

@@ -1,0 +1,474 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.blocks.model &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.blocks.model</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.blocks.model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This file contains the ``NMTModel`` class which is the main </span>
+<span class="sd">interface to the NMT implementations in Blocks. All main runner scripts</span>
+<span class="sd">(``train.py``, ``decode.py``, and ``align.py``) access Blocks NMT </span>
+<span class="sd">models through this class. According to the NMT config, it composes the</span>
+<span class="sd">final NMT model using an encoder, attention, and decoder network which</span>
+<span class="sd">are implemented in the modules ``encoder.py``, ``attention.py``, and</span>
+<span class="sd">``decoder.py``.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">blocks.initialization</span> <span class="kn">import</span> <span class="n">IsotropicGaussian</span><span class="p">,</span> <span class="n">Orthogonal</span><span class="p">,</span> <span class="n">Constant</span>
+<span class="kn">from</span> <span class="nn">blocks.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">blocks.filter</span> <span class="kn">import</span> <span class="n">VariableFilter</span>
+<span class="kn">from</span> <span class="nn">blocks.graph</span> <span class="kn">import</span> <span class="n">ComputationGraph</span><span class="p">,</span> <span class="n">apply_noise</span><span class="p">,</span> <span class="n">apply_dropout</span>
+<span class="kn">from</span> <span class="nn">blocks.select</span> <span class="kn">import</span> <span class="n">Selector</span>
+<span class="kn">from</span> <span class="nn">theano</span> <span class="kn">import</span> <span class="n">tensor</span>
+<span class="kn">from</span> <span class="nn">toolz</span> <span class="kn">import</span> <span class="n">merge</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.checkpoint</span> <span class="kn">import</span> <span class="n">SaveLoadUtils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.decoder</span> <span class="kn">import</span> <span class="n">Decoder</span><span class="p">,</span> <span class="n">NoLookupDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.encoder</span> <span class="kn">import</span> <span class="n">BidirectionalEncoder</span><span class="p">,</span> <span class="n">NoLookupEncoder</span><span class="p">,</span> \
+    <span class="n">HierarchicalAnnotator</span><span class="p">,</span> <span class="n">EncoderWithAnnotators</span><span class="p">,</span> <span class="n">DeepBidirectionalEncoder</span>
+
+
+<div class="viewcode-block" id="LoadNMTUtils"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.model.LoadNMTUtils">[docs]</a><span class="k">class</span> <span class="nc">LoadNMTUtils</span><span class="p">(</span><span class="n">SaveLoadUtils</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads parameters log and iterations state. This class is adapted</span>
+<span class="sd">    from the ``LoadNMT`` class in the blocks example and contains</span>
+<span class="sd">    some copied code. Note that we do not use BLOCKS_DELIMITER.</span>
+<span class="sd">    Instead, we always use &#39;-&#39; to keep back compatibility with older</span>
+<span class="sd">    models.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nmt_model_path</span><span class="p">,</span> <span class="n">saveto</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes the path to the training directory and the NMT</span>
+<span class="sd">        model.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            nmt_model_path (string): Path to the model npz file</span>
+<span class="sd">            saveto (string): Path to the NMT training directory (see</span>
+<span class="sd">                             the saveto field in the NMT configuration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nmt_model_path</span> <span class="o">=</span> <span class="n">nmt_model_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="o">=</span> <span class="n">saveto</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LoadNMTUtils</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LoadNMTUtils.load_weights"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.model.LoadNMTUtils.load_weights">[docs]</a>    <span class="k">def</span> <span class="nf">load_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load the model parameters from the model file. Compare with</span>
+<span class="sd">        ``blocks.machine_translation.LoadNMT``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path_to_folder</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No dump found&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading the model from {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nmt_model_path</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; ...loading model parameters&quot;</span><span class="p">)</span>
+            <span class="n">params_all</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_parameters</span><span class="p">()</span>
+            <span class="n">params_this</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_parameter_dict</span><span class="p">()</span>
+            <span class="n">missing</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">params_this</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">params_all</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">pname</span> <span class="ow">in</span> <span class="n">params_this</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">pname</span> <span class="ow">in</span> <span class="n">params_all</span><span class="p">:</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="n">params_all</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">params_this</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">val</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="s2">&quot; Dimension mismatch {}-{} for {}&quot;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">params_this</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                    <span class="n">val</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">pname</span><span class="p">))</span>
+
+                    <span class="n">params_this</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot; Loaded to CG {:15}: {}&quot;</span>
+                                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">pname</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s2">&quot; Parameter does not exist: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pname</span><span class="p">))</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot; Number of parameters loaded for computation graph: {}&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">params_this</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">missing</span><span class="p">)))</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot; Error {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="LoadNMTUtils.load_parameters"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.model.LoadNMTUtils.load_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">load_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Currently not used, kept for consistency with blocks</span>
+<span class="sd">        reference implementation. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_parameter_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nmt_model_path</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="NMTModel"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.model.NMTModel">[docs]</a><span class="k">class</span> <span class="nc">NMTModel</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Encapsulates an NMT model. Calling ``set_up`` will initialize</span>
+<span class="sd">    all the attributes.</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        samples (Variable): Samples variable used for search algorithms</span>
+<span class="sd">        cost (Variable): Model cost</span>
+<span class="sd">        search_model (Variable): Decoding model</span>
+<span class="sd">        training_model (Variable): Training model</span>
+<span class="sd">        sampling_input (Variable): Input variable for the source sentence</span>
+<span class="sd">        cg (Graph): Computational graph</span>
+<span class="sd">        encoder (Encoder): Encoder network </span>
+<span class="sd">        align_models (dict): Dictionary of alignment models indexed</span>
+<span class="sd">                             by source sentence length</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span> <span class="o">=</span> <span class="p">{}):</span>
+        <span class="sd">&quot;&quot;&quot;Stores the configuration but does not initialize the class</span>
+<span class="sd">        attributes yet.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            config (dict): NMT configuration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+    
+<div class="viewcode-block" id="NMTModel.set_up"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.model.NMTModel.set_up">[docs]</a>    <span class="k">def</span> <span class="nf">set_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loads and initializes all the theano variables for the</span>
+<span class="sd">        training model and the decoding model.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            config (dict): NMT configuration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+        <span class="c1"># Create Theano variables</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Creating theano variables&#39;</span><span class="p">)</span>
+        <span class="n">source_sentence_mask</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="s1">&#39;source_mask&#39;</span><span class="p">)</span>
+        <span class="n">target_sentence_mask</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="s1">&#39;target_mask&#39;</span><span class="p">)</span>
+    
+        <span class="c1"># Construct model (fs439: Add NoLookup options)</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_layers&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Only dec_layers=1 supported.&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Building RNN encoder-decoder&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_layers&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Only enc_layers=1 supported for sparse &quot;</span>
+                              <span class="s2">&quot;source features.&quot;</span><span class="p">)</span>
+            <span class="n">source_sentence</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">tensor3</span><span class="p">(</span><span class="s1">&#39;source&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sampling_input</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">tensor3</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">)</span>
+            <span class="n">encoder</span> <span class="o">=</span> <span class="n">NoLookupEncoder</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_embed&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">source_sentence</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">lmatrix</span><span class="p">(</span><span class="s1">&#39;source&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sampling_input</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">lmatrix</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_layers&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_share_weights&#39;</span><span class="p">]:</span>
+                <span class="n">encoder</span> <span class="o">=</span> <span class="n">DeepBidirectionalEncoder</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_vocab_size&#39;</span><span class="p">],</span>
+                                                   <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_embed&#39;</span><span class="p">],</span>
+                                                   <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_layers&#39;</span><span class="p">],</span> 
+                                                   <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_skip_connections&#39;</span><span class="p">],</span>
+                                                   <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">])</span> 
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">encoder</span> <span class="o">=</span> <span class="n">BidirectionalEncoder</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_vocab_size&#39;</span><span class="p">],</span>
+                                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_embed&#39;</span><span class="p">],</span>
+                                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_layers&#39;</span><span class="p">],</span> 
+                                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_skip_connections&#39;</span><span class="p">],</span>
+                                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]:</span>
+            <span class="n">target_sentence</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">tensor3</span><span class="p">(</span><span class="s1">&#39;target&#39;</span><span class="p">)</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">NoLookupDecoder</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_vocab_size&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_embed&#39;</span><span class="p">],</span> 
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_nhids&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;attention&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_attention_sources&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_readout_sources&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_size&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;seq_len&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_init&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">target_sentence</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">lmatrix</span><span class="p">(</span><span class="s1">&#39;target&#39;</span><span class="p">)</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">Decoder</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_vocab_size&#39;</span><span class="p">],</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_embed&#39;</span><span class="p">],</span> 
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_nhids&#39;</span><span class="p">],</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;attention&#39;</span><span class="p">],</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_attention_sources&#39;</span><span class="p">],</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_readout_sources&#39;</span><span class="p">],</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory&#39;</span><span class="p">],</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_size&#39;</span><span class="p">],</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;seq_len&#39;</span><span class="p">],</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_init&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;annotations&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;direct&#39;</span><span class="p">:</span>
+            <span class="n">annotators</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">add_direct</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;annotations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;direct&#39;</span><span class="p">:</span>
+                    <span class="n">add_direct</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;hierarchical&#39;</span><span class="p">:</span>
+                    <span class="n">annotators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HierarchicalAnnotator</span><span class="p">(</span><span class="n">encoder</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Annotation strategy </span><span class="si">%s</span><span class="s2"> unknown&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+            <span class="n">encoder</span> <span class="o">=</span> <span class="n">EncoderWithAnnotators</span><span class="p">(</span><span class="n">encoder</span><span class="p">,</span> <span class="n">annotators</span><span class="p">,</span> <span class="n">add_direct</span><span class="p">)</span>
+        <span class="n">annotations</span><span class="p">,</span> <span class="n">annotations_mask</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">source_sentence</span><span class="p">,</span>
+                                                      <span class="n">source_sentence_mask</span><span class="p">)</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">decoder</span><span class="o">.</span><span class="n">cost</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span>
+                                 <span class="n">annotations_mask</span><span class="p">,</span>
+                                 <span class="n">target_sentence</span><span class="p">,</span> 
+                                 <span class="n">target_sentence_mask</span><span class="p">)</span>
+    
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Creating computational graph&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cg</span> <span class="o">=</span> <span class="n">ComputationGraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>
+    
+        <span class="c1"># Initialize model</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Initializing model&#39;</span><span class="p">)</span>
+        <span class="n">encoder</span><span class="o">.</span><span class="n">weights_init</span> <span class="o">=</span> <span class="n">decoder</span><span class="o">.</span><span class="n">weights_init</span> <span class="o">=</span> <span class="n">IsotropicGaussian</span><span class="p">(</span>
+            <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_scale&#39;</span><span class="p">])</span>
+        <span class="n">encoder</span><span class="o">.</span><span class="n">biases_init</span> <span class="o">=</span> <span class="n">decoder</span><span class="o">.</span><span class="n">biases_init</span> <span class="o">=</span> <span class="n">Constant</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">encoder</span><span class="o">.</span><span class="n">push_initialization_config</span><span class="p">()</span>
+        <span class="n">decoder</span><span class="o">.</span><span class="n">push_initialization_config</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">encoder</span><span class="o">.</span><span class="n">bidir</span><span class="o">.</span><span class="n">prototype</span><span class="o">.</span><span class="n">weights_init</span> <span class="o">=</span> <span class="n">Orthogonal</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span> <span class="c1"># Its fine, no bidirectional encoder</span>
+        <span class="n">decoder</span><span class="o">.</span><span class="n">transition</span><span class="o">.</span><span class="n">weights_init</span> <span class="o">=</span> <span class="n">Orthogonal</span><span class="p">()</span>
+        <span class="n">encoder</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+        <span class="n">decoder</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+    
+        <span class="c1"># apply dropout for regularization</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dropout&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="c1"># dropout is applied to the output of maxout in ghog</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Applying dropout&#39;</span><span class="p">)</span>
+            <span class="n">dropout_inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cg</span><span class="o">.</span><span class="n">intermediary_variables</span>
+                              <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;maxout_apply_output&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cg</span> <span class="o">=</span> <span class="n">apply_dropout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cg</span><span class="p">,</span> <span class="n">dropout_inputs</span><span class="p">,</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dropout&#39;</span><span class="p">])</span>
+    
+        <span class="c1"># Apply weight noise for regularization</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_noise_ff&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Applying weight noise to ff layers&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">encoder</span><span class="o">.</span><span class="n">lookup</span><span class="p">:</span>
+                <span class="n">enc_params</span> <span class="o">=</span> <span class="n">Selector</span><span class="p">(</span><span class="n">encoder</span><span class="o">.</span><span class="n">lookup</span><span class="p">)</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="n">enc_params</span> <span class="o">+=</span> <span class="n">Selector</span><span class="p">(</span><span class="n">encoder</span><span class="o">.</span><span class="n">fwd_fork</span><span class="p">)</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="n">enc_params</span> <span class="o">+=</span> <span class="n">Selector</span><span class="p">(</span><span class="n">encoder</span><span class="o">.</span><span class="n">back_fork</span><span class="p">)</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="n">dec_params</span> <span class="o">=</span> <span class="n">Selector</span><span class="p">(</span>
+                <span class="n">decoder</span><span class="o">.</span><span class="n">sequence_generator</span><span class="o">.</span><span class="n">readout</span><span class="p">)</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="n">dec_params</span> <span class="o">+=</span> <span class="n">Selector</span><span class="p">(</span>
+                <span class="n">decoder</span><span class="o">.</span><span class="n">sequence_generator</span><span class="o">.</span><span class="n">fork</span><span class="p">)</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cg</span> <span class="o">=</span> <span class="n">apply_noise</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cg</span><span class="p">,</span> 
+                                  <span class="n">enc_params</span><span class="o">+</span><span class="n">dec_params</span><span class="p">,</span> 
+                                  <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_noise_ff&#39;</span><span class="p">])</span>
+    
+        <span class="c1"># Print shapes</span>
+        <span class="n">shapes</span> <span class="o">=</span> <span class="p">[</span><span class="n">param</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cg</span><span class="o">.</span><span class="n">parameters</span><span class="p">]</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Parameter shapes: &quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">shape</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">Counter</span><span class="p">(</span><span class="n">shapes</span><span class="p">)</span><span class="o">.</span><span class="n">most_common</span><span class="p">():</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;    {:15}: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">count</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Total number of CG parameters: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">shapes</span><span class="p">)))</span>
+    
+        <span class="c1"># Print parameter names</span>
+        <span class="n">enc_dec_param_dict</span> <span class="o">=</span> <span class="n">merge</span><span class="p">(</span><span class="n">Selector</span><span class="p">(</span><span class="n">encoder</span><span class="p">)</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">(),</span>
+                                   <span class="n">Selector</span><span class="p">(</span><span class="n">decoder</span><span class="p">)</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">())</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Parameter names: &quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">enc_dec_param_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;    {:15}: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Total number of parameters: {}&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">enc_dec_param_dict</span><span class="p">)))</span>
+    
+        <span class="c1"># Set up training model</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Building model&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>
+    
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Building sampling model&quot;</span><span class="p">)</span>
+        <span class="n">src_shape</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> 
+                     <span class="bp">self</span><span class="o">.</span><span class="n">sampling_input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># batch_size x sen_length</span>
+        <span class="n">sampling_representation</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_input</span><span class="p">,</span>
+                                                  <span class="n">tensor</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">src_shape</span><span class="p">))</span>
+        <span class="n">generated</span> <span class="o">=</span> <span class="n">decoder</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">src_shape</span><span class="p">,</span> <span class="n">sampling_representation</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">search_model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span>
+        <span class="n">generated_outputs</span> <span class="o">=</span> <span class="n">VariableFilter</span><span class="p">(</span>
+            <span class="n">bricks</span><span class="o">=</span><span class="p">[</span><span class="n">decoder</span><span class="o">.</span><span class="n">sequence_generator</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;outputs&quot;</span><span class="p">)(</span>
+                <span class="n">ComputationGraph</span><span class="p">(</span><span class="n">generated</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>  <span class="c1"># generated[1] is next_outputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="n">generated_outputs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span></div></div>
+    
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

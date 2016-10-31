@@ -1,0 +1,423 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.misc.trie &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.misc.trie</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.misc.trie</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains ``SimpleTrie`` which is a generic trie</span>
+<span class="sd">implementation based on strings of integers.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">itemgetter</span>
+
+<div class="viewcode-block" id="SimpleNode"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.trie.SimpleNode">[docs]</a><span class="k">class</span> <span class="nc">SimpleNode</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Helper class representing a node in a ``SimpleTrie`` &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates an empty node without children. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># outgoing edges with terminal symbols</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">element</span> <span class="o">=</span> <span class="bp">None</span> <span class="c1"># Elements stored at this node</span></div>
+
+
+<div class="viewcode-block" id="SimpleTrie"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.trie.SimpleTrie">[docs]</a><span class="k">class</span> <span class="nc">SimpleTrie</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This is a very simple Trie implementation. It is simpler than </span>
+<span class="sd">    the one in ``cam.sgnmt.predictors.grammar`` because it does not </span>
+<span class="sd">    support non-terminals or removal. The only supported operations are</span>
+<span class="sd">    ``add`` and ``get``, but those are implemented very efficiently. </span>
+<span class="sd">    For many applications (e.g. the cache in the greedy heuristic) this</span>
+<span class="sd">    is already enough.</span>
+<span class="sd">    </span>
+<span class="sd">    The implementation also supports keys in sparse representation,</span>
+<span class="sd">    in which most of the elements in the sequence are zero (see </span>
+<span class="sd">    ``add_sparse``, ``get_sparse``, and ``nearest_sparse``. In this</span>
+<span class="sd">    case, the key is a list of tuples [(dim1,val1),...(dimN,valN)].</span>
+<span class="sd">    Internally, we store them as sequence &quot;dim1 val1 dim2 val2...&quot;</span>
+<span class="sd">    Note that we assume that the tuples are ordered by dimension!</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates an empty Trie data structure. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">SimpleNode</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">_get_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the ```SimpleNode``` for the given sequence ``seq``. If</span>
+<span class="sd">        the path for ``seq`` does not exist yet in the Trie, add it and</span>
+<span class="sd">        return a reference to the newly created node. &quot;&quot;&quot;</span>
+        <span class="n">cur_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span>
+        <span class="k">for</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="n">cur_node</span><span class="o">.</span><span class="n">edges</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+                <span class="n">children</span><span class="p">[</span><span class="n">token_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">SimpleNode</span><span class="p">()</span>
+            <span class="n">cur_node</span> <span class="o">=</span> <span class="n">children</span><span class="p">[</span><span class="n">token_id</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">cur_node</span>
+    
+<div class="viewcode-block" id="SimpleTrie.add"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.trie.SimpleTrie.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add an element to the Trie for the key ``seq``. If ``seq`` </span>
+<span class="sd">        already exists, override.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            seq (list): Key</span>
+<span class="sd">            element (object): The object to store for key ``seq``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_node</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span><span class="o">.</span><span class="n">element</span> <span class="o">=</span> <span class="n">element</span></div>
+        
+<div class="viewcode-block" id="SimpleTrie.get"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.trie.SimpleTrie.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve the element for a key ``seq``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            seq (list): Query key</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            object. The element which has been added along with ``seq``</span>
+<span class="sd">            or ``None`` if the key does not exist. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span><span class="o">.</span><span class="n">element</span></div>
+    
+<div class="viewcode-block" id="SimpleTrie.get_prefix"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.trie.SimpleTrie.get_prefix">[docs]</a>    <span class="k">def</span> <span class="nf">get_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the key in the Trie with the longest common prefix with</span>
+<span class="sd">        ``seq``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            seq (list): Query sequence</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. The longest key in the Trie which is a prefix of </span>
+<span class="sd">            ``seq``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cur_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">best_prefix</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="n">cur_node</span><span class="o">.</span><span class="n">edges</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">prefix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token_id</span><span class="p">)</span>
+            <span class="n">cur_node</span> <span class="o">=</span> <span class="n">children</span><span class="p">[</span><span class="n">token_id</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">cur_node</span><span class="o">.</span><span class="n">element</span><span class="p">:</span>
+                <span class="n">best_prefix</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">best_prefix</span></div>
+
+    <span class="k">def</span> <span class="nf">_sparse2seq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Transforms a key in sparse representation to a sequence</span>
+<span class="sd">        which can be used as key in the Trie.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">seq</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+            <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+            <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">seq</span>
+        
+<div class="viewcode-block" id="SimpleTrie.add_sparse"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.trie.SimpleTrie.add_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">add_sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds an element with a key in sparse representation.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            seq (list): Sparse key (list of tuples)</span>
+<span class="sd">            element (object): The object to store for key ``seq`` </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sparse2seq</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="n">element</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="SimpleTrie.get_sparse"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.trie.SimpleTrie.get_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">get_sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves an element with a key in sparse representation.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            seq (list). Query key in sparse format</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            object. The element which has been added along with ``seq``</span>
+<span class="sd">            or ``None`` if the key does not exist. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sparse2seq</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="n">element</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="SimpleTrie.nearest_sparse"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.trie.SimpleTrie.nearest_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">nearest_sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method returns the element in the Trie with the closest</span>
+<span class="sd">        key to ``query`` in terms of Euclidean distance. The efficiency</span>
+<span class="sd">        relies on sparseness: The more zeros in the vector, the more </span>
+<span class="sd">        efficient. If the Trie contains an exact match, this method</span>
+<span class="sd">        runs linear in the length of the query (i.e. independent of</span>
+<span class="sd">        number of elements in the Trie).</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            query (list): Query key in sparse format</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple. (object,dist) pair with the nearest element to </span>
+<span class="sd">            ``query`` in terms of L2 norm and the squared L2 distance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_dist</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_element</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_register_best_element</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_register_best_element_single</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nearest_sparse_recursive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sparse2seq</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_element</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">best_dist</span></div>
+    
+<div class="viewcode-block" id="SimpleTrie.n_nearest_sparse"><a class="viewcode-back" href="../../../../cam.sgnmt.misc.html#cam.sgnmt.misc.trie.SimpleTrie.n_nearest_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">n_nearest_sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method returns the n element in the Trie with the closest</span>
+<span class="sd">        key to ``query`` in terms of Euclidean distance. The efficiency</span>
+<span class="sd">        relies on sparseness: The more zeros in the vector, the more </span>
+<span class="sd">        efficient.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            query (list): Query key in sparse format</span>
+<span class="sd">            n (int): Number of elements to retrieve</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            List. List of (object,dist) pairs with the nearest element to </span>
+<span class="sd">            ``query`` in terms of L2 norm and the squared L2 distance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">nearest_sparse</span><span class="p">(</span><span class="n">query</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_dist</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_elements</span> <span class="o">=</span> <span class="p">[(</span><span class="bp">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_dist</span><span class="p">)]</span> <span class="c1"># guardian element</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_register_best_element</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_register_best_element_multi</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nearest_sparse_recursive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sparse2seq</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_elements</span></div>
+    
+    <span class="k">def</span> <span class="nf">_register_best_element_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">el</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_dist</span> <span class="o">=</span> <span class="n">dist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_element</span> <span class="o">=</span> <span class="n">el</span>
+        
+    <span class="k">def</span> <span class="nf">_register_best_element_multi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">el</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_elements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_elements</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[(</span><span class="n">el</span><span class="p">,</span> <span class="n">dist</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_elements</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_elements</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> 
+            
+    <span class="k">def</span> <span class="nf">_nearest_sparse_recursive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">dist</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">dist</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_dist</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">seq</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dfs_for_nearest</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">dist</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">root</span><span class="o">.</span><span class="n">element</span><span class="p">:</span>
+            <span class="n">add_dist</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">seq</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">),</span> <span class="mi">2</span><span class="p">)])</span> 
+            <span class="k">if</span> <span class="n">dist</span> <span class="o">+</span> <span class="n">add_dist</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_dist</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_register_best_element</span><span class="p">(</span><span class="n">dist</span> <span class="o">+</span> <span class="n">add_dist</span><span class="p">,</span> <span class="n">root</span><span class="o">.</span><span class="n">element</span><span class="p">)</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="n">seq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># Explore close matches first</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">el</span><span class="p">:</span> <span class="p">(</span><span class="n">el</span><span class="o">-</span><span class="n">dim</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">child_dim</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+            <span class="n">child_node</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">child_dim</span><span class="p">]</span>
+            <span class="n">next_seq</span> <span class="o">=</span> <span class="n">seq</span><span class="p">[</span><span class="mi">0</span><span class="p">:]</span>
+            <span class="n">next_dist</span> <span class="o">=</span> <span class="n">dist</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">while</span> <span class="n">child_dim</span> <span class="o">&gt;</span> <span class="n">next_seq</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">next_dist</span> <span class="o">+=</span> <span class="n">next_seq</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+                    <span class="n">next_seq</span> <span class="o">=</span> <span class="n">next_seq</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+                <span class="k">if</span> <span class="n">child_dim</span> <span class="o">==</span> <span class="n">next_seq</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="c1"># Exact match :)</span>
+                    <span class="n">c_discount</span> <span class="o">=</span> <span class="n">next_seq</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">next_seq</span> <span class="o">=</span> <span class="n">next_seq</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">c_discount</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">node</span> <span class="ow">in</span> <span class="n">child_node</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_nearest_sparse_recursive</span><span class="p">(</span><span class="n">next_seq</span><span class="p">,</span> 
+                                                   <span class="n">node</span><span class="p">,</span>
+                                                   <span class="n">next_dist</span><span class="o">+</span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="n">c_discount</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">node</span> <span class="ow">in</span> <span class="n">child_node</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_dfs_for_nearest</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">next_dist</span> <span class="o">+</span> <span class="n">c</span><span class="o">*</span><span class="n">c</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_dfs_for_nearest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">dist</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Scans the subtree under ``root`` for nearest elements. </span>
+<span class="sd">            ``dist`` is the distance which has already been </span>
+<span class="sd">            accumulated.  </span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">dist</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_dist</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="k">if</span> <span class="n">root</span><span class="o">.</span><span class="n">element</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_register_best_element</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">root</span><span class="o">.</span><span class="n">element</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">itervalues</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">next_child</span> <span class="ow">in</span> <span class="n">child</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span> 
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_dfs_for_nearest</span><span class="p">(</span><span class="n">next_child</span><span class="p">,</span> <span class="n">dist</span> <span class="o">+</span> <span class="n">c</span><span class="o">*</span><span class="n">c</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

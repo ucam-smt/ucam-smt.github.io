@@ -1,0 +1,1356 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.ui &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.ui</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.ui</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module handles configuration and user interface when using </span>
+<span class="sd">blocks. ``yaml`` and ``ArgumentParser`` are used for parsing config</span>
+<span class="sd">files and command line arguments.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">YAML_AVAILABLE</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">yaml</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">YAML_AVAILABLE</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="str2bool"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.str2bool">[docs]</a><span class="k">def</span> <span class="nf">str2bool</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;For making the ``ArgumentParser`` understand boolean values&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">v</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="parse_args"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.parse_args">[docs]</a><span class="k">def</span> <span class="nf">parse_args</span><span class="p">(</span><span class="n">parser</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;http://codereview.stackexchange.com/questions/79008/parse-a-config-file-</span>
+<span class="sd">    and-add-to-command-line-arguments-using-argparse-in-python &quot;&quot;&quot;</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">YAML_AVAILABLE</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Install PyYAML in order to use config files.&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">args</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">)</span>
+        <span class="nb">delattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s1">&#39;config_file&#39;</span><span class="p">)</span>
+        <span class="n">arg_dict</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">__dict__</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="n">arg_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">arg_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="n">args</span></div>
+
+
+<div class="viewcode-block" id="get_train_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_train_parser">[docs]</a><span class="k">def</span> <span class="nf">get_train_parser</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Get the parser object for NMT training configuration. &quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span><span class="n">str2bool</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bokeh&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Use bokeh server for plotting&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--reshuffle&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Reshuffle before each epoch&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--slim_iteration_state&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Per default the iteration state stores the data &quot;</span>
+                        <span class="s2">&quot;stream and the main loop epoch iterator. Enabling &quot;</span>
+                        <span class="s2">&quot;this option only stores the epoch iterator. This &quot;</span>
+                        <span class="s2">&quot;results in a much smaller iteration state, but the &quot;</span>
+                        <span class="s2">&quot;data stream is reset after reloading. Normally, you &quot;</span>
+                        <span class="s2">&quot;can use slim iteration states if your data stream &quot;</span>
+                        <span class="s2">&quot;does reshuffling&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--reset_epoch&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Set epoch_started in main loop status to false. &quot;</span>
+                        <span class="s2">&quot;Sometimes required if you change training parameters &quot;</span>
+                        <span class="s2">&quot;such as --mono_data_integration&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--mono_data_integration&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter specifies how to use &quot;</span>
+                        <span class="s2">&quot;monolingual data. Currently, we only support &quot;</span>
+                        <span class="s2">&quot;using the target data.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;none&#39;: Do not use monolingual data</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--loss&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="s1">&#39;gleu&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Training loss function.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;default&#39;: Standard loss function: squared error &quot;</span>
+                        <span class="s2">&quot;with target feature maps, else cross entropy</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;gleu&#39;: Reinforcement learning objective function &quot;</span>
+                        <span class="s2">&quot;as proposed by Wu et al., 2016 (Googles NMT)&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--add_mono_dummy_data&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If the method specified with mono_data_&quot;</span>
+                        <span class="s2">&quot;integration uses monolingual data, it usually &quot;</span>
+                        <span class="s2">&quot;combines synthetic and dummy source sentences. Set &quot;</span>
+                        <span class="s2">&quot;this to false to disable dummy source sentences.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--backtrans_nmt_config&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;A string describing the configuration of the &quot;</span>
+                        <span class="s2">&quot;back-translating NMT system. Syntax is equal to nmt_&quot;</span>
+                        <span class="s2">&quot;config2 in decode.py: Comma separated list of name-&quot;</span>
+                        <span class="s2">&quot;value pairs, where name is one of the NMT &quot;</span>
+                        <span class="s2">&quot;configuration parameters. E.g. saveto=train.back,&quot;</span>
+                        <span class="s2">&quot;src_vocab_size=50000,trg_vocab_size=50000&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--backtrans_reload_frequency&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The back-translating NMT model is reloaded every&quot;</span>
+                        <span class="s2">&quot; n updates. This is useful if the back-translating &quot;</span>
+                        <span class="s2">&quot;NMT system is currently trained by itself with the &quot;</span>
+                        <span class="s2">&quot;same policy. This enables us to train two NMT &quot;</span>
+                        <span class="s2">&quot;systems in opposite translation directions and &quot;</span>
+                        <span class="s2">&quot;benefit from gains in the other system immediately. &quot;</span>
+                        <span class="s2">&quot;Set to 0 to disable reloading&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--backtrans_store&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Write the back-translated sentences to the &quot;</span>
+                        <span class="s2">&quot;file system.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--backtrans_max_same_word&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Used for sanity check of the backtranslation. &quot;</span>
+                        <span class="s2">&quot;If the most frequent word in the backtranslated &quot;</span>
+                        <span class="s2">&quot;sentence has relative frequency higher than this, &quot;</span>
+                         <span class="s2">&quot;discard this sentence pair&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--sampling_freq&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NOT USED, just to prevent old code from breaking&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--hook_samples&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NOT USED, just to prevent old code from breaking&quot;</span><span class="p">)</span>
+    <span class="n">_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+<div class="viewcode-block" id="get_align_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_align_parser">[docs]</a><span class="k">def</span> <span class="nf">get_align_parser</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Get the parser object for NMT alignment configuration. &quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span><span class="n">str2bool</span><span class="p">)</span>
+    
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--iterations&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of optimization iterations for each token&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_model_selector&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;bleu&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="s1">&#39;bleu&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NMT training normally creates several files in &quot;</span>
+                        <span class="s2">&quot;the ./train/ directory from which we can load the NMT&quot;</span>
+                        <span class="s2">&quot; model. Possible options:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;params&#39;: Load parameters from params.npz. This is &quot;</span>
+                        <span class="s2">&quot;usually the most recent model.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bleu&#39;: Load from the best_bleu_params_* file with &quot;</span>
+                        <span class="s2">&quot;the best BLEU score.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;time&#39;: Load from the most recent &quot;</span>
+                        <span class="s2">&quot;best_bleu_params_* file.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--alignment_model&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;nam&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;nam&#39;</span><span class="p">,</span> <span class="s1">&#39;nmt&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the alignment model.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;nam&#39;: Neural alignment model. Similar to NMT but &quot;</span>
+                        <span class="s2">&quot;trains the alignment weights explicitly for each &quot;</span>
+                        <span class="s2">&quot;sentence pair instead of using the NMT attention &quot;</span>
+                        <span class="s2">&quot;model.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;nmt&#39;: Standard NMT attention model following &quot;</span>
+                        <span class="s2">&quot;Bahdanau et. al., 2015.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;sgnmt-out.</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the output files generated by SGNMT. You &quot;</span>
+                        <span class="s2">&quot;can use the placeholder </span><span class="si">%%</span><span class="s2">s for the format specifier.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--outputs&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma separated list of output formats: </span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;csv&#39;: Plain text file with alignment matrix</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;npy&#39;: Alignment matrices in numpy&#39;s npy format</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;align&#39;: Usual (Pharaoh) alignment format.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="n">_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+<div class="viewcode-block" id="get_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_parser">[docs]</a><span class="k">def</span> <span class="nf">get_parser</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Get the parser object which is used to build the configuration</span>
+<span class="sd">    argument ``args``. This is a helper method for ``get_args()``</span>
+<span class="sd">    TODO: Decentralize configuration</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        ArgumentParser. The pre-filled parser object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span><span class="n">str2bool</span><span class="p">)</span>
+    
+    <span class="c1">## General options</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;General options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--config_file&#39;</span><span class="p">,</span> 
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Configuration file in standard .ini format. NOTE:&quot;</span>
+                        <span class="s2">&quot; Configuration file overrides command line arguments&quot;</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">FileType</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">))</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--verbosity&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span> <span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="s1">&#39;warn&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Log level: debug,info,warn,error&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--min_score&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mf">1000000.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Delete all complete hypotheses with total scores&quot;</span>
+                        <span class="s2">&quot; smaller than this value&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--range&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the range of sentences to be processed. &quot;</span>
+                        <span class="s2">&quot;Syntax is equal to HiFSTs printstrings and lmerts &quot;</span>
+                        <span class="s2">&quot;idxrange parameter: &lt;start-idx&gt;:&lt;end-idx&gt; (both &quot;</span>
+                        <span class="s2">&quot;inclusive, start with 1). E.g. 2:5 means: skip the &quot;</span>
+                        <span class="s2">&quot;first sentence, process next 4 sentences&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;test_en&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to source test set. This is expected to be &quot;</span>
+                        <span class="s2">&quot;a plain text file with one source sentence in each &quot;</span>
+                        <span class="s2">&quot;line. Words need to be indexed, i.e. use word IDs &quot;</span>
+                        <span class="s2">&quot;instead of their string representations.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--en_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED: Old name for --src_test&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--legacy_indexing&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the set of reserved word indices. The &quot;</span>
+                        <span class="s2">&quot;standard convention is:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;0: unk/eps, 1: &lt;s&gt;, 2: &lt;/s&gt;.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;Older systems use the TensorFlow scheme:&quot;</span>
+                        <span class="s2">&quot;0: pad, 1: &lt;s&gt;, 2: &lt;/s&gt;, 3: unk.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;Set this parameter to true to use the old scheme.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--input_method&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;file&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dummy&#39;</span><span class="p">,</span> <span class="s1">&#39;file&#39;</span><span class="p">,</span> <span class="s1">&#39;shell&#39;</span><span class="p">,</span> <span class="s1">&#39;stdin&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter controls how the input to GNMT &quot;</span>
+                        <span class="s2">&quot;is provided. GNMT supports three modes:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;dummy&#39;: Use dummy source sentences.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;file&#39;: Read test sentences from a plain text file&quot;</span>
+                            <span class="s2">&quot;specified by --src_test.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;shell&#39;: Start SGNMT in an interactive shell.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;stdin&#39;: Test sentences are read from stdin</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;In shell and stdin mode you can change GNMT options &quot;</span>
+                        <span class="s2">&quot;on the fly: Beginning a line with the string &#39;!sgnmt &#39;&quot;</span>
+                        <span class="s2">&quot; signals GNMT directives instead of sentences to &quot;</span>
+                        <span class="s2">&quot;translate. E.g. &#39;!sgnmt config predictor_weights &quot;</span>
+                        <span class="s2">&quot;0.2,0.8&#39; changes the current predictor weights. &quot;</span>
+                        <span class="s2">&quot;&#39;!sgnmt help&#39; lists all available directives. Using &quot;</span>
+                        <span class="s2">&quot;GNMT directives is particularly useful in combination&quot;</span>
+                        <span class="s2">&quot; with MERT to avoid start up times between &quot;</span>
+                        <span class="s2">&quot;evaluations. Note that input sentences still have to &quot;</span>
+                        <span class="s2">&quot;be written using word ids in all cases.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--log_sum&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="s2">&quot;log&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;tropical&#39;</span><span class="p">,</span> <span class="s1">&#39;log&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Controls how to compute the sum in the log &quot;</span>
+                        <span class="s2">&quot;space, i.e. how to compute log(exp(l1)+exp(l2)) for &quot;</span>
+                        <span class="s2">&quot;log values l1,l2.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;tropical&#39;: approximate with max(l1,l2)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;log&#39;: Use logsumexp in scipy&quot;</span><span class="p">)</span>
+    
+    <span class="c1">## Decoding options</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Decoding options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--beam&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Size of beam. Only used if --decoder is set to &quot;</span>
+                        <span class="s2">&quot;&#39;beam&#39; or &#39;astar&#39;. For &#39;astar&#39; it limits the capacity&quot;</span>
+                        <span class="s2">&quot; of the queue. Use --beam 0 for unlimited capacity.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--decoder&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;beam&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;greedy&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;beam&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;dfs&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;restarting&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;bow&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;flip&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;bucket&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;bigramgreedy&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;astar&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;vanilla&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Strategy for traversing the search space which &quot;</span>
+                        <span class="s2">&quot;is spanned by the predictors.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;greedy&#39;: Greedy decoding (similar to beam=1)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;beam&#39;: beam search like in Bahdanau et al, 2015</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;dfs&#39;: Depth-first search. This should be used for &quot;</span>
+                        <span class="s2">&quot;exact decoding or the complete enumeration of the &quot;</span>
+                        <span class="s2">&quot;search space, but it cannot be used if the search &quot;</span>
+                        <span class="s2">&quot;space is too large (like for unrestricted NMT) as &quot;</span>
+                        <span class="s2">&quot;it performs exhaustive search. If you have not only &quot;</span>
+                        <span class="s2">&quot;negative predictor scores, set --early_stopping to &quot;</span>
+                        <span class="s2">&quot;false.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;restarting&#39;: Like DFS but with better admissible &quot;</span>
+                        <span class="s2">&quot;pruning behavior.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bow&#39;: Restarting decoder optimized for bag-of-words &quot;</span>
+                        <span class="s2">&quot;problems.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;flip&#39;: This decoder works only for bag problems. &quot;</span>
+                        <span class="s2">&quot;It traverses the search space by switching two words &quot;</span>
+                        <span class="s2">&quot;in the hypothesis. Do not use bow predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bucket&#39;: Works best for bag problems. Maintains &quot;</span>
+                        <span class="s2">&quot;buckets for each hypo length and extends a hypo in &quot;</span>
+                        <span class="s2">&quot;a bucket by one before selecting the next bucket.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bigramgreedy&#39;: Works best for bag problems. &quot;</span>
+                        <span class="s2">&quot;Collects bigram statistics and constructs hypos to &quot;</span>
+                        <span class="s2">&quot;score by greedily selecting high scoring bigrams. &quot;</span>
+                        <span class="s2">&quot;Do not use bow predictor with this search strategy.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;astar&#39;: A* search. The heuristic function is &quot;</span>
+                        <span class="s2">&quot;configured using the --heuristics options.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;vanilla&#39;: Original blocks beam decoder. This &quot;</span>
+                        <span class="s2">&quot;bypasses the predictor framework and directly &quot;</span>
+                        <span class="s2">&quot;performs pure NMT beam decoding on the GPU. Use this &quot;</span>
+                        <span class="s2">&quot;when you do pure NMT decoding as this is usually &quot;</span>
+                        <span class="s2">&quot;faster then using a single nmt predictor as the &quot;</span>
+                        <span class="s2">&quot;search can be parallelized on the GPU.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--hypo_recombination&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Activates hypothesis recombination. Has to be &quot;</span>
+                        <span class="s2">&quot;supported by the decoder. Applicable to beam, &quot;</span>
+                        <span class="s2">&quot;restarting, bow, bucket&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_node_expansions&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter allows to limit the total number &quot;</span>
+                        <span class="s2">&quot;of search space expansions for a single sentence. &quot;</span>
+                        <span class="s2">&quot;If this is 0 we allow an unlimited number of &quot;</span>
+                        <span class="s2">&quot;expansions. If it is negative, the maximum number of &quot;</span>
+                        <span class="s2">&quot;expansions is this times the length of the source &quot;</span>
+                        <span class="s2">&quot;sentence. Supporting decoders:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;bigramgreedy, bow, bucket, dfs, flip, restarting&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_len_factor&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Limits the length of hypotheses to avoid &quot;</span>
+                        <span class="s2">&quot;infinity loops in search strategies for unbounded &quot;</span>
+                        <span class="s2">&quot;search spaces. The length of any translation is &quot;</span>
+                        <span class="s2">&quot;limited to max_len_factor times the length of the &quot;</span>
+                        <span class="s2">&quot;source sentence.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--early_stopping&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Use this parameter if you are only interested in&quot;</span>
+                        <span class="s2">&quot;the first best decoding result. This option has a &quot;</span>
+                        <span class="s2">&quot;different effect depending on the used --decoder. For&quot;</span>
+                        <span class="s2">&quot; the beam decoder, it means stopping decoding when &quot;</span>
+                        <span class="s2">&quot;the best active hypothesis ends with &lt;/s&gt;. If false, &quot;</span>
+                        <span class="s2">&quot;do not stop until all hypotheses end with EOS. For &quot;</span>
+                        <span class="s2">&quot;the dfs and restarting decoders, early stopping &quot;</span>
+                        <span class="s2">&quot;enables admissible pruning of branches when the &quot;</span>
+                        <span class="s2">&quot;accumulated score already exceeded the currently best&quot;</span>
+                        <span class="s2">&quot;score. DO NOT USE early stopping in combination with &quot;</span>
+                        <span class="s2">&quot;the dfs or restarting decoder when your predictors &quot;</span>
+                        <span class="s2">&quot;can produce positive scores!&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--heuristics&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma-separated list of heuristics to use in &quot;</span>
+                        <span class="s2">&quot;heuristic based search like A*.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;predictor&#39;: Predictor specific heuristics. Some &quot;</span>
+                        <span class="s2">&quot;predictors come with own heuristics - e.g. the fst &quot;</span>
+                        <span class="s2">&quot;predictor uses the shortest path to the final state.&quot;</span>
+                        <span class="s2">&quot; Using &#39;predictor&#39; combines the specific heuristics &quot;</span>
+                        <span class="s2">&quot;of all selected predictors.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;greedy&#39;: Do greedy decoding to get the heuristic&quot;</span>
+                        <span class="s2">&quot; costs. This is expensive but accurate.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;stats&#39;: Collect unigram statistics during decoding&quot;</span>
+                        <span class="s2">&quot;and compare actual hypothesis scores with the product&quot;</span>
+                        <span class="s2">&quot; of unigram scores of the used words.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;scoreperword&#39;: Using this heuristic normalizes the&quot;</span>
+                        <span class="s2">&quot; previously accumulated costs by its length. It can &quot;</span>
+                        <span class="s2">&quot;be used for beam search with normalized scores, using&quot;</span>
+                        <span class="s2">&quot; a capacity (--beam), no other heuristic, and setting&quot;</span>
+                        <span class="s2">&quot;--decoder to astar.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;Note that all heuristics are inadmissible, i.e. A* &quot;</span>
+                        <span class="s2">&quot;is not guaranteed to find the globally best path.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--heuristic_predictors&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma separated list of indices of predictors &quot;</span>
+                        <span class="s2">&quot;considered by the heuristic. For example, if &quot;</span>
+                        <span class="s2">&quot;--predictors is set to nmt,length,fst then setting &quot;</span>
+                        <span class="s2">&quot;--heuristic_predictors to 0,2 results in using nmt &quot;</span>
+                        <span class="s2">&quot;and fst in the heuristics. Use &#39;all&#39; to use all &quot;</span>
+                        <span class="s2">&quot;predictors in the heuristics&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--cache_heuristic_estimates&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to cache heuristic future cost &quot;</span>
+                        <span class="s2">&quot;estimates. This is especially useful with the greedy &quot;</span>
+                        <span class="s2">&quot;heuristic.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--pure_heuristic_scores&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is set to false, heuristic decoders as &quot;</span>
+                        <span class="s2">&quot;A* score hypotheses with the sum of the partial hypo &quot;</span>
+                        <span class="s2">&quot;score plus the heuristic estimates (lik in standard &quot;</span>
+                        <span class="s2">&quot;A*). Set to true to use the heuristic estimates only&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--restarting_node_score&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;difference&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;difference&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;absolute&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;constant&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;expansions&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter defines the strategy how the &quot;</span>
+                        <span class="s2">&quot;restarting decoder decides from which node to restart&quot;</span>
+                        <span class="s2">&quot;.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;difference&#39;: Restart where the difference between &quot;</span>
+                        <span class="s2">&quot;1-best and 2-best is smallest</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;absolute&#39;: Restart from the unexplored node with &quot;</span>
+                        <span class="s2">&quot;the best absolute score globally.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;constant&#39;: Constant node score. Simulates FILO or &quot;</span>
+                        <span class="s2">&quot;uniform distribution with restarting_stochastic.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;expansions&#39;: Inverse of the number of expansions &quot;</span>
+                        <span class="s2">&quot;on the node. Discourages expanding arcs on the same &quot;</span>
+                        <span class="s2">&quot;node repeatedly.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--low_decoder_memory&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Some decoding strategies support modes which do &quot;</span>
+                        <span class="s2">&quot;not change the decoding logic, but make use of the &quot;</span>
+                        <span class="s2">&quot;inadmissible pruning parameters like max_expansions &quot;</span>
+                        <span class="s2">&quot;to reduce memory consumption. This usually requires &quot;</span>
+                        <span class="s2">&quot;some  computational overhead for cleaning up data &quot;</span>
+                        <span class="s2">&quot;structures. Applicable to restarting and bucket &quot;</span>
+                        <span class="s2">&quot;decoders.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--stochastic_decoder&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Activates stochastic decoders. Applicable to the &quot;</span>
+                        <span class="s2">&quot;decoders restarting, bow, bucket&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--decode_always_single_step&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is set to true, heuristic depth first &quot;</span>
+                        <span class="s2">&quot;search decoders like restarting or bow always perform &quot;</span>
+                        <span class="s2">&quot;a single decoding step instead of greedy decoding. &quot;</span>
+                        <span class="s2">&quot;Handle with care...&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--flip_strategy&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;move&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;move&#39;</span><span class="p">,</span> <span class="s1">&#39;flip&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the hypothesis transition in the flip &quot;</span>
+                        <span class="s2">&quot;decoder. &#39;flip&#39; flips two words, &#39;move&#39; moves a word &quot;</span>
+                        <span class="s2">&quot;to a different position&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bucket_selector&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;maxscore&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the bucket selection strategy for the &quot;</span>
+                        <span class="s2">&quot;bucket decoder.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;iter&#39;: Rotate through all lengths</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;iter-n&#39;: Rotate through all lengths n times</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;maxscore&#39;: Like iter, but filters buckets with &quot;</span>
+                            <span class="s2">&quot;hypos worse than a threshold. Threshold is &quot;</span>
+                            <span class="s2">&quot;increased if no bucket found</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;score&#39;: Select bucket with the highest bucket &quot;</span>
+                        <span class="s2">&quot;score. The bucket score is determined by the &quot;</span>
+                        <span class="s2">&quot;bucket_score_strategy&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bucket_score_strategy&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;difference&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;difference&#39;</span><span class="p">,</span> <span class="s1">&#39;heap&#39;</span><span class="p">,</span> <span class="s1">&#39;absolute&#39;</span><span class="p">,</span> <span class="s1">&#39;constant&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines how buckets are scored for the &quot;</span>
+                        <span class="s2">&quot;bucket decoder. Usually, the best hypo in the bucket &quot;</span>
+                        <span class="s2">&quot;is compared to the global best score of that length &quot;</span>
+                        <span class="s2">&quot;according --collect_statistics.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;difference&#39;: Difference between both hypos</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;heap&#39;: Use best score on bucket heap directly</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;absolute&#39;: Use best hypo score in bucket directly</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;constant&#39;: Uniform bucket scores.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--collect_statistics&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">,</span>
+                       <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;best&#39;</span><span class="p">,</span> <span class="s1">&#39;full&#39;</span><span class="p">,</span> <span class="s1">&#39;all&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Determines over which hypotheses statistics are &quot;</span>
+                        <span class="s2">&quot;collected.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;best&#39;: Collect statistics from the current best &quot;</span>
+                        <span class="s2">&quot;full hypothesis</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;full&#39;: Collect statistics from all full hypos</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;all&#39;: Collect statistics also from partial hypos</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;Applicable to the bucket decoder, the heuristic &quot;</span>
+                        <span class="s2">&quot;of the bow predictor, and the heuristic &#39;stats&#39;.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--heuristic_scores_file&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The bow predictor heuristic and the stats &quot;</span>
+                       <span class="s2">&quot;heuristic sum up the unigram scores of words as &quot;</span>
+                       <span class="s2">&quot;heuristic estimate. This option should point to a &quot;</span>
+                       <span class="s2">&quot;mapping file from word-id to (unigram) score. If this &quot;</span>
+                       <span class="s2">&quot;is empty, the unigram scores are collected during &quot;</span>
+                       <span class="s2">&quot;decoding for each sentence separately according &quot;</span>
+                       <span class="s2">&quot;--collect_statistics.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--score_lower_bounds_file&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Admissible pruning in some decoding strategies &quot;</span>
+                       <span class="s2">&quot;can be improved by providing lower bounds on complete &quot;</span>
+                       <span class="s2">&quot;hypothesis scores. This is useful to improve the &quot;</span>
+                       <span class="s2">&quot;efficiency of exhaustive search, with lower bounds &quot;</span>
+                       <span class="s2">&quot;found by e.g. beam search. The expected file format &quot;</span>
+                       <span class="s2">&quot;is just a text file with line separated scores for &quot;</span>
+                       <span class="s2">&quot;each sentence. Supported by the following decoders: &quot;</span>
+                       <span class="s2">&quot;astar, bigramgreedy, bow, bucket, dfs, flip, restarting&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--decoder_diversity_factor&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is greater than zero, promote diversity &quot;</span>
+                       <span class="s2">&quot;between active hypotheses during decoding. The exact &quot;</span>
+                       <span class="s2">&quot;way of doing this depends on --decoder:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                       <span class="s2">&quot;* The &#39;beam&#39; decoder roughly follows the approach in &quot;</span>
+                       <span class="s2">&quot;Li and Jurafsky, 2016</span><span class="se">\n</span><span class="s2">&quot;</span>
+                       <span class="s2">&quot;* The &#39;bucket&#39; decoder reorders the hypotheses in a &quot;</span>
+                       <span class="s2">&quot;bucket by penalizing hypotheses with the number of &quot;</span>
+                       <span class="s2">&quot;expanded hypotheses from the same parent.&quot;</span><span class="p">)</span>
+    
+    <span class="c1">## Output options</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Output options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nbest&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum number of hypotheses in the output &quot;</span>
+                        <span class="s2">&quot;files. Set to 0 to output all hypotheses found by &quot;</span>
+                        <span class="s2">&quot;the decoder. If you use the beam or astar decoder, &quot;</span>
+                        <span class="s2">&quot;this option is limited by the beam size.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output_fst_unk_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">999999998</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;SGNMT uses the ID 0 for UNK. However, this &quot;</span>
+                        <span class="s2">&quot;clashes with OpenFST when writing FSTs as OpenFST &quot;</span>
+                        <span class="s2">&quot;reserves 0 for epsilon arcs. Therefore, we use this &quot;</span>
+                        <span class="s2">&quot;ID for UNK instead. Note that this only applies &quot;</span>
+                        <span class="s2">&quot;to output FSTs created by the fst or sfst output &quot;</span>
+                        <span class="s2">&quot;handler. Apart from that, UNK is still represented &quot;</span>
+                        <span class="s2">&quot;by the ID 0.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;sgnmt-out.</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the output files generated by SGNMT. You &quot;</span>
+                        <span class="s2">&quot;can use the placeholder </span><span class="si">%%</span><span class="s2">s for the format specifier&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--outputs&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma separated list of output formats: </span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;text&#39;: First best translations in plain text &quot;</span>
+                        <span class="s2">&quot;format</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;nbest&#39;: Moses&#39; n-best format with separate &quot;</span>
+                        <span class="s2">&quot;scores for each predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;fst&#39;: Translation lattices in OpenFST &quot;</span>
+                        <span class="s2">&quot;format with sparse tuple arcs.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;sfst&#39;: Translation lattices in OpenFST &quot;</span>
+                        <span class="s2">&quot;format with standard arcs (i.e. combined scores).</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;The path to the output files can be specified with &quot;</span>
+                        <span class="s2">&quot;--output_path&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--remove_eos&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to remove &lt;/S&gt; symbol on output.&quot;</span><span class="p">)</span>
+    
+    
+    <span class="c1">## Predictor options</span>
+    
+    <span class="c1"># General</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;General predictor options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--predictors&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;nmt&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma separated list of predictors. Predictors &quot;</span>
+                        <span class="s2">&quot;are scoring modules which define a distribution over &quot;</span>
+                        <span class="s2">&quot;target words given the history and some side &quot;</span>
+                        <span class="s2">&quot;information like the source sentence. If vocabulary &quot;</span>
+                        <span class="s2">&quot;sizes differ among predictors, we fill in gaps with &quot;</span>
+                        <span class="s2">&quot;predictor UNK scores.:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;nmt&#39;: neural machine translation predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: see machine_translation.&quot;</span>
+                        <span class="s2">&quot;configurations plus nmt_model_selector, &quot;</span>
+                        <span class="s2">&quot;cache_nmt_posteriors.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;srilm&#39;: n-gram language model.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;          Options: srilm_path, srilm_order</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;nplm&#39;: neural n-gram language model (NPLM).</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;          Options: nplm_path, normalize_nplm_probs</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;rnnlm&#39;: RNN language model based on TensorFlow.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;          Options: rnnlm_path</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;lstm&#39;: Pure lstm predictor (chainer-based).</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;          Options: lstm_path.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;forced&#39;: Forced decoding with one reference</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;            Options: trg_test</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;forcedlst&#39;: Forced decoding with a Moses n-best &quot;</span>
+                        <span class="s2">&quot;list (n-best list rescoring)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;               Options: trg_test, &quot;</span>
+                        <span class="s2">&quot;forcedlst_sparse_feat, use_nbest_weights</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bow&#39;: Forced decoding with one bag-of-words ref.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: trg_test, heuristic_scores_file, &quot;</span>
+                        <span class="s2">&quot;bow_heuristic_strategies, bow_accept_subsets, &quot;</span>
+                        <span class="s2">&quot;bow_accept_duplicates, bow_equivalence_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bowsearch&#39;: Forced decoding with one bag-of-words ref.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: hypo_recombination, trg_test, &quot;</span>
+                        <span class="s2">&quot;heuristic_scores_file, bow_heuristic_strategies, &quot;</span>
+                        <span class="s2">&quot;bow_accept_subsets, bow_accept_duplicates, &quot;</span>
+                        <span class="s2">&quot;bow_equivalence_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;fst&#39;: Deterministic translation lattices</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: fst_path, use_fst_weights, &quot;</span>
+                        <span class="s2">&quot;normalize_fst_weights, fst_to_log, &quot;</span>
+                        <span class="s2">&quot;fst_skip_bos_weight</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;nfst&#39;: Non-deterministic translation lattices</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;          Options: fst_path, use_fst_weights, &quot;</span>
+                        <span class="s2">&quot;normalize_fst_weights, fst_to_log, &quot;</span>
+                        <span class="s2">&quot;fst_skip_bos_weight</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;rtn&#39;: Recurrent transition networks as created by &quot;</span>
+                        <span class="s2">&quot;HiFST with late expansion.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: rtn_path, use_rtn_weights, &quot;</span>
+                        <span class="s2">&quot;minimize_rtns, remove_epsilon_in_rtns, &quot;</span>
+                        <span class="s2">&quot;normalize_rtn_weights</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;lrhiero&#39;: Direct Hiero (left-to-right Hiero). This &quot;</span>
+                        <span class="s2">&quot;is a EXPERIMENTAL implementation of LRHiero.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;             Options: rules_path, &quot;</span>
+                        <span class="s2">&quot;grammar_feature_weights, use_grammar_weights</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;wc&#39;: Number of words feature.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;        Options: wc_word.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;unkc&#39;: Poisson model for number of UNKs.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;          Options: unk_count_lambdas.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;length&#39;: Target sentence length model</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;            Options: src_test_raw, &quot;</span>
+                        <span class="s2">&quot;length_model_weights, use_length_point_probs</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;extlength&#39;: External target sentence lengths</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;               Options: extlength_path</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;All predictors can be combined with one or more &quot;</span>
+                        <span class="s2">&quot;wrapper predictors by adding the wrapper name &quot;</span>
+                        <span class="s2">&quot;separated by a _ symbol. Following wrappers are &quot;</span>
+                        <span class="s2">&quot;available:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;idxmap&#39;: Add this wrapper to predictors which use &quot;</span>
+                        <span class="s2">&quot;an alternative word map.&quot;</span>
+                        <span class="s2">&quot;            Options: src_idxmap, trg_idxmap</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;altsrc&#39;: This wrapper loads source sentences from &quot;</span>
+                        <span class="s2">&quot;an alternative source.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;            Options: altsrc_test</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;word2char&#39;: Wraps word-level predictors when SGNMT&quot;</span>
+                        <span class="s2">&quot; is running on character level.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;            Options: word2char_map</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;Note that you can use multiple instances of the same &quot;</span>
+                        <span class="s2">&quot;predictor. For example, &#39;nmt,nmt,nmt&#39; can be used &quot;</span>
+                        <span class="s2">&quot;for ensembling three NMT systems. You can often &quot;</span>
+                        <span class="s2">&quot;override parts of the predictor configurations for &quot;</span>
+                        <span class="s2">&quot;subsequent predictors by adding the predictor &quot;</span>
+                        <span class="s2">&quot;number (e.g. see --nmt_config2 or --fst_path2)&quot;</span><span class="p">)</span>    
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--predictor_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Predictor weights. Have to be specified &quot;</span>
+                        <span class="s2">&quot;consistently with --predictor, e.g. if --predictor is&quot;</span>
+                        <span class="s2">&quot; &#39;bla_fst,nmt&#39; then set their weights with &quot;</span>
+                        <span class="s2">&quot;--predictor_weights bla-weight_fst-weight,nmt-weight,&quot;</span>
+                        <span class="s2">&quot; e.g. &#39;--predictor_weights 0.1_0.3,0.6&#39;. Default &quot;</span>
+                        <span class="s2">&quot;(empty string) means that each predictor gets &quot;</span>
+                        <span class="s2">&quot;assigned the weight 1.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--closed_vocabulary_normalization&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;exact&#39;</span><span class="p">,</span> <span class="s1">&#39;reduced&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter specifies the way closed &quot;</span>
+                        <span class="s2">&quot;vocabulary predictors (e.g. NMT) are normalized. &quot;</span>
+                        <span class="s2">&quot;Closed vocabulary means that they have a predefined &quot;</span>
+                        <span class="s2">&quot;vocabulary. Open vocabulary predictors (e.g. fst) can&quot;</span>
+                        <span class="s2">&quot; potentially produce any word, or have a very large &quot;</span>
+                        <span class="s2">&quot;vocabulary.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;none&#39;: Use unmodified scores for closed &quot;</span>
+                        <span class="s2">&quot;vocabulary predictors</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;exact&#39;: Renormalize scores depending on the &quot;</span>
+                        <span class="s2">&quot;probability mass which they distribute to words &quot;</span>
+                        <span class="s2">&quot;outside the vocabulary via the UNK probability.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;reduced&#39;: Normalize to vocabulary defined by the &quot;</span>
+                        <span class="s2">&quot;open vocabulary predictors at each time step.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--combination_scheme&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;sum&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="s1">&#39;length_norm&#39;</span><span class="p">,</span> <span class="s1">&#39;bayesian&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter controls how the combined &quot;</span>
+                        <span class="s2">&quot;hypothesis score is calculated from the predictor &quot;</span>
+                        <span class="s2">&quot;scores and weights.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;sum&#39;: The combined score is the weighted sum of &quot;</span>
+                        <span class="s2">&quot;all predictor scores</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;length_norm&#39;: Renormalize scores by the length of &quot;</span>
+                        <span class="s2">&quot;hypotheses.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bayesian&#39;: Apply the Bayesian LM interpolation &quot;</span>
+                        <span class="s2">&quot;scheme from Allauzen and Riley to interpolate the &quot;</span>
+                        <span class="s2">&quot;predictor scores&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--apply_combination_scheme_to_partial_hypos&quot;</span><span class="p">,</span> 
+                        <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If true, apply the combination scheme specified &quot;</span>
+                        <span class="s2">&quot;with --combination_scheme after each node expansion. &quot;</span>
+                        <span class="s2">&quot;If false, apply it only to complete hypotheses at &quot;</span>
+                        <span class="s2">&quot;the end of decoding&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Neural predictors</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Neural predictor options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--length_normalization&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED. Synonym for --combination_scheme &quot;</span>
+                        <span class="s2">&quot;length_norm. Normalize n-best hypotheses by sentence &quot;</span>
+                        <span class="s2">&quot;length. Normally improves pure NMT decoding, but &quot;</span>
+                        <span class="s2">&quot;degrades performance when combined with predictors &quot;</span>
+                        <span class="s2">&quot;like fst or multiple NMT systems.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_engine&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;blocks&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;blocks&#39;</span><span class="p">,</span> <span class="s1">&#39;tensorflow&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NMT implementation which should be used. &quot;</span>
+                        <span class="s2">&quot;Use &#39;none&#39; to disable NMT support.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_model_selector&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;bleu&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="s1">&#39;bleu&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NMT training normally creates several files in &quot;</span>
+                        <span class="s2">&quot;the ./train/ directory from which we can load the NMT&quot;</span>
+                        <span class="s2">&quot; model. Possible options:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;params&#39;: Load parameters from params.npz. This is &quot;</span>
+                        <span class="s2">&quot;usually the most recent model.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bleu&#39;: Load from the best_bleu_params_* file with &quot;</span>
+                        <span class="s2">&quot;the best BLEU score.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;time&#39;: Load from the most recent &quot;</span>
+                        <span class="s2">&quot;best_bleu_params_* file.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--cache_nmt_posteriors&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This enables the cache in the [F]NMT predictor. &quot;</span>
+                        <span class="s2">&quot;Normally, the search procedure is responsible to &quot;</span>
+                        <span class="s2">&quot;avoid applying predictors to the same history twice. &quot;</span>
+                        <span class="s2">&quot;However, due to the limited NMT vocabulary, two &quot;</span>
+                        <span class="s2">&quot;different histories might be the same from the NMT &quot;</span>
+                        <span class="s2">&quot;perspective, e.g. if they are the same up to words &quot;</span>
+                        <span class="s2">&quot;which are outside the NMT vocabulary. If this &quot;</span>
+                        <span class="s2">&quot;parameter is set to true, we cache posteriors with &quot;</span>
+                        <span class="s2">&quot;histories containing UNK and reload them when needed&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--gnmt_beta&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is greater than zero, add a coverage &quot;</span>
+                       <span class="s2">&quot;penalization term following Googles NMT (Wu et al., &quot;</span>
+                       <span class="s2">&quot;2016) to the NMT score.&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Length predictors</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Length predictor options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_test_raw&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for the &#39;length&#39; predictor. Path &quot;</span>
+                        <span class="s2">&quot;to original source test set WITHOUT word indices. &quot;</span>
+                        <span class="s2">&quot;This is used to extract features for target sentence &quot;</span>
+                        <span class="s2">&quot;length predictions&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--length_model_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for length predictor. String of &quot;</span>
+                        <span class="s2">&quot;length model parameters.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--use_length_point_probs&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is true, the length predictor outputs &quot;</span>
+                        <span class="s2">&quot;probability 1 for all tokens except &lt;/S&gt;. For &lt;/S&gt; it&quot;</span>
+                        <span class="s2">&quot; uses the point probability given by the length &quot;</span>
+                        <span class="s2">&quot;model. If this is set to false, we normalize the &quot;</span>
+                        <span class="s2">&quot;predictive score by comparing P(l=x) and P(l&lt;x)&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--length_model_offset&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The target sentence length model is applied to &quot;</span>
+                        <span class="s2">&quot;hypothesis length minus length_model_offst&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--extlength_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for the &#39;extlength&#39; predictor. &quot;</span>
+                        <span class="s2">&quot;This is the path to the file which specifies the &quot;</span>
+                        <span class="s2">&quot;length distributions for each sentence. Each line &quot;</span>
+                        <span class="s2">&quot;consists of blank separated &#39;&lt;length&gt;:&lt;logprob&gt;&#39; &quot;</span>
+                        <span class="s2">&quot;pairs.&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># UNK count predictors</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Count predictor options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--unk_count_lambdas&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Model parameters for the UNK count model: comma-&quot;</span>
+                        <span class="s2">&quot;separated list of lambdas for Poisson distributions. &quot;</span>
+                        <span class="s2">&quot;The first float specifies the Poisson distribution &quot;</span>
+                        <span class="s2">&quot;over the number of UNKs in the hypotheses given that &quot;</span>
+                        <span class="s2">&quot;the number of UNKs on the source side is 0. The last &quot;</span>
+                        <span class="s2">&quot;lambda specifies the distribution given &gt;=n-1 UNKs &quot;</span>
+                        <span class="s2">&quot;in the source sentence.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--wc_word&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If negative, the wc predictor counts all &quot;</span>
+                       <span class="s2">&quot;words. Otherwise, count only the specific word&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Forced predictors</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Forced decoding predictor options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;test_fr&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to target test set (with integer tokens). &quot;</span>
+                        <span class="s2">&quot;This is only required for the predictors &#39;forced&#39; &quot;</span>
+                        <span class="s2">&quot;and &#39;forcedlst&#39;. For &#39;forcedlst&#39; this needs to point &quot;</span>
+                        <span class="s2">&quot;to an n-best list in Moses format.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fr_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> 
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED. Old name for --trg_test&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--forcedlst_sparse_feat&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> 
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Per default, the forcedlst predictor uses the &quot;</span>
+                        <span class="s2">&quot;combined score in the Moses nbest list. Alternatively,&quot;</span>
+                        <span class="s2">&quot; for nbest lists in sparse feature format, you can &quot;</span>
+                        <span class="s2">&quot;specify the name of the features which should be &quot;</span>
+                        <span class="s2">&quot;used instead.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--use_nbest_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for forcedlst predictor. Whether &quot;</span>
+                        <span class="s2">&quot;to use the scores in n-best lists.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bow_heuristic_strategies&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;remaining&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the form of heuristic estimates of the &quot;</span>
+                       <span class="s2">&quot;bow predictor. Comma-separate following values:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                       <span class="s2">&quot;* remaining: sum up unigram estimates for all words &quot;</span>
+                       <span class="s2">&quot;in the bag which haven&#39;t been consumed</span><span class="se">\n</span><span class="s2">&quot;</span>
+                       <span class="s2">&quot;* consumed: Use the difference between the actual &quot;</span>
+                       <span class="s2">&quot;hypothesis score and the sum of unigram estimates &quot;</span>
+                       <span class="s2">&quot;of consumed words as score&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bow_accept_subsets&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is set to false, the bow predictor &quot;</span>
+                       <span class="s2">&quot;enforces exact correspondence between bag and words &quot;</span>
+                       <span class="s2">&quot;in complete hypotheses. If false, it ensures that &quot;</span>
+                       <span class="s2">&quot;hypotheses are consistent with the bag (i.e. do not &quot;</span>
+                       <span class="s2">&quot;contain words outside the bag) but do not necessarily &quot;</span>
+                       <span class="s2">&quot;have all words in the bag&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bow_accept_duplicates&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is set to true, the bow predictor &quot;</span>
+                       <span class="s2">&quot;allows a word in the bag to appear multiple times, &quot;</span>
+                       <span class="s2">&quot;i.e. the exact count of the word is not enforced. &quot;</span>
+                       <span class="s2">&quot;Can only be used in conjunction with bow_accept_subsets&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bow_equivalence_vocab_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If positive, bow predictor states are considered &quot;</span>
+                       <span class="s2">&quot;equal if the the remaining words within that vocab &quot;</span>
+                       <span class="s2">&quot;and OOVs regarding this vocab are the same. Only &quot;</span>
+                       <span class="s2">&quot;relevant when using hypothesis recombination&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bow_diversity_heuristic_factor&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is greater than zero, promote diversity &quot;</span>
+                       <span class="s2">&quot;between bags via the bow predictor heuristic. Bags &quot;</span>
+                       <span class="s2">&quot;which correspond to bags of partial bags of full &quot;</span>
+                       <span class="s2">&quot;hypotheses are penalized by this factor.&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Wrappers</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Wrapper predictor options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_idxmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;idxmap.en&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for idxmap wrapper predictor. Path&quot;</span>
+                        <span class="s2">&quot; to the source side mapping file. The format is &quot;</span>
+                        <span class="s2">&quot;&#39;&lt;index&gt; &lt;alternative_index&gt;&#39;. The mapping must be &quot;</span>
+                        <span class="s2">&quot;complete and should be a bijection.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--en_idxmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED. Old name for --src_idxmap&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_idxmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;idxmap.fr&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for idxmap wrapper predictor. Path&quot;</span>
+                        <span class="s2">&quot; to the target side mapping file. The format is &quot;</span>
+                        <span class="s2">&quot;&#39;&lt;index&gt; &lt;alternative_index&gt;&#39;. The mapping must be &quot;</span>
+                        <span class="s2">&quot;complete and should be a bijection.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fr_idxmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED. Old name for --trg_idxmap&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--altsrc_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;test_en.alt&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for altsrc wrapper predictor. Path&quot;</span>
+                        <span class="s2">&quot; to the alternative source sentences.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--word2char_map&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;word2char.map&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for word2char wrapper predictor. &quot;</span>
+                        <span class="s2">&quot;Path to a mapping file from word ID to sequence of &quot;</span>
+                        <span class="s2">&quot;character IDs (format: &lt;word-id&gt; &lt;char-id1&gt; &lt;char-id2&quot;</span>
+                        <span class="s2">&quot;&gt;...). All character IDs which do not occur in this &quot;</span>
+                        <span class="s2">&quot;mapping are treated as word boundary symbols.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Hiero predictor</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Hiero predictor options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rules_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;rules/rules&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for predictor lrhiero. Path to &quot;</span>
+                        <span class="s2">&quot;the ruleXtract rules file.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--use_grammar_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to use weights in the synchronous &quot;</span>
+                        <span class="s2">&quot;grammar for the lrhiero predictor. If set to false, &quot;</span>
+                        <span class="s2">&quot;use uniform grammar scores.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--grammar_feature_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If rules_path points to a factorized rules file &quot;</span>
+                        <span class="s2">&quot;(i.e. containing rules associated with a number of &quot;</span>
+                        <span class="s2">&quot;features, not only one score) GNMT uses a weighted &quot;</span>
+                        <span class="s2">&quot;sum for them. You can specify the weights for this &quot;</span>
+                        <span class="s2">&quot;summation here (comma-separated) or leave it blank &quot;</span>
+                        <span class="s2">&quot;to sum them up equally weighted.&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># (NP)LM predictors</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;(Neural) LM predictor options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--srilm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;lm/ngram.lm.gz&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the ngram LM file in SRILM format&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nplm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;nplm/nplm.gz&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the NPLM language model&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;rnnlm/rnnlm.gz&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the RNNLM language model&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lstm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;chainer/model&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the LSTM model (chainer)&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--srilm_order&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Order of ngram for srilm predictor&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--normalize_nplm_probs&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to normalize nplm probabilities over &quot;</span>
+                        <span class="s2">&quot;the current unbounded predictor vocabulary.&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Automaton predictors</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;FST and RTN predictor options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fst_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;fst/</span><span class="si">%d</span><span class="s2">.fst&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for fst and nfst predictor. Sets &quot;</span>
+                        <span class="s2">&quot;the path to the OpenFST translation lattices. You &quot;</span>
+                        <span class="s2">&quot;can use the placeholder </span><span class="si">%%</span><span class="s2">d for the sentence index.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rtn_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;rtn/&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for rtn predictor. Sets &quot;</span>
+                        <span class="s2">&quot;the path to the RTN directory as created by HiFST&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fst_skip_bos_weight&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This option applies to fst and nfst &quot;</span>
+                        <span class="s2">&quot;predictors. Lattices produced by HiFST contain the &quot;</span>
+                        <span class="s2">&quot;&lt;S&gt; symbol and often have scores on the corresponding&quot;</span>
+                        <span class="s2">&quot; arc. However, GNMT skips &lt;S&gt; and this score is not &quot;</span>
+                        <span class="s2">&quot;regarded anywhere. Set this option to true to add the &quot;</span>
+                        <span class="s2">&quot;&lt;S&gt; scores. This ensures that the &quot;</span>
+                        <span class="s2">&quot;complete path scores for the [n]fst and rtn &quot;</span>
+                        <span class="s2">&quot;predictors match the corresponding path weights in &quot;</span>
+                        <span class="s2">&quot;the original FST as obtained with fstshortestpath.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fst_to_log&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Multiply weights in the FST by -1 to transform &quot;</span>
+                        <span class="s2">&quot;them from tropical semiring into logprobs.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--use_fst_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to use weights in FSTs for the&quot;</span>
+                        <span class="s2">&quot;nfst and fst predictor.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--use_rtn_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to use weights in RTNs.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--minimize_rtns&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to do determinization, epsilon removal, &quot;</span>
+                        <span class="s2">&quot;and minimization after each RTN expansion.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--remove_epsilon_in_rtns&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to remove epsilons after RTN expansion.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--normalize_fst_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to normalize weights in FSTs. This &quot;</span>
+                        <span class="s2">&quot;forces the weights on outgoing edges to sum up to 1. &quot;</span>
+                        <span class="s2">&quot;Applicable to fst and nfst predictor.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--normalize_rtn_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to normalize weights in RTNs. This &quot;</span>
+                        <span class="s2">&quot;forces the weights on outgoing edges to sum up to 1. &quot;</span>
+                        <span class="s2">&quot;Applicable to rtn predictor.&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Adding arguments for overriding when using same predictor multiple times</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Override options&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span><span class="n">w</span> <span class="ow">in</span> <span class="p">[(</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="s1">&#39;second&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">,</span> <span class="s1">&#39;third&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;4&#39;</span><span class="p">,</span> <span class="s1">&#39;4-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;5&#39;</span><span class="p">,</span> <span class="s1">&#39;5-th&#39;</span><span class="p">),</span> 
+                <span class="p">(</span><span class="s1">&#39;6&#39;</span><span class="p">,</span> <span class="s1">&#39;6-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;7&#39;</span><span class="p">,</span> <span class="s1">&#39;7-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;8&#39;</span><span class="p">,</span> <span class="s1">&#39;8-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;9&#39;</span><span class="p">,</span> <span class="s1">&#39;9-th&#39;</span><span class="p">),</span> 
+                <span class="p">(</span><span class="s1">&#39;10&#39;</span><span class="p">,</span> <span class="s1">&#39;10-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;11&#39;</span><span class="p">,</span> <span class="s1">&#39;11-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;12&#39;</span><span class="p">,</span> <span class="s1">&#39;12-th&#39;</span><span class="p">)]:</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_config</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If the --predictors string contains more than &quot;</span>
+                        <span class="s2">&quot;one nmt predictor, you can specify the configuration &quot;</span>
+                        <span class="s2">&quot;for the </span><span class="si">%s</span><span class="s2"> one with this parameter. The </span><span class="si">%s</span><span class="s2"> nmt &quot;</span>
+                        <span class="s2">&quot;predictor inherits all settings under &#39;Neural model &quot;</span>
+                        <span class="s2">&quot;configuration&#39; except for the ones in this parameter. &quot;</span>
+                        <span class="s2">&quot;Usage: --nmt_config</span><span class="si">%s</span><span class="s2"> &#39;save_to=train</span><span class="si">%s</span><span class="s2">,enc_embed=400&#39;&quot;</span>
+                        <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--altsrc_test</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --altsrc_test for the </span><span class="si">%s</span><span class="s2"> altsrc&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--word2char_map</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --word2char_map for the </span><span class="si">%s</span><span class="s2"> word2char&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_idxmap</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --src_idxmap for the </span><span class="si">%s</span><span class="s2"> indexmap&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_idxmap</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --trg_idxmap for the </span><span class="si">%s</span><span class="s2"> indexmap&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fst_path</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --fst_path for the </span><span class="si">%s</span><span class="s2"> fst &quot;</span>
+                        <span class="s2">&quot;predictor&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--forcedlst_sparse_feat</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --forcedlst_sparse_feat for the </span><span class="si">%s</span><span class="s2"> &quot;</span>
+                        <span class="s2">&quot;forcedlst predictor&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+    
+    <span class="c1"># Add NMT model options</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Neural model configuration&#39;</span><span class="p">)</span>
+    <span class="n">_add_nmt_config</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+<span class="k">def</span> <span class="nf">_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds the nmt options to the command line configuration.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        parser (object): Parser or ArgumentGroup object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">default_config</span> <span class="o">=</span> <span class="n">get_nmt_config</span><span class="p">()</span>
+    <span class="n">nmt_help_texts</span> <span class="o">=</span> <span class="n">get_nmt_config_help</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">default_config</span><span class="p">:</span>
+        <span class="n">arg_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">default_config</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">arg_type</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="n">arg_type</span> <span class="o">=</span> <span class="s1">&#39;bool&#39;</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+                    <span class="s2">&quot;--</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">k</span><span class="p">,</span>
+                    <span class="n">default</span><span class="o">=</span><span class="n">default_config</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+                    <span class="nb">type</span><span class="o">=</span><span class="n">arg_type</span><span class="p">,</span>
+                    <span class="n">help</span><span class="o">=</span><span class="n">nmt_help_texts</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="get_args"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_args">[docs]</a><span class="k">def</span> <span class="nf">get_args</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Get the arguments for the current SGNMT run from both command</span>
+<span class="sd">    line arguments and configuration files. This method contains all</span>
+<span class="sd">    available SGNMT options, i.e. configuration is not encapsulated e.g.</span>
+<span class="sd">    by predictors. Additionally, we add blocks NMT model options as</span>
+<span class="sd">    parameters to specify how the loaded NMT model was trained. These</span>
+<span class="sd">    are defined in ``machine_translation.configurations``.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        object. Arguments object like for ``ArgumentParser``</span>
+<span class="sd">    &quot;&quot;&quot;</span> 
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    
+    <span class="c1"># Legacy parameter names</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">en_test</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">src_test</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">en_test</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">fr_test</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">trg_test</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">fr_test</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">en_idxmap</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">src_idxmap</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">en_idxmap</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">fr_idxmap</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">trg_idxmap</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">fr_idxmap</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">length_normalization</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">=</span> <span class="s2">&quot;length_norm&quot;</span>
+    <span class="k">return</span> <span class="n">args</span></div>
+
+
+<div class="viewcode-block" id="validate_args"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.validate_args">[docs]</a><span class="k">def</span> <span class="nf">validate_args</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Some very rudimental sanity checks for configuration options.</span>
+<span class="sd">    This method directly prints help messages to the user. In case of fatal</span>
+<span class="sd">    errors, it terminates using ``logging.fatal()``</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        args (object):  Configuration as returned by ``get_args``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">depr</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;en_test&#39;</span><span class="p">,</span> <span class="s1">&#39;fr_test&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;length_normalization&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;en_idxmap&#39;</span><span class="p">,</span> <span class="s1">&#39;fr_idxmap&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">depr</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using deprecated argument </span><span class="si">%s</span><span class="s2">.&quot;</span> <span class="o">%</span> <span class="n">depr</span><span class="p">)</span>
+    <span class="c1"># Validate --range</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">input_method</span> <span class="o">==</span> <span class="s1">&#39;shell&#39;</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The --range parameter can lead to unexpected &quot;</span>
+                         <span class="s2">&quot;behavior in the &#39;shell&#39; mode.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">f</span><span class="p">,</span><span class="n">t</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)]</span>
+                <span class="k">if</span> <span class="n">f</span> <span class="o">&gt;</span> <span class="n">t</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Start index in range greater than end index&quot;</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span> <span class="c1"># Deal with it later</span>
+        
+    <span class="c1"># Some common pitfalls</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">input_method</span> <span class="o">==</span> <span class="s1">&#39;dummy&#39;</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;You are using the dummy input method but a low value &quot;</span>
+                     <span class="s2">&quot;for max_len_factor (</span><span class="si">%d</span><span class="s2">). This means that decoding will &quot;</span>
+                     <span class="s2">&quot;not consider hypotheses longer than </span><span class="si">%d</span><span class="s2"> tokens. Consider &quot;</span>
+                     <span class="s2">&quot;increasing max_len_factor to the length longest relevant&quot;</span>
+                     <span class="s2">&quot; hypothesis&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">max_len_factor</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">max_len_factor</span><span class="p">))</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;beam&quot;</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s2">&quot;length_norm&quot;</span>
+                               <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;You are using beam search with length normalization but &quot;</span>
+                     <span class="s2">&quot;with early stopping. All hypotheses found with beam &quot;</span>
+                     <span class="s2">&quot;search with early stopping have the same length. You &quot;</span>
+                     <span class="s2">&quot;might want to disable early stopping.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_nmt_config"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_nmt_config">[docs]</a><span class="k">def</span> <span class="nf">get_nmt_config</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Get default NMT configuration. &quot;&quot;&quot;</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Model related -----------------------------------------------------------</span>
+
+    <span class="c1"># Sequences longer than this will be discarded</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;seq_len&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span>
+
+    <span class="c1"># Number of hidden units in encoder/decoder GRU</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1000</span>
+
+    <span class="c1"># Dimension of the word embedding matrix in encoder/decoder</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">620</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">620</span>
+    
+    <span class="c1"># Number of layers in encoder and decoder</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_layers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_layers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    
+    <span class="c1"># Network layout</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_readout_sources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;sfa&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_attention_sources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span>
+    
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_share_weights&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_share_weights&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+    
+    <span class="c1"># Skip connections</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_skip_connections&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+    
+    <span class="c1"># How to derive annotations from the encoder. Comma</span>
+    <span class="c1"># separated list of strategies.</span>
+    <span class="c1"># - &#39;direct&#39;: directly use encoder hidden state</span>
+    <span class="c1"># - &#39;hierarchical&#39;: Create higher level annotations with an </span>
+    <span class="c1">#                   attentional RNN </span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;annotations&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;direct&quot;</span>
+    
+    <span class="c1"># Decoder initialisation</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_init&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;last&quot;</span>
+
+    <span class="c1"># Where to save model, this corresponds to &#39;prefix&#39; in groundhog</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;./train&#39;</span>
+    
+    <span class="c1"># Attention</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;attention&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;content&#39;</span>
+    
+    <span class="c1"># External memory structure</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">500</span>
+
+    <span class="c1"># Optimization related ----------------------------------------------------</span>
+
+    <span class="c1"># Batch size</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">80</span>
+
+    <span class="c1"># This many batches will be read ahead and sorted</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;sort_k_batches&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">12</span>
+
+    <span class="c1"># Optimization step rule</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;step_rule&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;AdaDelta&#39;</span>
+
+    <span class="c1"># Gradient clipping threshold</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;step_clipping&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span>
+
+    <span class="c1"># Std of weight initialization</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.01</span>
+
+    <span class="c1"># Regularization related --------------------------------------------------</span>
+
+    <span class="c1"># Weight noise flag for feed forward layers</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_noise_ff&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="c1"># Weight noise flag for recurrent layers</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_noise_rec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c1"># Dropout ratio, applied only after readout maxout</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dropout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="c1"># Vocabulary/dataset related ----------------------------------------------</span>
+
+    <span class="c1"># Root directory for dataset</span>
+    <span class="n">datadir</span> <span class="o">=</span> <span class="s1">&#39;./data/&#39;</span>
+    <span class="n">scriptsdir</span> <span class="o">=</span> <span class="s1">&#39;../scripts/&#39;</span>
+
+    <span class="c1"># Source and target datasets</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;train.ids.shuf.en&#39;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;train.ids.shuf.fr&#39;</span>
+    
+    <span class="c1"># Monolingual data (for use see --mono_data_integration</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_mono_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;mono.ids.en&#39;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_mono_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;mono.ids.fr&#39;</span>
+
+    <span class="c1"># Source and target vocabulary sizes, should include bos, eos, unk tokens</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_vocab_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30003</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_vocab_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30003</span>
+    
+    <span class="c1"># Mapping files for using sparse feature word representations</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="c1"># Early stopping based on bleu related ------------------------------------</span>
+
+    <span class="c1"># Normalize cost according to sequence length after beam-search</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;normalized_bleu&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="c1"># Bleu script that will be used (moses multi-perl in this case)</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;bleu_script&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;perl &#39;</span> <span class="o">+</span> <span class="n">scriptsdir</span> <span class="o">+</span> <span class="s1">&#39;multi-bleu.perl </span><span class="si">%s</span><span class="s1"> &lt;&#39;</span>
+
+    <span class="c1"># Validation set source file</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;dev.ids.en&#39;</span>
+
+    <span class="c1"># Validation set gold file</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set_grndtruth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;dev.ids.fr&#39;</span>
+
+    <span class="c1"># Print validation output to file</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;output_val_set&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="c1"># Validation output file</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set_out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;/validation_out.txt&#39;</span>
+
+    <span class="c1"># Beam-size</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;beam_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">12</span>
+
+    <span class="c1"># Timing/monitoring related -----------------------------------------------</span>
+
+    <span class="c1"># Maximum number of updates</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;finish_after&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1000000</span>
+
+    <span class="c1"># Reload model from files if exist</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;reload&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="c1"># Save model after this many updates</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;save_freq&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">750</span>
+
+    <span class="c1"># Validate bleu after this many updates</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;bleu_val_freq&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">6000</span>
+
+    <span class="c1"># Start bleu validation after this many updates</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_burn_in&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">80000</span>
+
+    <span class="c1"># fs439: Blocks originally creates dumps of the entire main loop</span>
+    <span class="c1"># when the BLEU on the dev set improves. This, however, cannot be</span>
+    <span class="c1"># read to load parameters from, so we create BEST_BLEU_PARAMS*</span>
+    <span class="c1"># files instead. Set the following parameter to true if you still</span>
+    <span class="c1"># want to create the old style archives</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;store_full_main_loop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+    
+    <span class="c1"># fs439: Fix embeddings when training</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;fix_embeddings&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="n">config</span></div>
+
+
+<div class="viewcode-block" id="get_nmt_config_help"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_nmt_config_help">[docs]</a><span class="k">def</span> <span class="nf">get_nmt_config_help</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Creates a dictionary with help text for the NMT configuration &quot;&quot;&quot;</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;seq_len&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Sequences longer than this will be discarded&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of hidden units in encoder GRU&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of hidden units in decoder GRU&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dimension of the word embedding matrix in encoder&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dimension of the word embedding matrix in decoder&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_layers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of encoder layers&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_layers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of decoder layers (NOT IMPLEMENTED for != 1)&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_readout_sources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Sources used by readout network: f for &quot;</span> \
+                                    <span class="s2">&quot;feedback, s for decoder states, a for &quot;</span> \
+                                    <span class="s2">&quot;attention (context vector)&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_attention_sources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Sources used by attention: f for &quot;</span> \
+                                      <span class="s2">&quot;feedback, s for decoder states&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_share_weights&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Whether to share weights in deep encoders&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_share_weights&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Whether to share weights in deep decoders&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_skip_connections&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Add skip connection in deep encoders&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;annotations&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Annotation strategy (comma-separated): &quot;</span> \
+                            <span class="s2">&quot;direct, hierarchical&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_init&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Decoder state initialisation: last, average, constant&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;attention&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Attention mechanism: none, content, nbest-&lt;n&gt;, &quot;</span> \
+                          <span class="s2">&quot;coverage-&lt;n&gt;, tree&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;External memory: none, stack&#39;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Size of external memory structure&#39;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Where to save model, same as &#39;prefix&#39; in groundhog&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Batch size&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;sort_k_batches&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;This many batches will be read ahead and sorted&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;step_rule&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Optimization step rule&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;step_clipping&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Gradient clipping threshold&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Std of weight initialization&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_noise_ff&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Weight noise flag for feed forward layers&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_noise_rec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Weight noise flag for recurrent layers&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dropout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dropout ratio, applied only after readout maxout&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Source dataset&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Target dataset&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_mono_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Source language monolingual data (for use &quot;</span> \
+                              <span class="s2">&quot;see --mono_data_integration)&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_mono_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Target language monolingual data (for use &quot;</span> \
+                              <span class="s2">&quot;see --mono_data_integration)&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_vocab_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Source vocab size, including special tokens&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_vocab_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Target vocab size, including special tokens&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Mapping files for using sparse feature &quot;</span> \
+                                    <span class="s2">&quot;word representations on the source side&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Mapping files for using sparse feature &quot;</span> \
+                                    <span class="s2">&quot;word representations on the target side&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;normalized_bleu&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Length normalization IN TRAINING&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;bleu_script&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BLEU script used during training for model selection&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Validation set source file&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set_grndtruth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Validation set gold file&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;output_val_set&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Print validation output to file&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set_out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Validation output file&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;beam_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Beam-size for decoding DURING TRAINING&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;finish_after&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Maximum number of updates&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;reload&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Reload model from files if exist&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;save_freq&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Save model after this many updates&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;bleu_val_freq&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Validate bleu after this many updates&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_burn_in&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Start bleu validation after this many updates&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;store_full_main_loop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Old style archives (not recommended)&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;fix_embeddings&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Fix embeddings during training&quot;</span>
+
+    <span class="k">return</span> <span class="n">config</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

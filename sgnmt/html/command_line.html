@@ -89,6 +89,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Command-line reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#decoding">Decoding</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#training">Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#alignment">Alignment</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="predictors.html">Predictors</a></li>
@@ -142,11 +143,13 @@
             
   <div class="section" id="command-line-reference">
 <h1>Command-line reference<a class="headerlink" href="#command-line-reference" title="Permalink to this headline">¶</a></h1>
-<p>SGNMT provides <code class="docutils literal"><span class="pre">decode.py</span></code> for decoding and <code class="docutils literal"><span class="pre">train.py</span></code> for NMT training. Both
-scripts can be configured via command line or configuration file. For a quick
-overview of available parameters use <code class="docutils literal"><span class="pre">--help</span></code>:</p>
+<p>SGNMT provides <code class="docutils literal"><span class="pre">decode.py</span></code> for decoding and <code class="docutils literal"><span class="pre">train.py</span></code> for NMT training. The
+neural word alignment script <code class="docutils literal"><span class="pre">align.py</span></code> is only available for the Blocks
+implementation. The scripts can be configured via command line or configuration file.
+For a quick overview of available parameters use <code class="docutils literal"><span class="pre">--help</span></code>:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">decode</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">help</span>
 <span class="n">python</span> <span class="n">train</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">help</span>
+<span class="n">python</span> <span class="n">align</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">help</span>
 </pre></div>
 </div>
 <p>The complete and detailed list of parameters is provided below.</p>
@@ -156,101 +159,149 @@ overview of available parameters use <code class="docutils literal"><span class=
                  <span class="p">[</span><span class="o">--</span><span class="n">verbosity</span> <span class="p">{</span><span class="n">debug</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">warn</span><span class="p">,</span><span class="n">error</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">min_score</span> <span class="n">MIN_SCORE</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="nb">range</span> <span class="n">RANGE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_test</span> <span class="n">SRC_TEST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">en_test</span> <span class="n">EN_TEST</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">legacy_indexing</span> <span class="n">LEGACY_INDEXING</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">input_method</span> <span class="p">{</span><span class="n">file</span><span class="p">,</span><span class="n">shell</span><span class="p">,</span><span class="n">stdin</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">input_method</span> <span class="p">{</span><span class="n">dummy</span><span class="p">,</span><span class="n">file</span><span class="p">,</span><span class="n">shell</span><span class="p">,</span><span class="n">stdin</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">log_sum</span> <span class="p">{</span><span class="n">tropical</span><span class="p">,</span><span class="n">log</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">beam</span> <span class="n">BEAM</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">decoder</span> <span class="p">{</span><span class="n">greedy</span><span class="p">,</span><span class="n">beam</span><span class="p">,</span><span class="n">dfs</span><span class="p">,</span><span class="n">restarting</span><span class="p">,</span><span class="n">astar</span><span class="p">,</span><span class="n">vanilla</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">decoder</span> <span class="p">{</span><span class="n">greedy</span><span class="p">,</span><span class="n">beam</span><span class="p">,</span><span class="n">dfs</span><span class="p">,</span><span class="n">restarting</span><span class="p">,</span><span class="n">bow</span><span class="p">,</span><span class="n">flip</span><span class="p">,</span><span class="n">bucket</span><span class="p">,</span><span class="n">bigramgreedy</span><span class="p">,</span><span class="n">astar</span><span class="p">,</span><span class="n">vanilla</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">hypo_recombination</span> <span class="n">HYPO_RECOMBINATION</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">max_node_expansions</span> <span class="n">MAX_NODE_EXPANSIONS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">early_stopping</span> <span class="n">EARLY_STOPPING</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nbest</span> <span class="n">NBEST</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">output_fst_unk_id</span> <span class="n">OUTPUT_FST_UNK_ID</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">output_path</span> <span class="n">OUTPUT_PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outputs</span> <span class="n">OUTPUTS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">remove_eos</span> <span class="n">REMOVE_EOS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">heuristics</span> <span class="n">HEURISTICS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">max_len_factor</span> <span class="n">MAX_LEN_FACTOR</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">early_stopping</span> <span class="n">EARLY_STOPPING</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">heuristics</span> <span class="n">HEURISTICS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">heuristic_predictors</span> <span class="n">HEURISTIC_PREDICTORS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">cache_heuristic_estimates</span> <span class="n">CACHE_HEURISTIC_ESTIMATES</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">predictors</span> <span class="n">PREDICTORS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">pure_heuristic_scores</span> <span class="n">PURE_HEURISTIC_SCORES</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">restarting_node_score</span> <span class="p">{</span><span class="n">difference</span><span class="p">,</span><span class="n">absolute</span><span class="p">,</span><span class="n">constant</span><span class="p">,</span><span class="n">expansions</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">low_decoder_memory</span> <span class="n">LOW_DECODER_MEMORY</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">stochastic_decoder</span> <span class="n">STOCHASTIC_DECODER</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">decode_always_single_step</span> <span class="n">DECODE_ALWAYS_SINGLE_STEP</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">flip_strategy</span> <span class="p">{</span><span class="n">move</span><span class="p">,</span><span class="n">flip</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">bucket_selector</span> <span class="n">BUCKET_SELECTOR</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">bucket_score_strategy</span> <span class="p">{</span><span class="n">difference</span><span class="p">,</span><span class="n">heap</span><span class="p">,</span><span class="n">absolute</span><span class="p">,</span><span class="n">constant</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">collect_statistics</span> <span class="p">{</span><span class="n">best</span><span class="p">,</span><span class="n">full</span><span class="p">,</span><span class="nb">all</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">heuristic_scores_file</span> <span class="n">HEURISTIC_SCORES_FILE</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">score_lower_bounds_file</span> <span class="n">SCORE_LOWER_BOUNDS_FILE</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">decoder_diversity_factor</span> <span class="n">DECODER_DIVERSITY_FACTOR</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nbest</span> <span class="n">NBEST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">output_fst_unk_id</span> <span class="n">OUTPUT_FST_UNK_ID</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">output_path</span> <span class="n">OUTPUT_PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outputs</span> <span class="n">OUTPUTS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">remove_eos</span> <span class="n">REMOVE_EOS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">predictors</span> <span class="n">PREDICTORS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">predictor_weights</span> <span class="n">PREDICTOR_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">closed_vocabulary_normalization</span> <span class="p">{</span><span class="n">none</span><span class="p">,</span><span class="n">exact</span><span class="p">,</span><span class="n">reduced</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">combination_scheme</span> <span class="p">{</span><span class="nb">sum</span><span class="p">,</span><span class="n">length_norm</span><span class="p">,</span><span class="n">bayesian</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">apply_combination_scheme_to_partial_hypos</span> <span class="n">APPLY_COMBINATION_SCHEME_TO_PARTIAL_HYPOS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">proto</span> <span class="n">PROTO</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">length_normalization</span> <span class="n">LENGTH_NORMALIZATION</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">length_normalization</span> <span class="n">LENGTH_NORMALIZATION</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine</span> <span class="p">{</span><span class="n">none</span><span class="p">,</span><span class="n">blocks</span><span class="p">,</span><span class="n">tensorflow</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">nmt_model_selector</span> <span class="p">{</span><span class="n">params</span><span class="p">,</span><span class="n">bleu</span><span class="p">,</span><span class="n">time</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">cache_nmt_posteriors</span> <span class="n">CACHE_NMT_POSTERIORS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">src_test_raw</span> <span class="n">SRC_TEST_RAW</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">gnmt_beta</span> <span class="n">GNMT_BETA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_test_raw</span> <span class="n">SRC_TEST_RAW</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">length_model_weights</span> <span class="n">LENGTH_MODEL_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">use_length_point_probs</span> <span class="n">USE_LENGTH_POINT_PROBS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">length_model_offset</span> <span class="n">LENGTH_MODEL_OFFSET</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">extlength_path</span> <span class="n">EXTLENGTH_PATH</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">unk_count_lambdas</span> <span class="n">UNK_COUNT_LAMBDAS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">wc_word</span> <span class="n">WC_WORD</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_test</span> <span class="n">TRG_TEST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fr_test</span> <span class="n">FR_TEST</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat</span> <span class="n">FORCEDLST_SPARSE_FEAT</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">use_nbest_weights</span> <span class="n">USE_NBEST_WEIGHTS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">bow_heuristic_strategies</span> <span class="n">BOW_HEURISTIC_STRATEGIES</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">bow_accept_subsets</span> <span class="n">BOW_ACCEPT_SUBSETS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">bow_accept_duplicates</span> <span class="n">BOW_ACCEPT_DUPLICATES</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">bow_equivalence_vocab_size</span> <span class="n">BOW_EQUIVALENCE_VOCAB_SIZE</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">bow_diversity_heuristic_factor</span> <span class="n">BOW_DIVERSITY_HEURISTIC_FACTOR</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap</span> <span class="n">SRC_IDXMAP</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">en_idxmap</span> <span class="n">EN_IDXMAP</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap</span> <span class="n">TRG_IDXMAP</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fr_idxmap</span> <span class="n">FR_IDXMAP</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test</span> <span class="n">ALTSRC_TEST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">word2char_map</span> <span class="n">WORD2CHAR_MAP</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">rules_path</span> <span class="n">RULES_PATH</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">use_grammar_weights</span> <span class="n">USE_GRAMMAR_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">grammar_feature_weights</span> <span class="n">GRAMMAR_FEATURE_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">srilm_path</span> <span class="n">SRILM_PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nplm_path</span> <span class="n">NPLM_PATH</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path</span> <span class="n">RNNLM_PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">lstm_path</span> <span class="n">LSTM_PATH</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">srilm_order</span> <span class="n">SRILM_ORDER</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">normalize_nplm_probs</span> <span class="n">NORMALIZE_NPLM_PROBS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fst_path</span> <span class="n">FST_PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rtn_path</span> <span class="n">RTN_PATH</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">add_fst_bos_to_eos_weight</span> <span class="n">ADD_FST_BOS_TO_EOS_WEIGHT</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fst_skip_bos_weight</span> <span class="n">FST_SKIP_BOS_WEIGHT</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fst_to_log</span> <span class="n">FST_TO_LOG</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">use_fst_weights</span> <span class="n">USE_FST_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">use_rtn_weights</span> <span class="n">USE_RTN_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">minimize_rtns</span> <span class="n">MINIMIZE_RTNS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">remove_epsilon_in_rtns</span> <span class="n">REMOVE_EPSILON_IN_RTNS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">normalize_fst_weights</span> <span class="n">NORMALIZE_FST_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">normalize_rtn_weights</span> <span class="n">NORMALIZE_RTN_WEIGHTS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config2</span> <span class="n">NMT_CONFIG2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap2</span> <span class="n">SRC_IDXMAP2</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config2</span> <span class="n">NMT_CONFIG2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test2</span> <span class="n">ALTSRC_TEST2</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map2</span> <span class="n">WORD2CHAR_MAP2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap2</span> <span class="n">SRC_IDXMAP2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap2</span> <span class="n">TRG_IDXMAP2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path2</span> <span class="n">FST_PATH2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat2</span> <span class="n">FORCEDLST_SPARSE_FEAT2</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config3</span> <span class="n">NMT_CONFIG3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap3</span> <span class="n">SRC_IDXMAP3</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config3</span> <span class="n">NMT_CONFIG3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test3</span> <span class="n">ALTSRC_TEST3</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map3</span> <span class="n">WORD2CHAR_MAP3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap3</span> <span class="n">SRC_IDXMAP3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap3</span> <span class="n">TRG_IDXMAP3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path3</span> <span class="n">FST_PATH3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat3</span> <span class="n">FORCEDLST_SPARSE_FEAT3</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config4</span> <span class="n">NMT_CONFIG4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap4</span> <span class="n">SRC_IDXMAP4</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config4</span> <span class="n">NMT_CONFIG4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test4</span> <span class="n">ALTSRC_TEST4</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map4</span> <span class="n">WORD2CHAR_MAP4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap4</span> <span class="n">SRC_IDXMAP4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap4</span> <span class="n">TRG_IDXMAP4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path4</span> <span class="n">FST_PATH4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat4</span> <span class="n">FORCEDLST_SPARSE_FEAT4</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config5</span> <span class="n">NMT_CONFIG5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap5</span> <span class="n">SRC_IDXMAP5</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config5</span> <span class="n">NMT_CONFIG5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test5</span> <span class="n">ALTSRC_TEST5</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map5</span> <span class="n">WORD2CHAR_MAP5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap5</span> <span class="n">SRC_IDXMAP5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap5</span> <span class="n">TRG_IDXMAP5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path5</span> <span class="n">FST_PATH5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat5</span> <span class="n">FORCEDLST_SPARSE_FEAT5</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config6</span> <span class="n">NMT_CONFIG6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap6</span> <span class="n">SRC_IDXMAP6</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config6</span> <span class="n">NMT_CONFIG6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test6</span> <span class="n">ALTSRC_TEST6</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map6</span> <span class="n">WORD2CHAR_MAP6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap6</span> <span class="n">SRC_IDXMAP6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap6</span> <span class="n">TRG_IDXMAP6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path6</span> <span class="n">FST_PATH6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat6</span> <span class="n">FORCEDLST_SPARSE_FEAT6</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config7</span> <span class="n">NMT_CONFIG7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap7</span> <span class="n">SRC_IDXMAP7</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config7</span> <span class="n">NMT_CONFIG7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test7</span> <span class="n">ALTSRC_TEST7</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map7</span> <span class="n">WORD2CHAR_MAP7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap7</span> <span class="n">SRC_IDXMAP7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap7</span> <span class="n">TRG_IDXMAP7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path7</span> <span class="n">FST_PATH7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat7</span> <span class="n">FORCEDLST_SPARSE_FEAT7</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config8</span> <span class="n">NMT_CONFIG8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap8</span> <span class="n">SRC_IDXMAP8</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config8</span> <span class="n">NMT_CONFIG8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test8</span> <span class="n">ALTSRC_TEST8</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map8</span> <span class="n">WORD2CHAR_MAP8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap8</span> <span class="n">SRC_IDXMAP8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap8</span> <span class="n">TRG_IDXMAP8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path8</span> <span class="n">FST_PATH8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat8</span> <span class="n">FORCEDLST_SPARSE_FEAT8</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config9</span> <span class="n">NMT_CONFIG9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap9</span> <span class="n">SRC_IDXMAP9</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config9</span> <span class="n">NMT_CONFIG9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test9</span> <span class="n">ALTSRC_TEST9</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map9</span> <span class="n">WORD2CHAR_MAP9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap9</span> <span class="n">SRC_IDXMAP9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap9</span> <span class="n">TRG_IDXMAP9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path9</span> <span class="n">FST_PATH9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat9</span> <span class="n">FORCEDLST_SPARSE_FEAT9</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config10</span> <span class="n">NMT_CONFIG10</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap10</span> <span class="n">SRC_IDXMAP10</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap10</span> <span class="n">TRG_IDXMAP10</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path10</span> <span class="n">FST_PATH10</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config10</span> <span class="n">NMT_CONFIG10</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test10</span> <span class="n">ALTSRC_TEST10</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map10</span> <span class="n">WORD2CHAR_MAP10</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap10</span> <span class="n">SRC_IDXMAP10</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap10</span> <span class="n">TRG_IDXMAP10</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fst_path10</span> <span class="n">FST_PATH10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat10</span> <span class="n">FORCEDLST_SPARSE_FEAT10</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config11</span> <span class="n">NMT_CONFIG11</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap11</span> <span class="n">SRC_IDXMAP11</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap11</span> <span class="n">TRG_IDXMAP11</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path11</span> <span class="n">FST_PATH11</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config11</span> <span class="n">NMT_CONFIG11</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test11</span> <span class="n">ALTSRC_TEST11</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map11</span> <span class="n">WORD2CHAR_MAP11</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap11</span> <span class="n">SRC_IDXMAP11</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap11</span> <span class="n">TRG_IDXMAP11</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fst_path11</span> <span class="n">FST_PATH11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat11</span> <span class="n">FORCEDLST_SPARSE_FEAT11</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config12</span> <span class="n">NMT_CONFIG12</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap12</span> <span class="n">SRC_IDXMAP12</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap12</span> <span class="n">TRG_IDXMAP12</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path12</span> <span class="n">FST_PATH12</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config12</span> <span class="n">NMT_CONFIG12</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test12</span> <span class="n">ALTSRC_TEST12</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">word2char_map12</span> <span class="n">WORD2CHAR_MAP12</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap12</span> <span class="n">SRC_IDXMAP12</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap12</span> <span class="n">TRG_IDXMAP12</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fst_path12</span> <span class="n">FST_PATH12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat12</span> <span class="n">FORCEDLST_SPARSE_FEAT12</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">enc_nhids</span> <span class="n">ENC_NHIDS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">stream</span> <span class="n">STREAM</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">enc_nhids</span> <span class="n">ENC_NHIDS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">enc_layers</span> <span class="n">ENC_LAYERS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">store_full_main_loop</span> <span class="n">STORE_FULL_MAIN_LOOP</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">weight_scale</span> <span class="n">WEIGHT_SCALE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">eos_token</span> <span class="n">EOS_TOKEN</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">sort_k_batches</span> <span class="n">SORT_K_BATCHES</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">val_set</span> <span class="n">VAL_SET</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">dec_share_weights</span> <span class="n">DEC_SHARE_WEIGHTS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">src_mono_data</span> <span class="n">SRC_MONO_DATA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">weight_scale</span> <span class="n">WEIGHT_SCALE</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">memory_size</span> <span class="n">MEMORY_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sort_k_batches</span> <span class="n">SORT_K_BATCHES</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">val_set</span> <span class="n">VAL_SET</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_init</span> <span class="n">DEC_INIT</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">weight_noise_rec</span> <span class="n">WEIGHT_NOISE_REC</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">src_vocab_size</span> <span class="n">SRC_VOCAB_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">save_freq</span> <span class="n">SAVE_FREQ</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">fix_embeddings</span> <span class="n">FIX_EMBEDDINGS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">val_set_out</span> <span class="n">VAL_SET_OUT</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">enc_embed</span> <span class="n">ENC_EMBED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_nhids</span> <span class="n">DEC_NHIDS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">finish_after</span> <span class="n">FINISH_AFTER</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">unk_token</span> <span class="n">UNK_TOKEN</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">saveto</span> <span class="n">SAVETO</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_data</span> <span class="n">TRG_DATA</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">step_clipping</span> <span class="n">STEP_CLIPPING</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dropout</span> <span class="n">DROPOUT</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">unk_id</span> <span class="n">UNK_ID</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">val_burn_in</span> <span class="n">VAL_BURN_IN</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">step_rule</span> <span class="n">STEP_RULE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_vocab_size</span> <span class="n">TRG_VOCAB_SIZE</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">batch_size</span> <span class="n">BATCH_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bleu_val_freq</span> <span class="n">BLEU_VAL_FREQ</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">output_val_set</span> <span class="n">OUTPUT_VAL_SET</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">weight_noise_ff</span> <span class="n">WEIGHT_NOISE_FF</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_data</span> <span class="n">SRC_DATA</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fix_embeddings</span> <span class="n">FIX_EMBEDDINGS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">val_set_grndtruth</span> <span class="n">VAL_SET_GRNDTRUTH</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">hook_samples</span> <span class="n">HOOK_SAMPLES</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bos_token</span> <span class="n">BOS_TOKEN</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">sampling_freq</span> <span class="n">SAMPLING_FREQ</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">reload</span> <span class="n">RELOAD</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">enc_embed</span> <span class="n">ENC_EMBED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_nhids</span> <span class="n">DEC_NHIDS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">finish_after</span> <span class="n">FINISH_AFTER</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">saveto</span> <span class="n">SAVETO</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">memory</span> <span class="n">MEMORY</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_data</span> <span class="n">TRG_DATA</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">dec_attention_sources</span> <span class="n">DEC_ATTENTION_SOURCES</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">step_clipping</span> <span class="n">STEP_CLIPPING</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">annotations</span> <span class="n">ANNOTATIONS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">enc_skip_connections</span> <span class="n">ENC_SKIP_CONNECTIONS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">val_set_out</span> <span class="n">VAL_SET_OUT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">val_burn_in</span> <span class="n">VAL_BURN_IN</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">step_rule</span> <span class="n">STEP_RULE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">attention</span> <span class="n">ATTENTION</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">trg_vocab_size</span> <span class="n">TRG_VOCAB_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">batch_size</span> <span class="n">BATCH_SIZE</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">dec_layers</span> <span class="n">DEC_LAYERS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">src_sparse_feat_map</span> <span class="n">SRC_SPARSE_FEAT_MAP</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">output_val_set</span> <span class="n">OUTPUT_VAL_SET</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">dec_readout_sources</span> <span class="n">DEC_READOUT_SOURCES</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">src_data</span> <span class="n">SRC_DATA</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">trg_sparse_feat_map</span> <span class="n">TRG_SPARSE_FEAT_MAP</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">dropout</span> <span class="n">DROPOUT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bleu_val_freq</span> <span class="n">BLEU_VAL_FREQ</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">enc_share_weights</span> <span class="n">ENC_SHARE_WEIGHTS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">trg_mono_data</span> <span class="n">TRG_MONO_DATA</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">normalized_bleu</span> <span class="n">NORMALIZED_BLEU</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">reload</span> <span class="n">RELOAD</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">beam_size</span> <span class="n">BEAM_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_embed</span> <span class="n">DEC_EMBED</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">bleu_script</span> <span class="n">BLEU_SCRIPT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">seq_len</span> <span class="n">SEQ_LEN</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">normalized_bleu</span> <span class="n">NORMALIZED_BLEU</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">weight_noise_ff</span> <span class="n">WEIGHT_NOISE_FF</span><span class="p">]</span>
 </pre></div>
 </div>
 <dl class="docutils">
@@ -294,12 +345,13 @@ Set this parameter to true to use the old scheme.</td></tr>
 </tr>
 <tr><td>&nbsp;</td><td><p class="first">This parameter controls how the input to GNMT is provided. GNMT supports three modes:
 
+* &#8216;dummy&#8217;: Use dummy source sentences.
 * &#8216;file&#8217;: Read test sentences from a plain text filespecified by &#8211;src_test.
-* &#8216;shell&#8217;: Start GNMT in an interactive shell.
+* &#8216;shell&#8217;: Start SGNMT in an interactive shell.
 * &#8216;stdin&#8217;: Test sentences are read from stdin
 
 In shell and stdin mode you can change GNMT options on the fly: Beginning a line with the string &#8216;!sgnmt &#8216; signals GNMT directives instead of sentences to translate. E.g. &#8216;!sgnmt config predictor_weights 0.2,0.8&#8217; changes the current predictor weights. &#8216;!sgnmt help&#8217; lists all available directives. Using GNMT directives is particularly useful in combination with MERT to avoid start up times between evaluations. Note that input sentences still have to be written using word ids in all cases.</p>
-<p class="last">Possible choices: file, shell, stdin</p>
+<p class="last">Possible choices: dummy, file, shell, stdin</p>
 </td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--log_sum=log</span></kbd></td>
@@ -328,18 +380,128 @@ In shell and stdin mode you can change GNMT options on the fly: Beginning a line
 * &#8216;beam&#8217;: beam search like in Bahdanau et al, 2015
 * &#8216;dfs&#8217;: Depth-first search. This should be used for exact decoding or the complete enumeration of the search space, but it cannot be used if the search space is too large (like for unrestricted NMT) as it performs exhaustive search. If you have not only negative predictor scores, set &#8211;early_stopping to false.
 * &#8216;restarting&#8217;: Like DFS but with better admissible pruning behavior.
+* &#8216;bow&#8217;: Restarting decoder optimized for bag-of-words problems.
+* &#8216;flip&#8217;: This decoder works only for bag problems. It traverses the search space by switching two words in the hypothesis. Do not use bow predictor.
+* &#8216;bucket&#8217;: Works best for bag problems. Maintains buckets for each hypo length and extends a hypo in a bucket by one before selecting the next bucket.
+* &#8216;bigramgreedy&#8217;: Works best for bag problems. Collects bigram statistics and constructs hypos to score by greedily selecting high scoring bigrams. Do not use bow predictor with this search strategy.
 * &#8216;astar&#8217;: A* search. The heuristic function is configured using the &#8211;heuristics options.
 * &#8216;vanilla&#8217;: Original blocks beam decoder. This bypasses the predictor framework and directly performs pure NMT beam decoding on the GPU. Use this when you do pure NMT decoding as this is usually faster then using a single nmt predictor as the search can be parallelized on the GPU.</p>
-<p class="last">Possible choices: greedy, beam, dfs, restarting, astar, vanilla</p>
+<p class="last">Possible choices: greedy, beam, dfs, restarting, bow, flip, bucket, bigramgreedy, astar, vanilla</p>
 </td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--hypo_recombination=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Activates hypothesis recombination. Has to be supported by the decoder. Applicable to beam, restarting, bow, bucket</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--max_node_expansions=0</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>This parameter allows to limit the total number of search space expansions for a single sentence. Currently, this parameter is only supported by the &#8216;dfs&#8217; and &#8216;restarting&#8217; decoder. 1000 is a good value for very gentle pruning, 0 means no limitation</td></tr>
+<tr><td>&nbsp;</td><td>This parameter allows to limit the total number of search space expansions for a single sentence. If this is 0 we allow an unlimited number of expansions. If it is negative, the maximum number of expansions is this times the length of the source sentence. Supporting decoders:
+bigramgreedy, bow, bucket, dfs, flip, restarting</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--max_len_factor=2</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Limits the length of hypotheses to avoid infinity loops in search strategies for unbounded search spaces. The length of any translation is limited to max_len_factor times the length of the source sentence.</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--early_stopping=True</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Use this parameter if you are only interested inthe first best decoding result. This option has a different effect depending on the used &#8211;decoder. For the beam decoder, it means stopping decoding when the best active hypothesis ends with &lt;/s&gt;. If false, do not stop until all hypotheses end with EOS. For the dfs and restarting decoders, early stopping enables admissible pruning of branches when the accumulated score already exceeded the currently bestscore. DO NOT USE early stopping in combination with the dfs or restarting decoder when your predictors can produce positive scores!</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--heuristics=</span></kbd></td>
+<td>Comma-separated list of heuristics to use in heuristic based search like A*.
+
+* &#8216;predictor&#8217;: Predictor specific heuristics. Some predictors come with own heuristics - e.g. the fst predictor uses the shortest path to the final state. Using &#8216;predictor&#8217; combines the specific heuristics of all selected predictors.
+* &#8216;greedy&#8217;: Do greedy decoding to get the heuristic costs. This is expensive but accurate.
+* &#8216;stats&#8217;: Collect unigram statistics during decodingand compare actual hypothesis scores with the product of unigram scores of the used words.
+* &#8216;scoreperword&#8217;: Using this heuristic normalizes the previously accumulated costs by its length. It can be used for beam search with normalized scores, using a capacity (&#8211;beam), no other heuristic, and setting&#8211;decoder to astar.
+
+Note that all heuristics are inadmissible, i.e. A* is not guaranteed to find the globally best path.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--heuristic_predictors=all</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Comma separated list of indices of predictors considered by the heuristic. For example, if &#8211;predictors is set to nmt,length,fst then setting &#8211;heuristic_predictors to 0,2 results in using nmt and fst in the heuristics. Use &#8216;all&#8217; to use all predictors in the heuristics</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--cache_heuristic_estimates=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Whether to cache heuristic future cost estimates. This is especially useful with the greedy heuristic.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--pure_heuristic_scores=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If this is set to false, heuristic decoders as A* score hypotheses with the sum of the partial hypo score plus the heuristic estimates (lik in standard A*). Set to true to use the heuristic estimates only</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--restarting_node_score=difference</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">This parameter defines the strategy how the restarting decoder decides from which node to restart.
+
+* &#8216;difference&#8217;: Restart where the difference between 1-best and 2-best is smallest
+* &#8216;absolute&#8217;: Restart from the unexplored node with the best absolute score globally.
+* &#8216;constant&#8217;: Constant node score. Simulates FILO or uniform distribution with restarting_stochastic.
+* &#8216;expansions&#8217;: Inverse of the number of expansions on the node. Discourages expanding arcs on the same node repeatedly.
+</p>
+<p class="last">Possible choices: difference, absolute, constant, expansions</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--low_decoder_memory=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Some decoding strategies support modes which do not change the decoding logic, but make use of the inadmissible pruning parameters like max_expansions to reduce memory consumption. This usually requires some  computational overhead for cleaning up data structures. Applicable to restarting and bucket decoders.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--stochastic_decoder=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Activates stochastic decoders. Applicable to the decoders restarting, bow, bucket</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--decode_always_single_step=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If this is set to true, heuristic depth first search decoders like restarting or bow always perform a single decoding step instead of greedy decoding. Handle with care...</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--flip_strategy=move</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Defines the hypothesis transition in the flip decoder. &#8216;flip&#8217; flips two words, &#8216;move&#8217; moves a word to a different position</p>
+<p class="last">Possible choices: move, flip</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bucket_selector=maxscore</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Defines the bucket selection strategy for the bucket decoder.
+
+* &#8216;iter&#8217;: Rotate through all lengths
+* &#8216;iter-n&#8217;: Rotate through all lengths n times
+* &#8216;maxscore&#8217;: Like iter, but filters buckets with hypos worse than a threshold. Threshold is increased if no bucket found
+* &#8216;score&#8217;: Select bucket with the highest bucket score. The bucket score is determined by the bucket_score_strategy</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bucket_score_strategy=difference</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Defines how buckets are scored for the bucket decoder. Usually, the best hypo in the bucket is compared to the global best score of that length according &#8211;collect_statistics.
+
+* &#8216;difference&#8217;: Difference between both hypos
+* &#8216;heap&#8217;: Use best score on bucket heap directly
+* &#8216;absolute&#8217;: Use best hypo score in bucket directly
+* &#8216;constant&#8217;: Uniform bucket scores.</p>
+<p class="last">Possible choices: difference, heap, absolute, constant</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--collect_statistics=best</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Determines over which hypotheses statistics are collected.
+
+* &#8216;best&#8217;: Collect statistics from the current best full hypothesis
+* &#8216;full&#8217;: Collect statistics from all full hypos
+* &#8216;all&#8217;: Collect statistics also from partial hypos
+Applicable to the bucket decoder, the heuristic of the bow predictor, and the heuristic &#8216;stats&#8217;.</p>
+<p class="last">Possible choices: best, full, all</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--heuristic_scores_file=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>The bow predictor heuristic and the stats heuristic sum up the unigram scores of words as heuristic estimate. This option should point to a mapping file from word-id to (unigram) score. If this is empty, the unigram scores are collected during decoding for each sentence separately according &#8211;collect_statistics.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--score_lower_bounds_file=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Admissible pruning in some decoding strategies can be improved by providing lower bounds on complete hypothesis scores. This is useful to improve the efficiency of exhaustive search, with lower bounds found by e.g. beam search. The expected file format is just a text file with line separated scores for each sentence. Supported by the following decoders: astar, bigramgreedy, bow, bucket, dfs, flip, restarting</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--decoder_diversity_factor=-1.0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If this is greater than zero, promote diversity between active hypotheses during decoding. The exact way of doing this depends on &#8211;decoder:
+* The &#8216;beam&#8217; decoder roughly follows the approach in Li and Jurafsky, 2016
+* The &#8216;bucket&#8217; decoder reorders the hypotheses in a bucket by penalizing hypotheses with the number of expanded hypotheses from the same parent.</td></tr>
 </tbody>
 </table>
 </dd>
@@ -373,23 +535,6 @@ The path to the output files can be specified with &#8211;output_path</td></tr>
 <kbd><span class="option">--remove_eos=True</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Whether to remove &lt;/S&gt; symbol on output.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--heuristics=</span></kbd></td>
-<td>Comma-separated list of heuristics to use in heuristic based search like A*.
-
-* &#8216;predictor&#8217;: Predictor specific heuristics. Some predictors come with own heuristics - e.g. the fst predictor uses the shortest path to the final state. Using &#8216;predictor&#8217; combines the specific heuristics of all selected predictors.
-* &#8216;greedy&#8217;: Do greedy decoding to get the heuristic costs. This is expensive but accurate.
-* &#8216;scoreperword&#8217;: Using this heuristic normalizes the previously accumulated costs by its length. It can be used for beam search with normalized scores, using a capacity (&#8211;beam), no other heuristic, and setting&#8211;decoder to astar.
-
-Note that all heuristics are inadmissible, i.e. A* is not guaranteed to find the globally best path.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--heuristic_predictors=all</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Comma separated list of indices of predictors considered by the heuristic. For example, if &#8211;predictors is set to nmt,length,fst then setting &#8211;heuristic_predictors to 0,2 results in using nmt and fst in the heuristics. Use &#8216;all&#8217; to use all predictors in the heuristics</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--cache_heuristic_estimates=True</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Whether to cache heuristic future cost estimates. This is especially useful with the greedy heuristic.</td></tr>
 </tbody>
 </table>
 </dd>
@@ -404,29 +549,45 @@ Note that all heuristics are inadmissible, i.e. A* is not guaranteed to find the
 <tr><td>&nbsp;</td><td>Comma separated list of predictors. Predictors are scoring modules which define a distribution over target words given the history and some side information like the source sentence. If vocabulary sizes differ among predictors, we fill in gaps with predictor UNK scores.:
 
 * &#8216;nmt&#8217;: neural machine translation predictor.
-         Options: see machine_translation.configurations plus proto, nmt_model_selector, cache_nmt_posteriors.
+         Options: see machine_translation.configurations plus nmt_model_selector, cache_nmt_posteriors.
 * &#8216;srilm&#8217;: n-gram language model.
           Options: srilm_path, srilm_order
 * &#8216;nplm&#8217;: neural n-gram language model (NPLM).
           Options: nplm_path, normalize_nplm_probs
+* &#8216;rnnlm&#8217;: RNN language model based on TensorFlow.
+          Options: rnnlm_path
+* &#8216;lstm&#8217;: Pure lstm predictor (chainer-based).
+          Options: lstm_path.
 * &#8216;forced&#8217;: Forced decoding with one reference
             Options: trg_test
 * &#8216;forcedlst&#8217;: Forced decoding with a Moses n-best list (n-best list rescoring)
                Options: trg_test, forcedlst_sparse_feat, use_nbest_weights
+* &#8216;bow&#8217;: Forced decoding with one bag-of-words ref.
+         Options: trg_test, heuristic_scores_file, bow_heuristic_strategies, bow_accept_subsets, bow_accept_duplicates, bow_equivalence_vocab_size
+* &#8216;bowsearch&#8217;: Forced decoding with one bag-of-words ref.
+         Options: hypo_recombination, trg_test, heuristic_scores_file, bow_heuristic_strategies, bow_accept_subsets, bow_accept_duplicates, bow_equivalence_vocab_size
 * &#8216;fst&#8217;: Deterministic translation lattices
-         Options: fst_path, use_fst_weights, normalize_fst_weights, fst_to_log, add_fst_bos_to_eos_weight
+         Options: fst_path, use_fst_weights, normalize_fst_weights, fst_to_log, fst_skip_bos_weight
 * &#8216;nfst&#8217;: Non-deterministic translation lattices
-          Options: fst_path, use_fst_weights, normalize_fst_weights, fst_to_log, add_fst_bos_to_eos_weight
+          Options: fst_path, use_fst_weights, normalize_fst_weights, fst_to_log, fst_skip_bos_weight
 * &#8216;rtn&#8217;: Recurrent transition networks as created by HiFST with late expansion.
          Options: rtn_path, use_rtn_weights, minimize_rtns, remove_epsilon_in_rtns, normalize_rtn_weights
 * &#8216;lrhiero&#8217;: Direct Hiero (left-to-right Hiero). This is a EXPERIMENTAL implementation of LRHiero.
              Options: rules_path, grammar_feature_weights, use_grammar_weights
 * &#8216;wc&#8217;: Number of words feature.
-        Options: no options.
+        Options: wc_word.
+* &#8216;unkc&#8217;: Poisson model for number of UNKs.
+          Options: unk_count_lambdas.
 * &#8216;length&#8217;: Target sentence length model
             Options: src_test_raw, length_model_weights, use_length_point_probs
+* &#8216;extlength&#8217;: External target sentence lengths
+               Options: extlength_path
 All predictors can be combined with one or more wrapper predictors by adding the wrapper name separated by a _ symbol. Following wrappers are available:
 * &#8216;idxmap&#8217;: Add this wrapper to predictors which use an alternative word map.            Options: src_idxmap, trg_idxmap
+* &#8216;altsrc&#8217;: This wrapper loads source sentences from an alternative source.
+            Options: altsrc_test
+* &#8216;word2char&#8217;: Wraps word-level predictors when SGNMT is running on character level.
+            Options: word2char_map
 
 Note that you can use multiple instances of the same predictor. For example, &#8216;nmt,nmt,nmt&#8217; can be used for ensembling three NMT systems. You can often override parts of the predictor configurations for subsequent predictors by adding the predictor number (e.g. see &#8211;nmt_config2 or &#8211;fst_path2)</td></tr>
 <tr><td class="option-group" colspan="2">
@@ -466,13 +627,15 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <col class="description" />
 <tbody valign="top">
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--proto=get_config_gnmt</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Prototype configuration of the NMT model. See cam.sgnmt.blocks.machine_translation.configuration for available prototypes. However, it is recommended to configure GNMT via command line arguments and configuration files instead of using this option.</td></tr>
-<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--length_normalization=False</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>DEPRECATED. Synonym for &#8211;combination_scheme length_norm. Normalize n-best hypotheses by sentence length. Normally improves pure NMT decoding, but degrades performance when combined with predictors like fst or multiple NMT systems.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--nmt_engine=blocks</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">NMT implementation which should be used. Use &#8216;none&#8217; to disable NMT support.</p>
+<p class="last">Possible choices: none, blocks, tensorflow</p>
+</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--nmt_model_selector=bleu</span></kbd></td>
 </tr>
@@ -487,6 +650,10 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--cache_nmt_posteriors=False</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>This enables the cache in the [F]NMT predictor. Normally, the search procedure is responsible to avoid applying predictors to the same history twice. However, due to the limited NMT vocabulary, two different histories might be the same from the NMT perspective, e.g. if they are the same up to words which are outside the NMT vocabulary. If this parameter is set to true, we cache posteriors with histories containing UNK and reload them when needed</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--gnmt_beta=0.0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If this is greater than zero, add a coverage penalization term following Googles NMT (Wu et al., 2016) to the NMT score.</td></tr>
 </tbody>
 </table>
 </dd>
@@ -507,6 +674,29 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--use_length_point_probs=False</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>If this is true, the length predictor outputs probability 1 for all tokens except &lt;/S&gt;. For &lt;/S&gt; it uses the point probability given by the length model. If this is set to false, we normalize the predictive score by comparing P(l=x) and P(l&lt;x)</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--length_model_offset=0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>The target sentence length model is applied to hypothesis length minus length_model_offst</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--extlength_path=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Only required for the &#8216;extlength&#8217; predictor. This is the path to the file which specifies the length distributions for each sentence. Each line consists of blank separated &#8216;&lt;length&gt;:&lt;logprob&gt;&#8217; pairs.</td></tr>
+</tbody>
+</table>
+</dd>
+<dt>Count predictor options</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--unk_count_lambdas=1.0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Model parameters for the UNK count model: comma-separated list of lambdas for Poisson distributions. The first float specifies the Poisson distribution over the number of UNKs in the hypotheses given that the number of UNKs on the source side is 0. The last lambda specifies the distribution given &gt;=n-1 UNKs in the source sentence.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--wc_word=-1</span></kbd></td>
+<td>If negative, the wc predictor counts all words. Otherwise, count only the specific word</td></tr>
 </tbody>
 </table>
 </dd>
@@ -530,10 +720,32 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--use_nbest_weights=False</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Only required for forcedlst predictor. Whether to use the scores in n-best lists.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bow_heuristic_strategies=remaining</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Defines the form of heuristic estimates of the bow predictor. Comma-separate following values:
+* remaining: sum up unigram estimates for all words in the bag which haven&#8217;t been consumed
+* consumed: Use the difference between the actual hypothesis score and the sum of unigram estimates of consumed words as score</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bow_accept_subsets=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If this is set to false, the bow predictor enforces exact correspondence between bag and words in complete hypotheses. If false, it ensures that hypotheses are consistent with the bag (i.e. do not contain words outside the bag) but do not necessarily have all words in the bag</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bow_accept_duplicates=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If this is set to true, the bow predictor allows a word in the bag to appear multiple times, i.e. the exact count of the word is not enforced. Can only be used in conjunction with bow_accept_subsets</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bow_equivalence_vocab_size=-1</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If positive, bow predictor states are considered equal if the the remaining words within that vocab and OOVs regarding this vocab are the same. Only relevant when using hypothesis recombination</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bow_diversity_heuristic_factor=-1.0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If this is greater than zero, promote diversity between bags via the bow predictor heuristic. Bags which correspond to bags of partial bags of full hypotheses are penalized by this factor.</td></tr>
 </tbody>
 </table>
 </dd>
-<dt>Indexmap predictor options</dt>
+<dt>Wrapper predictor options</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
 <col class="option" />
 <col class="description" />
@@ -552,6 +764,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group">
 <kbd><span class="option">--fr_idxmap=</span></kbd></td>
 <td>DEPRECATED. Old name for &#8211;trg_idxmap</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test=test_en.alt</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Only required for altsrc wrapper predictor. Path to the alternative source sentences.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map=word2char.map</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Only required for word2char wrapper predictor. Path to a mapping file from word ID to sequence of character IDs (format: &lt;word-id&gt; &lt;char-id1&gt; &lt;char-id2&gt;...). All character IDs which do not occur in this mapping are treated as word boundary symbols.</td></tr>
 </tbody>
 </table>
 </dd>
@@ -575,7 +795,7 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 </tbody>
 </table>
 </dd>
-<dt>Neural LM predictor options</dt>
+<dt>(Neural) LM predictor options</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
 <col class="option" />
 <col class="description" />
@@ -588,6 +808,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--nplm_path=nplm/nplm.gz</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Path to the NPLM language model</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--rnnlm_path=rnnlm/rnnlm.gz</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Path to the RNNLM language model</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--lstm_path=chainer/model</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Path to the LSTM model (chainer)</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--srilm_order=5</span></kbd></td>
 </tr>
@@ -613,9 +841,9 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 </tr>
 <tr><td>&nbsp;</td><td>Only required for rtn predictor. Sets the path to the RTN directory as created by HiFST</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--add_fst_bos_to_eos_weight=False</span></kbd></td>
+<kbd><span class="option">--fst_skip_bos_weight=True</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>This option applies to fst, nfst and rtn predictors. Lattices produced by HiFST contain the &lt;S&gt; symbol and often have scores on the corresponding arc. However, GNMT skips &lt;S&gt; and this score is not regarded anywhere. Set this option to true to add the &lt;S&gt; score to the &lt;/S&gt; arc. This ensures that the complete path scores for the [n]fst and rtn predictors match the corresponding path weights in the original FST as obtained with fstshortestpath.</td></tr>
+<tr><td>&nbsp;</td><td>This option applies to fst and nfst predictors. Lattices produced by HiFST contain the &lt;S&gt; symbol and often have scores on the corresponding arc. However, GNMT skips &lt;S&gt; and this score is not regarded anywhere. Set this option to true to add the &lt;S&gt; scores. This ensures that the complete path scores for the [n]fst and rtn predictors match the corresponding path weights in the original FST as obtained with fstshortestpath.</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--fst_to_log=True</span></kbd></td>
 </tr>
@@ -655,6 +883,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group">
 <kbd><span class="option">--nmt_config2=</span></kbd></td>
 <td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the second one with this parameter. The second nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config2 &#8216;save_to=train2,enc_embed=400&#8217;</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test2=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the second altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map2=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the second word2char</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--src_idxmap2=</span></kbd></td>
 <td>Overrides &#8211;src_idxmap for the second indexmap</td></tr>
@@ -671,6 +907,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group">
 <kbd><span class="option">--nmt_config3=</span></kbd></td>
 <td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the third one with this parameter. The third nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config3 &#8216;save_to=train3,enc_embed=400&#8217;</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test3=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the third altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map3=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the third word2char</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--src_idxmap3=</span></kbd></td>
 <td>Overrides &#8211;src_idxmap for the third indexmap</td></tr>
@@ -687,6 +931,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group">
 <kbd><span class="option">--nmt_config4=</span></kbd></td>
 <td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 4-th one with this parameter. The 4-th nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config4 &#8216;save_to=train4,enc_embed=400&#8217;</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test4=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the 4-th altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map4=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the 4-th word2char</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--src_idxmap4=</span></kbd></td>
 <td>Overrides &#8211;src_idxmap for the 4-th indexmap</td></tr>
@@ -703,6 +955,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group">
 <kbd><span class="option">--nmt_config5=</span></kbd></td>
 <td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 5-th one with this parameter. The 5-th nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config5 &#8216;save_to=train5,enc_embed=400&#8217;</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test5=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the 5-th altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map5=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the 5-th word2char</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--src_idxmap5=</span></kbd></td>
 <td>Overrides &#8211;src_idxmap for the 5-th indexmap</td></tr>
@@ -719,6 +979,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group">
 <kbd><span class="option">--nmt_config6=</span></kbd></td>
 <td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 6-th one with this parameter. The 6-th nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config6 &#8216;save_to=train6,enc_embed=400&#8217;</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test6=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the 6-th altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map6=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the 6-th word2char</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--src_idxmap6=</span></kbd></td>
 <td>Overrides &#8211;src_idxmap for the 6-th indexmap</td></tr>
@@ -735,6 +1003,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group">
 <kbd><span class="option">--nmt_config7=</span></kbd></td>
 <td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 7-th one with this parameter. The 7-th nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config7 &#8216;save_to=train7,enc_embed=400&#8217;</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test7=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the 7-th altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map7=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the 7-th word2char</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--src_idxmap7=</span></kbd></td>
 <td>Overrides &#8211;src_idxmap for the 7-th indexmap</td></tr>
@@ -751,6 +1027,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group">
 <kbd><span class="option">--nmt_config8=</span></kbd></td>
 <td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 8-th one with this parameter. The 8-th nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config8 &#8216;save_to=train8,enc_embed=400&#8217;</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test8=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the 8-th altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map8=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the 8-th word2char</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--src_idxmap8=</span></kbd></td>
 <td>Overrides &#8211;src_idxmap for the 8-th indexmap</td></tr>
@@ -767,6 +1051,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group">
 <kbd><span class="option">--nmt_config9=</span></kbd></td>
 <td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 9-th one with this parameter. The 9-th nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config9 &#8216;save_to=train9,enc_embed=400&#8217;</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test9=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the 9-th altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map9=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the 9-th word2char</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--src_idxmap9=</span></kbd></td>
 <td>Overrides &#8211;src_idxmap for the 9-th indexmap</td></tr>
@@ -784,6 +1076,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--nmt_config10=</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 10-th one with this parameter. The 10-th nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config10 &#8216;save_to=train10,enc_embed=400&#8217;</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test10=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the 10-th altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map10=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the 10-th word2char</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--src_idxmap10=</span></kbd></td>
 </tr>
@@ -804,6 +1104,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 </tr>
 <tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 11-th one with this parameter. The 11-th nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config11 &#8216;save_to=train11,enc_embed=400&#8217;</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test11=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the 11-th altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map11=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the 11-th word2char</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--src_idxmap11=</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;src_idxmap for the 11-th indexmap</td></tr>
@@ -822,6 +1130,14 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--nmt_config12=</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 12-th one with this parameter. The 12-th nmt predictor inherits all settings under &#8216;Neural model configuration&#8217; except for the ones in this parameter. Usage: &#8211;nmt_config12 &#8216;save_to=train12,enc_embed=400&#8217;</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--altsrc_test12=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;altsrc_test for the 12-th altsrc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--word2char_map12=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;word2char_map for the 12-th word2char</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--src_idxmap12=</span></kbd></td>
 </tr>
@@ -849,22 +1165,29 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--enc_nhids=1000</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Number of hidden units in encoder GRU</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--stream=stream</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Module name of the stream that will be used</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--enc_layers=1</span></kbd></td>
+<td>Number of encoder layers</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--store_full_main_loop=False</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Old style archives (not recommended)</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_share_weights=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Whether to share weights in deep decoders</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--src_mono_data=./data/mono.ids.en</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Source language monolingual data (for use see &#8211;mono_data_integration)</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--weight_scale=0.01</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Std of weight initialization</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--eos_token=_EOS</span></kbd></td>
+<kbd><span class="option">--memory_size=500</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>String representation for &lt;/S&gt;</td></tr>
+<tr><td>&nbsp;</td><td>Size of external memory structure</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--sort_k_batches=12</span></kbd></td>
 </tr>
@@ -874,6 +1197,10 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 </tr>
 <tr><td>&nbsp;</td><td>Validation set source file</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_init=last</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Decoder state initialisation: last, average, constant</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--weight_noise_rec=False</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Weight noise flag for recurrent layers</td></tr>
@@ -882,7 +1209,7 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 </tr>
 <tr><td>&nbsp;</td><td>Source vocab size, including special tokens</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--save_freq=500</span></kbd></td>
+<kbd><span class="option">--save_freq=750</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Save model after this many updates</td></tr>
 <tr><td class="option-group" colspan="2">
@@ -890,9 +1217,9 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 </tr>
 <tr><td>&nbsp;</td><td>Fix embeddings during training</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--val_set_out=./train/validation_out.txt</span></kbd></td>
+<kbd><span class="option">--val_set_grndtruth=./data/dev.ids.fr</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Validation output file</td></tr>
+<tr><td>&nbsp;</td><td>Validation set gold file</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--enc_embed=620</span></kbd></td>
 </tr>
@@ -906,27 +1233,36 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 </tr>
 <tr><td>&nbsp;</td><td>Maximum number of updates</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--unk_token=_UNK</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>String representation for UNK</td></tr>
-<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--saveto=./train</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Where to save model, same as &#8216;prefix&#8217; in groundhog</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--memory=none</span></kbd></td>
+<td>External memory: none, stack</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--trg_data=./data/train.ids.shuf.fr</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Target dataset</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_attention_sources=s</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Sources used by attention: f for feedback, s for decoder states</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--step_clipping=1.0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Gradient clipping threshold</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--dropout=1.0</span></kbd></td>
-<td>Dropout ratio, applied only after readout maxout</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--unk_id=0</span></kbd></td>
-<td>UNK id</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--annotations=direct</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Annotation strategy (comma-separated): direct, hierarchical</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--enc_skip_connections=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Add skip connection in deep encoders</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--val_set_out=./train/validation_out.txt</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Validation output file</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--val_burn_in=80000</span></kbd></td>
 </tr>
@@ -936,6 +1272,10 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 </tr>
 <tr><td>&nbsp;</td><td>Optimization step rule</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--attention=content</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Attention mechanism: none, content, nbest-&lt;n&gt;, coverage-&lt;n&gt;, tree</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--trg_vocab_size=30003</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Target vocab size, including special tokens</td></tr>
@@ -943,38 +1283,48 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--batch_size=80</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Batch size</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--dec_layers=1</span></kbd></td>
+<td>Number of decoder layers (NOT IMPLEMENTED for != 1)</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--bleu_val_freq=5000</span></kbd></td>
+<kbd><span class="option">--src_sparse_feat_map=</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Validate bleu after this many updates</td></tr>
+<tr><td>&nbsp;</td><td>Mapping files for using sparse feature word representations on the source side</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--output_val_set=True</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Print validation output to file</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--weight_noise_ff=0.0</span></kbd></td>
+<kbd><span class="option">--dec_readout_sources=sfa</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Weight noise flag for feed forward layers</td></tr>
+<tr><td>&nbsp;</td><td>Sources used by readout network: f for feedback, s for decoder states, a for attention (context vector)</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--src_data=./data/train.ids.shuf.en</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Source dataset</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--val_set_grndtruth=./data/dev.ids.fr</span></kbd></td>
+<kbd><span class="option">--trg_sparse_feat_map=</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Validation set gold file</td></tr>
+<tr><td>&nbsp;</td><td>Mapping files for using sparse feature word representations on the target side</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--dropout=1.0</span></kbd></td>
+<td>Dropout ratio, applied only after readout maxout</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--hook_samples=2</span></kbd></td>
+<kbd><span class="option">--bleu_val_freq=6000</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Show this many samples at each sampling</td></tr>
+<tr><td>&nbsp;</td><td>Validate bleu after this many updates</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--bos_token=_GO</span></kbd></td>
+<kbd><span class="option">--enc_share_weights=True</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>String representation for &lt;S&gt;</td></tr>
+<tr><td>&nbsp;</td><td>Whether to share weights in deep encoders</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--sampling_freq=13</span></kbd></td>
+<kbd><span class="option">--trg_mono_data=./data/mono.ids.fr</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Show samples from model after this many updates</td></tr>
+<tr><td>&nbsp;</td><td>Target language monolingual data (for use see &#8211;mono_data_integration)</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--normalized_bleu=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Length normalization IN TRAINING</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--reload=True</span></kbd></td>
 <td>Reload model from files if exist</td></tr>
@@ -993,9 +1343,9 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--seq_len=50</span></kbd></td>
 <td>Sequences longer than this will be discarded</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--normalized_bleu=True</span></kbd></td>
+<kbd><span class="option">--weight_noise_ff=0.0</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Length normalization IN TRAINING</td></tr>
+<tr><td>&nbsp;</td><td>Weight noise flag for feed forward layers</td></tr>
 </tbody>
 </table>
 </dd>
@@ -1006,29 +1356,47 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <p>The training script follows the NMT training example in blocks, but it adds an
 option for enabling reshuffling the training data between epochs, and fixing
 word embedding which might be used in later training stages.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">train</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">proto</span> <span class="n">PROTO</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bokeh</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">reshuffle</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">enc_nhids</span> <span class="n">ENC_NHIDS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">stream</span> <span class="n">STREAM</span><span class="p">]</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">train</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bokeh</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">reshuffle</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">slim_iteration_state</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">reset_epoch</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">mono_data_integration</span> <span class="p">{</span><span class="n">none</span><span class="p">}]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">loss</span> <span class="p">{</span><span class="n">default</span><span class="p">,</span><span class="n">gleu</span><span class="p">}]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">add_mono_dummy_data</span> <span class="n">ADD_MONO_DUMMY_DATA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">backtrans_nmt_config</span> <span class="n">BACKTRANS_NMT_CONFIG</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">backtrans_reload_frequency</span> <span class="n">BACKTRANS_RELOAD_FREQUENCY</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">backtrans_store</span> <span class="n">BACKTRANS_STORE</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">backtrans_max_same_word</span> <span class="n">BACKTRANS_MAX_SAME_WORD</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">sampling_freq</span> <span class="n">SAMPLING_FREQ</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">hook_samples</span> <span class="n">HOOK_SAMPLES</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">enc_nhids</span> <span class="n">ENC_NHIDS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">enc_layers</span> <span class="n">ENC_LAYERS</span><span class="p">]</span>
                 <span class="p">[</span><span class="o">--</span><span class="n">store_full_main_loop</span> <span class="n">STORE_FULL_MAIN_LOOP</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">weight_scale</span> <span class="n">WEIGHT_SCALE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">eos_token</span> <span class="n">EOS_TOKEN</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">sort_k_batches</span> <span class="n">SORT_K_BATCHES</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">val_set</span> <span class="n">VAL_SET</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">dec_share_weights</span> <span class="n">DEC_SHARE_WEIGHTS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">src_mono_data</span> <span class="n">SRC_MONO_DATA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">weight_scale</span> <span class="n">WEIGHT_SCALE</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">memory_size</span> <span class="n">MEMORY_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sort_k_batches</span> <span class="n">SORT_K_BATCHES</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">val_set</span> <span class="n">VAL_SET</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_init</span> <span class="n">DEC_INIT</span><span class="p">]</span>
                 <span class="p">[</span><span class="o">--</span><span class="n">weight_noise_rec</span> <span class="n">WEIGHT_NOISE_REC</span><span class="p">]</span>
                 <span class="p">[</span><span class="o">--</span><span class="n">src_vocab_size</span> <span class="n">SRC_VOCAB_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">save_freq</span> <span class="n">SAVE_FREQ</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">fix_embeddings</span> <span class="n">FIX_EMBEDDINGS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">val_set_out</span> <span class="n">VAL_SET_OUT</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">enc_embed</span> <span class="n">ENC_EMBED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_nhids</span> <span class="n">DEC_NHIDS</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">finish_after</span> <span class="n">FINISH_AFTER</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">unk_token</span> <span class="n">UNK_TOKEN</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">saveto</span> <span class="n">SAVETO</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_data</span> <span class="n">TRG_DATA</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">step_clipping</span> <span class="n">STEP_CLIPPING</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dropout</span> <span class="n">DROPOUT</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">unk_id</span> <span class="n">UNK_ID</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">val_burn_in</span> <span class="n">VAL_BURN_IN</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">step_rule</span> <span class="n">STEP_RULE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_vocab_size</span> <span class="n">TRG_VOCAB_SIZE</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">batch_size</span> <span class="n">BATCH_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bleu_val_freq</span> <span class="n">BLEU_VAL_FREQ</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">output_val_set</span> <span class="n">OUTPUT_VAL_SET</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">weight_noise_ff</span> <span class="n">WEIGHT_NOISE_FF</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_data</span> <span class="n">SRC_DATA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">fix_embeddings</span> <span class="n">FIX_EMBEDDINGS</span><span class="p">]</span>
                 <span class="p">[</span><span class="o">--</span><span class="n">val_set_grndtruth</span> <span class="n">VAL_SET_GRNDTRUTH</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">hook_samples</span> <span class="n">HOOK_SAMPLES</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bos_token</span> <span class="n">BOS_TOKEN</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">sampling_freq</span> <span class="n">SAMPLING_FREQ</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">reload</span> <span class="n">RELOAD</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">enc_embed</span> <span class="n">ENC_EMBED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_nhids</span> <span class="n">DEC_NHIDS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">finish_after</span> <span class="n">FINISH_AFTER</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">saveto</span> <span class="n">SAVETO</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">memory</span> <span class="n">MEMORY</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_data</span> <span class="n">TRG_DATA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">dec_attention_sources</span> <span class="n">DEC_ATTENTION_SOURCES</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">step_clipping</span> <span class="n">STEP_CLIPPING</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">annotations</span> <span class="n">ANNOTATIONS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">enc_skip_connections</span> <span class="n">ENC_SKIP_CONNECTIONS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">val_set_out</span> <span class="n">VAL_SET_OUT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">val_burn_in</span> <span class="n">VAL_BURN_IN</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">step_rule</span> <span class="n">STEP_RULE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">attention</span> <span class="n">ATTENTION</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">trg_vocab_size</span> <span class="n">TRG_VOCAB_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">batch_size</span> <span class="n">BATCH_SIZE</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">dec_layers</span> <span class="n">DEC_LAYERS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">src_sparse_feat_map</span> <span class="n">SRC_SPARSE_FEAT_MAP</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">output_val_set</span> <span class="n">OUTPUT_VAL_SET</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">dec_readout_sources</span> <span class="n">DEC_READOUT_SOURCES</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">src_data</span> <span class="n">SRC_DATA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">trg_sparse_feat_map</span> <span class="n">TRG_SPARSE_FEAT_MAP</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">dropout</span> <span class="n">DROPOUT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bleu_val_freq</span> <span class="n">BLEU_VAL_FREQ</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">enc_share_weights</span> <span class="n">ENC_SHARE_WEIGHTS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">trg_mono_data</span> <span class="n">TRG_MONO_DATA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">normalized_bleu</span> <span class="n">NORMALIZED_BLEU</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">reload</span> <span class="n">RELOAD</span><span class="p">]</span>
                 <span class="p">[</span><span class="o">--</span><span class="n">beam_size</span> <span class="n">BEAM_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_embed</span> <span class="n">DEC_EMBED</span><span class="p">]</span>
                 <span class="p">[</span><span class="o">--</span><span class="n">bleu_script</span> <span class="n">BLEU_SCRIPT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">seq_len</span> <span class="n">SEQ_LEN</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">normalized_bleu</span> <span class="n">NORMALIZED_BLEU</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">weight_noise_ff</span> <span class="n">WEIGHT_NOISE_FF</span><span class="p">]</span>
 </pre></div>
 </div>
 <dl class="docutils">
@@ -1037,10 +1405,6 @@ word embedding which might be used in later training stages.</p>
 <col class="option" />
 <col class="description" />
 <tbody valign="top">
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--proto=get_config_gnmt</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Prototype config to use for config</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--bokeh=False</span></kbd></td>
 <td>Use bokeh server for plotting</td></tr>
@@ -1049,25 +1413,85 @@ word embedding which might be used in later training stages.</p>
 </tr>
 <tr><td>&nbsp;</td><td>Reshuffle before each epoch</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--slim_iteration_state=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Per default the iteration state stores the data stream and the main loop epoch iterator. Enabling this option only stores the epoch iterator. This results in a much smaller iteration state, but the data stream is reset after reloading. Normally, you can use slim iteration states if your data stream does reshuffling</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--reset_epoch=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Set epoch_started in main loop status to false. Sometimes required if you change training parameters such as &#8211;mono_data_integration</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--mono_data_integration=none</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">This parameter specifies how to use monolingual data. Currently, we only support using the target data.
+
+* &#8216;none&#8217;: Do not use monolingual data
+</p>
+<p class="last">Possible choices: none</p>
+</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--loss=default</span></kbd></td>
+<td><p class="first">Training loss function.
+
+* &#8216;default&#8217;: Standard loss function: squared error with target feature maps, else cross entropy
+* &#8216;gleu&#8217;: Reinforcement learning objective function as proposed by Wu et al., 2016 (Googles NMT)</p>
+<p class="last">Possible choices: default, gleu</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--add_mono_dummy_data=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If the method specified with mono_data_integration uses monolingual data, it usually combines synthetic and dummy source sentences. Set this to false to disable dummy source sentences.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--backtrans_nmt_config=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>A string describing the configuration of the back-translating NMT system. Syntax is equal to nmt_config2 in decode.py: Comma separated list of name-value pairs, where name is one of the NMT configuration parameters. E.g. saveto=train.back,src_vocab_size=50000,trg_vocab_size=50000</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--backtrans_reload_frequency=0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>The back-translating NMT model is reloaded every n updates. This is useful if the back-translating NMT system is currently trained by itself with the same policy. This enables us to train two NMT systems in opposite translation directions and benefit from gains in the other system immediately. Set to 0 to disable reloading</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--backtrans_store=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Write the back-translated sentences to the file system.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--backtrans_max_same_word=0.3</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Used for sanity check of the backtranslation. If the most frequent word in the backtranslated sentence has relative frequency higher than this, discard this sentence pair</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--sampling_freq=13</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>NOT USED, just to prevent old code from breaking</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--hook_samples=0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>NOT USED, just to prevent old code from breaking</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--enc_nhids=1000</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Number of hidden units in encoder GRU</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--stream=stream</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Module name of the stream that will be used</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--enc_layers=1</span></kbd></td>
+<td>Number of encoder layers</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--store_full_main_loop=False</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Old style archives (not recommended)</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_share_weights=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Whether to share weights in deep decoders</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--src_mono_data=./data/mono.ids.en</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Source language monolingual data (for use see &#8211;mono_data_integration)</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--weight_scale=0.01</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Std of weight initialization</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--eos_token=_EOS</span></kbd></td>
+<kbd><span class="option">--memory_size=500</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>String representation for &lt;/S&gt;</td></tr>
+<tr><td>&nbsp;</td><td>Size of external memory structure</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--sort_k_batches=12</span></kbd></td>
 </tr>
@@ -1077,6 +1501,10 @@ word embedding which might be used in later training stages.</p>
 </tr>
 <tr><td>&nbsp;</td><td>Validation set source file</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_init=last</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Decoder state initialisation: last, average, constant</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--weight_noise_rec=False</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Weight noise flag for recurrent layers</td></tr>
@@ -1085,7 +1513,7 @@ word embedding which might be used in later training stages.</p>
 </tr>
 <tr><td>&nbsp;</td><td>Source vocab size, including special tokens</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--save_freq=500</span></kbd></td>
+<kbd><span class="option">--save_freq=750</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Save model after this many updates</td></tr>
 <tr><td class="option-group" colspan="2">
@@ -1093,9 +1521,9 @@ word embedding which might be used in later training stages.</p>
 </tr>
 <tr><td>&nbsp;</td><td>Fix embeddings during training</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--val_set_out=./train/validation_out.txt</span></kbd></td>
+<kbd><span class="option">--val_set_grndtruth=./data/dev.ids.fr</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Validation output file</td></tr>
+<tr><td>&nbsp;</td><td>Validation set gold file</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--enc_embed=620</span></kbd></td>
 </tr>
@@ -1109,27 +1537,36 @@ word embedding which might be used in later training stages.</p>
 </tr>
 <tr><td>&nbsp;</td><td>Maximum number of updates</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--unk_token=_UNK</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>String representation for UNK</td></tr>
-<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--saveto=./train</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Where to save model, same as &#8216;prefix&#8217; in groundhog</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--memory=none</span></kbd></td>
+<td>External memory: none, stack</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--trg_data=./data/train.ids.shuf.fr</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Target dataset</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_attention_sources=s</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Sources used by attention: f for feedback, s for decoder states</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--step_clipping=1.0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Gradient clipping threshold</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--dropout=1.0</span></kbd></td>
-<td>Dropout ratio, applied only after readout maxout</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--unk_id=0</span></kbd></td>
-<td>UNK id</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--annotations=direct</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Annotation strategy (comma-separated): direct, hierarchical</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--enc_skip_connections=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Add skip connection in deep encoders</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--val_set_out=./train/validation_out.txt</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Validation output file</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--val_burn_in=80000</span></kbd></td>
 </tr>
@@ -1139,6 +1576,10 @@ word embedding which might be used in later training stages.</p>
 </tr>
 <tr><td>&nbsp;</td><td>Optimization step rule</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--attention=content</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Attention mechanism: none, content, nbest-&lt;n&gt;, coverage-&lt;n&gt;, tree</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--trg_vocab_size=30003</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Target vocab size, including special tokens</td></tr>
@@ -1146,38 +1587,48 @@ word embedding which might be used in later training stages.</p>
 <kbd><span class="option">--batch_size=80</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Batch size</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--dec_layers=1</span></kbd></td>
+<td>Number of decoder layers (NOT IMPLEMENTED for != 1)</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--bleu_val_freq=5000</span></kbd></td>
+<kbd><span class="option">--src_sparse_feat_map=</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Validate bleu after this many updates</td></tr>
+<tr><td>&nbsp;</td><td>Mapping files for using sparse feature word representations on the source side</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--output_val_set=True</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Print validation output to file</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--weight_noise_ff=0.0</span></kbd></td>
+<kbd><span class="option">--dec_readout_sources=sfa</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Weight noise flag for feed forward layers</td></tr>
+<tr><td>&nbsp;</td><td>Sources used by readout network: f for feedback, s for decoder states, a for attention (context vector)</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--src_data=./data/train.ids.shuf.en</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Source dataset</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--val_set_grndtruth=./data/dev.ids.fr</span></kbd></td>
+<kbd><span class="option">--trg_sparse_feat_map=</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Validation set gold file</td></tr>
+<tr><td>&nbsp;</td><td>Mapping files for using sparse feature word representations on the target side</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--dropout=1.0</span></kbd></td>
+<td>Dropout ratio, applied only after readout maxout</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--hook_samples=2</span></kbd></td>
+<kbd><span class="option">--bleu_val_freq=6000</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Show this many samples at each sampling</td></tr>
+<tr><td>&nbsp;</td><td>Validate bleu after this many updates</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--bos_token=_GO</span></kbd></td>
+<kbd><span class="option">--enc_share_weights=True</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>String representation for &lt;S&gt;</td></tr>
+<tr><td>&nbsp;</td><td>Whether to share weights in deep encoders</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--sampling_freq=13</span></kbd></td>
+<kbd><span class="option">--trg_mono_data=./data/mono.ids.fr</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Show samples from model after this many updates</td></tr>
+<tr><td>&nbsp;</td><td>Target language monolingual data (for use see &#8211;mono_data_integration)</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--normalized_bleu=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Length normalization IN TRAINING</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--reload=True</span></kbd></td>
 <td>Reload model from files if exist</td></tr>
@@ -1196,9 +1647,283 @@ word embedding which might be used in later training stages.</p>
 <kbd><span class="option">--seq_len=50</span></kbd></td>
 <td>Sequences longer than this will be discarded</td></tr>
 <tr><td class="option-group" colspan="2">
+<kbd><span class="option">--weight_noise_ff=0.0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Weight noise flag for feed forward layers</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</div>
+<div class="section" id="alignment">
+<h2>Alignment<a class="headerlink" href="#alignment" title="Permalink to this headline">¶</a></h2>
+<p>Only available for the Blocks (Theano) NMT engine. Supports two different
+neural word alignment models which both utilize the concept of attention in
+NMT.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">align</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">iterations</span> <span class="n">ITERATIONS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">nmt_model_selector</span> <span class="p">{</span><span class="n">params</span><span class="p">,</span><span class="n">bleu</span><span class="p">,</span><span class="n">time</span><span class="p">}]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">alignment_model</span> <span class="p">{</span><span class="n">nam</span><span class="p">,</span><span class="n">nmt</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">output_path</span> <span class="n">OUTPUT_PATH</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">outputs</span> <span class="n">OUTPUTS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">enc_nhids</span> <span class="n">ENC_NHIDS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">enc_layers</span> <span class="n">ENC_LAYERS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">store_full_main_loop</span> <span class="n">STORE_FULL_MAIN_LOOP</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">dec_share_weights</span> <span class="n">DEC_SHARE_WEIGHTS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">src_mono_data</span> <span class="n">SRC_MONO_DATA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">weight_scale</span> <span class="n">WEIGHT_SCALE</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">memory_size</span> <span class="n">MEMORY_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sort_k_batches</span> <span class="n">SORT_K_BATCHES</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">val_set</span> <span class="n">VAL_SET</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_init</span> <span class="n">DEC_INIT</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">weight_noise_rec</span> <span class="n">WEIGHT_NOISE_REC</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">src_vocab_size</span> <span class="n">SRC_VOCAB_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">save_freq</span> <span class="n">SAVE_FREQ</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">fix_embeddings</span> <span class="n">FIX_EMBEDDINGS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">val_set_grndtruth</span> <span class="n">VAL_SET_GRNDTRUTH</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">enc_embed</span> <span class="n">ENC_EMBED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_nhids</span> <span class="n">DEC_NHIDS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">finish_after</span> <span class="n">FINISH_AFTER</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">saveto</span> <span class="n">SAVETO</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">memory</span> <span class="n">MEMORY</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_data</span> <span class="n">TRG_DATA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">dec_attention_sources</span> <span class="n">DEC_ATTENTION_SOURCES</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">step_clipping</span> <span class="n">STEP_CLIPPING</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">annotations</span> <span class="n">ANNOTATIONS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">enc_skip_connections</span> <span class="n">ENC_SKIP_CONNECTIONS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">val_set_out</span> <span class="n">VAL_SET_OUT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">val_burn_in</span> <span class="n">VAL_BURN_IN</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">step_rule</span> <span class="n">STEP_RULE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">attention</span> <span class="n">ATTENTION</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">trg_vocab_size</span> <span class="n">TRG_VOCAB_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">batch_size</span> <span class="n">BATCH_SIZE</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">dec_layers</span> <span class="n">DEC_LAYERS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">src_sparse_feat_map</span> <span class="n">SRC_SPARSE_FEAT_MAP</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">output_val_set</span> <span class="n">OUTPUT_VAL_SET</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">dec_readout_sources</span> <span class="n">DEC_READOUT_SOURCES</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">src_data</span> <span class="n">SRC_DATA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">trg_sparse_feat_map</span> <span class="n">TRG_SPARSE_FEAT_MAP</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">dropout</span> <span class="n">DROPOUT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bleu_val_freq</span> <span class="n">BLEU_VAL_FREQ</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">enc_share_weights</span> <span class="n">ENC_SHARE_WEIGHTS</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">trg_mono_data</span> <span class="n">TRG_MONO_DATA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">normalized_bleu</span> <span class="n">NORMALIZED_BLEU</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">reload</span> <span class="n">RELOAD</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">beam_size</span> <span class="n">BEAM_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">dec_embed</span> <span class="n">DEC_EMBED</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">bleu_script</span> <span class="n">BLEU_SCRIPT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">seq_len</span> <span class="n">SEQ_LEN</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">weight_noise_ff</span> <span class="n">WEIGHT_NOISE_FF</span><span class="p">]</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>optional arguments</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--iterations=50</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Number of optimization iterations for each token</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--nmt_model_selector=bleu</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">NMT training normally creates several files in the ./train/ directory from which we can load the NMT model. Possible options:
+
+* &#8216;params&#8217;: Load parameters from params.npz. This is usually the most recent model.
+* &#8216;bleu&#8217;: Load from the best_bleu_params_* file with the best BLEU score.
+* &#8216;time&#8217;: Load from the most recent best_bleu_params_* file.</p>
+<p class="last">Possible choices: params, bleu, time</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--alignment_model=nam</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Defines the alignment model.
+
+* &#8216;nam&#8217;: Neural alignment model. Similar to NMT but trains the alignment weights explicitly for each sentence pair instead of using the NMT attention model.
+* &#8216;nmt&#8217;: Standard NMT attention model following Bahdanau et. al., 2015.</p>
+<p class="last">Possible choices: nam, nmt</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--output_path=sgnmt-out.%s</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Path to the output files generated by SGNMT. You can use the placeholder %%s for the format specifier.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--outputs=</span></kbd></td>
+<td>Comma separated list of output formats: 
+
+* &#8216;csv&#8217;: Plain text file with alignment matrix
+* &#8216;npy&#8217;: Alignment matrices in numpy&#8217;s npy format
+* &#8216;align&#8217;: Usual (Pharaoh) alignment format.
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--enc_nhids=1000</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Number of hidden units in encoder GRU</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--enc_layers=1</span></kbd></td>
+<td>Number of encoder layers</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--store_full_main_loop=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Old style archives (not recommended)</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_share_weights=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Whether to share weights in deep decoders</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--src_mono_data=./data/mono.ids.en</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Source language monolingual data (for use see &#8211;mono_data_integration)</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--weight_scale=0.01</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Std of weight initialization</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--memory_size=500</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Size of external memory structure</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--sort_k_batches=12</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>This many batches will be read ahead and sorted</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--val_set=./data/dev.ids.en</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Validation set source file</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_init=last</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Decoder state initialisation: last, average, constant</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--weight_noise_rec=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Weight noise flag for recurrent layers</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--src_vocab_size=30003</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Source vocab size, including special tokens</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--save_freq=750</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Save model after this many updates</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fix_embeddings=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Fix embeddings during training</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--val_set_grndtruth=./data/dev.ids.fr</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Validation set gold file</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--enc_embed=620</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Dimension of the word embedding matrix in encoder</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_nhids=1000</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Number of hidden units in decoder GRU</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--finish_after=1000000</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Maximum number of updates</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--saveto=./train</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Where to save model, same as &#8216;prefix&#8217; in groundhog</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--memory=none</span></kbd></td>
+<td>External memory: none, stack</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--trg_data=./data/train.ids.shuf.fr</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Target dataset</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_attention_sources=s</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Sources used by attention: f for feedback, s for decoder states</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--step_clipping=1.0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Gradient clipping threshold</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--annotations=direct</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Annotation strategy (comma-separated): direct, hierarchical</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--enc_skip_connections=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Add skip connection in deep encoders</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--val_set_out=./train/validation_out.txt</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Validation output file</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--val_burn_in=80000</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Start bleu validation after this many updates</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--step_rule=AdaDelta</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Optimization step rule</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--attention=content</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Attention mechanism: none, content, nbest-&lt;n&gt;, coverage-&lt;n&gt;, tree</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--trg_vocab_size=30003</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Target vocab size, including special tokens</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--batch_size=80</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Batch size</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--dec_layers=1</span></kbd></td>
+<td>Number of decoder layers (NOT IMPLEMENTED for != 1)</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--src_sparse_feat_map=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Mapping files for using sparse feature word representations on the source side</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--output_val_set=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Print validation output to file</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_readout_sources=sfa</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Sources used by readout network: f for feedback, s for decoder states, a for attention (context vector)</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--src_data=./data/train.ids.shuf.en</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Source dataset</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--trg_sparse_feat_map=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Mapping files for using sparse feature word representations on the target side</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--dropout=1.0</span></kbd></td>
+<td>Dropout ratio, applied only after readout maxout</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bleu_val_freq=6000</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Validate bleu after this many updates</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--enc_share_weights=True</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Whether to share weights in deep encoders</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--trg_mono_data=./data/mono.ids.fr</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Target language monolingual data (for use see &#8211;mono_data_integration)</td></tr>
+<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--normalized_bleu=True</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Length normalization IN TRAINING</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--reload=True</span></kbd></td>
+<td>Reload model from files if exist</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--beam_size=12</span></kbd></td>
+<td>Beam-size for decoding DURING TRAINING</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--dec_embed=620</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Dimension of the word embedding matrix in decoder</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bleu_script=perl ../scripts/multi-bleu.perl %s &lt;</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>BLEU script used during training for model selection</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--seq_len=50</span></kbd></td>
+<td>Sequences longer than this will be discarded</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--weight_noise_ff=0.0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Weight noise flag for feed forward layers</td></tr>
 </tbody>
 </table>
 </dd>

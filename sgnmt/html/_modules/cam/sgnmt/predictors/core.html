@@ -1,0 +1,444 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.core &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.core</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.core</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains the two basic predictor interfaces</span>
+<span class="sd">for bounded and unbounded vocabulary predictors.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">Observer</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">,</span> <span class="n">MESSAGE_TYPE_DEFAULT</span>
+
+
+<div class="viewcode-block" id="Predictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor">[docs]</a><span class="k">class</span> <span class="nc">Predictor</span><span class="p">(</span><span class="n">Observer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A predictor produces the predictive probability distribution of</span>
+<span class="sd">    the next word given the state of the predictor. The state may </span>
+<span class="sd">    change during ``predict_next()`` and ``consume()``. The functions</span>
+<span class="sd">    ``get_state()`` and ``set_state()`` can be used for non-greedy </span>
+<span class="sd">    decoding. Note: The state describes the predictor with the current</span>
+<span class="sd">    history. It does not encapsulate the current source sentence, i.e. </span>
+<span class="sd">    you cannot recover a predictor state if ``initialize()`` was called</span>
+<span class="sd">    in between. ``predict_next()`` and ``consume()`` must be called </span>
+<span class="sd">    alternately. This holds even when using ``get_state()`` and </span>
+<span class="sd">    ``set_state()``: Loading/saving states is transparent to the</span>
+<span class="sd">    predictor instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes ``current_sen_id`` with 0. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Predictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="Predictor.set_current_sen_id"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur_sen_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function is called between ``initialize()`` calls to </span>
+<span class="sd">        increment the sentence id counter. It can also be used to skip </span>
+<span class="sd">        sentences for the --range argument.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            cur_sen_id (int):  Sentence id for the next call of</span>
+<span class="sd">                               ``initialize()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">=</span> <span class="n">cur_sen_id</span></div>
+    
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="Predictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the predictive distribution over the target </span>
+<span class="sd">        vocabulary for the next word given the predictor state. Note </span>
+<span class="sd">        that the prediction itself can change the state of the </span>
+<span class="sd">        predictor. For example, the neural predictor updates the </span>
+<span class="sd">        decoder network state and its attention to predict the next </span>
+<span class="sd">        word. Two calls of ``predict_next()`` must be separated by a </span>
+<span class="sd">        ``consume()`` call.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dictionary,array,list. Word log probabilities for the next </span>
+<span class="sd">            target token. All ids which are not set are assumed to have</span>
+<span class="sd">            probability ``get_unk_probability()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="Predictor.consume"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Expand the current history by ``word`` and update the </span>
+<span class="sd">        internal predictor state accordingly. Two calls of ``consume()``</span>
+<span class="sd">        must be separated by a ``predict_next()`` call.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int):  Word to add to the current history</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="Predictor.get_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the current predictor state. The state can be any object</span>
+<span class="sd">        or tuple of objects which makes it possible to return to the</span>
+<span class="sd">        predictor state with the current history.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">          object. Predictor state</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="Predictor.set_state"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loads a predictor state from an object created with </span>
+<span class="sd">        ``get_state()``. Note that this does not copy the argument but</span>
+<span class="sd">        just references the given state. If ``state`` is going to be</span>
+<span class="sd">        used in the future to return to that point again, you should</span>
+<span class="sd">        copy the state with ``copy.deepcopy()`` before.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">           state (object): Predictor state as returned by </span>
+<span class="sd">                           ``get_state()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="Predictor.reset"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reset the predictor state to the initial configuration. This</span>
+<span class="sd">        is required when a new set of sentences is to be decoded, e.g.</span>
+<span class="sd">        to reset the sentence counter in the fst predictor to load the</span>
+<span class="sd">        correct lattice. This function is NOT called each time before</span>
+<span class="sd">        decoding a single sentence. See ``initialize()`` for this.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    
+<div class="viewcode-block" id="Predictor.estimate_future_cost"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Predictors can implement their own look-ahead cost functions.</span>
+<span class="sd">        They are used in A* if the --heuristics parameter is set to </span>
+<span class="sd">        predictor. This function should return the future log *cost* </span>
+<span class="sd">        (i.e. the lower the better) given the current predictor state, </span>
+<span class="sd">        assuming that the last word in the partial hypothesis &#39;hypo&#39; is</span>
+<span class="sd">        consumed next. This function must not change the internal </span>
+<span class="sd">        predictor state.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypo (PartialHypothesis): Hypothesis for which to estimate</span>
+<span class="sd">                                      the future cost given the current</span>
+<span class="sd">                                      predictor state</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">            float. Future cost</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">0.0</span></div>
+    
+<div class="viewcode-block" id="Predictor.get_unk_probability"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function defines the probability of all words which are</span>
+<span class="sd">        not in ``posterior``. This is usually used to combine open and</span>
+<span class="sd">        closed vocabulary predictors. The argument ``posterior`` should </span>
+<span class="sd">        have been produced with ``predict_next()``</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            posterior (list,array,dict): Return value of the last call</span>
+<span class="sd">                                         of ``predict_next``</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float: Score to use for words outside ``posterior``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">NEG_INF</span></div>
+    
+<div class="viewcode-block" id="Predictor.initialize"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the predictor with the given source sentence. </span>
+<span class="sd">        This resets the internal predictor state and loads everything </span>
+<span class="sd">        which is constant throughout the processing of a single source</span>
+<span class="sd">        sentence. For example, the NMT decoder runs the encoder network</span>
+<span class="sd">        and stores the source annotations.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): List of word IDs which form the source</span>
+<span class="sd">                                 sentence without &lt;S&gt; or &lt;/S&gt;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="Predictor.initialize_heuristic"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is called after ``initialize()`` if the predictor is</span>
+<span class="sd">        registered as heuristic predictor (i.e. </span>
+<span class="sd">        ``estimate_future_cost()`` will be called in the future).</span>
+<span class="sd">        Predictors can implement this function for initialization of </span>
+<span class="sd">        their own heuristic mechanisms.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): List of word IDs which form the source</span>
+<span class="sd">                                 sentence without &lt;S&gt; or &lt;/S&gt;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="Predictor.finalize_posterior"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.finalize_posterior">[docs]</a>    <span class="k">def</span> <span class="nf">finalize_posterior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">use_weights</span><span class="p">,</span> <span class="n">normalize_scores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method can be used to enforce the parameters use_weights</span>
+<span class="sd">        normalize_scores in predictors with dict posteriors.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            scores (dict): unnormalized log valued scores</span>
+<span class="sd">            use_weights (bool): Set to false to replace all values in </span>
+<span class="sd">                                ``scores`` with 0 (= log 1)</span>
+<span class="sd">            normalize_scores: Set to true to make the exp of elements </span>
+<span class="sd">                              in ``scores`` sum up to 1&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">scores</span><span class="p">:</span> <span class="c1"># empty scores -&gt; pass through</span>
+            <span class="k">return</span> <span class="n">scores</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">use_weights</span><span class="p">:</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">normalize_scores</span><span class="p">:</span>
+            <span class="n">log_sum</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">scores</span><span class="o">.</span><span class="n">itervalues</span><span class="p">())</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="o">-</span> <span class="n">log_sum</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">scores</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()}</span>
+            <span class="k">return</span> <span class="n">ret</span>
+        <span class="k">return</span> <span class="n">scores</span></div>
+    
+<div class="viewcode-block" id="Predictor.is_equal"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if two predictor states are equal, i.e. both</span>
+<span class="sd">        states will always result in the same scores. This is used for</span>
+<span class="sd">        hypothesis recombination</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            state1 (object): First predictor state</span>
+<span class="sd">            state2 (object): Second predictor state</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            bool. True if both states are equal, false if not</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">False</span></div>
+    
+<div class="viewcode-block" id="Predictor.notify"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor.notify">[docs]</a>    <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We implement the ``notify`` method from the ``Observer``</span>
+<span class="sd">        super class with an empty method here s.t. predictors do not</span>
+<span class="sd">        need to implement it.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            message (object): The posterior sent by the decoder</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="UnboundedVocabularyPredictor"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.UnboundedVocabularyPredictor">[docs]</a><span class="k">class</span> <span class="nc">UnboundedVocabularyPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Predictors under this class implement models with very large </span>
+<span class="sd">    target vocabularies, for which it is too inefficient to list the </span>
+<span class="sd">    entire posterior. Instead, they are evaluated only for a given list</span>
+<span class="sd">    of target words. This list is usually created by taking all non-zero</span>
+<span class="sd">    probability words from the bounded vocabulary predictors. An </span>
+<span class="sd">    example of a unbounded vocabulary predictor is the ngram predictor:</span>
+<span class="sd">    Instead of listing the entire ngram vocabulary, we run srilm only</span>
+<span class="sd">    on the words which are possible according other predictor (e.g. fst</span>
+<span class="sd">    or nmt). This is realized by introducing the ``trgt_words``</span>
+<span class="sd">    argument to ``predict_next``. &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes ``current_sen_id`` with 0. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="UnboundedVocabularyPredictor.predict_next"><a class="viewcode-back" href="../../../../cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.UnboundedVocabularyPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trgt_words</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Like in ``Predictor``, returns the predictive distribution</span>
+<span class="sd">        over target words given the predictor state. Note </span>
+<span class="sd">        that the prediction itself can change the state of the </span>
+<span class="sd">        predictor. For example, the neural predictor updates the </span>
+<span class="sd">        decoder network state and its attention to predict the next </span>
+<span class="sd">        word. Two calls of ``predict_next()`` must be separated by a </span>
+<span class="sd">        ``consume()`` call.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trgt_words (list): List of target word ids.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dictionary,array,list. Word log probabilities for the next </span>
+<span class="sd">            target token. All ids which are not set are assumed to have</span>
+<span class="sd">            probability ``get_unk_probability()``. The returned set should</span>
+<span class="sd">            not contain any ids which are not in ``trgt_words``, but it</span>
+<span class="sd">            does not have to score all of them</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

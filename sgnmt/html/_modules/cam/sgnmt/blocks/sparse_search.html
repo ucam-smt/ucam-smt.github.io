@@ -1,0 +1,306 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.blocks.sparse_search &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.blocks.sparse_search</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.blocks.sparse_search</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module is similar to the ``blocks.search`` module but supports</span>
+<span class="sd">search with sparse features on the output side. This is significantly</span>
+<span class="sd">different from plain word IDs because it requires a cascaded search:</span>
+<span class="sd">First, we do beam search to get the n best output vectors. Then, we</span>
+<span class="sd">scan the sparse feat map table for the 12 best words given the</span>
+<span class="sd">output vectors. In vanilla NMT, the second step is not required because</span>
+<span class="sd">the 12 best words directly correspond to the dimensions of the output</span>
+<span class="sd">vector.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">blocks.search</span> <span class="kn">import</span> <span class="n">BeamSearch</span>
+<span class="kn">from</span> <span class="nn">blocks.roles</span> <span class="kn">import</span> <span class="n">OUTPUT</span>
+<span class="kn">from</span> <span class="nn">theano</span> <span class="kn">import</span> <span class="n">config</span><span class="p">,</span> <span class="n">function</span>
+<span class="kn">from</span> <span class="nn">blocks.filter</span> <span class="kn">import</span> <span class="n">VariableFilter</span>
+<span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">itemgetter</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+
+<div class="viewcode-block" id="SparseBeamSearch"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.sparse_search.SparseBeamSearch">[docs]</a><span class="k">class</span> <span class="nc">SparseBeamSearch</span><span class="p">(</span><span class="n">BeamSearch</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class modifies the original ``BeamSearch`` implementation</span>
+<span class="sd">    in blocks to work with sparse features on the output side. Note </span>
+<span class="sd">    that this violates the Liskov substitution principle as we inherit</span>
+<span class="sd">    only to leverage off the methods from ``BeamSearch``. However, we</span>
+<span class="sd">    leave it to future work to agonize about that.. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">trg_sparse_feat_map</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SparseBeamSearch</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span> <span class="o">=</span> <span class="n">trg_sparse_feat_map</span>
+
+    <span class="k">def</span> <span class="nf">_compile_logprobs_computer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># This filtering should return identical variables</span>
+        <span class="c1"># (in terms of computations) variables, and we do not care</span>
+        <span class="c1"># which to use.</span>
+        
+        <span class="c1"># fs439: use variable from emit</span>
+        <span class="c1"># probs = VariableFilter(</span>
+        <span class="c1">#    applications=[self.generator.readout.emitter.probs],</span>
+        <span class="c1">#    roles=[OUTPUT])(self.inner_cg)[0]</span>
+        <span class="n">logprobs</span> <span class="o">=</span> <span class="n">VariableFilter</span><span class="p">(</span>
+            <span class="n">applications</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="o">.</span><span class="n">readout</span><span class="o">.</span><span class="n">emitter</span><span class="o">.</span><span class="n">emit</span><span class="p">],</span>
+            <span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="n">OUTPUT</span><span class="p">])(</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_cg</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># fs439: do not convert to negative log because we use squared error</span>
+        <span class="c1">#logprobs = -tensor.log(probs)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logprobs_computer</span> <span class="o">=</span> <span class="n">function</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contexts</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_states</span><span class="p">,</span> <span class="n">logprobs</span><span class="p">,</span>
+            <span class="n">on_unused_input</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SparseBeamSearch.search"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.sparse_search.SparseBeamSearch.search">[docs]</a>    <span class="k">def</span> <span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_values</span><span class="p">,</span> <span class="n">eol_symbol</span><span class="p">,</span> <span class="n">max_length</span><span class="p">,</span>
+               <span class="n">ignore_first_eol</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">as_arrays</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Performs beam search. For a full description see</span>
+<span class="sd">        ``blocks.search.BeamSearch.search``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">()</span>
+
+        <span class="n">contexts</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">beam_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_initial_states_and_contexts</span><span class="p">(</span>
+            <span class="n">input_values</span><span class="p">)</span>
+        <span class="n">shp</span> <span class="o">=</span> <span class="p">(</span><span class="n">states</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">][</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">states</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">][</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">all_masks</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+        <span class="n">all_costs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">inf</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+        <span class="n">all_costs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">all_words</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_length</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">all_masks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="n">logprobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_logprobs</span><span class="p">(</span><span class="n">contexts</span><span class="p">,</span> <span class="n">states</span><span class="p">)</span>
+            <span class="c1"># Collect n best words</span>
+            <span class="n">best_words</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># Format: (beam_idx, word, cost)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">prob</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">logprobs</span><span class="p">):</span>
+                <span class="n">base_cost</span> <span class="o">=</span> <span class="n">all_costs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">all_masks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="p">]:</span> <span class="c1"># This one is already finished</span>
+                    <span class="n">best_words</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="n">eol_symbol</span><span class="p">,</span> <span class="n">base_cost</span><span class="p">))</span>
+                    <span class="k">continue</span>
+                <span class="n">this_words</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span><span class="o">.</span><span class="n">dense2nwords</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">beam_size</span><span class="p">)</span>
+                <span class="n">best_words</span><span class="o">.</span><span class="n">extend</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">base_cost</span> <span class="o">+</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span><span class="p">,</span><span class="n">c</span> <span class="ow">in</span> <span class="n">this_words</span><span class="p">])</span>
+            <span class="n">chosen</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">best_words</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">2</span><span class="p">))[:</span><span class="n">beam_size</span><span class="p">]</span>
+            <span class="n">indexes</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">w</span><span class="p">,</span><span class="n">c</span><span class="p">)</span> <span class="ow">in</span> <span class="n">chosen</span><span class="p">])</span>
+            <span class="n">words</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">w</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">w</span><span class="p">,</span><span class="n">c</span><span class="p">)</span> <span class="ow">in</span> <span class="n">chosen</span><span class="p">])</span>
+            <span class="n">next_costs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">c</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">w</span><span class="p">,</span><span class="n">c</span><span class="p">)</span> <span class="ow">in</span> <span class="n">chosen</span><span class="p">])</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span><span class="o">.</span><span class="n">word2dense</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">w</span><span class="p">,</span><span class="n">c</span><span class="p">)</span> <span class="ow">in</span> <span class="n">chosen</span><span class="p">])</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">w</span> <span class="o">!=</span> <span class="n">eol_symbol</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">w</span><span class="p">,</span><span class="n">c</span><span class="p">)</span> <span class="ow">in</span> <span class="n">chosen</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">ignore_first_eol</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">mask</span><span class="p">[:]</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="c1"># Rearrange everything</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">states</span><span class="p">:</span>
+                <span class="n">states</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">states</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">indexes</span><span class="p">]</span>
+            <span class="n">all_words</span> <span class="o">=</span> <span class="n">all_words</span><span class="p">[:,</span> <span class="n">indexes</span><span class="p">]</span>
+            <span class="n">all_masks</span> <span class="o">=</span> <span class="n">all_masks</span><span class="p">[:,</span> <span class="n">indexes</span><span class="p">]</span>
+            <span class="n">all_costs</span> <span class="o">=</span> <span class="n">all_costs</span><span class="p">[:,</span> <span class="n">indexes</span><span class="p">]</span>
+
+            <span class="c1"># Record chosen output and compute new states</span>
+            <span class="n">states</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compute_next_states</span><span class="p">(</span><span class="n">contexts</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">outputs</span><span class="p">))</span>
+            <span class="n">all_costs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">all_costs</span><span class="p">,</span> <span class="n">next_costs</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]])</span>
+            <span class="n">all_masks</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">all_masks</span><span class="p">,</span> <span class="n">mask</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]])</span>
+            <span class="n">all_words</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">all_words</span><span class="p">,</span> <span class="n">words</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]])</span>
+        <span class="n">all_words</span> <span class="o">=</span> <span class="n">all_words</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">all_masks</span> <span class="o">=</span> <span class="n">all_masks</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">all_costs</span> <span class="o">=</span> <span class="n">all_costs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">all_costs</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">all_words</span><span class="p">,</span> <span class="n">all_masks</span><span class="p">,</span> <span class="n">all_costs</span>
+        <span class="k">if</span> <span class="n">as_arrays</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">result_to_lists</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

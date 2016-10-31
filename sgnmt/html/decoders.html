@@ -473,12 +473,31 @@ time step.</p>
 
 <dl class="class">
 <dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">Decoder</code><span class="sig-paren">(</span><em>closed_vocab_norm=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">Decoder</code><span class="sig-paren">(</span><em>closed_vocab_norm=1</em>, <em>max_len_factor=2</em>, <em>lower_bounds_file=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.html#cam.sgnmt.utils.Observable" title="cam.sgnmt.utils.Observable"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.utils.Observable</span></code></a></p>
 <p>A <code class="docutils literal"><span class="pre">Decoder</span></code> instance represents a particular search strategy
 such as A*, beam search, greedy search etc. Decisions are made
 based on the outputs of one or many predictors, which are
 maintained by the <code class="docutils literal"><span class="pre">Decoder</span></code> instance.</p>
+<p>Decoders are observable. They fire notifications after
+apply_predictors has been called. All heuristics
+are observing the decoder by default.</p>
+<dl class="method">
+<dt>
+<code class="descname">add_full_hypo</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.add_full_hypo"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Adds a new full hypothesis to <code class="docutils literal"><span class="pre">full_hypos</span></code>. This can be
+used by implementing subclasses to add a new hypothesis to the
+result set. This method also notifies observers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>hypo</strong> (<a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.Hypothesis" title="cam.sgnmt.decoding.decoder.Hypothesis"><em>Hypothesis</em></a>) &#8211; New complete hypothesis</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt>
 <code class="descname">add_heuristic</code><span class="sig-paren">(</span><em>heuristic</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.add_heuristic"><span class="viewcode-link">[source]</span></a></dt>
@@ -509,7 +528,7 @@ predictor is going to be used to predict the next target word
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>name</strong> (<em>string</em>) &#8211; Predictor name like &#8216;nmt&#8217; or &#8216;fst&#8217;</li>
-<li><strong>predictor</strong> (<a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Predictor" title="cam.sgnmt.decoding.core.Predictor"><em>Predictor</em></a>) &#8211; Predictor instance</li>
+<li><strong>predictor</strong> (<a class="reference internal" href="cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Predictor instance</li>
 <li><strong>weight</strong> (<em>float</em>) &#8211; Predictor weight</li>
 </ul>
 </td>
@@ -533,6 +552,31 @@ contains the scores for each predictor separately
 represented as tuples (unweighted_score, predictor_weight)</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">combined,score_breakdown</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">are_equal_predictor_states</code><span class="sig-paren">(</span><em>states1</em>, <em>states2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.are_equal_predictor_states"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This method applies <code class="docutils literal"><span class="pre">is_equal</span></code> on all predictors. It
+returns true if all predictor states are equal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>states1</strong> (<em>list</em>) &#8211; First predictor states as returned by
+<code class="docutils literal"><span class="pre">get_predictor_states</span></code></li>
+<li><strong>states2</strong> (<em>list</em>) &#8211; Second predictor states as returned by
+<code class="docutils literal"><span class="pre">get_predictor_states</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">boolean. True if all predictor states are equal, False
+otherwise</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -637,6 +681,64 @@ predictor state</td>
 
 <dl class="method">
 <dt>
+<code class="descname">get_full_hypos_sorted</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.get_full_hypos_sorted"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">full_hypos</span></code> sorted by the total score. Can be
+used by implementing subclasses as return value of
+<code class="docutils literal"><span class="pre">decode</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list. <code class="docutils literal"><span class="pre">full_hypos</span></code> sorted by <code class="docutils literal"><span class="pre">total_score</span></code>.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">get_lower_score_bound</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.get_lower_score_bound"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Intended to be called by implementing subclasses. Returns a
+lower bound on the best score of the current sentence. This is
+either read from the lower bounds file (if provided) or set to
+negative infinity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">float. Lower bound on the best score for current sentence</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">get_max_expansions</code><span class="sig-paren">(</span><em>max_expansions_param</em>, <em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.get_max_expansions"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This is a helper for decoders which support the
+<code class="docutils literal"><span class="pre">max_node_expansions</span></code> parameter. It returns the maximum
+number of node expansions for the given sentence.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>max_expansions_param</strong> (<em>int</em>) &#8211; max_node_expansions parameter
+passed through from the config</li>
+<li><strong>src_sentence</strong> (<em>list</em>) &#8211; Current source sentence</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">int. Maximum number of node expansions for this decoding
+task.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
 <code class="descname">get_predictor_states</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.get_predictor_states"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Calls <code class="docutils literal"><span class="pre">get_state()</span></code> on all predictors.</p>
 </dd></dl>
@@ -733,7 +835,7 @@ to <code class="docutils literal"><span class="pre">start_sen_id</span></code> a
 <dl class="class">
 <dt>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">Heuristic</code><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Heuristic"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.html#cam.sgnmt.utils.Observer" title="cam.sgnmt.utils.Observer"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.utils.Observer</span></code></a></p>
 <p>A <code class="docutils literal"><span class="pre">Heuristic</span></code> instance can be used to estimate the future
 costs for a given word in a given state. See the <code class="docutils literal"><span class="pre">heuristics</span></code>
 module for implementations.</p>
@@ -779,6 +881,24 @@ predictors.</p>
 
 <dl class="method">
 <dt>
+<code class="descname">notify</code><span class="sig-paren">(</span><em>message</em>, <em>message_type=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Heuristic.notify"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This is the notification method from the <code class="docutils literal"><span class="pre">Observer</span></code>
+super class. We implement it with an empty method here, but
+implementing sub classes can override this method to get
+notifications from the decoder instance about generated
+posterior distributions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>message</strong> (<em>object</em>) &#8211; The posterior sent by the decoder</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
 <code class="descname">set_predictors</code><span class="sig-paren">(</span><em>predictors</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Heuristic.set_predictors"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Set the predictors used by this heuristic.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -797,95 +917,46 @@ tuples</td>
 
 </dd></dl>
 
-<dl class="data">
+<dl class="class">
 <dt>
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">NEG_INF</code><em class="property"> = -inf</em></dt>
-<dd><p>The <code class="docutils literal"><span class="pre">CLOSED_VOCAB_SCORE_NORM_*</span></code> constants define the normalization
-behavior for closed vocabulary predictor scores. Closed vocabulary
-predictors (e.g. NMT) have a predefined (and normally very limited)
-vocabulary. In contrast, open vocabulary predictors (see
-<code class="docutils literal"><span class="pre">UnboundedPredictor</span></code>) are defined over a much larger vocabulary
-(e.g. FST) s.t. it is easier to consider them as having an open
-vocabulary. When combining open and closed vocabulary predictors, we use
-the UNK probability of closed vocabulary predictors for words outside
-their vocabulary. The following flags decide (as argument to
-<code class="docutils literal"><span class="pre">Decoder</span></code>) what to do with the closed vocabulary predictor scores
-when combining them with open vocabulary predictors in that way. This
-can be changed with the &#8211;closed_vocab_norm argument</p>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">Hypothesis</code><span class="sig-paren">(</span><em>trgt_sentence</em>, <em>total_score</em>, <em>score_breakdown=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Hypothesis"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Complete translation hypotheses are represented by an instance
+of this class. We store the produced sentence, the combined score,
+and a score breakdown to the separate predictor scores.</p>
 </dd></dl>
 
 <dl class="class">
 <dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">Predictor</code><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>A predictor produces the predictive probability distribution of
-the next word given the state of the predictor. The state may
-change during <code class="docutils literal"><span class="pre">predict_next()</span></code> and <code class="docutils literal"><span class="pre">consume()</span></code>. The functions
-<code class="docutils literal"><span class="pre">get_state()</span></code> and <code class="docutils literal"><span class="pre">set_state()</span></code> can be used for non-greedy
-decoding. Note: The state describes the predictor with the current
-history. It does not encapsulate the current source sentence, i.e.
-you cannot recover a predictor state if <code class="docutils literal"><span class="pre">initialize()</span></code> was called
-in between. <code class="docutils literal"><span class="pre">predict_next()</span></code> and <code class="docutils literal"><span class="pre">consume()</span></code> must be called
-alternately. This holds even when using <code class="docutils literal"><span class="pre">get_state()</span></code> and
-<code class="docutils literal"><span class="pre">set_state()</span></code>: Loading/saving states is transparent to the
-predictor instance.</p>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">PartialHypothesis</code><span class="sig-paren">(</span><em>initial_states=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Represents a partial hypothesis in various decoders.</p>
 <dl class="method">
 <dt>
-<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.consume"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Expand the current history by <code class="docutils literal"><span class="pre">word</span></code> and update the
-internal predictor state accordingly. Two calls of <code class="docutils literal"><span class="pre">consume()</span></code>
-must be separated by a <code class="docutils literal"><span class="pre">predict_next()</span></code> call.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>word</strong> (<em>int</em>) &#8211; Word to add to the current history</td>
-</tr>
-</tbody>
-</table>
+<code class="descname">add_score_breakdown</code><span class="sig-paren">(</span><em>added_scores</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis.add_score_breakdown"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Helper function for adding the word level score breakdowns
+for the newly added word to the hypothesis score breakdown.</p>
 </dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.estimate_future_cost"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Predictors can implement their own look-ahead cost functions.
-They are used in A* if the &#8211;heuristics parameter is set to
-predictor. This function should return the future log <em>cost</em>
-(i.e. the lower the better) given the current predictor state,
-assuming that the last word in the partial hypothesis &#8216;hypo&#8217; is
-consumed next. This function must not change the internal
-predictor state.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>hypo</strong> (<a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.PartialHypothesis" title="cam.sgnmt.decoding.decoder.PartialHypothesis"><em>PartialHypothesis</em></a>) &#8211; Hypothesis for which to estimate
-the future cost given the current
-predictor state</td>
-</tr>
-</tbody>
-</table>
-<dl class="docutils">
-<dt>Returns</dt>
-<dd>float. Future cost</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">finalize_posterior</code><span class="sig-paren">(</span><em>scores</em>, <em>use_weights</em>, <em>normalize_scores</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.finalize_posterior"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>This method can be used to enforce the parameters use_weights
-normalize_scores in predictors with dict posteriors.</p>
+<code class="descname">cheap_expand</code><span class="sig-paren">(</span><em>word</em>, <em>score</em>, <em>score_breakdown</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis.cheap_expand"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Creates a new partial hypothesis adding a new word to the
+translation prefix with given probability. Does NOT update the
+predictor states but adds a flag which signals that the last
+word in this hypothesis has not been consumed yet by the
+predictors. This can save memory because we can reuse the
+current state for many hypothesis. It also saves computation
+as we do not consume words which are then discarded anyway by
+the search procedure.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scores</strong> (<em>dict</em>) &#8211; unnormalized log valued scores</li>
-<li><strong>use_weights</strong> (<em>bool</em>) &#8211; Set to false to replace all values in
-<code class="docutils literal"><span class="pre">scores</span></code> with 0 (= log 1)</li>
-<li><strong>normalize_scores</strong> &#8211; Set to true to make the exp of elements
-in <code class="docutils literal"><span class="pre">scores</span></code> sum up to 1</li>
+<li><strong>word</strong> (<em>int</em>) &#8211; New word to add to the translation prefix</li>
+<li><strong>score</strong> (<em>float</em>) &#8211; Word log probability which is to be added
+to the total hypothesis score</li>
+<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Predictor score breakdown for
+the new word</li>
 </ul>
 </td>
 </tr>
@@ -895,15 +966,24 @@ in <code class="docutils literal"><span class="pre">scores</span></code> sum up 
 
 <dl class="method">
 <dt>
-<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.get_state"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Get the current predictor state. The state can be any object
-or tuple of objects which makes it possible to return to the
-predictor state with the current history.</p>
+<code class="descname">expand</code><span class="sig-paren">(</span><em>word</em>, <em>new_states</em>, <em>score</em>, <em>score_breakdown</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis.expand"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Creates a new partial hypothesis adding a new word to the
+translation prefix with given probability and updates the
+stored predictor states.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">object. Predictor state</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>word</strong> (<em>int</em>) &#8211; New word to add to the translation prefix</li>
+<li><strong>new_states</strong> (<em>object</em>) &#8211; Predictor states after consuming
+<code class="docutils literal"><span class="pre">word</span></code></li>
+<li><strong>score</strong> (<em>float</em>) &#8211; Word log probability which is to be added
+to the total hypothesis score</li>
+<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Predictor score breakdown for
+the new word</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
@@ -911,172 +991,14 @@ predictor state with the current history.</p>
 
 <dl class="method">
 <dt>
-<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.get_unk_probability"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>This function defines the probability of all words which are
-not in <code class="docutils literal"><span class="pre">posterior</span></code>. This is usually used to combine open and
-closed vocabulary predictors. The argument <code class="docutils literal"><span class="pre">posterior</span></code> should
-have been produced with <code class="docutils literal"><span class="pre">predict_next()</span></code></p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>posterior</strong> (<em>list,array,dict</em>) &#8211; Return value of the last call
-of <code class="docutils literal"><span class="pre">predict_next</span></code></td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Score to use for words outside <code class="docutils literal"><span class="pre">posterior</span></code></td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">float</td>
-</tr>
-</tbody>
-</table>
+<code class="descname">generate_full_hypothesis</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis.generate_full_hypothesis"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Create a <code class="docutils literal"><span class="pre">Hypothesis</span></code> instance from this hypothesis.</p>
 </dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.initialize"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Initialize the predictor with the given source sentence.
-This resets the internal predictor state and loads everything
-which is constant throughout the processing of a single source
-sentence. For example, the NMT decoder runs the encoder network
-and stores the source annotations.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>src_sentence</strong> (<em>list</em>) &#8211; List of word IDs which form the source
-sentence without &lt;S&gt; or &lt;/S&gt;</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">initialize_heuristic</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.initialize_heuristic"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>This is called after <code class="docutils literal"><span class="pre">initialize()</span></code> if the predictor is
-registered as heuristic predictor (i.e.
-<code class="docutils literal"><span class="pre">estimate_future_cost()</span></code> will be called in the future).
-Predictors can implement this function for initialization of
-their own heuristic mechanisms.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>src_sentence</strong> (<em>list</em>) &#8211; List of word IDs which form the source
-sentence without &lt;S&gt; or &lt;/S&gt;</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.predict_next"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Returns the predictive distribution over the target
-vocabulary for the next word given the predictor state. Note
-that the prediction itself can change the state of the
-predictor. For example, the neural predictor updates the
-decoder network state and its attention to predict the next
-word. Two calls of <code class="docutils literal"><span class="pre">predict_next()</span></code> must be separated by a
-<code class="docutils literal"><span class="pre">consume()</span></code> call.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">dictionary,array,list. Word log probabilities for the next
-target token. All ids which are not set are assumed to have
-probability <code class="docutils literal"><span class="pre">get_unk_probability()</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.reset"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Reset the predictor state to the initial configuration. This
-is required when a new set of sentences is to be decoded, e.g.
-to reset the sentence counter in the fst predictor to load the
-correct lattice. This function is NOT called each time before
-decoding a single sentence. See <code class="docutils literal"><span class="pre">initialize()</span></code> for this.</p>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">set_current_sen_id</code><span class="sig-paren">(</span><em>cur_sen_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.set_current_sen_id"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>This function is called between <code class="docutils literal"><span class="pre">initialize()</span></code> calls to
-increment the sentence id counter. It can also be used to skip
-sentences for the &#8211;range argument.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cur_sen_id</strong> (<em>int</em>) &#8211; Sentence id for the next call of
-<code class="docutils literal"><span class="pre">initialize()</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Predictor.set_state"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Loads a predictor state from an object created with
-<code class="docutils literal"><span class="pre">get_state()</span></code>. Note that this does not copy the argument but
-just references the given state. If <code class="docutils literal"><span class="pre">state</span></code> is going to be
-used in the future to return to that point again, you should
-copy the state with <code class="docutils literal"><span class="pre">copy.deepcopy()</span></code> before.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>state</strong> (<em>object</em>) &#8211; Predictor state as returned by
-<code class="docutils literal"><span class="pre">get_state()</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">UnboundedVocabularyPredictor</code><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#UnboundedVocabularyPredictor"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Predictor" title="cam.sgnmt.decoding.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Predictor</span></code></a></p>
-<p>Predictors under this class implement models with very large
-target vocabularies, for which it is too inefficient to list the
-entire posterior. Instead, they are evaluated only for a given list
-of target words. This list is usually created by taking all non-zero
-probability words from the bounded vocabulary predictors. An
-example of a unbounded vocabulary predictor is the ngram predictor:
-Instead of listing the entire ngram vocabulary, we run srilm only
-on the words which are possible according other predictor (e.g. fst
-or nmt). This is realized by introducing the <code class="docutils literal"><span class="pre">trgt_words</span></code>
-argument to <code class="docutils literal"><span class="pre">predict_next</span></code>.</p>
-<dl class="method">
-<dt>
-<code class="descname">predict_next</code><span class="sig-paren">(</span><em>trgt_words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#UnboundedVocabularyPredictor.predict_next"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Like in <code class="docutils literal"><span class="pre">Predictor</span></code>, returns the predictive distribution
-over target words given the predictor state. Note
-that the prediction itself can change the state of the
-predictor. For example, the neural predictor updates the
-decoder network state and its attention to predict the next
-word. Two calls of <code class="docutils literal"><span class="pre">predict_next()</span></code> must be separated by a
-<code class="docutils literal"><span class="pre">consume()</span></code> call.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trgt_words</strong> (<em>list</em>) &#8211; List of target word ids.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">dictionary,array,list. Word log probabilities for the next
-target token. All ids which are not set are assumed to have
-probability <code class="docutils literal"><span class="pre">get_unk_probability().</span> <span class="pre">The</span> <span class="pre">returned</span> <span class="pre">set</span> <span class="pre">should</span>
-<span class="pre">not</span> <span class="pre">contain</span> <span class="pre">any</span> <span class="pre">ids</span> <span class="pre">which</span> <span class="pre">are</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">``trgt_words</span></code>, but it
-does not have to score all of them</td>
-</tr>
-</tbody>
-</table>
+<code class="descname">get_last_word</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis.get_last_word"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Get the last word in the translation prefix.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1210,7 +1132,7 @@ estimated look ahead costs. The <code class="docutils literal"><span class="pre"
 in the <code class="docutils literal"><span class="pre">core</span></code> module.</p>
 <dl class="class">
 <dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.heuristics.</code><code class="descname">GreedyHeuristic</code><span class="sig-paren">(</span><em>closed_vocab_norm</em>, <em>cache_estimates=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#GreedyHeuristic"><span class="viewcode-link">[source]</span></a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.heuristics.</code><code class="descname">GreedyHeuristic</code><span class="sig-paren">(</span><em>closed_vocab_norm</em>, <em>max_len_factor</em>, <em>cache_estimates=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#GreedyHeuristic"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Heuristic" title="cam.sgnmt.decoding.core.Heuristic"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Heuristic</span></code></a></p>
 <p>This heuristic performs greedy decoding to get future cost
 estimates. This is expensive but can lead to very close estimates.</p>
@@ -1268,6 +1190,13 @@ e.g. shortest path for the fst predictor.</p>
 <dd><p>Calls <code class="docutils literal"><span class="pre">initialize_heuristic()</span></code> on all predictors.</p>
 </dd></dl>
 
+<dl class="method">
+<dt>
+<code class="descname">notify</code><span class="sig-paren">(</span><em>message</em>, <em>message_type=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#PredictorHeuristic.notify"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>This heuristic passes through notifications to the
+predictors.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
@@ -1297,12 +1226,51 @@ as partial hypothesis score. Therefore, this method returns
 
 </dd></dl>
 
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.heuristics.</code><code class="descname">StatsHeuristic</code><span class="sig-paren">(</span><em>heuristic_scores_file=''</em>, <em>collect_stats_strategy='best'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#StatsHeuristic"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Heuristic" title="cam.sgnmt.decoding.core.Heuristic"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Heuristic</span></code></a></p>
+<p>This heuristic is based on the sum of unigram costs of consumed
+words. Unigram statistics are collected via a <code class="docutils literal"><span class="pre">UnigramTable</span></code>.</p>
+<dl class="method">
+<dt>
+<code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#StatsHeuristic.estimate_future_cost"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Returns the sum of heuristic unigram estimates of the words
+in the translation prefix of <code class="docutils literal"><span class="pre">hypo</span></code>. Combined with the hypo
+score, this leads to using the ratio between actual hypo score
+and an idealistic score (product of unigrams) to discriminate
+partial hypotheses.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#StatsHeuristic.initialize"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Calls <code class="docutils literal"><span class="pre">reset</span></code> to reset collected statistics from previous
+sentences</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>src_sentence</strong> (<em>list</em>) &#8211; Not used</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">notify</code><span class="sig-paren">(</span><em>message</em>, <em>message_type=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#StatsHeuristic.notify"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Passing through to the unigram table <code class="docutils literal"><span class="pre">self.estimates</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="module-contents">
 <h3>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h3>
 <p>This package contains the central interfaces for the decoder (in the
 <code class="docutils literal"><span class="pre">core</span></code> module ), and the implementations of search strategies
-(<code class="docutils literal"><span class="pre">Decoder</span></code>) in the <code class="docutils literal"><span class="pre">decoder</span></code> module.</p>
+(<code class="docutils literal"><span class="pre">Decoder</span></code>).</p>
 </div>
 </div>
 </div>

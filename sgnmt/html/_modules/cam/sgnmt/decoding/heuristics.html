@@ -142,9 +142,15 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Heuristic</span><span class="p">,</span> <span class="n">Decoder</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.decoder</span> <span class="kn">import</span> <span class="n">GreedyDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.greedy</span> <span class="kn">import</span> <span class="n">GreedyDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.trie</span> <span class="kn">import</span> <span class="n">SimpleTrie</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.unigram</span> <span class="kn">import</span> <span class="n">FileUnigramTable</span><span class="p">,</span> <span class="n">BestStatsUnigramTable</span><span class="p">,</span> \
+    <span class="n">FullStatsUnigramTable</span><span class="p">,</span> <span class="n">AllStatsUnigramTable</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">MESSAGE_TYPE_DEFAULT</span>
 
 
 <div class="viewcode-block" id="PredictorHeuristic"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.PredictorHeuristic">[docs]</a><span class="k">class</span> <span class="nc">PredictorHeuristic</span><span class="p">(</span><span class="n">Heuristic</span><span class="p">):</span>
@@ -163,7 +169,14 @@
 <div class="viewcode-block" id="PredictorHeuristic.initialize"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.PredictorHeuristic.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Calls ``initialize_heuristic()`` on all predictors. &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">:</span>
-            <span class="n">pred</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div></div>
+            <span class="n">pred</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="PredictorHeuristic.notify"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.PredictorHeuristic.notify">[docs]</a>    <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This heuristic passes through notifications to the </span>
+<span class="sd">        predictors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">:</span>
+            <span class="n">pred</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">message_type</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="ScorePerWordHeuristic"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.ScorePerWordHeuristic">[docs]</a><span class="k">class</span> <span class="nc">ScorePerWordHeuristic</span><span class="p">(</span><span class="n">Heuristic</span><span class="p">):</span>
@@ -195,7 +208,7 @@
 <span class="sd">    estimates. This is expensive but can lead to very close estimates.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">closed_vocab_norm</span><span class="p">,</span> <span class="n">cache_estimates</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">closed_vocab_norm</span><span class="p">,</span> <span class="n">max_len_factor</span><span class="p">,</span> <span class="n">cache_estimates</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new ``GreedyHeuristic`` instance. The greedy </span>
 <span class="sd">        heuristic performs full greedy decoding from the current</span>
 <span class="sd">        state to get accurate cost estimates. However, this can be very</span>
@@ -213,8 +226,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">GreedyHeuristic</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cache_estimates</span> <span class="o">=</span> <span class="n">cache_estimates</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">GreedyDecoder</span><span class="p">(</span><span class="n">closed_vocab_norm</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">SimpleTrie</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">GreedyDecoder</span><span class="p">(</span><span class="n">closed_vocab_norm</span><span class="p">,</span> <span class="n">max_len_factor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span>
         
 <div class="viewcode-block" id="GreedyHeuristic.set_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.set_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">set_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictors</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Override ``Decoder.set_predictors`` to redirect the </span>
@@ -225,7 +238,7 @@
     
 <div class="viewcode-block" id="GreedyHeuristic.initialize"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Initialize the cache. &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">SimpleTrie</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span></div>
     
 <div class="viewcode-block" id="GreedyHeuristic.estimate_future_cost"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.GreedyHeuristic.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Estimate the future cost by full greedy decoding. If</span>
@@ -275,6 +288,61 @@
         <span class="c1"># Reset predictor states</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">old_states</span><span class="p">)</span>
         <span class="k">return</span> <span class="o">-</span><span class="n">score</span></div></div>
+
+
+<div class="viewcode-block" id="StatsHeuristic"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.StatsHeuristic">[docs]</a><span class="k">class</span> <span class="nc">StatsHeuristic</span><span class="p">(</span><span class="n">Heuristic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This heuristic is based on the sum of unigram costs of consumed </span>
+<span class="sd">    words. Unigram statistics are collected via a ``UnigramTable``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heuristic_scores_file</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">collect_stats_strategy</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new ``StatsHeuristic`` instance. The constructor</span>
+<span class="sd">        initializes the unigram table.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            heuristic_scores_file (string): Path to the unigram scores </span>
+<span class="sd">                                            which are used if this </span>
+<span class="sd">                                            predictor estimates future</span>
+<span class="sd">                                            costs</span>
+<span class="sd">            collect_stats_strategy (string): best, full, or all. Defines </span>
+<span class="sd">                                             how unigram estimates are </span>
+<span class="sd">                                             collected for heuristic</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">StatsHeuristic</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">heuristic_scores_file</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span> <span class="o">=</span> <span class="n">FileUnigramTable</span><span class="p">(</span><span class="n">heuristic_scores_file</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">collect_stats_strategy</span> <span class="o">==</span> <span class="s1">&#39;best&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span> <span class="o">=</span> <span class="n">BestStatsUnigramTable</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">collect_stats_strategy</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span> <span class="o">=</span> <span class="n">FullStatsUnigramTable</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">collect_stats_strategy</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span> <span class="o">=</span> <span class="n">AllStatsUnigramTable</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unknown statistics collection strategy&quot;</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="StatsHeuristic.initialize"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.StatsHeuristic.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calls ``reset`` to reset collected statistics from previous</span>
+<span class="sd">        sentences</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="StatsHeuristic.notify"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.StatsHeuristic.notify">[docs]</a>    <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Passing through to the unigram table ``self.estimates``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">message_type</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="StatsHeuristic.estimate_future_cost"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.heuristics.StatsHeuristic.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the sum of heuristic unigram estimates of the words</span>
+<span class="sd">        in the translation prefix of ``hypo``. Combined with the hypo</span>
+<span class="sd">        score, this leads to using the ratio between actual hypo score </span>
+<span class="sd">        and an idealistic score (product of unigrams) to discriminate</span>
+<span class="sd">        partial hypotheses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">estimates</span><span class="o">.</span><span class="n">estimate</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="o">-</span><span class="mf">1000.0</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">])</span></div></div>
 </pre></div>
 
            </div>

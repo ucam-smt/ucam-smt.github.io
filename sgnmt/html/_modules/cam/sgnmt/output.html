@@ -154,6 +154,7 @@
 <span class="kn">import</span> <span class="nn">errno</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
 
 <div class="viewcode-block" id="OutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.OutputHandler">[docs]</a><span class="k">class</span> <span class="nc">OutputHandler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -405,6 +406,121 @@
             <span class="n">c</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="n">f</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">compile</span><span class="p">()</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_pattern</span> <span class="o">%</span> <span class="n">fst_idx</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="AlignmentOutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.AlignmentOutputHandler">[docs]</a><span class="k">class</span> <span class="nc">AlignmentOutputHandler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface for output handlers for alignments. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Empty constructor &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+    
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="AlignmentOutputHandler.write_alignments"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.AlignmentOutputHandler.write_alignments">[docs]</a>    <span class="k">def</span> <span class="nf">write_alignments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alignments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method writes output files to the file system. The</span>
+<span class="sd">        configuration parameters such as output paths should already</span>
+<span class="sd">        have been provided via constructor arguments.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            alignments (list): list of alignment matrices</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            IOError. If something goes wrong while writing to the disk</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="CSVAlignmentOutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.CSVAlignmentOutputHandler">[docs]</a><span class="k">class</span> <span class="nc">CSVAlignmentOutputHandler</span><span class="p">(</span><span class="n">AlignmentOutputHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates a directory with CSV files which store the alignment</span>
+<span class="sd">    matrices.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_pattern</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;/</span><span class="si">%d</span><span class="s2">.csv&quot;</span>
+    
+<div class="viewcode-block" id="CSVAlignmentOutputHandler.write_alignments"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.CSVAlignmentOutputHandler.write_alignments">[docs]</a>    <span class="k">def</span> <span class="nf">write_alignments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alignments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes CSV files for each alignment. </span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            alignments (list): list of alignments</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            OSError. If the directory could not be created</span>
+<span class="sd">            IOError. If something goes wrong while writing to the disk</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exception</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">EEXIST</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                        <span class="s2">&quot;Output CSV directory </span><span class="si">%s</span><span class="s2"> already exists.&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">alignment</span> <span class="ow">in</span> <span class="n">alignments</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_pattern</span> <span class="o">%</span> <span class="n">idx</span><span class="p">,</span> <span class="n">alignment</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span></div></div>
+
+
+<div class="viewcode-block" id="NPYAlignmentOutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.NPYAlignmentOutputHandler">[docs]</a><span class="k">class</span> <span class="nc">NPYAlignmentOutputHandler</span><span class="p">(</span><span class="n">AlignmentOutputHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates a directory with alignment matrices in numpy format npy</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_pattern</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;/</span><span class="si">%d</span><span class="s2">.npy&quot;</span>
+    
+<div class="viewcode-block" id="NPYAlignmentOutputHandler.write_alignments"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.NPYAlignmentOutputHandler.write_alignments">[docs]</a>    <span class="k">def</span> <span class="nf">write_alignments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alignments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes NPY files for each alignment. </span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            alignments (list): list of alignments</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            OSError. If the directory could not be created</span>
+<span class="sd">            IOError. If something goes wrong while writing to the disk</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exception</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">EEXIST</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                        <span class="s2">&quot;Output NPY directory </span><span class="si">%s</span><span class="s2"> already exists.&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">alignment</span> <span class="ow">in</span> <span class="n">alignments</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_pattern</span> <span class="o">%</span> <span class="n">idx</span><span class="p">,</span> <span class="n">alignment</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span></div></div>
+
+
+<div class="viewcode-block" id="TextAlignmentOutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.TextAlignmentOutputHandler">[docs]</a><span class="k">class</span> <span class="nc">TextAlignmentOutputHandler</span><span class="p">(</span><span class="n">AlignmentOutputHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates a single text alignment file (Pharaoh format).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+    
+<div class="viewcode-block" id="TextAlignmentOutputHandler.write_alignments"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.TextAlignmentOutputHandler.write_alignments">[docs]</a>    <span class="k">def</span> <span class="nf">write_alignments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alignments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes an alignment file in standard text format. </span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            alignments (list): list of alignments</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            IOError. If something goes wrong while writing to the disk</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">alignment</span> <span class="ow">in</span> <span class="n">alignments</span><span class="p">:</span>
+                <span class="n">src_len</span><span class="p">,</span><span class="n">trg_len</span> <span class="o">=</span> <span class="n">alignment</span><span class="o">.</span><span class="n">shape</span>
+                <span class="n">entries</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">spos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">src_len</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">tpos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">trg_len</span><span class="p">):</span>
+                        <span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2">-</span><span class="si">%d</span><span class="s2">:</span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">spos</span><span class="p">,</span>
+                                                     <span class="n">tpos</span><span class="p">,</span>
+                                                     <span class="n">alignment</span><span class="p">[</span><span class="n">spos</span><span class="p">,</span><span class="n">tpos</span><span class="p">]))</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">entries</span><span class="p">))</span></div></div>
 </pre></div>
 
            </div>
