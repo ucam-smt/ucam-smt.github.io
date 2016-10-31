@@ -138,7 +138,7 @@
   <h1>Source code for cam.sgnmt.predictors.automata</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;This module encapsulates the predictor interface to OpenFST. This</span>
 <span class="sd">module depends on OpenFST. To enable Python support in OpenFST, use a </span>
-<span class="sd">recent version (&gt;=1.5.2) and compile with ``--enable_python``. </span>
+<span class="sd">recent version (&gt;=1.5.4) and compile with ``--enable_python``. </span>
 <span class="sd">Further information can be found here:</span>
 
 <span class="sd">http://www.openfst.org/twiki/bin/view/FST/PythonExtension </span>
@@ -286,7 +286,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="o">=</span> <span class="n">load_fst</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fst_path</span><span class="p">,</span>
                                                <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span> <span class="k">else</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bos_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bos_score</span><span class="p">:</span> <span class="c1"># Override None</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bos_score</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -437,7 +437,7 @@
                                                <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_follow_eps</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_follow_eps</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span><span class="p">():</span> <span class="mf">0.0</span><span class="p">})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_nodes</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The lattice for sentence </span><span class="si">%d</span><span class="s2"> does not contain any &quot;</span>
@@ -657,7 +657,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcsort</span><span class="p">(</span><span class="n">sort_type</span><span class="o">=</span><span class="s2">&quot;olabel&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_to_label_fst_map_recursive</span><span class="p">(</span><span class="n">label_fst_map</span><span class="p">,</span>
                                                 <span class="p">{},</span>
-                                                <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> 
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">start</span><span class="p">(),</span> 
                                                 <span class="mf">0.0</span><span class="p">,</span>
                                                 <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">label_fst_map</span><span class="p">:</span>
