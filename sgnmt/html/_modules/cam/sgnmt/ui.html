@@ -143,6 +143,10 @@
 
 <span class="kn">import</span> <span class="nn">argparse</span>
 <span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.nmt</span> <span class="kn">import</span> <span class="n">blocks_add_nmt_config</span>
+
 
 <span class="n">YAML_AVAILABLE</span> <span class="o">=</span> <span class="bp">True</span>
 <span class="k">try</span><span class="p">:</span>
@@ -173,6 +177,31 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">arg_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
     <span class="k">return</span> <span class="n">args</span></div>
+
+
+<div class="viewcode-block" id="parse_param_string"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.parse_param_string">[docs]</a><span class="k">def</span> <span class="nf">parse_param_string</span><span class="p">(</span><span class="n">param</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Parses a parameter string such as &#39;param1=x,param2=y&#39;. Loads </span>
+<span class="sd">    config files if specified in the string. If ``param`` points to a</span>
+<span class="sd">    file, load this file with YAML.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">param</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">param</span><span class="p">):</span>
+        <span class="n">param</span> <span class="o">=</span> <span class="s2">&quot;config_file=</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">param</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">param</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+        <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;config_file&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">YAML_AVAILABLE</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Install PyYAML in order to use config files.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">config_file_key</span><span class="p">,</span> <span class="n">config_file_value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="n">config</span><span class="p">[</span><span class="n">config_file_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">config_file_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">config</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+    <span class="k">return</span> <span class="n">config</span></div>
 
 
 <div class="viewcode-block" id="get_train_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_train_parser">[docs]</a><span class="k">def</span> <span class="nf">get_train_parser</span><span class="p">():</span>
@@ -240,7 +269,7 @@
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NOT USED, just to prevent old code from breaking&quot;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--hook_samples&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NOT USED, just to prevent old code from breaking&quot;</span><span class="p">)</span>
-    <span class="n">_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="n">blocks_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span></div>
 
 
@@ -280,7 +309,7 @@
                         <span class="s2">&quot;* &#39;npy&#39;: Alignment matrices in numpy&#39;s npy format</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;align&#39;: Usual (Pharaoh) alignment format.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
     
-    <span class="n">_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="n">blocks_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span></div>
 
 
@@ -363,6 +392,7 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--decoder&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;beam&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;greedy&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;beam&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;multisegbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;dfs&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;restarting&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;bow&#39;</span><span class="p">,</span>
@@ -384,6 +414,8 @@
                         <span class="s2">&quot;false.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;restarting&#39;: Like DFS but with better admissible &quot;</span>
                         <span class="s2">&quot;pruning behavior.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;multisegbeam&#39;: Beam search for predictors with &quot;</span>
+                        <span class="s2">&quot;multiple tokenizations ([sub]word/char-levels).</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;bow&#39;: Restarting decoder optimized for bag-of-words &quot;</span>
                         <span class="s2">&quot;problems.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;flip&#39;: This decoder works only for bag problems. &quot;</span>
@@ -408,6 +440,11 @@
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Activates hypothesis recombination. Has to be &quot;</span>
                         <span class="s2">&quot;supported by the decoder. Applicable to beam, &quot;</span>
                         <span class="s2">&quot;restarting, bow, bucket&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--allow_unk_in_output&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If false, remove all UNKs in the final &quot;</span>
+                        <span class="s2">&quot;posteriors. Predictor distributions can still &quot;</span>
+                        <span class="s2">&quot;produce UNKs, but they have to be replaced by &quot;</span>
+                        <span class="s2">&quot;other words by other predictors&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_node_expansions&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter allows to limit the total number &quot;</span>
                         <span class="s2">&quot;of search space expansions for a single sentence. &quot;</span>
@@ -462,6 +499,17 @@
                         <span class="s2">&quot;--heuristic_predictors to 0,2 results in using nmt &quot;</span>
                         <span class="s2">&quot;and fst in the heuristics. Use &#39;all&#39; to use all &quot;</span>
                         <span class="s2">&quot;predictors in the heuristics&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--multiseg_tokenizations&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This argument must be used when the multisegbeam&quot;</span>
+                        <span class="s2">&quot; decoder is activated. For each predictor, it defines&quot;</span>
+                        <span class="s2">&quot; the tokenizations used for it (comma separated). If &quot;</span>
+                        <span class="s2">&quot;a path to a word map file is provided, the &quot;</span>
+                        <span class="s2">&quot;corresponding predictor is operating on the pure &quot;</span>
+                        <span class="s2">&quot;word level. The &#39;mixed:&#39; prefix activates mixed &quot;</span>
+                        <span class="s2">&quot;word/character models according Wu et al. (2016). &quot;</span>
+                        <span class="s2">&quot;the &#39;eow&#39;: prefix assumes to find explicit &lt;/w&gt;&quot;</span>
+                        <span class="s2">&quot;specifiers in the word maps which mark end of words. &quot;</span>
+                        <span class="s2">&quot;This is suitable for subword units, e.g. bpe.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--cache_heuristic_estimates&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to cache heuristic future cost &quot;</span>
                         <span class="s2">&quot;estimates. This is especially useful with the greedy &quot;</span>
@@ -519,7 +567,9 @@
                             <span class="s2">&quot;increased if no bucket found</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;score&#39;: Select bucket with the highest bucket &quot;</span>
                         <span class="s2">&quot;score. The bucket score is determined by the &quot;</span>
-                        <span class="s2">&quot;bucket_score_strategy&quot;</span><span class="p">)</span>
+                        <span class="s2">&quot;bucket_score_strategy</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;score-end&#39;: Start with the bucket with highest bucket &quot;</span>
+                            <span class="s2">&quot;score, and iterate through all subsequent buckets. </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bucket_score_strategy&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;difference&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;difference&#39;</span><span class="p">,</span> <span class="s1">&#39;heap&#39;</span><span class="p">,</span> <span class="s1">&#39;absolute&#39;</span><span class="p">,</span> <span class="s1">&#39;constant&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines how buckets are scored for the &quot;</span>
@@ -566,7 +616,7 @@
                        <span class="s2">&quot;* The &#39;bucket&#39; decoder reorders the hypotheses in a &quot;</span>
                        <span class="s2">&quot;bucket by penalizing hypotheses with the number of &quot;</span>
                        <span class="s2">&quot;expanded hypotheses from the same parent.&quot;</span><span class="p">)</span>
-    
+
     <span class="c1">## Output options</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Output options&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nbest&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
@@ -599,7 +649,23 @@
                         <span class="s2">&quot;--output_path&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--remove_eos&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to remove &lt;/S&gt; symbol on output.&quot;</span><span class="p">)</span>
-    
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_wmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the source side word map (Format: &lt;word&gt;&quot;</span>
+                        <span class="s2">&quot; &lt;id&gt;). This is used to map the words in --src_test &quot;</span>
+                        <span class="s2">&quot;to their word IDs. If empty, SGNMT expects the input &quot;</span>
+                        <span class="s2">&quot;words to be in integer representation.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_wmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the target side word map (Format: &lt;word&gt;&quot;</span>
+                        <span class="s2">&quot; &lt;id&gt;). This is used to generate log output and the &quot;</span>
+                        <span class="s2">&quot;output formats text and nbest. If empty, we directly &quot;</span>
+                        <span class="s2">&quot;write word IDs.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_cmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the target side char map (Format: &lt;char&gt;&quot;</span>
+                        <span class="s2">&quot; &lt;id&gt;). If this is not empty, all output files are &quot;</span>
+                        <span class="s2">&quot;converted to character-level. The mapping from word &quot;</span>
+                        <span class="s2">&quot;to character sequence is read from --trg_wmap. The &quot;</span>
+                        <span class="s2">&quot;char map must contain an entry for &lt;/w&gt; which points &quot;</span>
+                        <span class="s2">&quot;to the word boundary ID.&quot;</span><span class="p">)</span>
     
     <span class="c1">## Predictor options</span>
     
@@ -613,15 +679,14 @@
                         <span class="s2">&quot;sizes differ among predictors, we fill in gaps with &quot;</span>
                         <span class="s2">&quot;predictor UNK scores.:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;nmt&#39;: neural machine translation predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;         Options: see machine_translation.&quot;</span>
-                        <span class="s2">&quot;configurations plus nmt_model_selector, &quot;</span>
-                        <span class="s2">&quot;cache_nmt_posteriors.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: nmt_config, nmt_path, gnmt_beta, &quot;</span>
+                        <span class="s2">&quot;nmt_model_selector, cache_nmt_posteriors.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;srilm&#39;: n-gram language model.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: srilm_path, srilm_order</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;nplm&#39;: neural n-gram language model (NPLM).</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: nplm_path, normalize_nplm_probs</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;rnnlm&#39;: RNN language model based on TensorFlow.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;          Options: rnnlm_path</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;          Options: rnnlm_config, rnnlm_path</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;lstm&#39;: Pure lstm predictor (chainer-based).</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: lstm_path.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;forced&#39;: Forced decoding with one reference</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -660,6 +725,8 @@
                         <span class="s2">&quot;        Options: wc_word.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;unkc&#39;: Poisson model for number of UNKs.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: unk_count_lambdas.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;ngramc&#39;: Number of ngram feature.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;            Options: ngramc_path, ngramc_order.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;length&#39;: Target sentence length model</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;            Options: src_test_raw, &quot;</span>
                         <span class="s2">&quot;length_model_weights, use_length_point_probs</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -675,6 +742,10 @@
                         <span class="s2">&quot;* &#39;altsrc&#39;: This wrapper loads source sentences from &quot;</span>
                         <span class="s2">&quot;an alternative source.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;            Options: altsrc_test</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;unkvocab&#39;: This wrapper explicitly excludes &quot;</span>
+                        <span class="s2">&quot;matching word indices higher than trg_vocab_size &quot;</span>
+                        <span class="s2">&quot;with UNK scores.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;             Options: trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;word2char&#39;: Wraps word-level predictors when SGNMT&quot;</span>
                         <span class="s2">&quot; is running on character level.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;            Options: word2char_map</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -694,7 +765,7 @@
                         <span class="s2">&quot;(empty string) means that each predictor gets &quot;</span>
                         <span class="s2">&quot;assigned the weight 1.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--closed_vocabulary_normalization&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
-                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;exact&#39;</span><span class="p">,</span> <span class="s1">&#39;reduced&#39;</span><span class="p">],</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;exact&#39;</span><span class="p">,</span> <span class="s1">&#39;reduced&#39;</span><span class="p">,</span> <span class="s1">&#39;rescale_unk&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter specifies the way closed &quot;</span>
                         <span class="s2">&quot;vocabulary predictors (e.g. NMT) are normalized. &quot;</span>
                         <span class="s2">&quot;Closed vocabulary means that they have a predefined &quot;</span>
@@ -706,6 +777,9 @@
                         <span class="s2">&quot;* &#39;exact&#39;: Renormalize scores depending on the &quot;</span>
                         <span class="s2">&quot;probability mass which they distribute to words &quot;</span>
                         <span class="s2">&quot;outside the vocabulary via the UNK probability.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;rescale_unk&#39;: Rescale UNK probabilities and &quot;</span>
+                        <span class="s2">&quot;leave all other scores unmodified. Results in a &quot;</span>
+                        <span class="s2">&quot;distribution if predictor scores are stochastic.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;reduced&#39;: Normalize to vocabulary defined by the &quot;</span>
                         <span class="s2">&quot;open vocabulary predictors at each time step.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--combination_scheme&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;sum&quot;</span><span class="p">,</span>
@@ -735,6 +809,17 @@
                         <span class="s2">&quot;length. Normally improves pure NMT decoding, but &quot;</span>
                         <span class="s2">&quot;degrades performance when combined with predictors &quot;</span>
                         <span class="s2">&quot;like fst or multiple NMT systems.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_config&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the configuration of the NMT model. This &quot;</span>
+                        <span class="s2">&quot;can either point to a configuration file, or it can &quot;</span>
+                        <span class="s2">&quot;directly contain the parameters (e.g. &#39;src_vocab_size&quot;</span>
+                        <span class="s2">&quot;=1234,trg_vocab_size=2345&#39;). Use &#39;config_file=&#39; in &quot;</span>
+                        <span class="s2">&quot;the parameter string to use configuration files &quot;</span>
+                        <span class="s2">&quot;with the second method.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the path to the NMT model. If empty, &quot;</span>
+                        <span class="s2">&quot;the model is loaded from the default location which &quot;</span>
+                        <span class="s2">&quot;depends on the NMT engine&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_engine&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;blocks&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;blocks&#39;</span><span class="p">,</span> <span class="s1">&#39;tensorflow&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NMT implementation which should be used. &quot;</span>
@@ -764,7 +849,7 @@
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is greater than zero, add a coverage &quot;</span>
                        <span class="s2">&quot;penalization term following Googles NMT (Wu et al., &quot;</span>
                        <span class="s2">&quot;2016) to the NMT score.&quot;</span><span class="p">)</span>
-    
+
     <span class="c1"># Length predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Length predictor options&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_test_raw&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -804,6 +889,21 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--wc_word&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If negative, the wc predictor counts all &quot;</span>
                        <span class="s2">&quot;words. Otherwise, count only the specific word&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramc_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;ngramc/</span><span class="si">%d</span><span class="s2">.txt&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for ngramc predictor. The ngramc &quot;</span>
+                        <span class="s2">&quot;predictor counts the number of ngrams and multiplies &quot;</span>
+                        <span class="s2">&quot;them with the factors defined in the files. The &quot;</span>
+                        <span class="s2">&quot;format is one ngram per line &#39;&lt;ngram&gt; : &lt;score&gt;&#39;. &quot;</span>
+                        <span class="s2">&quot;You can use the placeholder </span><span class="si">%%</span><span class="s2">d for the sentence &quot;</span>
+                        <span class="s2">&quot;index.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramc_order&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If positive, count only ngrams of the specified &quot;</span>
+                       <span class="s2">&quot;Order. Otherwise, count all ngrams&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramc_discount_factor&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is non-negative, discount ngram counts &quot;</span>
+                       <span class="s2">&quot;by this factor each time the ngram is consumed&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--unkc_src_vocab_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30003</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Vocabulary size for the unkc predictor.&quot;</span><span class="p">)</span>
 
     <span class="c1"># Forced predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Forced decoding predictor options&#39;</span><span class="p">)</span>
@@ -901,10 +1001,20 @@
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;(Neural) LM predictor options&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--srilm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;lm/ngram.lm.gz&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the ngram LM file in SRILM format&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--srilm_convert_to_ln&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to convert srilm scores from log to ln.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nplm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;nplm/nplm.gz&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the NPLM language model&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;rnnlm/rnnlm.gz&quot;</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;rnnlm/rnn.ckpt&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the RNNLM language model&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_config&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;rnnlm.ini&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the configuration of the RNNLM model. This&quot;</span>
+                        <span class="s2">&quot; can either point to a configuration file, or it can &quot;</span>
+                        <span class="s2">&quot;directly contain the parameters (e.g. &#39;src_vocab_size&quot;</span>
+                        <span class="s2">&quot;=1234,trg_vocab_size=2345&#39;). Use &#39;config_file=&#39; in &quot;</span>
+                        <span class="s2">&quot;the parameter string to use configuration files &quot;</span>
+                        <span class="s2">&quot;with the second method. Use &#39;model_name=X&#39; in the &quot;</span>
+                        <span class="s2">&quot;parameter string to use one of the predefined models.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lstm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;chainer/model&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the LSTM model (chainer)&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--srilm_order&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
@@ -953,7 +1063,7 @@
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to normalize weights in RTNs. This &quot;</span>
                         <span class="s2">&quot;forces the weights on outgoing edges to sum up to 1. &quot;</span>
                         <span class="s2">&quot;Applicable to rtn predictor.&quot;</span><span class="p">)</span>
-    
+
     <span class="c1"># Adding arguments for overriding when using same predictor multiple times</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Override options&#39;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">n</span><span class="p">,</span><span class="n">w</span> <span class="ow">in</span> <span class="p">[(</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="s1">&#39;second&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">,</span> <span class="s1">&#39;third&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;4&#39;</span><span class="p">,</span> <span class="s1">&#39;4-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;5&#39;</span><span class="p">,</span> <span class="s1">&#39;5-th&#39;</span><span class="p">),</span> 
@@ -963,10 +1073,22 @@
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If the --predictors string contains more than &quot;</span>
                         <span class="s2">&quot;one nmt predictor, you can specify the configuration &quot;</span>
                         <span class="s2">&quot;for the </span><span class="si">%s</span><span class="s2"> one with this parameter. The </span><span class="si">%s</span><span class="s2"> nmt &quot;</span>
-                        <span class="s2">&quot;predictor inherits all settings under &#39;Neural model &quot;</span>
-                        <span class="s2">&quot;configuration&#39; except for the ones in this parameter. &quot;</span>
-                        <span class="s2">&quot;Usage: --nmt_config</span><span class="si">%s</span><span class="s2"> &#39;save_to=train</span><span class="si">%s</span><span class="s2">,enc_embed=400&#39;&quot;</span>
-                        <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+                        <span class="s2">&quot;predictor inherits all previous settings except for &quot;</span>
+                        <span class="s2">&quot;the ones in this parameter.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">w</span><span class="p">))</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_path</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --nmt_path for the </span><span class="si">%s</span><span class="s2"> nmt&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_engine</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --nmt_engine for the </span><span class="si">%s</span><span class="s2"> nmt&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>                        
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_config</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If the --predictors string contains more than &quot;</span>
+                        <span class="s2">&quot;one rnnlm predictor, you can specify the configuration &quot;</span>
+                        <span class="s2">&quot;for the </span><span class="si">%s</span><span class="s2"> one with this parameter. The </span><span class="si">%s</span><span class="s2"> rnnlm &quot;</span>
+                        <span class="s2">&quot;predictor inherits all previous settings except for &quot;</span>
+                        <span class="s2">&quot;the ones in this parameter.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">w</span><span class="p">))</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_path</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --rnnlm_path for the </span><span class="si">%s</span><span class="s2"> nmt&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_test</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --src_test for the </span><span class="si">%s</span><span class="s2"> src&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>                        
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--altsrc_test</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --altsrc_test for the </span><span class="si">%s</span><span class="s2"> altsrc&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--word2char_map</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -981,30 +1103,11 @@
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--forcedlst_sparse_feat</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --forcedlst_sparse_feat for the </span><span class="si">%s</span><span class="s2"> &quot;</span>
                         <span class="s2">&quot;forcedlst predictor&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
-    
-    <span class="c1"># Add NMT model options</span>
-    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Neural model configuration&#39;</span><span class="p">)</span>
-    <span class="n">_add_nmt_config</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramc_path</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --ngramc_path for the </span><span class="si">%s</span><span class="s2"> ngramc&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramc_order</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --ngramc_order for the </span><span class="si">%s</span><span class="s2"> ngramc&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span></div>
-
-
-<span class="k">def</span> <span class="nf">_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Adds the nmt options to the command line configuration.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        parser (object): Parser or ArgumentGroup object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">default_config</span> <span class="o">=</span> <span class="n">get_nmt_config</span><span class="p">()</span>
-    <span class="n">nmt_help_texts</span> <span class="o">=</span> <span class="n">get_nmt_config_help</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">default_config</span><span class="p">:</span>
-        <span class="n">arg_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">default_config</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">arg_type</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">:</span>
-            <span class="n">arg_type</span> <span class="o">=</span> <span class="s1">&#39;bool&#39;</span>
-        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-                    <span class="s2">&quot;--</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">k</span><span class="p">,</span>
-                    <span class="n">default</span><span class="o">=</span><span class="n">default_config</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
-                    <span class="nb">type</span><span class="o">=</span><span class="n">arg_type</span><span class="p">,</span>
-                    <span class="n">help</span><span class="o">=</span><span class="n">nmt_help_texts</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
 
 
 <div class="viewcode-block" id="get_args"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_args">[docs]</a><span class="k">def</span> <span class="nf">get_args</span><span class="p">():</span>
@@ -1075,224 +1178,6 @@
                      <span class="s2">&quot;search with early stopping have the same length. You &quot;</span>
                      <span class="s2">&quot;might want to disable early stopping.&quot;</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="get_nmt_config"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_nmt_config">[docs]</a><span class="k">def</span> <span class="nf">get_nmt_config</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Get default NMT configuration. &quot;&quot;&quot;</span>
-    <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
-
-    <span class="c1"># Model related -----------------------------------------------------------</span>
-
-    <span class="c1"># Sequences longer than this will be discarded</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;seq_len&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span>
-
-    <span class="c1"># Number of hidden units in encoder/decoder GRU</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1000</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1000</span>
-
-    <span class="c1"># Dimension of the word embedding matrix in encoder/decoder</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">620</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">620</span>
-    
-    <span class="c1"># Number of layers in encoder and decoder</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_layers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_layers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-    
-    <span class="c1"># Network layout</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_readout_sources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;sfa&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_attention_sources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span>
-    
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_share_weights&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_share_weights&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
-    
-    <span class="c1"># Skip connections</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_skip_connections&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
-    
-    <span class="c1"># How to derive annotations from the encoder. Comma</span>
-    <span class="c1"># separated list of strategies.</span>
-    <span class="c1"># - &#39;direct&#39;: directly use encoder hidden state</span>
-    <span class="c1"># - &#39;hierarchical&#39;: Create higher level annotations with an </span>
-    <span class="c1">#                   attentional RNN </span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;annotations&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;direct&quot;</span>
-    
-    <span class="c1"># Decoder initialisation</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_init&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;last&quot;</span>
-
-    <span class="c1"># Where to save model, this corresponds to &#39;prefix&#39; in groundhog</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;./train&#39;</span>
-    
-    <span class="c1"># Attention</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;attention&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;content&#39;</span>
-    
-    <span class="c1"># External memory structure</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">500</span>
-
-    <span class="c1"># Optimization related ----------------------------------------------------</span>
-
-    <span class="c1"># Batch size</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">80</span>
-
-    <span class="c1"># This many batches will be read ahead and sorted</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;sort_k_batches&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">12</span>
-
-    <span class="c1"># Optimization step rule</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;step_rule&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;AdaDelta&#39;</span>
-
-    <span class="c1"># Gradient clipping threshold</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;step_clipping&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span>
-
-    <span class="c1"># Std of weight initialization</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.01</span>
-
-    <span class="c1"># Regularization related --------------------------------------------------</span>
-
-    <span class="c1"># Weight noise flag for feed forward layers</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_noise_ff&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-
-    <span class="c1"># Weight noise flag for recurrent layers</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_noise_rec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
-
-    <span class="c1"># Dropout ratio, applied only after readout maxout</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dropout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-
-    <span class="c1"># Vocabulary/dataset related ----------------------------------------------</span>
-
-    <span class="c1"># Root directory for dataset</span>
-    <span class="n">datadir</span> <span class="o">=</span> <span class="s1">&#39;./data/&#39;</span>
-    <span class="n">scriptsdir</span> <span class="o">=</span> <span class="s1">&#39;../scripts/&#39;</span>
-
-    <span class="c1"># Source and target datasets</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;train.ids.shuf.en&#39;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;train.ids.shuf.fr&#39;</span>
-    
-    <span class="c1"># Monolingual data (for use see --mono_data_integration</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_mono_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;mono.ids.en&#39;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_mono_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;mono.ids.fr&#39;</span>
-
-    <span class="c1"># Source and target vocabulary sizes, should include bos, eos, unk tokens</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_vocab_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30003</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_vocab_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30003</span>
-    
-    <span class="c1"># Mapping files for using sparse feature word representations</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-
-    <span class="c1"># Early stopping based on bleu related ------------------------------------</span>
-
-    <span class="c1"># Normalize cost according to sequence length after beam-search</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;normalized_bleu&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
-
-    <span class="c1"># Bleu script that will be used (moses multi-perl in this case)</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;bleu_script&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;perl &#39;</span> <span class="o">+</span> <span class="n">scriptsdir</span> <span class="o">+</span> <span class="s1">&#39;multi-bleu.perl </span><span class="si">%s</span><span class="s1"> &lt;&#39;</span>
-
-    <span class="c1"># Validation set source file</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;dev.ids.en&#39;</span>
-
-    <span class="c1"># Validation set gold file</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set_grndtruth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;dev.ids.fr&#39;</span>
-
-    <span class="c1"># Print validation output to file</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;output_val_set&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
-
-    <span class="c1"># Validation output file</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set_out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;/validation_out.txt&#39;</span>
-
-    <span class="c1"># Beam-size</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;beam_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">12</span>
-
-    <span class="c1"># Timing/monitoring related -----------------------------------------------</span>
-
-    <span class="c1"># Maximum number of updates</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;finish_after&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1000000</span>
-
-    <span class="c1"># Reload model from files if exist</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;reload&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
-
-    <span class="c1"># Save model after this many updates</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;save_freq&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">750</span>
-
-    <span class="c1"># Validate bleu after this many updates</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;bleu_val_freq&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">6000</span>
-
-    <span class="c1"># Start bleu validation after this many updates</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_burn_in&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">80000</span>
-
-    <span class="c1"># fs439: Blocks originally creates dumps of the entire main loop</span>
-    <span class="c1"># when the BLEU on the dev set improves. This, however, cannot be</span>
-    <span class="c1"># read to load parameters from, so we create BEST_BLEU_PARAMS*</span>
-    <span class="c1"># files instead. Set the following parameter to true if you still</span>
-    <span class="c1"># want to create the old style archives</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;store_full_main_loop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
-    
-    <span class="c1"># fs439: Fix embeddings when training</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;fix_embeddings&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
-
-    <span class="k">return</span> <span class="n">config</span></div>
-
-
-<div class="viewcode-block" id="get_nmt_config_help"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_nmt_config_help">[docs]</a><span class="k">def</span> <span class="nf">get_nmt_config_help</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Creates a dictionary with help text for the NMT configuration &quot;&quot;&quot;</span>
-
-    <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;seq_len&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Sequences longer than this will be discarded&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of hidden units in encoder GRU&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of hidden units in decoder GRU&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dimension of the word embedding matrix in encoder&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dimension of the word embedding matrix in decoder&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_layers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of encoder layers&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_layers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of decoder layers (NOT IMPLEMENTED for != 1)&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_readout_sources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Sources used by readout network: f for &quot;</span> \
-                                    <span class="s2">&quot;feedback, s for decoder states, a for &quot;</span> \
-                                    <span class="s2">&quot;attention (context vector)&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_attention_sources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Sources used by attention: f for &quot;</span> \
-                                      <span class="s2">&quot;feedback, s for decoder states&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_share_weights&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Whether to share weights in deep encoders&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_share_weights&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Whether to share weights in deep decoders&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_skip_connections&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Add skip connection in deep encoders&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;annotations&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Annotation strategy (comma-separated): &quot;</span> \
-                            <span class="s2">&quot;direct, hierarchical&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_init&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Decoder state initialisation: last, average, constant&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;attention&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Attention mechanism: none, content, nbest-&lt;n&gt;, &quot;</span> \
-                          <span class="s2">&quot;coverage-&lt;n&gt;, tree&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;External memory: none, stack&#39;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Size of external memory structure&#39;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Where to save model, same as &#39;prefix&#39; in groundhog&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Batch size&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;sort_k_batches&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;This many batches will be read ahead and sorted&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;step_rule&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Optimization step rule&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;step_clipping&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Gradient clipping threshold&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Std of weight initialization&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_noise_ff&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Weight noise flag for feed forward layers&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;weight_noise_rec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Weight noise flag for recurrent layers&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dropout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dropout ratio, applied only after readout maxout&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Source dataset&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Target dataset&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_mono_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Source language monolingual data (for use &quot;</span> \
-                              <span class="s2">&quot;see --mono_data_integration)&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_mono_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Target language monolingual data (for use &quot;</span> \
-                              <span class="s2">&quot;see --mono_data_integration)&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_vocab_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Source vocab size, including special tokens&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_vocab_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Target vocab size, including special tokens&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Mapping files for using sparse feature &quot;</span> \
-                                    <span class="s2">&quot;word representations on the source side&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Mapping files for using sparse feature &quot;</span> \
-                                    <span class="s2">&quot;word representations on the target side&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;normalized_bleu&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Length normalization IN TRAINING&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;bleu_script&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BLEU script used during training for model selection&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Validation set source file&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set_grndtruth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Validation set gold file&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;output_val_set&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Print validation output to file&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_set_out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Validation output file&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;beam_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Beam-size for decoding DURING TRAINING&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;finish_after&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Maximum number of updates&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;reload&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Reload model from files if exist&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;save_freq&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Save model after this many updates&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;bleu_val_freq&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Validate bleu after this many updates&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;val_burn_in&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Start bleu validation after this many updates&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;store_full_main_loop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Old style archives (not recommended)&quot;</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;fix_embeddings&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Fix embeddings during training&quot;</span>
-
-    <span class="k">return</span> <span class="n">config</span></div>
 </pre></div>
 
            </div>

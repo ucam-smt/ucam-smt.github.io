@@ -1,0 +1,465 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.tokenization &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.tokenization</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.tokenization</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains wrapper predictors which support decoding with</span>
+<span class="sd">diverse tokenization. The ``Word2charPredictor`` can be used if the </span>
+<span class="sd">decoder operates on fine-grained tokens such as characters, but the</span>
+<span class="sd">tokenization of a predictor is coarse-grained (e.g. words or subwords).</span>
+
+<span class="sd">The ``word2char`` predictor maintains an explicit list of word boundary</span>
+<span class="sd">characters and applies consume and predict_next whenever a word boundary</span>
+<span class="sd">character is consumed.</span>
+
+<span class="sd">The ``char2word`` predictor masks character-based predictors and </span>
+<span class="sd">presents word level posterior distributions to the decoder. In order to</span>
+<span class="sd">form these posteriors, ``char2word`` internally searches until a list</span>
+<span class="sd">of full words is found. Note that since char2word can produce words</span>
+<span class="sd">without word ID, it maintains an internal word map which is updated</span>
+<span class="sd">accordingly. Therefore, the ``output_chars`` option should be used to</span>
+<span class="sd">create output files on the character level, otherwise the new word IDs</span>
+<span class="sd">cannot be mapped back to words.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.trie</span> <span class="kn">import</span> <span class="n">SimpleTrie</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">,</span> <span class="n">Predictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">NEG_INF</span><span class="p">,</span> <span class="n">common_get</span>
+
+
+<div class="viewcode-block" id="Char2wordPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor">[docs]</a><span class="k">class</span> <span class="nc">Char2wordPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This wrapper can be used if the SGNMT decoder operates on the</span>
+<span class="sd">    word level, but a predictor uses a finer grained tokenization. The</span>
+<span class="sd">    wrapper internally implements a search for full words with the</span>
+<span class="sd">    character-based model (predictor) and presents the found full word</span>
+<span class="sd">    continuations to the decoder. If the wrapped predictor produces a</span>
+<span class="sd">    word which has not have an assigned word ID, it updates</span>
+<span class="sd">    ``Char2wordPredictor.wmap`` with a new word. This word map is taken</span>
+<span class="sd">    into account when the SGNMT option ``output_chars`` is activated.</span>
+<span class="sd">    </span>
+<span class="sd">    TODO Implement</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_test</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;TODO</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            TODO</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Char2wordPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slave_predictor</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;char2word cannot wrap an unbounded &quot;</span>
+                          <span class="s2">&quot;vocabulary predictor.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    
+<div class="viewcode-block" id="Char2wordPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor. The source sentence is not</span>
+<span class="sd">        modified </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Char2wordPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor. The source sentence is not</span>
+<span class="sd">        modified </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Char2wordPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+        
+<div class="viewcode-block" id="Char2wordPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="Char2wordPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="Char2wordPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="Char2wordPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Char2wordPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Char2wordPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Char2wordPredictor.set_current_sen_id"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur_sen_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We need to override this method to propagate current\_</span>
+<span class="sd">        sentence_id to the slave predictor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Char2wordPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Char2wordPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="k">pass</span></div></div>
+    
+
+<div class="viewcode-block" id="Word2charPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor">[docs]</a><span class="k">class</span> <span class="nc">Word2charPredictor</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor wraps word level predictors when SGNMT is running</span>
+<span class="sd">    on the character level. The mapping between word ID and character </span>
+<span class="sd">    ID sequence is loaded from the file system. All characters which</span>
+<span class="sd">    do not appear in that mapping are treated as word boundary</span>
+<span class="sd">    makers. The wrapper blocks consume and predict_next calls until a</span>
+<span class="sd">    word boundary marker is consumed, and updates the slave predictor</span>
+<span class="sd">    according the word between the last two word boundaries. The </span>
+<span class="sd">    mapping is done only on the target side, and the source sentences</span>
+<span class="sd">    are passed through as they are. To use alternative tokenization on</span>
+<span class="sd">    the source side, see the altsrc predictor wrapper. The word2char</span>
+<span class="sd">    wrapper is always an ``UnboundedVocabularyPredictor``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new word2char wrapper predictor. The map_path </span>
+<span class="sd">        file has to be plain text files, each line containing the </span>
+<span class="sd">        mapping from a word index to the character index sequence</span>
+<span class="sd">        (format: word char1 char2... charn).</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            map_path (string): Path to the mapping file</span>
+<span class="sd">            slave_predictor (Predictor): Instance of the predictor with</span>
+<span class="sd">                                         a different wmap than SGNMT</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Word2charPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">words</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_chars</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">map_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">l</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+                <span class="n">word</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">chars</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">chars</span><span class="p">,</span> <span class="n">word</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">chars</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">word_chars</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>   
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slave_predictor</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stub_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_stub_prob_unbounded</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_start_new_word</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_new_word_unbounded</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stub_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_stub_prob_bounded</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_start_new_word</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_new_word_bounded</span>             
+    
+<div class="viewcode-block" id="Word2charPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor. The source sentence is not</span>
+<span class="sd">        modified </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_new_word</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="Word2charPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor. The source sentence is not</span>
+<span class="sd">        modified </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+    
+    <span class="k">def</span> <span class="nf">_update_slave_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_unk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_go</span> <span class="o">=</span> <span class="n">common_get</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_unk</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_eos</span> <span class="o">=</span> <span class="n">common_get</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_unk</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">_start_new_word_unbounded</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;start_new_word implementation for unbounded vocabulary slave</span>
+<span class="sd">        predictors. Needs to set slave_go, slave_eos, and slave_unk</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_stub</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">([</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">,</span>
+                                                       <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">,</span>
+                                                       <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_slave_vars</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_start_new_word_bounded</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;start_new_word implementation for bounded vocabulary slave</span>
+<span class="sd">        predictors. Needs to set slave_go, slave_eos, slave_unk, and</span>
+<span class="sd">        slave_posterior</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_stub</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_slave_vars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slave_posterior</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_get_stub_prob_unbounded</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get_stub_prob implementation for unbounded vocabulary slave</span>
+<span class="sd">        predictors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">word</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">word_stub</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">word</span><span class="p">:</span>
+            <span class="n">posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">([</span><span class="n">word</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">common_get</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="n">word</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_unk</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_unk</span>
+    
+    <span class="k">def</span> <span class="nf">_get_stub_prob_bounded</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get_stub_prob implementation for bounded vocabulary slave</span>
+<span class="sd">        predictors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">word</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">word_stub</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">common_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slave_posterior</span><span class="p">,</span>
+                          <span class="n">word</span> <span class="k">if</span> <span class="n">word</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">slave_unk</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="Word2charPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trgt_words</span><span class="p">):</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">stub_prob</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">trgt_words</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_chars</span><span class="p">:</span>
+                <span class="n">posterior</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># Word boundary marker</span>
+                <span class="k">if</span> <span class="n">stub_prob</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+                    <span class="n">stub_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_stub_prob</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_stub</span> <span class="k">else</span> <span class="mf">0.0</span>
+                <span class="n">posterior</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span> <span class="o">=</span> <span class="n">stub_prob</span>
+        <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">:</span>
+            <span class="n">posterior</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_go</span>
+        <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">:</span>
+            <span class="n">posterior</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_eos</span>
+        <span class="k">return</span> <span class="n">posterior</span></div>
+        
+<div class="viewcode-block" id="Word2charPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is about the unkown character, not word. Since the word</span>
+<span class="sd">        level slave predictor has no notion of the unknown character, </span>
+<span class="sd">        we return NEG_INF unconditionally.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">NEG_INF</span></div>
+    
+<div class="viewcode-block" id="Word2charPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If ``word`` is a word boundary marker, truncate ``word_stub``</span>
+<span class="sd">        and let the slave predictor consume word_stub. Otherwise, </span>
+<span class="sd">        extend ``word_stub`` by the character.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_chars</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">word_stub</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_stub</span><span class="p">:</span>
+            <span class="n">word</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">word_stub</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span> <span class="k">if</span> <span class="n">word</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_start_new_word</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="Word2charPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_stub</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="Word2charPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_stub</span><span class="p">,</span> <span class="n">slave_state</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">slave_state</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Word2charPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Word2charPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Not supported &quot;&quot;&quot;</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Cannot use future cost estimates of predictors &quot;</span>
+                     <span class="s2">&quot;wrapped by word2char&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mf">0.0</span></div>
+
+<div class="viewcode-block" id="Word2charPredictor.set_current_sen_id"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur_sen_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We need to override this method to propagate current\_</span>
+<span class="sd">        sentence_id to the slave predictor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Word2charPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Word2charPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="n">stub1</span><span class="p">,</span> <span class="n">slave_state1</span> <span class="o">=</span> <span class="n">state1</span>
+        <span class="n">stub2</span><span class="p">,</span> <span class="n">slave_state2</span> <span class="o">=</span> <span class="n">state2</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">stub1</span> <span class="o">==</span> <span class="n">stub2</span> 
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">slave_state1</span><span class="p">,</span> <span class="n">slave_state2</span><span class="p">))</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

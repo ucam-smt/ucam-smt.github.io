@@ -150,7 +150,7 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">Observable</span><span class="p">,</span> <span class="n">Observer</span><span class="p">,</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">,</span> \
     <span class="n">MESSAGE_TYPE_POSTERIOR</span><span class="p">,</span> <span class="n">MESSAGE_TYPE_FULL_HYPO</span><span class="p">,</span> <span class="n">NEG_INF</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-
+<span class="kn">import</span> <span class="nn">logging</span>
 
 <div class="viewcode-block" id="Hypothesis"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Hypothesis">[docs]</a><span class="k">class</span> <span class="nc">Hypothesis</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Complete translation hypotheses are represented by an instance</span>
@@ -176,7 +176,48 @@
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a string representation of this hypothesis.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> (</span><span class="si">%f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">),</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span><span class="p">)</span></div>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Hypothesis.convert_to_char_level"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Hypothesis.convert_to_char_level">[docs]</a>    <span class="k">def</span> <span class="nf">convert_to_char_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmap</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new hypothesis on the character level from a </span>
+<span class="sd">        hypothesis on the word level. Both objects will have the same </span>
+<span class="sd">        total score, but the word tokens in trgt_sentence are replaced</span>
+<span class="sd">        by characters and score_breakdown adds word scores on the first</span>
+<span class="sd">        character of the word. The mapping from word ID to character ID</span>
+<span class="sd">        sequence is realized by using ``utils.trg_wmap`` and the char-</span>
+<span class="sd">        to-id map ``cmap``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            cmap (dict): Mapping from character to character ID</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Hypothesis. New hypo which corresponds to this hypo but is</span>
+<span class="sd">            tokenized on the character instead of the word level.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="n">eow</span> <span class="o">=</span> <span class="n">cmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;&lt;/w&gt;&quot;</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span>
+        <span class="n">dummy_breakdown</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">ctokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cscore_breakdown</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">w</span> <span class="ow">in</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]:</span>
+                <span class="n">chars</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">:</span>
+                <span class="n">chars</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">[</span><span class="n">w</span><span class="p">]]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chars</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span>
+            <span class="n">chars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eow</span><span class="p">)</span>
+            <span class="n">ctokens</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span>
+            <span class="n">cscore_breakdown</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="o">+</span>
+                                    <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">[</span><span class="n">dummy_breakdown</span><span class="p">])</span>
+	<span class="c1"># Remove last eow</span>
+        <span class="n">ctokens</span> <span class="o">=</span> <span class="n">ctokens</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">cscore_breakdown</span> <span class="o">=</span> <span class="n">cscore_breakdown</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">):</span>
+            <span class="n">cscore_breakdown</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">chypo</span> <span class="o">=</span> <span class="n">Hypothesis</span><span class="p">(</span><span class="n">ctokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">cscore_breakdown</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">chypo</span></div></div>
 
 
 <div class="viewcode-block" id="PartialHypothesis"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.PartialHypothesis">[docs]</a><span class="k">class</span> <span class="nc">PartialHypothesis</span><span class="p">:</span>
@@ -286,6 +327,11 @@
 <span class="sd">&quot;&quot;&quot;Reduced: Always normalize the closed vocabulary scores to the </span>
 <span class="sd">vocabulary which is defined by the open vocabulary predictors at each</span>
 <span class="sd">time step. &quot;&quot;&quot;</span>
+
+<span class="n">CLOSED_VOCAB_SCORE_NORM_RESCALE_UNK</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="sd">&quot;&quot;&quot;Rescale UNK: Divide the UNK scores by the number of words outside the </span>
+<span class="sd">vocabulary. Results in a valid distribution if predictor scores are</span>
+<span class="sd">stochastic. &quot;&quot;&quot;</span>
 
 
 <div class="viewcode-block" id="Heuristic"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Heuristic">[docs]</a><span class="k">class</span> <span class="nc">Heuristic</span><span class="p">(</span><span class="n">Observer</span><span class="p">):</span>
@@ -461,19 +507,17 @@
 <span class="sd">    are observing the decoder by default.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">closed_vocab_norm</span> <span class="o">=</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_NONE</span><span class="p">,</span>
-                 <span class="n">max_len_factor</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-                 <span class="n">lower_bounds_file</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Initializes the decoder instance with no predictors or </span>
 <span class="sd">        heuristics.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
-<span class="sd">            closed_vocab_norm (int): Defines the normalization behavior</span>
-<span class="sd">                                     for closed vocabulary predictor</span>
-<span class="sd">                                     scores. See the documentation to</span>
-<span class="sd">                                     the ``CLOSED_VOCAB_SCORE_NORM_*``</span>
-<span class="sd">                                     variables for more information</span>
+<span class="sd">            closed_vocabulary_normalization (string): Defines the </span>
+<span class="sd">                                    normalization behavior for closed </span>
+<span class="sd">                                    vocabulary predictor scores. See </span>
+<span class="sd">                                    the documentation to the </span>
+<span class="sd">                                    ``CLOSED_VOCAB_SCORE_NORM_*``</span>
+<span class="sd">                                    variables for more information</span>
 <span class="sd">            max_len_factor (int): Hypotheses are not longer than</span>
 <span class="sd">                                  source sentence length times this.</span>
 <span class="sd">                                  Needs to be supported by the search</span>
@@ -484,24 +528,32 @@
 <span class="sd">                                        set to ``NEG_INF``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Decoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">=</span> <span class="n">max_len_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">max_len_factor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># Tuples (predictor, weight)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">heuristics</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_predictors</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allow_unk_in_output</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">allow_unk_in_output</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nbest</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># length of n-best list</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">combi_predictor_method</span> <span class="o">=</span> <span class="n">Decoder</span><span class="o">.</span><span class="n">combi_arithmetic_unnormalized</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_none</span>
-        <span class="k">if</span> <span class="n">closed_vocab_norm</span> <span class="o">==</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_EXACT</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed_vocab_norm</span> <span class="o">=</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_NONE</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">closed_vocabulary_normalization</span> <span class="o">==</span> <span class="s1">&#39;exact&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closed_vocab_norm</span> <span class="o">=</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_EXACT</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_exact</span>
-        <span class="k">elif</span> <span class="n">closed_vocab_norm</span> <span class="o">==</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_REDUCED</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">closed_vocabulary_normalization</span> <span class="o">==</span> <span class="s1">&#39;reduced&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closed_vocab_norm</span> <span class="o">=</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_REDUCED</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_reduced</span>
+        <span class="k">elif</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">closed_vocabulary_normalization</span> <span class="o">==</span> <span class="s1">&#39;rescale_unk&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closed_vocab_norm</span> <span class="o">=</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_RESCALE_UNK</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_rescale_unk</span>
+        
         <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start_sen_id</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lower_bounds</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="n">lower_bounds_file</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">lower_bounds_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">score_lower_bounds_file</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">decoder_args</span><span class="o">.</span><span class="n">score_lower_bounds_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">lower_bounds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
     
@@ -629,6 +681,9 @@
             <span class="n">posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
             <span class="n">unk_probs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_unk_in_output</span> <span class="ow">and</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">del</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">ret</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">notify_observers</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_POSTERIOR</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ret</span></div>
     
@@ -660,6 +715,40 @@
             <span class="n">combined</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combi_predictor_method</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span> 
             <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="n">preds</span>
         <span class="k">return</span> <span class="n">combined</span><span class="p">,</span> <span class="n">score_breakdown</span>
+
+
+    <span class="k">def</span> <span class="nf">_combine_posteriors_norm_rescale_unk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                             <span class="n">non_zero_words</span><span class="p">,</span>
+                                             <span class="n">posteriors</span><span class="p">,</span>
+                                             <span class="n">unk_probs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine predictor posteriors according the normalization</span>
+<span class="sd">        scheme ``CLOSED_VOCAB_SCORE_NORM_RESCALE_UNK``. For more </span>
+<span class="sd">        information on closed vocabulary predictor score normalization </span>
+<span class="sd">        see the documentation on the ``CLOSED_VOCAB_SCORE_NORM_*`` vars.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            non_zero_words (set): All words with positive probability</span>
+<span class="sd">            posteriors: Predictor posterior distributions calculated</span>
+<span class="sd">                        with ``predict_next()``</span>
+<span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
+<span class="sd">                       with ``get_unk_probability``</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_predictors</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)</span>
+        <span class="n">unk_counts</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_predictors</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="mf">0.00001</span> <span class="ow">or</span> <span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">==</span> <span class="n">NEG_INF</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">non_zero_words</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_contains</span><span class="p">(</span><span class="n">posteriors</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">trgt_word</span><span class="p">):</span>
+                    <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">1.0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_none</span><span class="p">(</span>
+                          <span class="n">non_zero_words</span><span class="p">,</span>
+                          <span class="n">posteriors</span><span class="p">,</span>
+                          <span class="p">[</span><span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span> 
+                               <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">)])</span>
     
     <span class="k">def</span> <span class="nf">_combine_posteriors_norm_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                        <span class="n">non_zero_words</span><span class="p">,</span>
@@ -775,12 +864,23 @@
 <span class="sd">            src_sentence (list): List of source word ids without &lt;S&gt; or</span>
 <span class="sd">                                 &lt;/S&gt; which make up the source sentence</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">full_hypos</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">):</span>
             <span class="n">p</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">)</span>
-            <span class="n">p</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="c1"># Assign inputs to predictors by index if available</span>
+                <span class="k">if</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">):</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initialize predictor {} with input idx={}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">idx</span><span class="p">))</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">heuristics</span><span class="p">:</span>
             <span class="n">h</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
     

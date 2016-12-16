@@ -177,7 +177,7 @@
 <span class="sd">        not in the target sentence have assigned probability 0 by</span>
 <span class="sd">        this predictor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">NEG_INF</span></div>
+        <span class="k">return</span> <span class="n">posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="ForcedPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a dictionary with one entry and value 0 (=log 1). The</span>
@@ -185,7 +185,8 @@
 <span class="sd">        target sentence has no more words) the end-of-sentence symbol.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">):</span>
-            <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="n">NEG_INF</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span></div>
     
@@ -208,7 +209,8 @@
 <span class="sd">            word (int): Next word to consume</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span> <span class="o">!=</span> <span class="n">word</span><span class="p">:</span>
+            <span class="n">trg_word</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">trg_word</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="ow">and</span> <span class="n">trg_word</span> <span class="o">!=</span> <span class="n">word</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># Mismatch with our target sentence</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">+</span> <span class="mi">1</span></div>
@@ -313,7 +315,7 @@
         <span class="sd">&quot;&quot;&quot;Return negative infinity unconditionally - words outside the</span>
 <span class="sd">        n-best list are not possible according to this predictor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">NEG_INF</span></div>
+        <span class="k">return</span> <span class="n">posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="ForcedLstPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Outputs 0.0 (i.e. prob=1) for all words for which there is </span>
@@ -328,11 +330,18 @@
         <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">hist_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">sen_score</span><span class="p">,</span><span class="n">trg_sentence</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentences</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">trg_sentence</span><span class="p">[:</span><span class="n">hist_len</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">trg_sentence</span><span class="p">)</span> <span class="o">==</span> <span class="n">hist_len</span><span class="p">:</span>
+            <span class="n">sen_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trg_sentence</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sen_len</span> <span class="o">&lt;</span> <span class="n">hist_len</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">hist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">trg_sentence</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span>
+                      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">hist_len</span><span class="p">)]</span> 
+            <span class="k">if</span> <span class="n">trg_sentence</span><span class="p">[:</span><span class="n">hist_len</span><span class="p">]</span> <span class="o">==</span> <span class="n">hist</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">sen_len</span> <span class="o">==</span> <span class="n">hist_len</span><span class="p">:</span>
                     <span class="n">scores</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">sen_score</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">scores</span><span class="p">[</span><span class="n">trg_sentence</span><span class="p">[</span><span class="n">hist_len</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="ow">in</span> <span class="n">scores</span><span class="p">:</span>
+            <span class="n">scores</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">NEG_INF</span>
         <span class="k">return</span> <span class="n">scores</span></div>
     
 <div class="viewcode-block" id="ForcedLstPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>

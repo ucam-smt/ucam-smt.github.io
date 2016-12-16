@@ -146,7 +146,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">import</span> <span class="nn">operator</span>
 <span class="kn">from</span> <span class="nn">scipy.misc</span> <span class="kn">import</span> <span class="n">logsumexp</span>
-
+<span class="kn">import</span> <span class="nn">codecs</span>
 
 <span class="c1"># Reserved IDs</span>
 <span class="n">PAD_ID</span> <span class="o">=</span> <span class="bp">None</span>
@@ -318,6 +318,95 @@
         <span class="k">return</span> <span class="n">key</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
 
 
+<span class="c1"># Word maps</span>
+
+
+<span class="n">src_wmap</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="sd">&quot;&quot;&quot; Source language word map &quot;&quot;&quot;</span>
+
+
+<span class="n">trg_wmap</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="sd">&quot;&quot;&quot; Target language word map &quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="load_src_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.load_src_wmap">[docs]</a><span class="k">def</span> <span class="nf">load_src_wmap</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads a source side word map from the file system.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path (string): Path to the word map (Format: word id)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        dict. Source word map (key: word, value: id)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">src_wmap</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+        <span class="n">src_wmap</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="n">src_wmap</span>
+    <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">src_wmap</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span>
+                        <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">src_wmap</span></div>
+
+
+<div class="viewcode-block" id="load_trg_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.load_trg_wmap">[docs]</a><span class="k">def</span> <span class="nf">load_trg_wmap</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads a target side word map from the file system.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path (string): Path to the word map (Format: word id)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        dict. Source word map (key: id, value: word)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">trg_wmap</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+        <span class="n">trg_wmap</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="n">trg_wmap</span>
+    <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">trg_wmap</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                        <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">trg_wmap</span></div>
+        
+
+<div class="viewcode-block" id="apply_src_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.apply_src_wmap">[docs]</a><span class="k">def</span> <span class="nf">apply_src_wmap</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">wmap</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts a string to a sequence of integers by applying the</span>
+<span class="sd">    mapping ``wmap``. If ``wmap`` is empty, parse ``seq`` as string</span>
+<span class="sd">    of blank separated integers.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        seq (list): List of strings to convert</span>
+<span class="sd">        wmap (dict): word map to apply (key: word, value: ID). If empty</span>
+<span class="sd">                     use ``utils.src_wmap``</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        list. List of integers</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">wmap</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">wmap</span> <span class="o">=</span> <span class="n">src_wmap</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">wmap</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">UNK_ID</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="apply_trg_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.apply_trg_wmap">[docs]</a><span class="k">def</span> <span class="nf">apply_trg_wmap</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">inv_wmap</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts a sequence of integers to a string by applying the</span>
+<span class="sd">    mapping ``wmap``. If ``wmap`` is empty, output the integers</span>
+<span class="sd">    directly.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        seq (list): List of integers to convert</span>
+<span class="sd">        inv_wmap (dict): word map to apply (key: id, value: word). If </span>
+<span class="sd">                         empty use ``utils.trg_wmap``</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        string. Mapped ``seq`` as single (blank separated) string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">inv_wmap</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">inv_wmap</span> <span class="o">=</span> <span class="n">trg_wmap</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">inv_wmap</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">])</span>
+    <span class="k">return</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">inv_wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;UNK&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">])</span></div>
+
+
 <span class="c1"># Miscellaneous</span>
 
 
@@ -329,7 +418,7 @@
 <span class="sd">        tmpl (string): Path, potentially with %d placeholder</span>
 <span class="sd">        sub (int): Substitution for %d</span>
 <span class="sd">    </span>
-<span class="sd">    Return:</span>
+<span class="sd">    Returns:</span>
 <span class="sd">        string. ``tmpl`` with %d replaced with ``sub`` if present</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">tmpl</span><span class="p">:</span>

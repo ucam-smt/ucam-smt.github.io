@@ -165,14 +165,16 @@
 <span class="sd">    on both source and target side.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nmt_model_path</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nmt_model_path</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set up the NMT model used by the decoder.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            nmt_model_path (string):  Path to the NMT model file (.npz)</span>
 <span class="sd">            config (dict): NMT configuration</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from configuration API.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">BlocksNMTVanillaDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BlocksNMTVanillaDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_up_decoder</span><span class="p">(</span><span class="n">nmt_model_path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">src_eos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sparse_feat_map</span><span class="o">.</span><span class="n">word2dense</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">)</span>
@@ -194,7 +196,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">src_sparse_feat_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">]</span> \
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_sparse_feat_map&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">FlatSparseFeatMap</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;sparse trg&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">trg_sparse_feat_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_sparse_feat_map&#39;</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">beam_search</span> <span class="o">=</span> <span class="n">SparseBeamSearch</span><span class="p">(</span>
                                  <span class="n">samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nmt_model</span><span class="o">.</span><span class="n">samples</span><span class="p">,</span> 
@@ -225,7 +226,6 @@
                 <span class="n">src_sentence</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;src_vocab_size&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">src_eos</span><span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sparse_feat_map</span><span class="o">.</span><span class="n">dim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># sparse src feats</span>
-            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;sparse src&quot;</span><span class="p">)</span>
             <span class="n">input_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span>
                             <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;beam_size&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
                             <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>

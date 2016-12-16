@@ -170,8 +170,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
-                 <span class="n">closed_vocab_norm</span><span class="p">,</span>
-                 <span class="n">max_len_factor</span><span class="p">,</span>
+                 <span class="n">decoder_args</span><span class="p">,</span>
                  <span class="n">hypo_recombination</span><span class="p">,</span> 
                  <span class="n">max_expansions</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                  <span class="n">low_memory_mode</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
@@ -179,7 +178,6 @@
                  <span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
                  <span class="n">diversity_factor</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
                  <span class="n">early_stopping</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                 <span class="n">lower_bounds_file</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                  <span class="n">stochastic</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                  <span class="n">bucket_selector</span><span class="o">=</span><span class="s1">&#39;maxscore&#39;</span><span class="p">,</span>
                  <span class="n">bucket_score_strategy</span><span class="o">=</span><span class="s1">&#39;difference&#39;</span><span class="p">,</span>
@@ -187,13 +185,8 @@
         <span class="sd">&quot;&quot;&quot;Create a new bucket decoder</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
-<span class="sd">            closed_vocab_norm (int): Defines the normalization behavior</span>
-<span class="sd">                                     for closed vocabulary predictor</span>
-<span class="sd">                                     scores. See the documentation to</span>
-<span class="sd">                                     the ``CLOSED_VOCAB_SCORE_NORM_*``</span>
-<span class="sd">                                     variables for more information</span>
-<span class="sd">            max_len_factor (int): Hypotheses are not longer than</span>
-<span class="sd">                                  source sentence length times this</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from the configuration API.</span>
 <span class="sd">            hypo_recombination (boolean): Activates hypothesis </span>
 <span class="sd">                                          recombination. Hypos are</span>
 <span class="sd">                                          tested only within a bucket </span>
@@ -242,9 +235,7 @@
 <span class="sd">                                             collected for heuristic</span>
 <span class="sd">                                            </span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">BucketDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">closed_vocab_norm</span><span class="p">,</span> 
-                                            <span class="n">max_len_factor</span><span class="p">,</span>
-                                            <span class="n">lower_bounds_file</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BucketDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions_param</span> <span class="o">=</span> <span class="n">max_expansions</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">low_memory_mode</span> <span class="o">=</span> <span class="n">low_memory_mode</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">beam</span> <span class="o">=</span> <span class="n">beam</span>
@@ -266,6 +257,8 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">bucket_selector</span> <span class="o">==</span> <span class="s1">&#39;maxscore&#39;</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">get_bucket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bucket_maxscore</span>
+            <span class="k">elif</span> <span class="n">bucket_selector</span> <span class="o">==</span> <span class="s1">&#39;score-end&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_bucket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bucket_score_end</span>
             <span class="k">elif</span> <span class="n">bucket_selector</span> <span class="o">==</span> <span class="s1">&#39;score&#39;</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">get_bucket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bucket_score</span>
             <span class="k">else</span><span class="p">:</span>
@@ -355,6 +348,25 @@
                 <span class="k">if</span> <span class="n">score</span> <span class="o">&lt;=</span> <span class="n">best_score</span><span class="p">:</span>
                     <span class="n">best_score</span> <span class="o">=</span> <span class="n">score</span>
                     <span class="n">best_length</span> <span class="o">=</span> <span class="n">length</span> 
+        <span class="k">return</span> <span class="n">best_length</span>
+
+    <span class="k">def</span> <span class="nf">_get_bucket_score_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implements the bucket selector &#39;score-end&#39; &quot;&quot;&quot;</span>
+        <span class="n">last_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_bucket</span>
+        <span class="k">for</span> <span class="n">length</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">last_length</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buckets</span><span class="p">[</span><span class="n">length</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">last_bucket</span> <span class="o">=</span> <span class="n">length</span>
+                <span class="k">return</span> <span class="n">length</span>
+        <span class="c1"># Restart with best bucket</span>
+        <span class="n">best_score</span> <span class="o">=</span> <span class="n">INF</span>
+        <span class="n">best_length</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">length</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buckets</span><span class="p">[</span><span class="n">length</span><span class="p">]:</span>
+                <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_bucketscore</span><span class="p">(</span><span class="n">length</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">score</span> <span class="o">&lt;=</span> <span class="n">best_score</span><span class="p">:</span>
+                    <span class="n">best_score</span> <span class="o">=</span> <span class="n">score</span>
+                    <span class="n">best_length</span> <span class="o">=</span> <span class="n">length</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_bucket</span> <span class="o">=</span> <span class="n">best_length</span>
         <span class="k">return</span> <span class="n">best_length</span>
 
     <span class="k">def</span> <span class="nf">_get_bucket_random</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -592,7 +604,9 @@
                 <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expand_backpointers</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
             <span class="n">est_score</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">diversity_factor</span> <span class="o">*</span> <span class="n">cnt</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">est_score</span> <span class="o">+</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span>
+            <span class="n">est_score</span> <span class="o">+=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">!=</span> <span class="n">NEG_INF</span><span class="p">:</span>
+                <span class="n">est_score</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span>
         <span class="k">return</span> <span class="n">est_score</span>
     
     <span class="k">def</span> <span class="nf">_get_min_bucket_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>

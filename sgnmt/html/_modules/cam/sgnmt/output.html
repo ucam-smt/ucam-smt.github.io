@@ -155,6 +155,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">codecs</span>
 
 
 <div class="viewcode-block" id="OutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.OutputHandler">[docs]</a><span class="k">class</span> <span class="nc">OutputHandler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -177,23 +178,42 @@
 <span class="sd">            IOError. If something goes wrong while writing to the disk</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
-    
+
 
 <div class="viewcode-block" id="TextOutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.TextOutputHandler">[docs]</a><span class="k">class</span> <span class="nc">TextOutputHandler</span><span class="p">(</span><span class="n">OutputHandler</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Writes the first best hypotheses to a plain text file &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">trg_wmap</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a plain text output handler to write to ``path`` &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">TextOutputHandler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_wmap</span> <span class="o">=</span> <span class="n">trg_wmap</span>
         
 <div class="viewcode-block" id="TextOutputHandler.write_hypos"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.TextOutputHandler.write_hypos">[docs]</a>    <span class="k">def</span> <span class="nf">write_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">all_hypos</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Writes the hypotheses in ``all_hypos`` to ``path`` &quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+          <span class="k">for</span> <span class="n">hypos</span> <span class="ow">in</span> <span class="n">all_hypos</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">apply_trg_wmap</span><span class="p">(</span><span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">hypos</span> <span class="ow">in</span> <span class="n">all_hypos</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div></div>
-  
+              <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">apply_trg_wmap</span><span class="p">(</span><span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">))</span>
+              <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TextOutputHandler.open_file"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.TextOutputHandler.open_file">[docs]</a>    <span class="k">def</span> <span class="nf">open_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TextOutputHandler.close_file"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.TextOutputHandler.close_file">[docs]</a>    <span class="k">def</span> <span class="nf">close_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TextOutputHandler.write_empty_line"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.TextOutputHandler.write_empty_line">[docs]</a>    <span class="k">def</span> <span class="nf">write_empty_line</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+         <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+         <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div></div>
+    
                 
 <div class="viewcode-block" id="NBestOutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.NBestOutputHandler">[docs]</a><span class="k">class</span> <span class="nc">NBestOutputHandler</span><span class="p">(</span><span class="n">OutputHandler</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Produces a n-best file in Moses format. The third part of each </span>
@@ -203,7 +223,7 @@
 <span class="sd">    first sentence with 1 (e.g. in lattice directories or --range)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">predictor_names</span><span class="p">,</span> <span class="n">start_sen_id</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">predictor_names</span><span class="p">,</span> <span class="n">start_sen_id</span><span class="p">,</span> <span class="n">trg_wmap</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a Moses n-best list output handler.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -212,10 +232,12 @@
 <span class="sd">                             should be included in the score breakdown</span>
 <span class="sd">                             in the n-best list</span>
 <span class="sd">            start_sen_id: ID of the first sentence</span>
+<span class="sd">            trg_wmap (dict): (Inverse) word map for target language</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">NBestOutputHandler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start_sen_id</span> <span class="o">=</span> <span class="n">start_sen_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_wmap</span> <span class="o">=</span> <span class="n">trg_wmap</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">name_count</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">predictor_names</span><span class="p">:</span>
@@ -229,14 +251,15 @@
         
 <div class="viewcode-block" id="NBestOutputHandler.write_hypos"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.NBestOutputHandler.write_hypos">[docs]</a>    <span class="k">def</span> <span class="nf">write_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">all_hypos</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Writes the hypotheses in ``all_hypos`` to ``path`` &quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">n_predictors</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span><span class="p">)</span>
             <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_sen_id</span>
             <span class="k">for</span> <span class="n">hypos</span> <span class="ow">in</span> <span class="n">all_hypos</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
                     <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> ||| </span><span class="si">%s</span><span class="s2"> ||| </span><span class="si">%s</span><span class="s2"> ||| </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span>
                             <span class="p">(</span><span class="n">idx</span><span class="p">,</span>
-                             <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">),</span>
+                             <span class="n">utils</span><span class="o">.</span><span class="n">apply_trg_wmap</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">),</span>
                              <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">= </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
                                   <span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                   <span class="nb">sum</span><span class="p">([</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">]))</span>

@@ -1,0 +1,310 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.tf.interface &mdash; SGNMT 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.tf.interface</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.tf.interface</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module is the interface to the TensorFlow NMT and RNNLM implementations.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="n">TENSORFLOW_AVAILABLE</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">cam.sgnmt.tf.vanilla_decoder</span> <span class="kn">import</span> <span class="n">TensorFlowNMTVanillaDecoder</span>
+    <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_nmt</span> <span class="kn">import</span> <span class="n">TensorFlowNMTPredictor</span>
+    <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_rnnlm</span> <span class="kn">import</span> <span class="n">TensorFlowRNNLMPredictor</span>
+    <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
+    <span class="n">session</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">TENSORFLOW_AVAILABLE</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="tf_get_nmt_predictor"><a class="viewcode-back" href="../../../../cam.sgnmt.tf.html#cam.sgnmt.tf.interface.tf_get_nmt_predictor">[docs]</a><span class="k">def</span> <span class="nf">tf_get_nmt_predictor</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">nmt_path</span><span class="p">,</span> <span class="n">nmt_config</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Get the TensorFlow NMT predictor.</span>
+<span class="sd">    </span>
+<span class="sd">  Args:</span>
+<span class="sd">    args (object): SGNMT arguments from ``ArgumentParser``</span>
+<span class="sd">    nmt_config (string): NMT configuration</span>
+<span class="sd">    path (string): Path to NMT model or directory</span>
+<span class="sd">    </span>
+<span class="sd">  Returns:</span>
+<span class="sd">    Predictor. An instance of ``TensorFlowNMTPredictor``</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="ow">not</span> <span class="n">TENSORFLOW_AVAILABLE</span><span class="p">:</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find TensorFlow!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">None</span>
+
+  <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading tensorflow nmt predictor&quot;</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">nmt_path</span><span class="p">):</span>
+    <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;train_dir&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nmt_path</span>
+  <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">nmt_path</span><span class="p">):</span>
+    <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;model_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nmt_path</span>
+  <span class="k">global</span> <span class="n">session</span>
+  <span class="k">if</span> <span class="ow">not</span> <span class="n">session</span><span class="p">:</span>
+    <span class="n">session</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+  <span class="k">return</span> <span class="n">TensorFlowNMTPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cache_nmt_posteriors</span><span class="p">,</span> <span class="n">nmt_config</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="tf_get_default_nmt_config"><a class="viewcode-back" href="../../../../cam.sgnmt.tf.html#cam.sgnmt.tf.interface.tf_get_default_nmt_config">[docs]</a><span class="k">def</span> <span class="nf">tf_get_default_nmt_config</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Get default NMT configuration. &quot;&quot;&quot;</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">_parse_flags</span><span class="p">(</span><span class="n">flags</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Replicated here from tensorflow.python.platform.flags to avoid processing</span>
+<span class="sd">        sgnmt command line flags. &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">tensorflow.python.platform.flags</span> <span class="kn">import</span> <span class="n">_global_parser</span>
+        <span class="n">result</span><span class="p">,</span> <span class="n">unknown_args</span> <span class="o">=</span> <span class="n">_global_parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">unknown_args</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unknown arguments: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unknown_args</span><span class="p">))</span>
+            <span class="nb">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">flag_name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">flags</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s1">&#39;__flags&#39;</span><span class="p">][</span><span class="n">flag_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="n">flags</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s1">&#39;__parsed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">flags</span><span class="p">)</span>
+
+    <span class="kn">from</span> <span class="nn">tensorflow.models.rnn.translate.train</span> <span class="kn">import</span> <span class="n">FLAGS</span> <span class="k">as</span> <span class="n">train_flags</span>
+    <span class="n">_parse_flags</span><span class="p">(</span><span class="n">train_flags</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="n">train_flags</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s1">&#39;__flags&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+      <span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="n">config</span></div>
+
+<div class="viewcode-block" id="tf_get_nmt_vanilla_decoder"><a class="viewcode-back" href="../../../../cam.sgnmt.tf.html#cam.sgnmt.tf.interface.tf_get_nmt_vanilla_decoder">[docs]</a><span class="k">def</span> <span class="nf">tf_get_nmt_vanilla_decoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">nmt_config</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Get the TensorFlow NMT vanilla decoder.</span>
+
+<span class="sd">  Args:</span>
+<span class="sd">    args (object): SGNMT arguments from ``ArgumentParser``</span>
+<span class="sd">    nmt_config (string): NMT configuration</span>
+
+<span class="sd">  Returns:</span>
+<span class="sd">    Predictor. An instance of ``TensorFlowNMTVanillaDecoder``</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="ow">not</span> <span class="n">TENSORFLOW_AVAILABLE</span><span class="p">:</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find TensorFlow!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">None</span>
+  <span class="k">return</span> <span class="n">TensorFlowNMTVanillaDecoder</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="tf_get_rnnlm_predictor"><a class="viewcode-back" href="../../../../cam.sgnmt.tf.html#cam.sgnmt.tf.interface.tf_get_rnnlm_predictor">[docs]</a><span class="k">def</span> <span class="nf">tf_get_rnnlm_predictor</span><span class="p">(</span><span class="n">rnnlm_path</span><span class="p">,</span> <span class="n">rnnlm_config</span><span class="p">,</span> <span class="n">variable_prefix</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Get the TensorFlow RNNLM predictor.</span>
+<span class="sd">    </span>
+<span class="sd">  Args:    </span>
+<span class="sd">    rnnlm_config (string): RNNLM configuration</span>
+<span class="sd">    path (string): Path to RNNLM model or directory</span>
+<span class="sd">    variable_prefix(string): prefix of model variables</span>
+<span class="sd">    </span>
+<span class="sd">  Returns:</span>
+<span class="sd">    Predictor. An instance of ``TensorFlowRNNLMPredictor``</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="ow">not</span> <span class="n">TENSORFLOW_AVAILABLE</span><span class="p">:</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find TensorFlow!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">None</span>
+
+  <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading tensorflow rnnlm predictor&quot;</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">TensorFlowRNNLMPredictor</span><span class="p">(</span><span class="n">rnnlm_path</span><span class="p">,</span> <span class="n">rnnlm_config</span><span class="p">,</span> <span class="n">variable_prefix</span><span class="p">)</span></div>
+
+<span class="n">_rnnlm_count</span> <span class="o">=</span> <span class="mi">0</span>
+<div class="viewcode-block" id="tf_get_rnnlm_prefix"><a class="viewcode-back" href="../../../../cam.sgnmt.tf.html#cam.sgnmt.tf.interface.tf_get_rnnlm_prefix">[docs]</a><span class="k">def</span> <span class="nf">tf_get_rnnlm_prefix</span><span class="p">(</span><span class="n">var_prefix</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is a helper function to increment the variable prefix when</span>
+<span class="sd">    decoding with multiple rnnlm models. This assumes that models have</span>
+<span class="sd">    been prefixed &#39;model&#39;, &#39;model2&#39;, &#39;model3&#39; etc.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        variable prefix for first model</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        variable prefix according to model index</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_rnnlm_count</span>
+    <span class="n">_rnnlm_count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">var_prefix</span><span class="p">,</span> <span class="n">_rnnlm_count</span><span class="p">)</span> <span class="k">if</span> <span class="n">_rnnlm_count</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">var_prefix</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

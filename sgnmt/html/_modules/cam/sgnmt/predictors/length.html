@@ -147,12 +147,13 @@
 
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">scipy.misc</span> <span class="kn">import</span> <span class="n">logsumexp</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">gammaln</span>
 
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.trie</span> <span class="kn">import</span> <span class="n">SimpleTrie</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
-<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">gammaln</span>
-<span class="kn">from</span> <span class="nn">scipy.misc</span> <span class="kn">import</span> <span class="n">logsumexp</span>
 
 
 <span class="n">NEG_INF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
@@ -361,9 +362,9 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">WordCountPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">word</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span> <span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span> <span class="p">:</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">}</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="mf">0.0</span> 
         
 <div class="viewcode-block" id="WordCountPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
@@ -477,6 +478,145 @@
 <div class="viewcode-block" id="ExternalLengthPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.ExternalLengthPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns true if the number of consumed words is the same &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+
+
+<div class="viewcode-block" id="NgramCountPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NgramCountPredictor">[docs]</a><span class="k">class</span> <span class="nc">NgramCountPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor counts the number of n-grams in hypotheses. n-gram</span>
+<span class="sd">    posteriors are loaded from a file. The predictor score is the sum of</span>
+<span class="sd">    all n-gram posteriors in a hypothesis. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">discount_factor</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new ngram count predictor instance.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            path (string): Path to the n-gram posteriors. File format:</span>
+<span class="sd">                           &lt;ngram&gt; : &lt;score&gt; (one ngram per line). Use</span>
+<span class="sd">                           placeholder %d for sentence id.</span>
+<span class="sd">            order (int): If positive, count n-grams of the specified</span>
+<span class="sd">                         order. Otherwise, count all n-grams</span>
+<span class="sd">            discount_factor (float): If non-negative, discount n-gram</span>
+<span class="sd">                                     posteriors by this factor each time </span>
+<span class="sd">                                     they are consumed </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NgramCountPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="n">order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">discount_factor</span> <span class="o">=</span> <span class="n">discount_factor</span>
+        
+<div class="viewcode-block" id="NgramCountPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NgramCountPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Always return 0.0 &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">0.0</span></div>
+    
+<div class="viewcode-block" id="NgramCountPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NgramCountPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Composes the posterior vector by collecting all ngrams which</span>
+<span class="sd">        are consistent with the current history.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)):</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ngrams</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">[</span><span class="n">i</span><span class="p">:])</span>
+            <span class="k">if</span> <span class="n">scores</span><span class="p">:</span>
+                <span class="n">factors</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">discount_factor</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+                    <span class="n">factors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">discounts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">[</span><span class="n">i</span><span class="p">:])</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">factors</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">w</span><span class="p">,</span><span class="n">score</span> <span class="ow">in</span> <span class="n">scores</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                        <span class="n">posterior</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="n">posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">score</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">w</span><span class="p">,</span><span class="n">score</span> <span class="ow">in</span> <span class="n">scores</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                        <span class="n">posterior</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="n">posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span>  \
+                                       <span class="n">factors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">score</span>
+        <span class="k">return</span> <span class="n">posterior</span></div>
+    
+    <span class="k">def</span> <span class="nf">_load_posteriors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets up self.max_history_len and self.ngrams &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_history_len</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ngrams</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">ngram</span><span class="p">,</span><span class="n">score</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+                <span class="n">words</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">ngram</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">hist</span> <span class="o">=</span> <span class="n">words</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">last_word</span> <span class="o">=</span> <span class="n">words</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">last_word</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">max_history_len</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history_len</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">hist</span><span class="p">))</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ngrams</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hist</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">p</span><span class="p">:</span>
+                    <span class="n">p</span><span class="p">[</span><span class="n">last_word</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">ngrams</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">hist</span><span class="p">,</span> <span class="p">{</span><span class="n">last_word</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="o">.</span><span class="n">strip</span><span class="p">())})</span>
+    
+<div class="viewcode-block" id="NgramCountPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NgramCountPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loads n-gram posteriors and resets history.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_posteriors</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">discounts</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="NgramCountPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NgramCountPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds ``word`` to the current history. Shorten if the extended</span>
+<span class="sd">        history exceeds ``max_history_len``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): Word to add to the history.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_history_len</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history_len</span><span class="p">:]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">discount_factor</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">)):</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">factors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">discounts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">factors</span><span class="p">:</span>
+                    <span class="n">factors</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">discount_factor</span><span class="p">}</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">factors</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="n">factors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">discount_factor</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">discounts</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">factors</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="NgramCountPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NgramCountPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Current history is the predictor state &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">discounts</span></div>
+    
+<div class="viewcode-block" id="NgramCountPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NgramCountPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Current history is the predictor state &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_history</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">discounts</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="NgramCountPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NgramCountPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="NgramCountPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NgramCountPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hypothesis recombination is</span>
+<span class="sd">        not supported if discounting is enabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">discount_factor</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="n">hist1</span> <span class="o">=</span> <span class="n">state1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">hist2</span> <span class="o">=</span> <span class="n">state2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">hist1</span> <span class="o">==</span> <span class="n">hist2</span><span class="p">:</span> <span class="c1"># Return true if histories match</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">hist1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">hist2</span><span class="p">):</span>
+            <span class="n">hist_long</span> <span class="o">=</span> <span class="n">hist1</span>
+            <span class="n">hist_short</span> <span class="o">=</span> <span class="n">hist2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">hist_long</span> <span class="o">=</span> <span class="n">hist2</span>
+            <span class="n">hist_short</span> <span class="o">=</span> <span class="n">hist1</span>
+        <span class="n">min_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hist_short</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">min_len</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span> <span class="c1"># Look up non matching in self.ngrams</span>
+            <span class="n">key1</span> <span class="o">=</span> <span class="n">hist1</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:]</span>
+            <span class="n">key2</span> <span class="o">=</span> <span class="n">hist2</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="n">key1</span> <span class="o">!=</span> <span class="n">key2</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ngrams</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key1</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">ngrams</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key2</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">min_len</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">hist_long</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ngrams</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hist_long</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:]):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span></div></div>
     
 </pre></div>
 

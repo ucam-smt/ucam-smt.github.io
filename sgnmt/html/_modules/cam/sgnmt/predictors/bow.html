@@ -375,7 +375,8 @@
 
 
 <div class="viewcode-block" id="BagOfWordsSearchPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor">[docs]</a><span class="k">class</span> <span class="nc">BagOfWordsSearchPredictor</span><span class="p">(</span><span class="n">BagOfWordsPredictor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;TODO</span>
+    <span class="sd">&quot;&quot;&quot;Combines the bag-of-words predictor with a proxy decoding pass</span>
+<span class="sd">    which creates a skeleton translation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -451,7 +452,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span> <span class="o">=</span> <span class="bp">False</span>
     
 <div class="viewcode-block" id="BagOfWordsSearchPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;TODO</span>
+        <span class="sd">&quot;&quot;&quot;If in ``pre_mode``, pass through to super class. Otherwise,</span>
+<span class="sd">        scan skeleton </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
@@ -465,6 +467,9 @@
         <span class="k">return</span> <span class="n">ret</span></div>
     
 <div class="viewcode-block" id="BagOfWordsSearchPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If in ``pre_mode``, pass through to super class. Otherwise,</span>
+<span class="sd">        initialize skeleton. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span> <span class="o">=</span> <span class="bp">True</span>
@@ -513,7 +518,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">missing</span> <span class="o">=</span> <span class="p">{</span><span class="n">w</span><span class="p">:</span> <span class="n">cnt</span> <span class="k">for</span> <span class="n">w</span><span class="p">,</span> <span class="n">cnt</span> <span class="ow">in</span> <span class="n">missing</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="n">cnt</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">}</span>
         
 <div class="viewcode-block" id="BagOfWordsSearchPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;TODO</span>
+        <span class="sd">&quot;&quot;&quot;Calls super class ``consume``. If not in ``pre_mode``,</span>
+<span class="sd">        update skeleton info. </span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            word (int): Next word to consume</span>
@@ -530,24 +536,23 @@
                 <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">[</span><span class="n">word</span><span class="p">]</span></div>
     
 <div class="viewcode-block" id="BagOfWordsSearchPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;State of this predictor is the current bag</span>
-<span class="sd">        TODO</span>
+        <span class="sd">&quot;&quot;&quot;If in pre_mode, state of this predictor is the current bag</span>
+<span class="sd">        Otherwise, its the bag plus skeleton state</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span></div>
     
 <div class="viewcode-block" id="BagOfWordsSearchPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;State of this predictor is the current bag</span>
-<span class="sd">        TODO</span>
+        <span class="sd">&quot;&quot;&quot;If in pre_mode, state of this predictor is the current bag</span>
+<span class="sd">        Otherwise, its the bag plus skeleton state</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span> <span class="o">=</span> <span class="n">state</span></div>
     
 <div class="viewcode-block" id="BagOfWordsSearchPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns true if the bag is the same</span>
-<span class="sd">        TODO</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the bag and the skeleton states are the same</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">state1</span><span class="p">,</span> 
