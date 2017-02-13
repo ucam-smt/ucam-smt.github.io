@@ -1,0 +1,320 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.decoding.syncbeam &mdash; SGNMT 0.2 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.2 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.decoding.syncbeam</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.decoding.syncbeam</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Implementation of beam search with explicit synchronization symbol&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.beam</span> <span class="kn">import</span> <span class="n">BeamDecoder</span>
+
+
+<div class="viewcode-block" id="SyncBeamDecoder"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.syncbeam.SyncBeamDecoder">[docs]</a><span class="k">class</span> <span class="nc">SyncBeamDecoder</span><span class="p">(</span><span class="n">BeamDecoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This beam search implementation is a two level approach.</span>
+<span class="sd">    Hypotheses are not compared after each iteration, but after</span>
+<span class="sd">    consuming an explicit synchronization symbol. This is useful</span>
+<span class="sd">    when SGNMT runs on the character level, but it makes more sense</span>
+<span class="sd">    to compare hypos with same lengths in terms of number of words </span>
+<span class="sd">    and not characters. The end-of-word symbol &lt;/w&gt; can be used as</span>
+<span class="sd">    synchronization symbol.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">decoder_args</span><span class="p">,</span>
+                 <span class="n">hypo_recombination</span><span class="p">,</span>
+                 <span class="n">beam_size</span><span class="p">,</span>
+                 <span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> 
+                 <span class="n">diversity_factor</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
+                 <span class="n">early_stopping</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+                 <span class="n">sync_symb</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">max_word_len</span> <span class="o">=</span> <span class="mi">25</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new beam decoder instance with explicit</span>
+<span class="sd">        synchronization symbol.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from the configuration API.</span>
+<span class="sd">            hypo_recombination (bool): Activates hypo recombination </span>
+<span class="sd">            beam_size (int): Absolute beam size. A beam of 12 means</span>
+<span class="sd">                             that we keep track of 12 active hypothesis</span>
+<span class="sd">            pure_heuristic_scores (bool): Hypotheses to keep in the beam</span>
+<span class="sd">                                          are normally selected </span>
+<span class="sd">                                          according the sum of partial</span>
+<span class="sd">                                          hypo score and future cost</span>
+<span class="sd">                                          estimates. If set to true, </span>
+<span class="sd">                                          partial hypo scores are </span>
+<span class="sd">                                          ignored.</span>
+<span class="sd">            diversity_factor (float): If this is set to a positive </span>
+<span class="sd">                                      value we add diversity promoting</span>
+<span class="sd">                                      penalization terms to the partial</span>
+<span class="sd">                                      hypothesis scores following Li</span>
+<span class="sd">                                      and Jurafsky, 2016</span>
+<span class="sd">            early_stopping (bool): If true, we stop when the best</span>
+<span class="sd">                                   scoring hypothesis ends with &lt;/S&gt;.</span>
+<span class="sd">                                   If false, we stop when all hypotheses</span>
+<span class="sd">                                   end with &lt;/S&gt;. Enable if you are</span>
+<span class="sd">                                   only interested in the single best</span>
+<span class="sd">                                   decoding result. If you want to </span>
+<span class="sd">                                   create full 12-best lists, disable</span>
+<span class="sd">            sync_symb (int): Synchronization symbol. If negative, fetch</span>
+<span class="sd">                             &#39;&lt;/w&gt;&#39; from ``utils.trg_cmap`` </span>
+<span class="sd">            max_word_len (int): Maximum length of a single word</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SyncBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">,</span>
+                                              <span class="n">hypo_recombination</span><span class="p">,</span>
+                                              <span class="n">beam_size</span><span class="p">,</span>
+                                              <span class="n">pure_heuristic_scores</span><span class="p">,</span> 
+                                              <span class="n">diversity_factor</span><span class="p">,</span>
+                                              <span class="n">early_stopping</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sync_symb</span> <span class="o">=</span> <span class="n">sync_symb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_word_len</span> <span class="o">=</span> <span class="n">max_word_len</span>
+    
+    <span class="k">def</span> <span class="nf">_is_closed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if hypo ends with &lt;/S&gt; or &lt;/W&gt;&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sync_symb</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">_all_eos_or_eow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the all hypotheses end with &lt;/S&gt; or &lt;/W&gt;&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span><span class="p">(</span><span class="n">hypo</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    
+    <span class="k">def</span> <span class="nf">_expand_hypo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Expand hypo until all of the beam size best hypotheses end </span>
+<span class="sd">        with ``sync_symb`` or EOS.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypo (PartialHypothesis): Hypothesis to expand</span>
+<span class="sd">        </span>
+<span class="sd">        Return:</span>
+<span class="sd">            list. List of expanded hypotheses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#print(&quot;EXPAND: %s (%f: %f, %f, %f)&quot; % (utils.apply_trg_wmap(hypo.trgt_sentence), hypo.score, sum([s[0][0] for s in hypo.score_breakdown]), sum([s[1][0] for s in hypo.score_breakdown]), sum([s[2][0] for s in hypo.score_breakdown])))</span>
+        <span class="c1">#print(&quot;N-STATES: %d %d %d&quot; % (len(self.predictors[0][0].states), len(self.predictors[1][0].slave_predictor.states), len(self.predictors[2][0].slave_predictor.states)))</span>
+        <span class="c1">#if min(len(self.predictors[0][0].states), len(self.predictors[1][0].slave_predictor.states), len(self.predictors[2][0].slave_predictor.states)) &gt; 0:</span>
+        <span class="c1">#    print(&quot;PENDING: %f %f %f&quot; % (self.predictors[0][0].states[0].pending_score, self.predictors[1][0].slave_predictor.states[0].pending_score, self.predictors[1][0].slave_predictor.states[0].pending_score))</span>
+        <span class="c1"># Get initial expansions</span>
+        <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">next_scores</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">next_hypo</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">(</span><span class="n">SyncBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_expand_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="p">):</span>
+            <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+            <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">))</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_hypos</span><span class="p">(</span><span class="n">next_hypos</span><span class="p">,</span> <span class="n">next_scores</span><span class="p">)</span>
+        <span class="c1"># Expand until all hypos are closed</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_eos_or_eow</span><span class="p">(</span><span class="n">hypos</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">it</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_word_len</span><span class="p">:</span> <span class="c1"># prevent infinite loops</span>
+                <span class="k">break</span>
+            <span class="n">it</span> <span class="o">=</span> <span class="n">it</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">next_scores</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="c1">#print(&quot;-&gt; %s (%f: %f, %f, %f)&quot; % (utils.apply_trg_wmap(hypo.trgt_sentence), hypo.score, sum([s[0][0] for s in hypo.score_breakdown]), sum([s[1][0] for s in hypo.score_breakdown]), sum([s[2][0] for s in hypo.score_breakdown])))</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span><span class="p">(</span><span class="n">hypo</span><span class="p">):</span>
+                    <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+                    <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">hypo</span><span class="p">))</span>
+                    <span class="k">continue</span> 
+                <span class="k">for</span> <span class="n">next_hypo</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">(</span><span class="n">SyncBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_expand_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="p">):</span>
+                    <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+                    <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">))</span>
+            <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_hypos</span><span class="p">(</span><span class="n">next_hypos</span><span class="p">,</span> <span class="n">next_scores</span><span class="p">)</span>
+        <span class="c1">#for hypo in hypos:</span>
+        <span class="c1">#    print(&quot;SYNCRESULT %s (%f: %f, %f, %f)&quot; % (utils.apply_trg_wmap(hypo.trgt_sentence), hypo.score, sum([s[0][0] for s in hypo.score_breakdown]), sum([s[1][0] for s in hypo.score_breakdown]), sum([s[2][0] for s in hypo.score_breakdown])))</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hypos</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span><span class="p">(</span><span class="n">h</span><span class="p">)]</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

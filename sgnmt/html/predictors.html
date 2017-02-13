@@ -232,6 +232,12 @@ If vocabulary sizes differ among predictors, we fill in gaps with predictor UNK 
 <li><p class="first"><strong>altsrc</strong>: This wrapper loads source sentences from an alternative source.</p>
 <p>Options: <code class="docutils literal"><span class="pre">altsrc_test</span></code></p>
 </li>
+<li><p class="first"><strong>unkvocab</strong>: This wrapper explicitly excludes matching word indices higher than trg_vocab_size with UNK scores.</p>
+<p>Options: <code class="docutils literal"><span class="pre">trg_vocab_size</span></code></p>
+</li>
+<li><p class="first"><strong>fsttok</strong>: Uses an FST to transduce SGNMT tokens to predictor tokens.</p>
+<p>Options: <code class="docutils literal"><span class="pre">fsttok_path</span></code>, <code class="docutils literal"><span class="pre">fsttok_max_pending_score</span></code>, <code class="docutils literal"><span class="pre">fst_unk_id</span></code></p>
+</li>
 <li><p class="first"><strong>word2char</strong>: Wraps word-level predictors when SGNMT is running on character level.</p>
 <p>Options: <code class="docutils literal"><span class="pre">word2char_map</span></code></p>
 </li>
@@ -605,36 +611,6 @@ or arcs, or no root FST is loaded, return the empty set.</p>
 <dd><p>Sets the current history.</p>
 </dd></dl>
 
-</dd></dl>
-
-<dl class="data">
-<dt>
-<code class="descclassname">cam.sgnmt.predictors.automata.</code><code class="descname">TMP_FILENAME</code><em class="property"> = '/tmp/sgnmt.18534.fst'</em></dt>
-<dd><p>Temporary file name to use if a FST file is zipped.</p>
-</dd></dl>
-
-<dl class="function">
-<dt>
-<code class="descclassname">cam.sgnmt.predictors.automata.</code><code class="descname">load_fst</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/automata.html#load_fst"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Loads a FST from the file system using PyFSTs <code class="docutils literal"><span class="pre">read()</span></code> method.
-GZipped format is also supported. The arc type must be standard
-or log, otherwise PyFST cannot load them.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>string</em>) &#8211; Path to the FST file to load</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">fst. PyFST FST object or <code class="docutils literal"><span class="pre">None</span></code> if FST could not be read</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt>
-<code class="descclassname">cam.sgnmt.predictors.automata.</code><code class="descname">w2f</code><span class="sig-paren">(</span><em>fstweight</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/automata.html#w2f"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Converts an arc weight to float</p>
 </dd></dl>
 
 </div>
@@ -2747,87 +2723,176 @@ tokenization of a predictor is coarse-grained (e.g. words or subwords).</p>
 <p>The <code class="docutils literal"><span class="pre">word2char</span></code> predictor maintains an explicit list of word boundary
 characters and applies consume and predict_next whenever a word boundary
 character is consumed.</p>
-<p>The <code class="docutils literal"><span class="pre">char2word</span></code> predictor masks character-based predictors and
-presents word level posterior distributions to the decoder. In order to
-form these posteriors, <code class="docutils literal"><span class="pre">char2word</span></code> internally searches until a list
-of full words is found. Note that since char2word can produce words
-without word ID, it maintains an internal word map which is updated
-accordingly. Therefore, the <code class="docutils literal"><span class="pre">output_chars</span></code> option should be used to
-create output files on the character level, otherwise the new word IDs
-cannot be mapped back to words.</p>
+<p>The <code class="docutils literal"><span class="pre">fsttok</span></code> predictor also masks coarse grained predictors when SGNMT
+uses fine-grained tokens such as characters. This wrapper loads an FST
+which transduces character to predictor-unit sequences.</p>
 <dl class="class">
 <dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tokenization.</code><code class="descname">Char2wordPredictor</code><span class="sig-paren">(</span><em>src_test</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor"><span class="viewcode-link">[source]</span></a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tokenization.</code><code class="descname">CombinedState</code><span class="sig-paren">(</span><em>fst_node</em>, <em>pred_state</em>, <em>posterior</em>, <em>unconsumed=[]</em>, <em>pending_score=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#CombinedState"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Combines an FST state with predictor state. Use by the fsttok
+predictor.</p>
+<dl class="method">
+<dt>
+<code class="descname">consume_all</code><span class="sig-paren">(</span><em>predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#CombinedState.consume_all"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Consume all unconsumed tokens and update pred_state,
+pending_score, and posterior accordingly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>predictor</strong> (<a class="reference internal" href="cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Predictor instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">consume_single</code><span class="sig-paren">(</span><em>predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#CombinedState.consume_single"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Consume a single token in <code class="docutils literal"><span class="pre">self.unconsumed</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>predictor</strong> (<a class="reference internal" href="cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Predictor instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">score</code><span class="sig-paren">(</span><em>token</em>, <em>predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#CombinedState.score"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Returns a score which can be added if <code class="docutils literal"><span class="pre">token</span></code> is consumed
+next. This is not necessarily the full score but an upper bound
+on it: Continuations will have a score lower or equal than
+this. We only use the current posterior vector and do not
+consume tokens with the wrapped predictor.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">traverse_fst</code><span class="sig-paren">(</span><em>trans_fst</em>, <em>char</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#CombinedState.traverse_fst"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Returns a list of <code class="docutils literal"><span class="pre">CombinedState``s</span> <span class="pre">with</span> <span class="pre">the</span> <span class="pre">same</span> <span class="pre">predictor</span>
+<span class="pre">state</span> <span class="pre">and</span> <span class="pre">posterior,</span> <span class="pre">but</span> <span class="pre">an</span> <span class="pre">``fst_node</span></code> which is reachable
+via the input label <code class="docutils literal"><span class="pre">char</span></code>. If the output tabe contains
+symbols, add them to <code class="docutils literal"><span class="pre">unconsumed</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>trans_fst</strong> (<em>Fst</em>) &#8211; FST to traverse</li>
+<li><strong>char</strong> (<em>int</em>) &#8211; Index of character</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list. List of combined states reachable via <code class="docutils literal"><span class="pre">char</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">update_posterior</code><span class="sig-paren">(</span><em>predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#CombinedState.update_posterior"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>If <code class="docutils literal"><span class="pre">self.posterior</span></code> is None, call <code class="docutils literal"><span class="pre">predict_next</span></code> to
+be able to score the next tokens.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt>
+<code class="descclassname">cam.sgnmt.predictors.tokenization.</code><code class="descname">EPS_ID</code><em class="property"> = 0</em></dt>
+<dd><p>OpenFST&#8217;s reserved ID for epsilon arcs.</p>
+</dd></dl>
+
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tokenization.</code><code class="descname">FSTTokPredictor</code><span class="sig-paren">(</span><em>path</em>, <em>fst_unk_id</em>, <em>max_pending_score</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Bases: <a class="reference internal" href="cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This wrapper can be used if the SGNMT decoder operates on the
-word level, but a predictor uses a finer grained tokenization. The
-wrapper internally implements a search for full words with the
-character-based model (predictor) and presents the found full word
-continuations to the decoder. If the wrapped predictor produces a
-word which has not have an assigned word ID, it updates
-<code class="docutils literal"><span class="pre">Char2wordPredictor.wmap</span></code> with a new word. This word map is taken
-into account when the SGNMT option <code class="docutils literal"><span class="pre">output_chars</span></code> is activated.</p>
-<p>TODO Implement</p>
+character level, but a predictor uses a more coarse grained
+tokenization. The mapping is defined by an FST which transduces
+character to predictor unit sequences. This wrapper maintains a
+list of <code class="docutils literal"><span class="pre">CombinedState</span></code> objects which are tuples of an FST node
+and a predictor state for which holds:</p>
+<ul class="simple">
+<li>The input labels on the path to the node are consistent with the
+consumed characters</li>
+<li>The output labels on the path to the node are consistent with the
+predictor states</li>
+</ul>
 <dl class="method">
 <dt>
-<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.consume"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.consume"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Update <code class="docutils literal"><span class="pre">self.states</span></code> to be consistent with <code class="docutils literal"><span class="pre">word</span></code> and
+consumes all the predictor tokens.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.estimate_future_cost"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Not implemented yet</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.get_state"><span class="viewcode-link">[source]</span></a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.estimate_future_cost"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
+<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Always returns negative infinity. Handling UNKs needs to be
+realized by the FST.</p>
+</dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.get_state"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.initialize"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Pass through to slave predictor. The source sentence is not
+modified. <code class="docutils literal"><span class="pre">states</span></code> is updated to the initial FST node and
+predictor posterior and state.</p>
+</dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.initialize"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">initialize_heuristic</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.initialize_heuristic"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Pass through to slave predictor. The source sentence is not
 modified</p>
 </dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">initialize_heuristic</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.initialize_heuristic"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Pass through to slave predictor. The source sentence is not
-modified</p>
+<code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.is_equal"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Not implemented yet</p>
 </dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.is_equal"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.predict_next"><span class="viewcode-link">[source]</span></a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.predict_next"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.reset"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.reset"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Pass through to slave predictor</p>
 </dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">set_current_sen_id</code><span class="sig-paren">(</span><em>cur_sen_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.set_current_sen_id"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">set_current_sen_id</code><span class="sig-paren">(</span><em>cur_sen_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.set_current_sen_id"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>We need to override this method to propagate current_
 sentence_id to the slave predictor</p>
 </dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Char2wordPredictor.set_state"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.set_state"><span class="viewcode-link">[source]</span></a></dt>
 <dd></dd></dl>
 
 </dd></dl>

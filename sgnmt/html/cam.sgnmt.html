@@ -193,13 +193,14 @@
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.bow">cam.sgnmt.decoding.bow module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.bucket">cam.sgnmt.decoding.bucket module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.core">cam.sgnmt.decoding.core module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.decoder">cam.sgnmt.decoding.decoder module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.dfs">cam.sgnmt.decoding.dfs module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.flip">cam.sgnmt.decoding.flip module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.greedy">cam.sgnmt.decoding.greedy module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.heuristics">cam.sgnmt.decoding.heuristics module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.multisegbeam">cam.sgnmt.decoding.multisegbeam module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.restarting">cam.sgnmt.decoding.restarting module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.sepbeam">cam.sgnmt.decoding.sepbeam module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.syncbeam">cam.sgnmt.decoding.syncbeam module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding">Module contents</a></li>
 </ul>
 </li>
@@ -725,6 +726,12 @@ implementation.</p>
 </dd></dl>
 
 <dl class="data">
+<dt id="cam.sgnmt.utils.TMP_FILENAME">
+<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">TMP_FILENAME</code><em class="property"> = '/tmp/sgnmt.12111.fst'</em><a class="headerlink" href="#cam.sgnmt.utils.TMP_FILENAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Temporary file name to use if a FST file is zipped.</p>
+</dd></dl>
+
+<dl class="data">
 <dt id="cam.sgnmt.utils.UNK_ID">
 <code class="descclassname">cam.sgnmt.utils.</code><code class="descname">UNK_ID</code><em class="property"> = 0</em><a class="headerlink" href="#cam.sgnmt.utils.UNK_ID" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reserved word ID for the unknown word (UNK).</p>
@@ -902,6 +909,24 @@ does not contain %d, return <code class="docutils literal"><span class="pre">tmp
 </dd></dl>
 
 <dl class="function">
+<dt id="cam.sgnmt.utils.load_fst">
+<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">load_fst</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/utils.html#load_fst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.utils.load_fst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a FST from the file system using PyFSTs <code class="docutils literal"><span class="pre">read()</span></code> method.
+GZipped format is also supported. The arc type must be standard
+or log, otherwise PyFST cannot load them.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>string</em>) &#8211; Path to the FST file to load</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">fst. PyFST FST object or <code class="docutils literal"><span class="pre">None</span></code> if FST could not be read</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="cam.sgnmt.utils.load_src_wmap">
 <code class="descclassname">cam.sgnmt.utils.</code><code class="descname">load_src_wmap</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/utils.html#load_src_wmap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.utils.load_src_wmap" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a source side word map from the file system.</p>
@@ -914,6 +939,25 @@ does not contain %d, return <code class="docutils literal"><span class="pre">tmp
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">word, value: id)</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dict. Source word map (key</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.utils.load_trg_cmap">
+<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">load_trg_cmap</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/utils.html#load_trg_cmap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.utils.load_trg_cmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a character map from <code class="docutils literal"><span class="pre">path</span></code>. Returns None if <code class="docutils literal"><span class="pre">path</span></code> is
+empty or does not point to a file. In this case, output files are
+generated on the word level.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>string</em>) &#8211; Path to the character map</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">dict. Map char -&gt; id or None if character level output is not
+activated.</td>
 </tr>
 </tbody>
 </table>
@@ -980,7 +1024,7 @@ the sum of a set of log values.</p>
 <dl class="data">
 <dt id="cam.sgnmt.utils.src_wmap">
 <code class="descclassname">cam.sgnmt.utils.</code><code class="descname">src_wmap</code><em class="property"> = {}</em><a class="headerlink" href="#cam.sgnmt.utils.src_wmap" title="Permalink to this definition">¶</a></dt>
-<dd><p>Source language word map</p>
+<dd><p>Source language word map (word -&gt; id)</p>
 </dd></dl>
 
 <dl class="function">
@@ -993,9 +1037,21 @@ and is legacy from TensorFlow.</p>
 </dd></dl>
 
 <dl class="data">
+<dt id="cam.sgnmt.utils.trg_cmap">
+<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">trg_cmap</code><em class="property"> = None</em><a class="headerlink" href="#cam.sgnmt.utils.trg_cmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Target language character map (char -&gt; id)</p>
+</dd></dl>
+
+<dl class="data">
 <dt id="cam.sgnmt.utils.trg_wmap">
 <code class="descclassname">cam.sgnmt.utils.</code><code class="descname">trg_wmap</code><em class="property"> = {}</em><a class="headerlink" href="#cam.sgnmt.utils.trg_wmap" title="Permalink to this definition">¶</a></dt>
-<dd><p>Target language word map</p>
+<dd><p>Target language word map (id -&gt; word)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.utils.w2f">
+<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">w2f</code><span class="sig-paren">(</span><em>fstweight</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/utils.html#w2f"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.utils.w2f" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts an arc weight to float</p>
 </dd></dl>
 
 </div>

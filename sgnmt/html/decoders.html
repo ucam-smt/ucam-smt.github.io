@@ -104,6 +104,8 @@
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-heuristics-module">cam.sgnmt.decoding.heuristics module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-multisegbeam-module">cam.sgnmt.decoding.multisegbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-restarting-module">cam.sgnmt.decoding.restarting module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-sepbeam-module">cam.sgnmt.decoding.sepbeam module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-syncbeam-module">cam.sgnmt.decoding.syncbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
@@ -165,6 +167,8 @@ Decoders are specified using the <code class="docutils literal"><span class="pre
 <ul class="simple">
 <li><strong>greedy</strong>: Greedy decoding (similar to beam=1)</li>
 <li><strong>beam</strong>: Beam search like in Bahdanau et al, 2015 .</li>
+<li><strong>sepbeam</strong>: Associates predictors with hypos in beam search and applies only one predictor instead of all for hypo expansion.</li>
+<li><strong>syncbeam</strong>: Beam search which compares after consuming a special synchronization symbol instead of after each iteration.</li>
 <li><strong>multisegbeam</strong>: Beam search with multiple segmentations.</li>
 <li><strong>dfs</strong>: Depth-first search. This should be used for exact decoding or the complete enumeration of the search space.
 but it cannot be used if the search space is too large (like for unrestricted NMT) as it performs exhaustive search.
@@ -441,7 +445,7 @@ result set. This method also notifies observers.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>hypo</strong> (<a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.decoder.Hypothesis" title="cam.sgnmt.decoding.decoder.Hypothesis"><em>Hypothesis</em></a>) &#8211; New complete hypothesis</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>hypo</strong> (<a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Hypothesis" title="cam.sgnmt.decoding.core.Hypothesis"><em>Hypothesis</em></a>) &#8211; New complete hypothesis</td>
 </tr>
 </tbody>
 </table>
@@ -1099,267 +1103,6 @@ predictor scores</li>
 </div>
 <div class="section" id="cam-sgnmt-decoding-decoder-module">
 <h3>cam.sgnmt.decoding.decoder module<a class="headerlink" href="#cam-sgnmt-decoding-decoder-module" title="Permalink to this headline">¶</a></h3>
-<p>This module contains high level decoder algorithms such as greedy,
-A*, beam search, or depth first search schemes. Note that all decoders
-are implemented in a monotonic left-to-right way which works well in
-the predictors paradigm. If we use features which do not have natural
-left-to-right semantics, we</p>
-<ul class="simple">
-<li>Restrict it to a accept/not-accept decision or</li>
-<li>Change it s.t. it does have left-to-right semantics</li>
-</ul>
-<p>For example, to use synchronous grammars, we could</p>
-<ul class="simple">
-<li>Keep track of all parse trees which match the partial prefix
-sequence</li>
-<li>Transform the grammar into Greibach normal form</li>
-</ul>
-<p>The reason for this design decision is the emphasis on NMT: The neural
-decoder decodes the sequence from left to right, all other features
-(i.e. predictors) are conceptually rather guiding the neural decoding.</p>
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.decoder.</code><code class="descname">AstarDecoder</code><span class="sig-paren">(</span><em>closed_vocab_norm</em>, <em>capacity=0</em>, <em>nbest=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#AstarDecoder"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Decoder</span></code></a></p>
-<p>This decoder implements A*. For heuristics, see the the
-<code class="docutils literal"><span class="pre">decoding.core</span></code> module for interfaces and the general handling of
-heuristics, and the <code class="docutils literal"><span class="pre">decoding.heuristics</span></code> package for heuristic
-implementations. This A* implementation does not have a &#8216;closed
-set&#8217;, i.e. we do not keep track of already visited states. Make
-sure that your search space is acyclic (normally it is unless you
-decode on cyclic lattices with the fst predictor.</p>
-<dl class="method">
-<dt>
-<code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#AstarDecoder.decode"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Decodes a single source sentence using A* search.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.decoder.</code><code class="descname">BeamDecoder</code><span class="sig-paren">(</span><em>closed_vocab_norm</em>, <em>beam_size</em>, <em>early_stopping=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#BeamDecoder"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Decoder</span></code></a></p>
-<p>This decoder implements beam search without heuristics.</p>
-<dl class="method">
-<dt>
-<code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#BeamDecoder.decode"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Decodes a single source sentence using beam search.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.decoder.</code><code class="descname">DFSDecoder</code><span class="sig-paren">(</span><em>closed_vocab_norm</em>, <em>early_stopping=True</em>, <em>max_expansions=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#DFSDecoder"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Decoder</span></code></a></p>
-<p>This decoder implements depth first search without using
-heuristics. This is the most efficient search algorithm for
-complete enumeration of the search space as it minimizes the
-number of <code class="docutils literal"><span class="pre">get_state()</span></code> and <code class="docutils literal"><span class="pre">set_state()</span></code> calls. Note that
-this DFS implementation has no cycle detection, i.e. if the search
-space has cycles this decoder may run into an infinite loop.</p>
-<dl class="method">
-<dt>
-<code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#DFSDecoder.decode"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Decodes a single source sentence using depth first search.
-If <code class="docutils literal"><span class="pre">max_expansions</span></code> equals 0, this corresponds to exhaustive
-search for the globally best scoring hypothesis. Note that with
-<code class="docutils literal"><span class="pre">early_stopping</span></code> enabled, the returned set of hypothesis are
-not necessarily the global n-best hypotheses. To create an
-exact n-best list, disable both <code class="docutils literal"><span class="pre">max_expansions</span></code> and
-<code class="docutils literal"><span class="pre">early_stopping</span></code> in the constructor.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>src_sentence</strong> (<em>list</em>) &#8211; List of source word ids without &lt;S&gt; or
-&lt;/S&gt; which make up the source sentence</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list. A list of <code class="docutils literal"><span class="pre">Hypothesis</span></code> instances ordered by their
-score. If <code class="docutils literal"><span class="pre">max_expansions</span></code> equals 0, the first element
-holds the global best scoring hypothesis</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.decoder.</code><code class="descname">GreedyDecoder</code><span class="sig-paren">(</span><em>closed_vocab_norm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#GreedyDecoder"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Decoder</span></code></a></p>
-<p>The greedy decoder does not revise decisions and therefore does
-not have to maintain predictor states. Therefore, this
-implementation is particularly simple and can be used as template
-for more complex decoders. The greedy decoder can be imitated with
-the <code class="docutils literal"><span class="pre">BeamDecoder</span></code> with beam size 1.</p>
-<dl class="method">
-<dt>
-<code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#GreedyDecoder.decode"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Decode a single source sentence in a greedy way: Always take
-the highest scoring word as next word and proceed to the next
-position. This makes it possible to decode without using the
-predictors <code class="docutils literal"><span class="pre">get_state()</span></code> and <code class="docutils literal"><span class="pre">set_state()</span></code> methods as we
-do not have to keep track of predictor states.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>src_sentence</strong> (<em>list</em>) &#8211; List of source word ids without &lt;S&gt; or
-&lt;/S&gt; which make up the source sentence</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list. A list of a single best <code class="docutils literal"><span class="pre">Hypothesis</span></code> instance.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.decoder.</code><code class="descname">Hypothesis</code><span class="sig-paren">(</span><em>trgt_sentence</em>, <em>total_score</em>, <em>score_breakdown=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#Hypothesis"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Complete translation hypotheses are represented by an instance
-of this class. We store the produced sentence, the combined score,
-and a score breakdown to the separate predictor scores.</p>
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.decoder.</code><code class="descname">PartialHypothesis</code><span class="sig-paren">(</span><em>initial_states=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#PartialHypothesis"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Represents a partial hypothesis in various decoders.</p>
-<dl class="method">
-<dt>
-<code class="descname">add_score_breakdown</code><span class="sig-paren">(</span><em>added_scores</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#PartialHypothesis.add_score_breakdown"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Helper function for adding the word level score breakdowns
-for the newly added word to the hypothesis score breakdown.</p>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">cheap_expand</code><span class="sig-paren">(</span><em>word</em>, <em>score</em>, <em>score_breakdown</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#PartialHypothesis.cheap_expand"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Creates a new partial hypothesis adding a new word to the
-translation prefix with given probability. Does NOT update the
-predictor states but adds a flag which signals that the last
-word in this hypothesis has not been consumed yet by the
-predictors. This can save memory because we can reuse the
-current state for many hypothesis. It also saves computation
-as we do not consume words which are then discarded anyway by
-the search procedure.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>word</strong> (<em>int</em>) &#8211; New word to add to the translation prefix</li>
-<li><strong>score</strong> (<em>float</em>) &#8211; Word log probability which is to be added
-to the total hypothesis score</li>
-<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Predictor score breakdown for
-the new word</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">expand</code><span class="sig-paren">(</span><em>word</em>, <em>new_states</em>, <em>score</em>, <em>score_breakdown</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#PartialHypothesis.expand"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Creates a new partial hypothesis adding a new word to the
-translation prefix with given probability and updates the
-stored predictor states.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>word</strong> (<em>int</em>) &#8211; New word to add to the translation prefix</li>
-<li><strong>new_states</strong> (<em>object</em>) &#8211; Predictor states after consuming
-<code class="docutils literal"><span class="pre">word</span></code></li>
-<li><strong>score</strong> (<em>float</em>) &#8211; Word log probability which is to be added
-to the total hypothesis score</li>
-<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Predictor score breakdown for
-the new word</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">generate_full_hypothesis</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#PartialHypothesis.generate_full_hypothesis"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Create a <code class="docutils literal"><span class="pre">Hypothesis</span></code> instance from this hypothesis.</p>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">get_last_word</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#PartialHypothesis.get_last_word"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Get the last word in the translation prefix.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.decoder.</code><code class="descname">RestartingChild</code><span class="sig-paren">(</span><em>word</em>, <em>score</em>, <em>score_breakdown</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#RestartingChild"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>Helper class for <code class="docutils literal"><span class="pre">RestartingDecoder`</span></code> representing a child
-object in the search tree.</p>
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.decoder.</code><code class="descname">RestartingDecoder</code><span class="sig-paren">(</span><em>closed_vocab_norm</em>, <em>max_expansions=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#RestartingDecoder"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Decoder</span></code></a></p>
-<p>This decoder first creates a path to the final node greedily.
-Then, it looks for the node on this path with the smallest
-difference between best and second best child, and restarts greedy
-decoding from this point. In order to do so, it maintains a
-priority queue of all visited nodes, which is ordered by the
-difference between the worst expanded child and the best unexpanded
-one. If this queue is empty, we have visited the best path. This
-algorithm is similar to DFS but does not backtrace to the last call
-of the recursive function but to the one which is most promising.</p>
-<p>Note that this algorithm is exact. It tries to exploit the problem
-characteristics of NMT search: Reloading predictor states can be
-expensive, node expansion is even more expensive but for free from
-visited nodes, and there is no good admissible heuristic.</p>
-<p>Note2: Does not work properly if predictor scores can be positive
-because of admissible pruning</p>
-<dl class="method">
-<dt>
-<code class="descname">create_initial_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#RestartingDecoder.create_initial_node"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Create the root node for the search tree.</p>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#RestartingDecoder.decode"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Decodes a single source sentence using Restarting search.</p>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">greedy_decode</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#RestartingDecoder.greedy_decode"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Helper function for greedy decoding from a certain point in
-the search tree.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.decoder.</code><code class="descname">RestartingNode</code><span class="sig-paren">(</span><em>hypo</em>, <em>children</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/decoder.html#RestartingNode"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>Helper class for <code class="docutils literal"><span class="pre">RestartingDecoder`</span></code> representing a node
-in the search tree.</p>
-</dd></dl>
-
 </div>
 <div class="section" id="cam-sgnmt-decoding-dfs-module">
 <h3>cam.sgnmt.decoding.dfs module<a class="headerlink" href="#cam-sgnmt-decoding-dfs-module" title="Permalink to this headline">¶</a></h3>
@@ -1687,17 +1430,59 @@ score is final.</p>
 can be used for subword unit based tokenizers.</p>
 <dl class="method">
 <dt>
-<code class="descname">is_word_begin_key</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#EOWTokenizer.is_word_begin_key"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">is_word_begin_token</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#EOWTokenizer.is_word_begin_token"><span class="viewcode-link">[source]</span></a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt>
-<code class="descname">key2tokens</code><span class="sig-paren">(</span><em>key</em>, <em>max_len=100</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#EOWTokenizer.key2tokens"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">key2tokens</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#EOWTokenizer.key2tokens"><span class="viewcode-link">[source]</span></a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt>
 <code class="descname">tokens2key</code><span class="sig-paren">(</span><em>tokens</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#EOWTokenizer.tokens2key"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.multisegbeam.</code><code class="descname">FSTTokenizer</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#FSTTokenizer"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.multisegbeam.Tokenizer" title="cam.sgnmt.decoding.multisegbeam.Tokenizer"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.multisegbeam.Tokenizer</span></code></a></p>
+<p>This tokenizer reads in an FST which transduces a sequence
+of subword units to a sequence of characters which constitute
+the key. The characters must used the global target cmap.</p>
+<dl class="attribute">
+<dt>
+<code class="descname">EPS_ID</code><em class="property"> = 0</em></dt>
+<dd><p>OpenFST&#8217;s reserved ID for epsilon arcs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">is_word_begin_token</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#FSTTokenizer.is_word_begin_token"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Returns true if there is an arc labeled with <code class="docutils literal"><span class="pre">token</span></code> from
+the start state in the token2char FST.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>token</strong> (<em>int</em>) &#8211; token ID</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">bool. True if a word can start with <code class="docutils literal"><span class="pre">token</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">key2tokens</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#FSTTokenizer.key2tokens"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">tokens2key</code><span class="sig-paren">(</span><em>tokens</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#FSTTokenizer.tokens2key"><span class="viewcode-link">[source]</span></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1712,7 +1497,7 @@ tokenizations like proposed by Wu et al. (2016). Words with
 tokens, all others are completed word-level tokens</p>
 <dl class="method">
 <dt>
-<code class="descname">is_word_begin_key</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#MixedTokenizer.is_word_begin_key"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">is_word_begin_token</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#MixedTokenizer.is_word_begin_token"><span class="viewcode-link">[source]</span></a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -1729,7 +1514,7 @@ tokens, all others are completed word-level tokens</p>
 
 <dl class="class">
 <dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.multisegbeam.</code><code class="descname">MultisegBeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em>, <em>hypo_recombination</em>, <em>beam_size</em>, <em>tokenizations</em>, <em>early_stopping=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#MultisegBeamDecoder"><span class="viewcode-link">[source]</span></a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.multisegbeam.</code><code class="descname">MultisegBeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em>, <em>hypo_recombination</em>, <em>beam_size</em>, <em>tokenizations</em>, <em>early_stopping=True</em>, <em>max_word_len=25</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#MultisegBeamDecoder"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Decoder</span></code></a></p>
 <p>This is a version of beam search which can handle predictors
 with differing tokenizations. We assume that all tokenizations are
@@ -1810,7 +1595,7 @@ It is mainly responsible for matching token sequences from
 different predictors together.</p>
 <dl class="method">
 <dt>
-<code class="descname">is_word_begin_key</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#Tokenizer.is_word_begin_key"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">is_word_begin_token</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#Tokenizer.is_word_begin_token"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Returns true if <code class="docutils literal"><span class="pre">token</span></code> is only allowed at word begins.</p>
 </dd></dl>
 
@@ -1860,22 +1645,46 @@ match any (sub)string without token correspondence.</p>
 the original word map. This mapper adds these words to</dd>
 </dl>
 <p><code class="docutils literal"><span class="pre">utils.trg_wmap</span></code>.</p>
+<blockquote>
+<div>This class uses the GoF design pattern singleton.</div></blockquote>
 <dl class="staticmethod">
 <dt>
 <em class="property">static </em><code class="descname">get_singleton</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#WordMapper.get_singleton"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
+<dd><p>Get singleton instance of the word mapper. This method
+implements lazy initialization.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">WordMapper. Singleton <code class="docutils literal"><span class="pre">WordMapper</span></code> instance.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt>
 <code class="descname">get_word_id</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#WordMapper.get_word_id"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Finds a word ID for the given key. If no such key is in the
 current word map, create a new entry in <code class="docutils literal"><span class="pre">utils.trg_wmap</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<em>string</em>) &#8211; key to look up</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">int. Word ID corresponding to <code class="docutils literal"><span class="pre">key</span></code>. Add new word ID if
+the key cannot be found in <code class="docutils literal"><span class="pre">utils.trg_wmap</span></code></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt>
 <code class="descname">singleton</code><em class="property"> = None</em></dt>
-<dd></dd></dl>
+<dd><p>Singleton instance. Access via <code class="docutils literal"><span class="pre">get_singleton()</span></code>.</p>
+</dd></dl>
 
 <dl class="method">
 <dt>
@@ -1896,7 +1705,7 @@ to new words.</p>
 Keys are generated according a standard word map.</p>
 <dl class="method">
 <dt>
-<code class="descname">is_word_begin_key</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#WordTokenizer.is_word_begin_key"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descname">is_word_begin_token</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#WordTokenizer.is_word_begin_token"><span class="viewcode-link">[source]</span></a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -1914,7 +1723,21 @@ Keys are generated according a standard word map.</p>
 <dl class="function">
 <dt>
 <code class="descclassname">cam.sgnmt.decoding.multisegbeam.</code><code class="descname">is_key_complete</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#is_key_complete"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
+<dd><p>Returns true if the key is complete. Complete keys are marked
+with a blank symbol at the end of the string. A complete key
+corresponds to a full word, incomplete keys cannot be mapped to
+word IDs.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<em>string</em>) &#8211; The key</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">bool. Return true if the last character in <code class="docutils literal"><span class="pre">key</span></code> is blank.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 </div>
 <div class="section" id="cam-sgnmt-decoding-restarting-module">
@@ -1974,6 +1797,46 @@ the search tree.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Helper class for <code class="docutils literal"><span class="pre">RestartingDecoder`</span></code> representing a node
 in the search tree.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="cam-sgnmt-decoding-sepbeam-module">
+<h3>cam.sgnmt.decoding.sepbeam module<a class="headerlink" href="#cam-sgnmt-decoding-sepbeam-module" title="Permalink to this headline">¶</a></h3>
+<p>Implementation of beam search which does not combine all predictor
+scores but keeps only one predictor alive for each hypo in the
+beam. Good for approximate and efficient ensembling.</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.sepbeam.</code><code class="descname">SepBeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em>, <em>hypo_recombination</em>, <em>beam_size</em>, <em>pure_heuristic_scores=False</em>, <em>diversity_factor=-1.0</em>, <em>early_stopping=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/sepbeam.html#SepBeamDecoder"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.beam.BeamDecoder" title="cam.sgnmt.decoding.beam.BeamDecoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.beam.BeamDecoder</span></code></a></p>
+<p>This beam search implementation breaks with the predictor
+abstraction via the <code class="docutils literal"><span class="pre">Decoder.apply_predictors()</span></code> and
+<code class="docutils literal"><span class="pre">Decoder.consume()</span></code> interfaces. We do not use combined scores
+of all predictors, but link single predictors to hypotheses in
+the beam. On hypo expansion, we call <code class="docutils literal"><span class="pre">predict_next()</span></code> only on
+this predictor. This is suitable for approximated ensembling as
+it reduces the runtime nearly to a single system run.</p>
+<p>Note that <code class="docutils literal"><span class="pre">PartialHypothesis.predictor_states</span></code> holds a list
+with <code class="docutils literal"><span class="pre">None</span></code> objects except for one position.</p>
+<p>Also note that predictor weights are ignored for this decoding
+strategy.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="cam-sgnmt-decoding-syncbeam-module">
+<h3>cam.sgnmt.decoding.syncbeam module<a class="headerlink" href="#cam-sgnmt-decoding-syncbeam-module" title="Permalink to this headline">¶</a></h3>
+<p>Implementation of beam search with explicit synchronization symbol</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.syncbeam.</code><code class="descname">SyncBeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em>, <em>hypo_recombination</em>, <em>beam_size</em>, <em>pure_heuristic_scores=False</em>, <em>diversity_factor=-1.0</em>, <em>early_stopping=True</em>, <em>sync_symb=-1</em>, <em>max_word_len=25</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/syncbeam.html#SyncBeamDecoder"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.beam.BeamDecoder" title="cam.sgnmt.decoding.beam.BeamDecoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.beam.BeamDecoder</span></code></a></p>
+<p>This beam search implementation is a two level approach.
+Hypotheses are not compared after each iteration, but after
+consuming an explicit synchronization symbol. This is useful
+when SGNMT runs on the character level, but it makes more sense
+to compare hypos with same lengths in terms of number of words
+and not characters. The end-of-word symbol &lt;/w&gt; can be used as
+synchronization symbol.</p>
 </dd></dl>
 
 </div>

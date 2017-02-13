@@ -147,6 +147,12 @@
 <span class="kn">import</span> <span class="nn">operator</span>
 <span class="kn">from</span> <span class="nn">scipy.misc</span> <span class="kn">import</span> <span class="n">logsumexp</span>
 <span class="kn">import</span> <span class="nn">codecs</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">call</span>
+<span class="kn">from</span> <span class="nn">shutil</span> <span class="kn">import</span> <span class="n">copyfile</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pywrapfst</span> <span class="kn">as</span> <span class="nn">fst</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
 <span class="c1"># Reserved IDs</span>
 <span class="n">PAD_ID</span> <span class="o">=</span> <span class="bp">None</span>
@@ -218,7 +224,7 @@
 <span class="sd">&quot;&quot;&quot;Defines which log summation function to use. &quot;&quot;&quot;</span>
 
 
-<div class="viewcode-block" id="oov_to_unk"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.oov_to_unk">[docs]</a><span class="k">def</span> <span class="nf">oov_to_unk</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">unk_idx</span><span class="o">=</span><span class="n">UNK_ID</span><span class="p">):</span>
+<div class="viewcode-block" id="oov_to_unk"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.oov_to_unk">[docs]</a><span class="k">def</span> <span class="nf">oov_to_unk</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">unk_idx</span> <span class="o">=</span> <span class="n">UNK_ID</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">x</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">vocab_size</span> <span class="k">else</span> <span class="n">unk_idx</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">]</span></div>
 
 <span class="c1"># Maximum functions</span>
@@ -301,6 +307,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">obj</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">if</span> <span class="n">key</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">else</span> <span class="n">default</span></div>
 
+
 <div class="viewcode-block" id="common_contains"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.common_contains">[docs]</a><span class="k">def</span> <span class="nf">common_contains</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Checks the existence of a key or index in a mapping.</span>
 <span class="sd">    Works with numpy arrays, lists, and dicts.</span>
@@ -322,11 +329,15 @@
 
 
 <span class="n">src_wmap</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="sd">&quot;&quot;&quot; Source language word map &quot;&quot;&quot;</span>
+<span class="sd">&quot;&quot;&quot; Source language word map (word -&gt; id)&quot;&quot;&quot;</span>
 
 
 <span class="n">trg_wmap</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="sd">&quot;&quot;&quot; Target language word map &quot;&quot;&quot;</span>
+<span class="sd">&quot;&quot;&quot; Target language word map (id -&gt; word)&quot;&quot;&quot;</span>
+
+
+<span class="n">trg_cmap</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="sd">&quot;&quot;&quot; Target language character map (char -&gt; id)&quot;&quot;&quot;</span>
 
 
 <div class="viewcode-block" id="load_src_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.load_src_wmap">[docs]</a><span class="k">def</span> <span class="nf">load_src_wmap</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
@@ -365,7 +376,33 @@
         <span class="n">trg_wmap</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
                         <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]))</span>
     <span class="k">return</span> <span class="n">trg_wmap</span></div>
-        
+
+
+<div class="viewcode-block" id="load_trg_cmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.load_trg_cmap">[docs]</a><span class="k">def</span> <span class="nf">load_trg_cmap</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads a character map from ``path``. Returns None if ``path`` is</span>
+<span class="sd">    empty or does not point to a file. In this case, output files are</span>
+<span class="sd">    generated on the word level.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path (string): Path to the character map</span>
+<span class="sd"> </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        dict. Map char -&gt; id or None if character level output is not</span>
+<span class="sd">        activated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">trg_cmap</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+        <span class="n">trg_cmap</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="bp">None</span>
+    <span class="n">trg_cmap</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">c</span><span class="p">,</span><span class="n">i</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="n">trg_cmap</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;&lt;/w&gt;&quot;</span> <span class="ow">in</span> <span class="n">trg_cmap</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Could not find &lt;/w&gt; in char map.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">trg_cmap</span></div>
+
 
 <div class="viewcode-block" id="apply_src_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.apply_src_wmap">[docs]</a><span class="k">def</span> <span class="nf">apply_src_wmap</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">wmap</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Converts a string to a sequence of integers by applying the</span>
@@ -405,6 +442,44 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">inv_wmap</span><span class="p">:</span>
         <span class="k">return</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">])</span>
     <span class="k">return</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">inv_wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;UNK&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">])</span></div>
+
+
+<span class="c1"># FST utilities</span>
+
+
+<span class="n">TMP_FILENAME</span> <span class="o">=</span> <span class="s1">&#39;/tmp/sgnmt.</span><span class="si">%s</span><span class="s1">.fst&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span>
+<span class="sd">&quot;&quot;&quot;Temporary file name to use if a FST file is zipped. &quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="w2f"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.w2f">[docs]</a><span class="k">def</span> <span class="nf">w2f</span><span class="p">(</span><span class="n">fstweight</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts an arc weight to float &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">fstweight</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="load_fst"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.load_fst">[docs]</a><span class="k">def</span> <span class="nf">load_fst</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads a FST from the file system using PyFSTs ``read()`` method.</span>
+<span class="sd">    GZipped format is also supported. The arc type must be standard</span>
+<span class="sd">    or log, otherwise PyFST cannot load them.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path (string):  Path to the FST file to load</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        fst. PyFST FST object or ``None`` if FST could not be read</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">path</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;.gz&quot;</span><span class="p">:</span>
+            <span class="n">copyfile</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.gz&quot;</span> <span class="o">%</span> <span class="n">TMP_FILENAME</span><span class="p">)</span>
+            <span class="n">call</span><span class="p">([</span><span class="s2">&quot;gunzip&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.gz&quot;</span> <span class="o">%</span> <span class="n">TMP_FILENAME</span><span class="p">])</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">Fst</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">TMP_FILENAME</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">TMP_FILENAME</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># Fst not zipped</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">Fst</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Read fst from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> error reading fst from </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+            <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span> <span class="n">path</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+    <span class="k">return</span> <span class="bp">None</span></div>
 
 
 <span class="c1"># Miscellaneous</span>

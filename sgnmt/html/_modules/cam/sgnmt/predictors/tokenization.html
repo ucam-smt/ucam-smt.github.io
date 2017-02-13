@@ -145,16 +145,12 @@
 <span class="sd">characters and applies consume and predict_next whenever a word boundary</span>
 <span class="sd">character is consumed.</span>
 
-<span class="sd">The ``char2word`` predictor masks character-based predictors and </span>
-<span class="sd">presents word level posterior distributions to the decoder. In order to</span>
-<span class="sd">form these posteriors, ``char2word`` internally searches until a list</span>
-<span class="sd">of full words is found. Note that since char2word can produce words</span>
-<span class="sd">without word ID, it maintains an internal word map which is updated</span>
-<span class="sd">accordingly. Therefore, the ``output_chars`` option should be used to</span>
-<span class="sd">create output files on the character level, otherwise the new word IDs</span>
-<span class="sd">cannot be mapped back to words.</span>
+<span class="sd">The ``fsttok`` predictor also masks coarse grained predictors when SGNMT</span>
+<span class="sd">uses fine-grained tokens such as characters. This wrapper loads an FST</span>
+<span class="sd">which transduces character to predictor-unit sequences.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
@@ -163,75 +159,281 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">NEG_INF</span><span class="p">,</span> <span class="n">common_get</span>
 
 
-<div class="viewcode-block" id="Char2wordPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor">[docs]</a><span class="k">class</span> <span class="nc">Char2wordPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;This wrapper can be used if the SGNMT decoder operates on the</span>
-<span class="sd">    word level, but a predictor uses a finer grained tokenization. The</span>
-<span class="sd">    wrapper internally implements a search for full words with the</span>
-<span class="sd">    character-based model (predictor) and presents the found full word</span>
-<span class="sd">    continuations to the decoder. If the wrapped predictor produces a</span>
-<span class="sd">    word which has not have an assigned word ID, it updates</span>
-<span class="sd">    ``Char2wordPredictor.wmap`` with a new word. This word map is taken</span>
-<span class="sd">    into account when the SGNMT option ``output_chars`` is activated.</span>
-<span class="sd">    </span>
-<span class="sd">    TODO Implement</span>
+<span class="n">EPS_ID</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="sd">&quot;&quot;&quot;OpenFST&#39;s reserved ID for epsilon arcs. &quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="CombinedState"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.CombinedState">[docs]</a><span class="k">class</span> <span class="nc">CombinedState</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Combines an FST state with predictor state. Use by the fsttok</span>
+<span class="sd">    predictor.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_test</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;TODO</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">fst_node</span><span class="p">,</span> 
+                 <span class="n">pred_state</span><span class="p">,</span> 
+                 <span class="n">posterior</span><span class="p">,</span> 
+                 <span class="n">unconsumed</span> <span class="o">=</span> <span class="p">[],</span> 
+                 <span class="n">pending_score</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fst_node</span> <span class="o">=</span> <span class="n">fst_node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pred_state</span> <span class="o">=</span> <span class="n">pred_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="n">posterior</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">unconsumed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pending_score</span> <span class="o">=</span> <span class="n">pending_score</span>
+    
+<div class="viewcode-block" id="CombinedState.traverse_fst"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.CombinedState.traverse_fst">[docs]</a>    <span class="k">def</span> <span class="nf">traverse_fst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trans_fst</span><span class="p">,</span> <span class="n">char</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of ``CombinedState``s with the same predictor</span>
+<span class="sd">        state and posterior, but an ``fst_node`` which is reachable</span>
+<span class="sd">        via the input label ``char``. If the output tabe contains</span>
+<span class="sd">        symbols, add them to ``unconsumed``.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
-<span class="sd">            TODO</span>
+<span class="sd">            trans_fst (Fst): FST to traverse</span>
+<span class="sd">            char (int): Index of character</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. List of combined states reachable via ``char``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Char2wordPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dfs</span><span class="p">(</span><span class="n">trans_fst</span><span class="p">,</span> <span class="n">ret</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fst_node</span><span class="p">,</span> <span class="n">char</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+    
+    <span class="k">def</span> <span class="nf">_dfs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trans_fst</span><span class="p">,</span> <span class="n">acc</span><span class="p">,</span> <span class="n">root_node</span><span class="p">,</span> <span class="n">char</span><span class="p">,</span> <span class="n">cur_unconsumed</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper method for ``traverse_fst`` for traversing the FST</span>
+<span class="sd">        along ``char`` and epsilon arcs with DFS.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trans_fst (Fst): FST to traverse</span>
+<span class="sd">            acc (list): Accumulator list</span>
+<span class="sd">            root_node (int): State in the FST to start</span>
+<span class="sd">            char (int): Index of character</span>
+<span class="sd">            cur_unconsumed (list): Unconsumed predictor tokens so far</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="n">trans_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="n">root_node</span><span class="p">):</span>
+            <span class="n">next_unconsumed</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cur_unconsumed</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">!=</span> <span class="n">EPS_ID</span><span class="p">:</span>
+                <span class="n">next_unconsumed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span> <span class="o">==</span> <span class="n">EPS_ID</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dfs</span><span class="p">(</span><span class="n">trans_fst</span><span class="p">,</span> <span class="n">acc</span><span class="p">,</span> <span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">,</span> <span class="n">char</span><span class="p">,</span> <span class="n">next_unconsumed</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span> <span class="o">==</span> <span class="n">char</span><span class="p">:</span>
+                <span class="n">acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">CombinedState</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">,</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">pred_state</span><span class="p">,</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="p">,</span>
+                                         <span class="n">next_unconsumed</span><span class="p">,</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">pending_score</span><span class="p">))</span>
+    
+<div class="viewcode-block" id="CombinedState.score"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.CombinedState.score">[docs]</a>    <span class="k">def</span> <span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a score which can be added if ``token`` is consumed</span>
+<span class="sd">        next. This is not necessarily the full score but an upper bound</span>
+<span class="sd">        on it: Continuations will have a score lower or equal than</span>
+<span class="sd">        this. We only use the current posterior vector and do not</span>
+<span class="sd">        consume tokens with the wrapped predictor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">token</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consume_all</span><span class="p">(</span><span class="n">predictor</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pending_score</span>
+        <span class="k">if</span> <span class="n">token</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_token_score</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">predictor</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span></div>
+    
+<div class="viewcode-block" id="CombinedState.consume_all"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.CombinedState.consume_all">[docs]</a>    <span class="k">def</span> <span class="nf">consume_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Consume all unconsumed tokens and update pred_state, </span>
+<span class="sd">        pending_score, and posterior accordingly.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            predictor (Predictor): Predictor instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_posterior</span><span class="p">(</span><span class="n">predictor</span><span class="p">)</span>
+        <span class="n">predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pred_state</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pending_score</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_token_score</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">predictor</span><span class="p">)</span>
+            <span class="n">predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pred_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span> <span class="o">=</span> <span class="p">[]</span></div>
+    
+<div class="viewcode-block" id="CombinedState.consume_single"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.CombinedState.consume_single">[docs]</a>    <span class="k">def</span> <span class="nf">consume_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Consume a single token in ``self.unconsumed``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            predictor (Predictor): Predictor instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pending_score</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_token_score</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                        <span class="n">predictor</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="bp">None</span></div>
+    
+    <span class="k">def</span> <span class="nf">_get_token_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Look up ``token`` in ``self.posterior``. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="p">,</span>
+                                <span class="n">token</span><span class="p">,</span>
+                                <span class="n">predictor</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="p">))</span>
+        
+<div class="viewcode-block" id="CombinedState.update_posterior"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.CombinedState.update_posterior">[docs]</a>    <span class="k">def</span> <span class="nf">update_posterior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If ``self.posterior`` is None, call ``predict_next`` to</span>
+<span class="sd">        be able to score the next tokens.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pred_state</span><span class="p">))</span>
+        <span class="n">predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pred_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unconsumed</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span></div></div>
+        
+
+<div class="viewcode-block" id="FSTTokPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor">[docs]</a><span class="k">class</span> <span class="nc">FSTTokPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This wrapper can be used if the SGNMT decoder operates on the</span>
+<span class="sd">    character level, but a predictor uses a more coarse grained </span>
+<span class="sd">    tokenization. The mapping is defined by an FST which transduces</span>
+<span class="sd">    character to predictor unit sequences. This wrapper maintains a</span>
+<span class="sd">    list of ``CombinedState`` objects which are tuples of an FST node</span>
+<span class="sd">    and a predictor state for which holds:</span>
+<span class="sd">    </span>
+<span class="sd">    - The input labels on the path to the node are consistent with the</span>
+<span class="sd">      consumed characters</span>
+<span class="sd">    - The output labels on the path to the node are consistent with the</span>
+<span class="sd">      predictor states</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fst_unk_id</span><span class="p">,</span> <span class="n">max_pending_score</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor for the fsttok wrapper</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            path (string): Path to an FST which transduces characters </span>
+<span class="sd">                           to predictor tokens</span>
+<span class="sd">            fst_unk_id (int): ID used to represent UNK in the FSTs</span>
+<span class="sd">                              (usually 999999998)</span>
+<span class="sd">            max_pending_score (float): Maximum pending score in a</span>
+<span class="sd">                                       ``CombinedState`` instance.</span>
+<span class="sd">            slave_predictor (Predictor): Wrapped predictor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FSTTokPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_pending_score</span> <span class="o">=</span> <span class="n">max_pending_score</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">fst_unk_id</span> <span class="o">=</span> <span class="n">fst_unk_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slave_predictor</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;char2word cannot wrap an unbounded &quot;</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;fsttok cannot wrap an unbounded &quot;</span>
                           <span class="s2">&quot;vocabulary predictor.&quot;</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trans_fst</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">load_fst</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
     
-<div class="viewcode-block" id="Char2wordPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+<div class="viewcode-block" id="FSTTokPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor. The source sentence is not</span>
+<span class="sd">        modified. ``states`` is updated to the initial FST node and</span>
+<span class="sd">        predictor posterior and state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="n">CombinedState</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trans_fst</span><span class="o">.</span><span class="n">start</span><span class="p">(),</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">(),</span>
+                                     <span class="n">posterior</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_prediction</span> <span class="o">=</span> <span class="p">{}</span></div>
+    
+<div class="viewcode-block" id="FSTTokPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Pass through to slave predictor. The source sentence is not</span>
 <span class="sd">        modified </span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
-    
-<div class="viewcode-block" id="Char2wordPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor. The source sentence is not</span>
-<span class="sd">        modified </span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;fsttok does not support predictor heuristics&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="Char2wordPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+<div class="viewcode-block" id="FSTTokPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_prediction</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">states</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_collect_chars</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">fst_node</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_prediction</span></div>
+    
+    <span class="k">def</span> <span class="nf">_collect_chars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">root_node</span><span class="p">,</span> <span class="n">first_olabel</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursively builds up ``last_prediction`` by traversing</span>
+<span class="sd">        epsilon arcs in the FST from ``root_node``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trans_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="n">root_node</span><span class="p">):</span>
+            <span class="n">arc_first_olabel</span> <span class="o">=</span> <span class="n">first_olabel</span> <span class="k">if</span> <span class="n">first_olabel</span> <span class="k">else</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span>
+            <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span> <span class="o">==</span> <span class="n">EPS_ID</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_collect_chars</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">,</span> <span class="n">arc_first_olabel</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">score</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">arc_first_olabel</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_prediction</span><span class="p">:</span> 
+                    <span class="bp">self</span><span class="o">.</span><span class="n">last_prediction</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">last_prediction</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span><span class="p">],</span> 
+                                            <span class="n">score</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">last_prediction</span><span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
         
-<div class="viewcode-block" id="Char2wordPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
-        <span class="k">pass</span></div>
-    
-<div class="viewcode-block" id="Char2wordPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
-        <span class="k">pass</span></div>
-    
-<div class="viewcode-block" id="Char2wordPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span></div>
-    
-<div class="viewcode-block" id="Char2wordPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+<div class="viewcode-block" id="FSTTokPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Always returns negative infinity. Handling UNKs needs to be </span>
+<span class="sd">        realized by the FST.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span></div>
 
-<div class="viewcode-block" id="Char2wordPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_choose_better</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;``consume`` merges states if they have the same ``fst_node``</span>
+<span class="sd">        This method defines which one to keep. We prefer states that</span>
+<span class="sd">        </span>
+<span class="sd">        1) have less unconsumed UNK tokens</span>
+<span class="sd">        2) have higher pending_score</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">s1</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">s2</span>
+        <span class="n">n_unk1</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="mi">1</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">s1</span><span class="o">.</span><span class="n">unconsumed</span> <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">fst_unk_id</span><span class="p">])</span>
+        <span class="n">n_unk2</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="mi">1</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">s2</span><span class="o">.</span><span class="n">unconsumed</span> <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">fst_unk_id</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">n_unk1</span> <span class="o">&gt;</span> <span class="n">n_unk2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">s2</span>
+        <span class="k">if</span> <span class="n">n_unk1</span> <span class="o">&lt;</span> <span class="n">n_unk2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">s1</span>
+        <span class="k">if</span> <span class="n">s1</span><span class="o">.</span><span class="n">pending_score</span> <span class="o">&lt;</span> <span class="n">s2</span><span class="o">.</span><span class="n">pending_score</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">s2</span>
+        <span class="k">return</span> <span class="n">s1</span>
+    
+<div class="viewcode-block" id="FSTTokPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update ``self.states`` to be consistent with ``word`` and </span>
+<span class="sd">        consumes all the predictor tokens.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">next_states</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">states</span><span class="p">:</span>
+            <span class="n">next_states</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">traverse_fst</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trans_fst</span><span class="p">,</span> <span class="n">word</span><span class="p">))</span>
+        <span class="n">consumed_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_prediction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">next_states</span><span class="p">:</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">pending_score</span> <span class="o">-=</span> <span class="n">consumed_score</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">consume_single</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="p">)</span>
+        <span class="c1"># if two states have the same fst_node, keep only the better one</span>
+        <span class="c1"># Also: Remove states with too large pending_score</span>
+        <span class="n">uniq_states</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">next_states</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">pending_score</span> <span class="o">&lt;</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">max_pending_score</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">fst_node</span>
+            <span class="n">uniq_states</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_choose_better</span><span class="p">(</span><span class="n">uniq_states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">None</span><span class="p">),</span>
+                                                 <span class="n">state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">states</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">uniq_states</span><span class="o">.</span><span class="n">itervalues</span><span class="p">())</span></div>
+    
+<div class="viewcode-block" id="FSTTokPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">states</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_prediction</span></div>
+    
+<div class="viewcode-block" id="FSTTokPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">states</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_prediction</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="FSTTokPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Char2wordPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+<div class="viewcode-block" id="FSTTokPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Not implemented yet&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">0.0</span></div>
 
-<div class="viewcode-block" id="Char2wordPredictor.set_current_sen_id"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur_sen_id</span><span class="p">):</span>
+<div class="viewcode-block" id="FSTTokPredictor.set_current_sen_id"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur_sen_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;We need to override this method to propagate current\_</span>
 <span class="sd">        sentence_id to the slave predictor</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Char2wordPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FSTTokPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="Char2wordPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Char2wordPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
-        <span class="k">pass</span></div></div>
+<div class="viewcode-block" id="FSTTokPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.FSTTokPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Not implemented yet&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">False</span></div></div>
     
 
 <div class="viewcode-block" id="Word2charPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tokenization.Word2charPredictor">[docs]</a><span class="k">class</span> <span class="nc">Word2charPredictor</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>

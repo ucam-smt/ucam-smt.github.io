@@ -193,6 +193,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span> <span class="o">=</span> <span class="n">beam_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span> <span class="o">=</span> <span class="n">hypo_recombination</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_best_eos</span> <span class="k">if</span> <span class="n">early_stopping</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_eos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span> <span class="o">=</span> <span class="n">early_stopping</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">hypo_recombination</span> 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Risk-free beam-search pruning enabled&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="n">pure_heuristic_scores</span>
     
     <span class="k">def</span> <span class="nf">_get_combined_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
@@ -203,7 +206,7 @@
 
     <span class="k">def</span> <span class="nf">_best_eos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns true if the best hypothesis ends with &lt;/S&gt;&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">hypos</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span>
+        <span class="k">return</span> <span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span>
 
     <span class="k">def</span> <span class="nf">_all_eos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns true if the all hypotheses end with &lt;/S&gt;&quot;&quot;&quot;</span>
@@ -212,10 +215,91 @@
                 <span class="k">return</span> <span class="bp">True</span>
         <span class="k">return</span> <span class="bp">False</span>
     
+    <span class="k">def</span> <span class="nf">_expand_hypo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the best beam size expansions of ``hypo``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypo (PartialHypothesis): Hypothesis to expans</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. List of child hypotheses</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># Consume if cheap expand</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
+            <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
+        <span class="n">top</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">hypo</span><span class="o">.</span><span class="n">cheap_expand</span><span class="p">(</span>
+                            <span class="n">trgt_word</span><span class="p">,</span>
+                            <span class="n">posterior</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">],</span>
+                            <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">])</span> <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">top</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">_filter_equal_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">,</span> <span class="n">scores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Apply hypo recombination to the hypotheses in ``hypos``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypos (list): List of hypotheses</span>
+<span class="sd">            scores (list): hypo scores with heuristic estimates</span>
+<span class="sd">        </span>
+<span class="sd">        Return:</span>
+<span class="sd">            list. List with hypotheses in ``hypos`` after applying</span>
+<span class="sd">            hypotheses recombination.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">scores</span><span class="p">)):</span>
+            <span class="n">candidate</span> <span class="o">=</span> <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">candidate</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
+                <span class="n">candidate</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="n">candidate</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">new_hypos</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">are_equal_predictor_states</span><span class="p">(</span>
+                                                <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">,</span>
+                                                <span class="n">candidate</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">):</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Hypo recombination: </span><span class="si">%s</span><span class="s2"> &gt; </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                                                 <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span>
+                                                 <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+                    <span class="n">valid</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="n">valid</span><span class="p">:</span>
+                <span class="n">new_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">candidate</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_hypos</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:</span>
+                    <span class="k">break</span>
+        <span class="k">return</span> <span class="n">new_hypos</span>
+
+    <span class="k">def</span> <span class="nf">_get_next_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">all_hypos</span><span class="p">,</span> <span class="n">all_scores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get hypos for the next beam iteration. &quot;&quot;&quot;</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">all_scores</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:]</span>
+                        <span class="k">if</span> <span class="n">all_hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span><span class="p">]</span>
+        <span class="n">hypos</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">hypos</span>
+    
+    <span class="k">def</span> <span class="nf">_register_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates best_scores and min_score.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> 
+    
+    <span class="k">def</span> <span class="nf">_get_initial_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the list of initial ``PartialHypothesis``. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">PartialHypothesis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())]</span>
+    
 <div class="viewcode-block" id="BeamDecoder.decode"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.beam.BeamDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Decodes a single source sentence using beam search. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
-        <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">PartialHypothesis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())]</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_initial_hypos</span><span class="p">()</span>
         <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span><span class="p">(</span><span class="n">hypos</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">it</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span> <span class="c1"># prevent infinite loops</span>
@@ -223,60 +307,30 @@
             <span class="n">it</span> <span class="o">=</span> <span class="n">it</span> <span class="o">+</span> <span class="mi">1</span>
             <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">next_scores</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
                     <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
                     <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">hypo</span><span class="p">))</span>
                     <span class="k">continue</span> 
-                <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># Consume if cheap expand</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
-                    <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
-                <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
-                <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
-                <span class="n">top</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">top</span><span class="p">:</span>
-                    <span class="n">next_hypo</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">cheap_expand</span><span class="p">(</span><span class="n">trgt_word</span><span class="p">,</span>
-                                                  <span class="n">posterior</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">],</span>
-                                                  <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">])</span>
-                    <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
-                    <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">next_hypo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="p">):</span>
+                    <span class="n">next_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">next_score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span><span class="p">:</span>
+                        <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+                        <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_score</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_register_score</span><span class="p">(</span><span class="n">next_score</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">:</span>
-                <span class="n">new_hypos</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">next_scores</span><span class="p">)):</span>
-                    <span class="n">candidate</span> <span class="o">=</span> <span class="n">next_hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span>
-                                                    <span class="n">candidate</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="n">candidate</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
-                        <span class="n">candidate</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
-                        <span class="n">candidate</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
-                    <span class="n">valid</span> <span class="o">=</span> <span class="bp">True</span>
-                    <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">new_hypos</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">are_equal_predictor_states</span><span class="p">(</span>
-                                                <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">,</span>
-                                                <span class="n">candidate</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">):</span>
-                            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Hypo recombination: </span><span class="si">%s</span><span class="s2"> &gt; </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
-                                                 <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span>
-                                                 <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
-                            <span class="n">valid</span> <span class="o">=</span> <span class="bp">False</span>
-                            <span class="k">break</span>
-                    <span class="k">if</span> <span class="n">valid</span><span class="p">:</span>
-                        <span class="n">new_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">candidate</span><span class="p">)</span>
-                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_hypos</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:</span>
-                            <span class="k">break</span>
-                <span class="n">new_hypos</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
-                <span class="n">hypos</span> <span class="o">=</span> <span class="n">new_hypos</span>
+                <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_equal_hypos</span><span class="p">(</span><span class="n">next_hypos</span><span class="p">,</span> <span class="n">next_scores</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">next_hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-                        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">next_scores</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:]]</span>
-        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hypos</span><span class="p">)):</span>
-            <span class="k">if</span> <span class="n">hypos</span><span class="p">[</span><span class="o">-</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">hypos</span><span class="p">[</span><span class="o">-</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span> 
+                <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_hypos</span><span class="p">(</span><span class="n">next_hypos</span><span class="p">,</span> <span class="n">next_scores</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span> 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_hypos</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No complete hypotheses found for </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">src_sentence</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hypos</span><span class="p">)):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">hypos</span><span class="p">[</span><span class="o">-</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_hypos_sorted</span><span class="p">()</span></div></div>
 </pre></div>
 

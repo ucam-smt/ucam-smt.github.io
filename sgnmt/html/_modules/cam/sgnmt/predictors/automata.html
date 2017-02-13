@@ -154,58 +154,19 @@
 <span class="sd">symbols.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">pywrapfst</span> <span class="kn">as</span> <span class="nn">fst</span>
 <span class="kn">import</span> <span class="nn">glob</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">call</span>
-<span class="kn">from</span> <span class="nn">shutil</span> <span class="kn">import</span> <span class="n">copyfile</span>
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">w2f</span><span class="p">,</span> <span class="n">load_fst</span>
+<span class="kn">import</span> <span class="nn">pywrapfst</span> <span class="kn">as</span> <span class="nn">fst</span>
 
 
 <span class="n">EPS_ID</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="sd">&quot;&quot;&quot;OpenFST&#39;s reserved ID for epsilon arcs. &quot;&quot;&quot;</span>
-
-
-<span class="n">NEG_INF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
-
-
-<span class="n">TMP_FILENAME</span> <span class="o">=</span> <span class="s1">&#39;/tmp/sgnmt.</span><span class="si">%s</span><span class="s1">.fst&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span>
-<span class="sd">&quot;&quot;&quot;Temporary file name to use if a FST file is zipped. &quot;&quot;&quot;</span>
-
-
-<div class="viewcode-block" id="w2f"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.w2f">[docs]</a><span class="k">def</span> <span class="nf">w2f</span><span class="p">(</span><span class="n">fstweight</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Converts an arc weight to float &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">fstweight</span><span class="p">))</span></div>
-
-
-<div class="viewcode-block" id="load_fst"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.load_fst">[docs]</a><span class="k">def</span> <span class="nf">load_fst</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Loads a FST from the file system using PyFSTs ``read()`` method.</span>
-<span class="sd">    GZipped format is also supported. The arc type must be standard</span>
-<span class="sd">    or log, otherwise PyFST cannot load them.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        path (string):  Path to the FST file to load</span>
-<span class="sd">    Returns:</span>
-<span class="sd">        fst. PyFST FST object or ``None`` if FST could not be read</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">path</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;.gz&quot;</span><span class="p">:</span>
-            <span class="n">copyfile</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.gz&quot;</span> <span class="o">%</span> <span class="n">TMP_FILENAME</span><span class="p">)</span>
-            <span class="n">call</span><span class="p">([</span><span class="s2">&quot;gunzip&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.gz&quot;</span> <span class="o">%</span> <span class="n">TMP_FILENAME</span><span class="p">])</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">Fst</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">TMP_FILENAME</span><span class="p">)</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">TMP_FILENAME</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span> <span class="c1"># Fst not zipped</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">Fst</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Read fst from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ret</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> error reading fst from </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
-            <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span> <span class="n">path</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
-    <span class="k">return</span> <span class="bp">None</span></div>
 
 
 <div class="viewcode-block" id="FstPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor">[docs]</a><span class="k">class</span> <span class="nc">FstPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
@@ -257,7 +218,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            float. Negative infinity</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">NEG_INF</span> </div>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> </div>
     
 <div class="viewcode-block" id="FstPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Uses the outgoing arcs from the current node to build up the</span>
@@ -268,7 +229,7 @@
 <span class="sd">            together with their scores, or an empty set if we currently</span>
 <span class="sd">            have no active node or fst.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{}</span>
         <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span><span class="p">)}</span>
@@ -398,7 +359,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            float. Negative infinity</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">NEG_INF</span> </div>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> </div>
     
 <div class="viewcode-block" id="NondeterministicFstPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Uses the outgoing arcs from all current node to build up the</span>
@@ -463,7 +424,7 @@
                 <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">word</span><span class="p">:</span>
                     <span class="n">next_node</span> <span class="o">=</span> <span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span>
                     <span class="n">next_score</span> <span class="o">=</span> <span class="n">weight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">d_unconsumed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">next_node</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">next_score</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">d_unconsumed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">next_node</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">next_score</span><span class="p">:</span>
                         <span class="n">d_unconsumed</span><span class="p">[</span><span class="n">next_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">next_score</span>
         <span class="c1"># Subtract the word score from the last predict_next </span>
         <span class="n">consumed_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_max_func</span><span class="p">(</span><span class="n">d_unconsumed</span><span class="o">.</span><span class="n">itervalues</span><span class="p">())</span> \
@@ -492,7 +453,7 @@
                     <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">EPS_ID</span><span class="p">:</span>
                         <span class="n">next_node</span> <span class="o">=</span> <span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span>
                         <span class="n">next_score</span> <span class="o">=</span> <span class="n">score</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
-                        <span class="k">if</span> <span class="n">visited</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">next_node</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">next_score</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">visited</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">next_node</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">next_score</span><span class="p">:</span>
                             <span class="n">visited</span><span class="p">[</span><span class="n">next_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">next_score</span>
                             <span class="n">next_open</span><span class="p">[</span><span class="n">next_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">next_score</span>
                     <span class="k">else</span><span class="p">:</span>
@@ -604,7 +565,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            float. Negative infinity</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">NEG_INF</span></div>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span></div>
     
 <div class="viewcode-block" id="RtnPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Loads the root RTN and consumes the start of sentence </span>
@@ -751,7 +712,7 @@
         <span class="sd">&quot;&quot;&quot;Can be used as ``func`` argument in ``expand_rtn`` to build</span>
 <span class="sd">        up the posterior for the next target token  in ``predict_next``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cur_posterior</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">),</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_posterior</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">),</span>
                                         <span class="n">weight</span><span class="p">)</span>
     
 <div class="viewcode-block" id="RtnPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.RtnPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

@@ -393,6 +393,8 @@
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;greedy&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;beam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;multisegbeam&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;syncbeam&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;sepbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;dfs&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;restarting&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;bow&#39;</span><span class="p">,</span>
@@ -416,6 +418,12 @@
                         <span class="s2">&quot;pruning behavior.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;multisegbeam&#39;: Beam search for predictors with &quot;</span>
                         <span class="s2">&quot;multiple tokenizations ([sub]word/char-levels).</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;syncbeam&#39;: beam search which compares after &quot;</span>
+                        <span class="s2">&quot;consuming a special synchronization symbol instead &quot;</span>
+                        <span class="s2">&quot;of after each iteration.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;sepbeam&#39;: Associates predictors with hypos in &quot;</span>
+                        <span class="s2">&quot;beam search and applies only one predictor instead &quot;</span>
+                        <span class="s2">&quot;of all for hypo expansion.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;bow&#39;: Restarting decoder optimized for bag-of-words &quot;</span>
                         <span class="s2">&quot;problems.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;flip&#39;: This decoder works only for bag problems. &quot;</span>
@@ -616,6 +624,13 @@
                        <span class="s2">&quot;* The &#39;bucket&#39; decoder reorders the hypotheses in a &quot;</span>
                        <span class="s2">&quot;bucket by penalizing hypotheses with the number of &quot;</span>
                        <span class="s2">&quot;expanded hypotheses from the same parent.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--sync_symbol&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Used for the syncbeam decoder. Synchronization &quot;</span>
+                       <span class="s2">&quot;symbol for hypothesis comparision. If negative, use &quot;</span>
+                       <span class="s2">&quot;the &lt;/w&gt; entry in --trg_cmap.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_word_len&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum length of a single word. Only applicable &quot;</span>
+                       <span class="s2">&quot;to the decoders multisegbeam and syncbeam.&quot;</span><span class="p">)</span>
 
     <span class="c1">## Output options</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Output options&#39;</span><span class="p">)</span>
@@ -624,14 +639,16 @@
                         <span class="s2">&quot;files. Set to 0 to output all hypotheses found by &quot;</span>
                         <span class="s2">&quot;the decoder. If you use the beam or astar decoder, &quot;</span>
                         <span class="s2">&quot;this option is limited by the beam size.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output_fst_unk_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">999999998</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output_fst_unk_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED: Old name for --fst_unk_id&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fst_unk_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">999999998</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;SGNMT uses the ID 0 for UNK. However, this &quot;</span>
                         <span class="s2">&quot;clashes with OpenFST when writing FSTs as OpenFST &quot;</span>
                         <span class="s2">&quot;reserves 0 for epsilon arcs. Therefore, we use this &quot;</span>
                         <span class="s2">&quot;ID for UNK instead. Note that this only applies &quot;</span>
                         <span class="s2">&quot;to output FSTs created by the fst or sfst output &quot;</span>
-                        <span class="s2">&quot;handler. Apart from that, UNK is still represented &quot;</span>
-                        <span class="s2">&quot;by the ID 0.&quot;</span><span class="p">)</span>
+                        <span class="s2">&quot;handler, or FSTs used by the fsttok wrapper. Apart &quot;</span>
+                        <span class="s2">&quot;from that, UNK is still represented by the ID 0.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;sgnmt-out.</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the output files generated by SGNMT. You &quot;</span>
                         <span class="s2">&quot;can use the placeholder </span><span class="si">%%</span><span class="s2">s for the format specifier&quot;</span><span class="p">)</span>
@@ -746,6 +763,10 @@
                         <span class="s2">&quot;matching word indices higher than trg_vocab_size &quot;</span>
                         <span class="s2">&quot;with UNK scores.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;             Options: trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;fsttok&#39;: Uses an FST to transduce SGNMT tokens to &quot;</span>
+                        <span class="s2">&quot;predictor tokens.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;             Options: fsttok_path, &quot;</span>
+                        <span class="s2">&quot;fsttok_max_pending_score, fst_unk_id</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;word2char&#39;: Wraps word-level predictors when SGNMT&quot;</span>
                         <span class="s2">&quot; is running on character level.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;            Options: word2char_map</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -979,6 +1000,17 @@
                         <span class="s2">&quot;character IDs (format: &lt;word-id&gt; &lt;char-id1&gt; &lt;char-id2&quot;</span>
                         <span class="s2">&quot;&gt;...). All character IDs which do not occur in this &quot;</span>
                         <span class="s2">&quot;mapping are treated as word boundary symbols.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fsttok_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;tok.fst&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;For the fsttok wrapper. Defines the path to the &quot;</span>
+                        <span class="s2">&quot;FSt which transduces sequences of SGNMT tokens (eg. &quot;</span>
+                        <span class="s2">&quot;characters) to predictor tokens (eg BPEs). FST may &quot;</span>
+                        <span class="s2">&quot;be non-deterministic and contain epsilons.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fsttok_max_pending_score&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Applicable if an FST used by the fsttok wrapper &quot;</span>
+                       <span class="s2">&quot;is non-deterministic. In this case, one predictor &quot;</span>
+                       <span class="s2">&quot;state may correspond to multiple nodes in the FST. &quot;</span>
+                       <span class="s2">&quot;We prune nodes which are this much worse than the &quot;</span>
+                       <span class="s2">&quot;best scoring node with the same history.&quot;</span><span class="p">)</span>
 
     <span class="c1"># Hiero predictor</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Hiero predictor options&#39;</span><span class="p">)</span>
@@ -1093,6 +1125,8 @@
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --altsrc_test for the </span><span class="si">%s</span><span class="s2"> altsrc&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--word2char_map</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --word2char_map for the </span><span class="si">%s</span><span class="s2"> word2char&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fsttok_path</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --fsttok_path for the </span><span class="si">%s</span><span class="s2"> fsttok&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_idxmap</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --src_idxmap for the </span><span class="si">%s</span><span class="s2"> indexmap&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_idxmap</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -1135,6 +1169,8 @@
         <span class="n">args</span><span class="o">.</span><span class="n">trg_idxmap</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">fr_idxmap</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">length_normalization</span><span class="p">:</span>
         <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">=</span> <span class="s2">&quot;length_norm&quot;</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">output_fst_unk_id</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">fst_unk_id</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">output_fst_unk_id</span> 
     <span class="k">return</span> <span class="n">args</span></div>
 
 
