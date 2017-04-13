@@ -250,7 +250,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
     
-<div class="viewcode-block" id="NMTModel.set_up"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.model.NMTModel.set_up">[docs]</a>    <span class="k">def</span> <span class="nf">set_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="NMTModel.set_up"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.model.NMTModel.set_up">[docs]</a>    <span class="k">def</span> <span class="nf">set_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">make_prunable</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Loads and initializes all the theano variables for the</span>
 <span class="sd">        training model and the decoding model.</span>
 <span class="sd">        </span>
@@ -298,6 +298,8 @@
             <span class="n">decoder</span> <span class="o">=</span> <span class="n">NoLookupDecoder</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_vocab_size&#39;</span><span class="p">],</span>
                                       <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_embed&#39;</span><span class="p">],</span> 
                                       <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_nhids&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;att_nhids&#39;</span><span class="p">],</span>
+                                      <span class="n">config</span><span class="p">[</span><span class="s1">&#39;maxout_nhids&#39;</span><span class="p">],</span>
                                       <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
                                       <span class="n">config</span><span class="p">[</span><span class="s1">&#39;attention&#39;</span><span class="p">],</span>
                                       <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_attention_sources&#39;</span><span class="p">],</span>
@@ -311,6 +313,8 @@
             <span class="n">decoder</span> <span class="o">=</span> <span class="n">Decoder</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;trg_vocab_size&#39;</span><span class="p">],</span>
                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_embed&#39;</span><span class="p">],</span> 
                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_nhids&#39;</span><span class="p">],</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;att_nhids&#39;</span><span class="p">],</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;maxout_nhids&#39;</span><span class="p">],</span>
                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;attention&#39;</span><span class="p">],</span>
                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_attention_sources&#39;</span><span class="p">],</span>
@@ -318,7 +322,8 @@
                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory&#39;</span><span class="p">],</span>
                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_size&#39;</span><span class="p">],</span>
                               <span class="n">config</span><span class="p">[</span><span class="s1">&#39;seq_len&#39;</span><span class="p">],</span>
-                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_init&#39;</span><span class="p">])</span>
+                              <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_init&#39;</span><span class="p">],</span>
+                              <span class="n">make_prunable</span><span class="o">=</span><span class="n">make_prunable</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;annotations&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;direct&#39;</span><span class="p">:</span>
             <span class="n">annotators</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">add_direct</span> <span class="o">=</span> <span class="bp">False</span>
@@ -409,7 +414,8 @@
             <span class="n">bricks</span><span class="o">=</span><span class="p">[</span><span class="n">decoder</span><span class="o">.</span><span class="n">sequence_generator</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;outputs&quot;</span><span class="p">)(</span>
                 <span class="n">ComputationGraph</span><span class="p">(</span><span class="n">generated</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>  <span class="c1"># generated[1] is next_outputs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="n">generated_outputs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">decoder</span></div></div>
     
 </pre></div>
 

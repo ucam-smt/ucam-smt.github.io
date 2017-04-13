@@ -143,25 +143,28 @@
 <span class="sd">combine the final encoder-decoder network.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">blocks.bricks</span> <span class="kn">import</span> <span class="p">(</span><span class="n">Tanh</span><span class="p">,</span> <span class="n">Logistic</span><span class="p">,</span> <span class="n">Maxout</span><span class="p">,</span> <span class="n">Linear</span><span class="p">,</span> <span class="n">FeedforwardSequence</span><span class="p">,</span>
-                           <span class="n">Bias</span><span class="p">,</span> <span class="n">Initializable</span><span class="p">,</span> <span class="n">MLP</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">blocks.bricks.attention</span> <span class="kn">import</span> <span class="n">SequenceContentAttention</span>
-<span class="kn">from</span> <span class="nn">blocks.bricks.base</span> <span class="kn">import</span> <span class="n">application</span><span class="p">,</span> <span class="n">lazy</span>
-<span class="kn">from</span> <span class="nn">blocks.bricks.cost</span> <span class="kn">import</span> <span class="n">SquaredError</span>
-<span class="kn">from</span> <span class="nn">blocks.bricks.parallel</span> <span class="kn">import</span> <span class="n">Fork</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-
 <span class="kn">from</span> <span class="nn">blocks.bricks.recurrent</span> <span class="kn">import</span> <span class="n">GatedRecurrent</span>
 <span class="kn">from</span> <span class="nn">blocks.bricks.sequence_generators</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">LookupFeedback</span><span class="p">,</span> <span class="n">Readout</span><span class="p">,</span> <span class="n">SoftmaxEmitter</span><span class="p">,</span>
     <span class="n">SequenceGenerator</span><span class="p">,</span> <span class="n">AbstractEmitter</span><span class="p">,</span> <span class="n">TrivialFeedback</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">blocks.roles</span> <span class="kn">import</span> <span class="n">add_role</span><span class="p">,</span> <span class="n">WEIGHT</span><span class="p">,</span> <span class="n">INITIAL_STATE</span>
 <span class="kn">from</span> <span class="nn">blocks.utils</span> <span class="kn">import</span> <span class="n">shared_floatx_nans</span><span class="p">,</span> <span class="n">shared_floatx_zeros</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">theano</span> <span class="kn">import</span> <span class="n">tensor</span>
 
+<span class="kn">from</span> <span class="nn">blocks.bricks</span> <span class="kn">import</span> <span class="p">(</span><span class="n">Tanh</span><span class="p">,</span> <span class="n">Logistic</span><span class="p">,</span> <span class="n">Maxout</span><span class="p">,</span> <span class="n">Linear</span><span class="p">,</span> <span class="n">FeedforwardSequence</span><span class="p">,</span>
+                           <span class="n">Bias</span><span class="p">,</span> <span class="n">Initializable</span><span class="p">,</span> <span class="n">MLP</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks.attention</span> <span class="kn">import</span> <span class="n">SequenceContentAttention</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks.base</span> <span class="kn">import</span> <span class="n">application</span><span class="p">,</span> <span class="n">lazy</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks.cost</span> <span class="kn">import</span> <span class="n">SquaredError</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks.parallel</span> <span class="kn">import</span> <span class="n">Fork</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.pruning</span> <span class="kn">import</span> <span class="n">PrunableSequenceGenerator</span><span class="p">,</span> \
+                                     <span class="n">PrunableInitializableFeedforwardSequence</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.attention</span> <span class="kn">import</span> <span class="n">AlignmentAttention</span><span class="p">,</span> \
     <span class="n">ThresholdedSequenceContentAttention</span><span class="p">,</span> <span class="n">PushDownSequenceContentAttention</span><span class="p">,</span> \
-    <span class="n">PushDownThresholdedAttention</span><span class="p">,</span> <span class="n">CoverageContentAttention</span>
+    <span class="n">PushDownThresholdedAttention</span><span class="p">,</span> <span class="n">CoverageContentAttention</span><span class="p">,</span> \
+    <span class="n">SequenceMultiContentAttention</span>
 
 
 <div class="viewcode-block" id="InitializableFeedforwardSequence"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.decoder.InitializableFeedforwardSequence">[docs]</a><span class="k">class</span> <span class="nc">InitializableFeedforwardSequence</span><span class="p">(</span><span class="n">FeedforwardSequence</span><span class="p">,</span> <span class="n">Initializable</span><span class="p">):</span>
@@ -255,7 +258,7 @@
                           <span class="n">seq_len</span><span class="p">,</span> 
                           <span class="n">transition</span><span class="p">,</span> 
                           <span class="n">representation_dim</span><span class="p">,</span> 
-                          <span class="n">state_dim</span><span class="p">,</span>
+                          <span class="n">att_dim</span><span class="p">,</span>
                           <span class="n">attention_sources</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
                           <span class="n">readout_sources</span><span class="o">=</span><span class="s1">&#39;sfa&#39;</span><span class="p">,</span>
                           <span class="n">memory</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
@@ -282,7 +285,7 @@
 <span class="sd">                                decoder network which is to be equipped</span>
 <span class="sd">                                with an attention mechanism</span>
 <span class="sd">        representation_dim (int): Dimension of source annotations</span>
-<span class="sd">        state_dim (int): Number of hidden units in decoder RNN</span>
+<span class="sd">        att_dim (int): Number of hidden units in match vector</span>
 <span class="sd">        attention_sources (string): Defines the sources used by the </span>
 <span class="sd">                                    attention model &#39;s&#39; for decoder</span>
 <span class="sd">                                    states, &#39;f&#39; for feedback</span>
@@ -324,12 +327,24 @@
                     <span class="n">stack_dim</span><span class="o">=</span><span class="n">memory_size</span><span class="p">,</span>
                     <span class="n">state_names</span><span class="o">=</span><span class="n">att_src_names</span><span class="p">,</span>
                     <span class="n">attended_dim</span><span class="o">=</span><span class="n">representation_dim</span><span class="p">,</span>
-                    <span class="n">match_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
+                    <span class="n">match_dim</span><span class="o">=</span><span class="n">att_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">attention</span> <span class="o">=</span> <span class="n">SequenceContentAttention</span><span class="p">(</span>
                     <span class="n">state_names</span><span class="o">=</span><span class="n">att_src_names</span><span class="p">,</span>
                     <span class="n">attended_dim</span><span class="o">=</span><span class="n">representation_dim</span><span class="p">,</span>
-                    <span class="n">match_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
+                    <span class="n">match_dim</span><span class="o">=</span><span class="n">att_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s1">&#39;content-&#39;</span> <span class="ow">in</span> <span class="n">attention_strategy</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">memory</span> <span class="o">==</span> <span class="s1">&#39;stack&#39;</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Memory &#39;stack&#39; cannot used in combination &quot;</span>
+                              <span class="s2">&quot;with multi content attention strategy (not &quot;</span>
+                              <span class="s2">&quot;implemented yet)&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_</span><span class="p">,</span><span class="n">n</span> <span class="o">=</span> <span class="n">attention_strategy</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+                <span class="n">attention</span> <span class="o">=</span> <span class="n">SequenceMultiContentAttention</span><span class="p">(</span>
+                    <span class="n">n_att_weights</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
+                    <span class="n">state_names</span><span class="o">=</span><span class="n">att_src_names</span><span class="p">,</span>
+                    <span class="n">attended_dim</span><span class="o">=</span><span class="n">representation_dim</span><span class="p">,</span>
+                    <span class="n">match_dim</span><span class="o">=</span><span class="n">att_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="s1">&#39;nbest-&#39;</span> <span class="ow">in</span> <span class="n">attention_strategy</span><span class="p">:</span>
             <span class="n">_</span><span class="p">,</span><span class="n">n</span> <span class="o">=</span> <span class="n">attention_strategy</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">memory</span> <span class="o">==</span> <span class="s1">&#39;stack&#39;</span><span class="p">:</span>
@@ -338,13 +353,13 @@
                     <span class="n">nbest</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
                     <span class="n">state_names</span><span class="o">=</span><span class="n">att_src_names</span><span class="p">,</span>
                     <span class="n">attended_dim</span><span class="o">=</span><span class="n">representation_dim</span><span class="p">,</span>
-                    <span class="n">match_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
+                    <span class="n">match_dim</span><span class="o">=</span><span class="n">att_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">attention</span> <span class="o">=</span> <span class="n">ThresholdedSequenceContentAttention</span><span class="p">(</span>
                     <span class="n">nbest</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
                     <span class="n">state_names</span><span class="o">=</span><span class="n">att_src_names</span><span class="p">,</span>
                     <span class="n">attended_dim</span><span class="o">=</span><span class="n">representation_dim</span><span class="p">,</span>
-                    <span class="n">match_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
+                    <span class="n">match_dim</span><span class="o">=</span><span class="n">att_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="s1">&#39;coverage-&#39;</span> <span class="ow">in</span> <span class="n">attention_strategy</span><span class="p">:</span>
             <span class="n">_</span><span class="p">,</span><span class="n">n</span> <span class="o">=</span> <span class="n">attention_strategy</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">memory</span> <span class="o">==</span> <span class="s1">&#39;stack&#39;</span><span class="p">:</span>
@@ -356,7 +371,7 @@
                     <span class="n">max_fertility</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
                     <span class="n">state_names</span><span class="o">=</span><span class="n">att_src_names</span><span class="p">,</span>
                     <span class="n">attended_dim</span><span class="o">=</span><span class="n">representation_dim</span><span class="p">,</span>
-                    <span class="n">match_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
+                    <span class="n">match_dim</span><span class="o">=</span><span class="n">att_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Unknown attention strategy &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span>
                               <span class="o">%</span> <span class="n">attention_strategy</span><span class="p">)</span>
@@ -374,6 +389,8 @@
                  <span class="n">vocab_size</span><span class="p">,</span> 
                  <span class="n">embedding_dim</span><span class="p">,</span> 
                  <span class="n">state_dim</span><span class="p">,</span>
+                 <span class="n">att_dim</span><span class="p">,</span>
+                 <span class="n">maxout_dim</span><span class="p">,</span>
                  <span class="n">representation_dim</span><span class="p">,</span> 
                  <span class="n">attention_strategy</span><span class="o">=</span><span class="s1">&#39;content&#39;</span><span class="p">,</span>
                  <span class="n">attention_sources</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
@@ -382,6 +399,7 @@
                  <span class="n">memory_size</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
                  <span class="n">seq_len</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
                  <span class="n">init_strategy</span><span class="o">=</span><span class="s1">&#39;last&#39;</span><span class="p">,</span> 
+                 <span class="n">make_prunable</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                  <span class="n">theano_seed</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> 
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new decoder brick.</span>
@@ -390,6 +408,8 @@
 <span class="sd">            vocab_size (int): Target language vocabulary size</span>
 <span class="sd">            embedding_dim (int): Size of feedback embedding layer</span>
 <span class="sd">            state_dim (int): Number of hidden units</span>
+<span class="sd">            att_dim (int): Size of attention match vector</span>
+<span class="sd">            maxout_dim (int): Size of maxout layer</span>
 <span class="sd">            representation_dim (int): Dimension of source annotations</span>
 <span class="sd">            attention_strategy (string): Which attention should be used</span>
 <span class="sd">                                         cf.  ``_initialize_attention``</span>
@@ -417,18 +437,19 @@
 
         <span class="c1"># Initialize gru with special initial state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transition</span> <span class="o">=</span> <span class="n">GRUInitialState</span><span class="p">(</span>
-            <span class="n">attended_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span>
+            <span class="n">attended_dim</span><span class="o">=</span><span class="n">representation_dim</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
             <span class="n">init_strategy</span><span class="o">=</span><span class="n">init_strategy</span><span class="p">,</span> 
             <span class="n">dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span>
             <span class="n">activation</span><span class="o">=</span><span class="n">Tanh</span><span class="p">(),</span> 
             <span class="n">name</span><span class="o">=</span><span class="s1">&#39;decoder&#39;</span><span class="p">)</span>
 
         <span class="c1"># Initialize the attention mechanism</span>
+        <span class="n">att_dim</span> <span class="o">=</span> <span class="n">att_dim</span> <span class="k">if</span> <span class="n">att_dim</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">state_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">,</span><span class="n">src_names</span> <span class="o">=</span> <span class="n">_initialize_attention</span><span class="p">(</span><span class="n">attention_strategy</span><span class="p">,</span>
                                                          <span class="n">seq_len</span><span class="p">,</span> 
                                                          <span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="p">,</span> 
                                                          <span class="n">representation_dim</span><span class="p">,</span> 
-                                                         <span class="n">state_dim</span><span class="p">,</span>
+                                                         <span class="n">att_dim</span><span class="p">,</span>
                                                          <span class="n">attention_sources</span><span class="p">,</span>
                                                          <span class="n">readout_sources</span><span class="p">,</span>
                                                          <span class="n">memory</span><span class="p">,</span>
@@ -436,27 +457,41 @@
 
         <span class="c1"># Initialize the readout, note that SoftmaxEmitter emits -1 for</span>
         <span class="c1"># initial outputs which is used by LookupFeedBackWMT15</span>
+        <span class="n">maxout_dim</span> <span class="o">=</span> <span class="n">maxout_dim</span> <span class="k">if</span> <span class="n">maxout_dim</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">state_dim</span>
+        <span class="n">post_layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">Bias</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">maxout_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;maxout_bias&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
+                       <span class="n">Maxout</span><span class="p">(</span><span class="n">num_pieces</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;maxout&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
+                       <span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">maxout_dim</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">output_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">,</span>
+                           <span class="n">use_bias</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;softmax0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
+                       <span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;softmax1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">make_prunable</span><span class="p">:</span>
+            <span class="n">post_merge</span> <span class="o">=</span> <span class="n">PrunableInitializableFeedforwardSequence</span><span class="p">(</span><span class="n">post_layers</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">post_merge</span> <span class="o">=</span> <span class="n">InitializableFeedforwardSequence</span><span class="p">(</span><span class="n">post_layers</span><span class="p">)</span>
         <span class="n">readout</span> <span class="o">=</span> <span class="n">Readout</span><span class="p">(</span>
             <span class="n">source_names</span><span class="o">=</span><span class="n">src_names</span><span class="p">,</span>
             <span class="n">readout_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span>
             <span class="n">emitter</span><span class="o">=</span><span class="n">SoftmaxEmitter</span><span class="p">(</span><span class="n">initial_output</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">theano_seed</span><span class="o">=</span><span class="n">theano_seed</span><span class="p">),</span>
             <span class="n">feedback_brick</span><span class="o">=</span><span class="n">LookupFeedbackWMT15</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">embedding_dim</span><span class="p">),</span>
-            <span class="n">post_merge</span><span class="o">=</span><span class="n">InitializableFeedforwardSequence</span><span class="p">(</span>
-                <span class="p">[</span><span class="n">Bias</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;maxout_bias&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
-                 <span class="n">Maxout</span><span class="p">(</span><span class="n">num_pieces</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;maxout&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
-                 <span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">state_dim</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">output_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">,</span>
-                        <span class="n">use_bias</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;softmax0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
-                 <span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;softmax1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">]),</span>
-            <span class="n">merged_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">)</span>
+            <span class="n">post_merge</span><span class="o">=</span><span class="n">post_merge</span><span class="p">,</span>
+            <span class="n">merged_dim</span><span class="o">=</span><span class="n">maxout_dim</span><span class="p">)</span>
 
         <span class="c1"># Build sequence generator accordingly</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sequence_generator</span> <span class="o">=</span> <span class="n">SequenceGenerator</span><span class="p">(</span>
-            <span class="n">readout</span><span class="o">=</span><span class="n">readout</span><span class="p">,</span>
-            <span class="n">transition</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="p">,</span>
-            <span class="n">attention</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">,</span>
-            <span class="n">fork</span><span class="o">=</span><span class="n">Fork</span><span class="p">([</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="o">.</span><span class="n">apply</span><span class="o">.</span><span class="n">sequences</span>
-                       <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;mask&#39;</span><span class="p">],</span> <span class="n">prototype</span><span class="o">=</span><span class="n">Linear</span><span class="p">())</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">make_prunable</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sequence_generator</span> <span class="o">=</span> <span class="n">PrunableSequenceGenerator</span><span class="p">(</span>
+                <span class="n">readout</span><span class="o">=</span><span class="n">readout</span><span class="p">,</span>
+                <span class="n">transition</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="p">,</span>
+                <span class="n">attention</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">,</span>
+                <span class="n">fork</span><span class="o">=</span><span class="n">Fork</span><span class="p">([</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="o">.</span><span class="n">apply</span><span class="o">.</span><span class="n">sequences</span>
+                           <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;mask&#39;</span><span class="p">],</span> <span class="n">prototype</span><span class="o">=</span><span class="n">Linear</span><span class="p">())</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sequence_generator</span> <span class="o">=</span> <span class="n">SequenceGenerator</span><span class="p">(</span>
+                <span class="n">readout</span><span class="o">=</span><span class="n">readout</span><span class="p">,</span>
+                <span class="n">transition</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="p">,</span>
+                <span class="n">attention</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">,</span>
+                <span class="n">fork</span><span class="o">=</span><span class="n">Fork</span><span class="p">([</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="o">.</span><span class="n">apply</span><span class="o">.</span><span class="n">sequences</span>
+                           <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;mask&#39;</span><span class="p">],</span> <span class="n">prototype</span><span class="o">=</span><span class="n">Linear</span><span class="p">())</span>
+            <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence_generator</span><span class="p">]</span>
 
@@ -535,6 +570,8 @@
                  <span class="n">vocab_size</span><span class="p">,</span> 
                  <span class="n">embedding_dim</span><span class="p">,</span> 
                  <span class="n">state_dim</span><span class="p">,</span>
+                 <span class="n">att_dim</span><span class="p">,</span>
+                 <span class="n">maxout_dim</span><span class="p">,</span>
                  <span class="n">representation_dim</span><span class="p">,</span>
                  <span class="n">attention_strategy</span><span class="o">=</span><span class="s1">&#39;content&#39;</span><span class="p">,</span>
                  <span class="n">attention_sources</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
@@ -551,6 +588,8 @@
 <span class="sd">            vocab_size (int): Target language vocabulary size</span>
 <span class="sd">            embedding_dim (int): Size of feedback embedding layer</span>
 <span class="sd">            state_dim (int): Number of hidden units</span>
+<span class="sd">            att_dim (int): Size of attention match vector</span>
+<span class="sd">            maxout_dim (int): Size of maxout layer</span>
 <span class="sd">            representation_dim (int): Dimension of source annotations</span>
 <span class="sd">            attention_strategy (string): Which attention should be used</span>
 <span class="sd">                                         cf.  ``_initialize_attention``</span>
@@ -585,11 +624,12 @@
             <span class="n">name</span><span class="o">=</span><span class="s1">&#39;decoder&#39;</span><span class="p">)</span>
 
         <span class="c1"># Initialize the attention mechanism</span>
+        <span class="n">att_dim</span> <span class="o">=</span> <span class="n">att_dim</span> <span class="k">if</span> <span class="n">att_dim</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">state_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">,</span><span class="n">src_names</span> <span class="o">=</span> <span class="n">_initialize_attention</span><span class="p">(</span><span class="n">attention_strategy</span><span class="p">,</span>
                                                          <span class="n">seq_len</span><span class="p">,</span> 
                                                          <span class="bp">self</span><span class="o">.</span><span class="n">transition</span><span class="p">,</span> 
                                                          <span class="n">representation_dim</span><span class="p">,</span> 
-                                                         <span class="n">state_dim</span><span class="p">,</span>
+                                                         <span class="n">att_dim</span><span class="p">,</span>
                                                          <span class="n">attention_sources</span><span class="p">,</span>
                                                          <span class="n">readout_sources</span><span class="p">,</span>
                                                          <span class="n">memory</span><span class="p">,</span>
@@ -597,6 +637,7 @@
 
         <span class="c1"># Initialize the readout, note that SoftmaxEmitter emits -1 for</span>
         <span class="c1"># initial outputs which is used by LookupFeedBackWMT15</span>
+        <span class="n">maxout_dim</span> <span class="o">=</span> <span class="n">maxout_dim</span> <span class="k">if</span> <span class="n">maxout_dim</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">state_dim</span>
         <span class="n">readout</span> <span class="o">=</span> <span class="n">Readout</span><span class="p">(</span>
             <span class="n">source_names</span><span class="o">=</span><span class="n">src_names</span><span class="p">,</span>
             <span class="n">readout_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">,</span>
@@ -606,12 +647,12 @@
             <span class="c1">#                        cost_brick=CategoricalCrossEntropy()),</span>
             <span class="n">feedback_brick</span><span class="o">=</span><span class="n">TrivialFeedback</span><span class="p">(</span><span class="n">output_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">),</span>
             <span class="n">post_merge</span><span class="o">=</span><span class="n">InitializableFeedforwardSequence</span><span class="p">(</span>
-                <span class="p">[</span><span class="n">Bias</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;maxout_bias&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
+                <span class="p">[</span><span class="n">Bias</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">maxout_dim</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;maxout_bias&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
                  <span class="n">Maxout</span><span class="p">(</span><span class="n">num_pieces</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;maxout&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
-                 <span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">state_dim</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">output_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">,</span>
+                 <span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">maxout_dim</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">output_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">,</span>
                         <span class="n">use_bias</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;softmax0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
                  <span class="n">Logistic</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;softmax1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">]),</span>
-            <span class="n">merged_dim</span><span class="o">=</span><span class="n">state_dim</span><span class="p">)</span>
+            <span class="n">merged_dim</span><span class="o">=</span><span class="n">maxout_dim</span><span class="p">)</span>
 
         <span class="c1"># Build sequence generator accordingly</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sequence_generator</span> <span class="o">=</span> <span class="n">SequenceGenerator</span><span class="p">(</span>

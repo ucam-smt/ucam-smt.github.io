@@ -150,7 +150,8 @@
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">blocks.search</span> <span class="kn">import</span> <span class="n">BeamSearch</span> <span class="c1"># To check if blocks is available</span>
     
-    <span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.vanilla_decoder</span> <span class="kn">import</span> <span class="n">BlocksNMTVanillaDecoder</span>
+    <span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.vanilla_decoder</span> <span class="kn">import</span> <span class="n">BlocksNMTVanillaDecoder</span><span class="p">,</span>\
+                                                 <span class="n">BlocksNMTEnsembleVanillaDecoder</span>
     <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.blocks_nmt</span> <span class="kn">import</span> <span class="n">BlocksNMTPredictor</span>
     <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.blocks_nmt</span> <span class="kn">import</span> <span class="n">BlocksUnboundedNMTPredictor</span>
 <span class="k">except</span><span class="p">:</span>
@@ -202,12 +203,13 @@
                               <span class="n">nmt_config</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="blocks_get_nmt_vanilla_decoder"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.nmt.blocks_get_nmt_vanilla_decoder">[docs]</a><span class="k">def</span> <span class="nf">blocks_get_nmt_vanilla_decoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">nmt_path</span><span class="p">,</span> <span class="n">nmt_config</span><span class="p">):</span>
+<div class="viewcode-block" id="blocks_get_nmt_vanilla_decoder"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.nmt.blocks_get_nmt_vanilla_decoder">[docs]</a><span class="k">def</span> <span class="nf">blocks_get_nmt_vanilla_decoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">nmt_specs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Get the Blocks NMT vanilla decoder.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        args (object): SGNMT arguments from ``ArgumentParser``</span>
-<span class="sd">        nmt_config (dict): NMT configuration</span>
+<span class="sd">        nmt_specs (list): List of (nmt_path,nmt_config) tuples, one</span>
+<span class="sd">                          entry for each model in the ensemble</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        Predictor. An instance of ``BlocksNMTVanillaDecoder``</span>
@@ -215,12 +217,19 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">BLOCKS_AVAILABLE</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find Blocks!&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">None</span>
-    <span class="n">nmt_config</span> <span class="o">=</span> <span class="n">_add_sparse_feat_maps_to_config</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">nmt_path</span><span class="p">:</span>
-        <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nmt_path</span>
-    <span class="k">return</span> <span class="n">BlocksNMTVanillaDecoder</span><span class="p">(</span><span class="n">get_nmt_model_path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nmt_model_selector</span><span class="p">,</span>
-                                                      <span class="n">nmt_config</span><span class="p">),</span>
-				                    <span class="n">nmt_config</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></div>
+    <span class="n">nmt_specs_blocks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">nmt_path</span><span class="p">,</span> <span class="n">nmt_config</span> <span class="ow">in</span> <span class="n">nmt_specs</span><span class="p">:</span>
+        <span class="n">nmt_config</span> <span class="o">=</span> <span class="n">_add_sparse_feat_maps_to_config</span><span class="p">(</span><span class="n">nmt_config</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nmt_path</span><span class="p">:</span>
+            <span class="n">nmt_config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nmt_path</span>
+        <span class="n">nmt_specs_blocks</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">get_nmt_model_path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nmt_model_selector</span><span class="p">,</span>
+                                                    <span class="n">nmt_config</span><span class="p">),</span>
+                                 <span class="n">nmt_config</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nmt_specs_blocks</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>        
+        <span class="k">return</span> <span class="n">BlocksNMTVanillaDecoder</span><span class="p">(</span><span class="n">nmt_specs_blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                                       <span class="n">nmt_specs_blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                                       <span class="n">args</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">BlocksNMTEnsembleVanillaDecoder</span><span class="p">(</span><span class="n">nmt_specs_blocks</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="blocks_add_nmt_config"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.nmt.blocks_add_nmt_config">[docs]</a><span class="k">def</span> <span class="nf">blocks_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">):</span>
@@ -254,6 +263,8 @@
     <span class="c1"># Number of hidden units in encoder/decoder GRU</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1000</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;att_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;maxout_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
 
     <span class="c1"># Dimension of the word embedding matrix in encoder/decoder</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">620</span>
@@ -403,6 +414,10 @@
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;seq_len&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Sequences longer than this will be discarded&quot;</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of hidden units in encoder GRU&quot;</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of hidden units in decoder GRU&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;att_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dimensionality of attention match vector (-1 to &quot;</span> \
+                          <span class="s2">&quot;use dec_nhids)&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;maxout_nhids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dimensionality of maxout output layer (-1 to &quot;</span> \
+                             <span class="s2">&quot;use dec_nhids)&quot;</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dimension of the word embedding matrix in encoder&quot;</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_embed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dimension of the word embedding matrix in decoder&quot;</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;enc_layers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Number of encoder layers&quot;</span>
@@ -419,7 +434,7 @@
                             <span class="s2">&quot;direct, hierarchical&quot;</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;dec_init&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Decoder state initialisation: last, average, constant&quot;</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;attention&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Attention mechanism: none, content, nbest-&lt;n&gt;, &quot;</span> \
-                          <span class="s2">&quot;coverage-&lt;n&gt;, tree&quot;</span>
+                          <span class="s2">&quot;coverage-&lt;n&gt;, tree, content-&lt;n&gt;&quot;</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;External memory: none, stack&#39;</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;memory_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Size of external memory structure&#39;</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">&#39;saveto&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Where to save model, same as &#39;prefix&#39; in groundhog&quot;</span>

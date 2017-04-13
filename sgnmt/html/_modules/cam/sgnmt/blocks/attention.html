@@ -144,7 +144,13 @@
 <span class="sd">using an external memory like a neural stack as part of the attention.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">blocks.bricks</span> <span class="kn">import</span> <span class="n">Initializable</span><span class="p">,</span> <span class="n">Linear</span><span class="p">,</span> <span class="n">MLP</span><span class="p">,</span> <span class="n">Logistic</span><span class="p">,</span> <span class="n">Tanh</span>
+<span class="kn">from</span> <span class="nn">blocks.bricks</span> <span class="kn">import</span> <span class="n">Initializable</span><span class="p">,</span> \
+                          <span class="n">Linear</span><span class="p">,</span> \
+                          <span class="n">MLP</span><span class="p">,</span> \
+                          <span class="n">Logistic</span><span class="p">,</span> \
+                          <span class="n">Tanh</span><span class="p">,</span> \
+                          <span class="n">Sequence</span><span class="p">,</span> \
+                          <span class="n">Feedforward</span>
 <span class="kn">from</span> <span class="nn">blocks.bricks.attention</span> <span class="kn">import</span> <span class="n">SequenceContentAttention</span><span class="p">,</span> \
                                     <span class="n">GenericSequenceAttention</span><span class="p">,</span> \
                                     <span class="n">ShallowEnergyComputer</span>
@@ -154,7 +160,6 @@
 <span class="kn">from</span> <span class="nn">blocks.roles</span> <span class="kn">import</span> <span class="n">add_role</span><span class="p">,</span> <span class="n">WEIGHT</span><span class="p">,</span> <span class="n">INITIAL_STATE</span>
 <span class="kn">from</span> <span class="nn">blocks.utils</span> <span class="kn">import</span> <span class="n">shared_floatx_nans</span>
 <span class="kn">from</span> <span class="nn">theano</span> <span class="kn">import</span> <span class="n">tensor</span>
-<span class="kn">import</span> <span class="nn">theano</span>
 
 
 <div class="viewcode-block" id="AlignmentAttention"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.attention.AlignmentAttention">[docs]</a><span class="k">class</span> <span class="nc">AlignmentAttention</span><span class="p">(</span><span class="n">GenericSequenceAttention</span><span class="p">,</span> <span class="n">Initializable</span><span class="p">):</span>
@@ -825,6 +830,143 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attended_dim</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TreeAttention</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_dim</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div></div>
 
+
+<div class="viewcode-block" id="SequenceMultiContentAttention"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.attention.SequenceMultiContentAttention">[docs]</a><span class="k">class</span> <span class="nc">SequenceMultiContentAttention</span><span class="p">(</span><span class="n">GenericSequenceAttention</span><span class="p">,</span> <span class="n">Initializable</span><span class="p">):</span>
+    
+    <span class="nd">@lazy</span><span class="p">(</span><span class="n">allocation</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;match_dim&#39;</span><span class="p">])</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_att_weights</span><span class="p">,</span> <span class="n">match_dim</span><span class="p">,</span> <span class="n">state_transformer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">attended_transformer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">energy_computer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SequenceContentAttention</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_att_weights</span> <span class="o">=</span> <span class="n">n_att_weights</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">state_transformer</span><span class="p">:</span>
+            <span class="n">state_transformer</span> <span class="o">=</span> <span class="n">Linear</span><span class="p">(</span><span class="n">use_bias</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">match_dim</span> <span class="o">=</span> <span class="n">match_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_transformer</span> <span class="o">=</span> <span class="n">state_transformer</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_transformers</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">input_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_names</span><span class="p">,</span>
+                                           <span class="n">prototype</span><span class="o">=</span><span class="n">state_transformer</span><span class="p">,</span>
+                                           <span class="n">name</span><span class="o">=</span><span class="s2">&quot;state_trans&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">attended_transformer</span><span class="p">:</span>
+            <span class="n">attended_transformer</span> <span class="o">=</span> <span class="n">Linear</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;preprocess&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">energy_computer</span><span class="p">:</span>
+            <span class="n">energy_computer</span> <span class="o">=</span> <span class="n">MultiShallowEnergyComputer</span><span class="p">(</span><span class="n">n_att_weights</span><span class="p">,</span>
+                                                         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy_comp&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attended_transformer</span> <span class="o">=</span> <span class="n">attended_transformer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">energy_computer</span> <span class="o">=</span> <span class="n">energy_computer</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">state_transformers</span><span class="p">,</span> <span class="n">attended_transformer</span><span class="p">,</span>
+                         <span class="n">energy_computer</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_push_allocation_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_transformers</span><span class="o">.</span><span class="n">input_dims</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_dims</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_transformers</span><span class="o">.</span><span class="n">output_dims</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">match_dim</span>
+                                               <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_names</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attended_transformer</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attended_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attended_transformer</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">match_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">energy_computer</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">match_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">energy_computer</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="nd">@application</span>
+    <span class="k">def</span> <span class="nf">compute_energies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attended</span><span class="p">,</span> <span class="n">preprocessed_attended</span><span class="p">,</span> <span class="n">states</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">preprocessed_attended</span><span class="p">:</span>
+            <span class="n">preprocessed_attended</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">attended</span><span class="p">)</span>
+        <span class="n">transformed_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_transformers</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">as_dict</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                                           <span class="o">**</span><span class="n">states</span><span class="p">)</span>
+        <span class="c1"># Broadcasting of transformed states should be done automatically</span>
+        <span class="n">match_vectors</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">transformed_states</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
+                            <span class="n">preprocessed_attended</span><span class="p">)</span>
+        <span class="n">energies</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_computer</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">match_vectors</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+            <span class="n">match_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">ndim</span><span class="o">=</span><span class="n">match_vectors</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">energies</span>
+
+    <span class="nd">@application</span><span class="p">(</span><span class="n">outputs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;weighted_averages&#39;</span><span class="p">,</span> <span class="s1">&#39;weights&#39;</span><span class="p">])</span>
+    <span class="k">def</span> <span class="nf">take_glimpses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attended</span><span class="p">,</span> <span class="n">preprocessed_attended</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                      <span class="n">attended_mask</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">states</span><span class="p">):</span>
+        <span class="sd">r&quot;&quot;&quot;Compute attention weights and produce glimpses.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        attended : :class:`~tensor.TensorVariable`</span>
+<span class="sd">            The sequence, time is the 1-st dimension.</span>
+<span class="sd">        preprocessed_attended : :class:`~tensor.TensorVariable`</span>
+<span class="sd">            The preprocessed sequence. If ``None``, is computed by calling</span>
+<span class="sd">            :meth:`preprocess`.</span>
+<span class="sd">        attended_mask : :class:`~tensor.TensorVariable`</span>
+<span class="sd">            A 0/1 mask specifying available data. 0 means that the</span>
+<span class="sd">            corresponding sequence element is fake.</span>
+<span class="sd">        \*\*states</span>
+<span class="sd">            The states of the network.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        weighted_averages : :class:`~theano.Variable`</span>
+<span class="sd">            Linear combinations of sequence elements with the attention</span>
+<span class="sd">            weights.</span>
+<span class="sd">        weights : :class:`~theano.Variable`</span>
+<span class="sd">            The attention weights. The first dimension is batch, the second</span>
+<span class="sd">            is time.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">energies</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_energies</span><span class="p">(</span><span class="n">attended</span><span class="p">,</span> <span class="n">preprocessed_attended</span><span class="p">,</span>
+                                         <span class="n">states</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_weights</span><span class="p">(</span><span class="n">energies</span><span class="p">,</span> <span class="n">attended_mask</span><span class="p">)</span>
+        <span class="n">weighted_averages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_weighted_averages</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">attended</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">weighted_averages</span><span class="p">,</span> <span class="n">weights</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="nd">@take_glimpses.property</span><span class="p">(</span><span class="s1">&#39;inputs&#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="SequenceMultiContentAttention.take_glimpses_inputs"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.attention.SequenceMultiContentAttention.take_glimpses_inputs">[docs]</a>    <span class="k">def</span> <span class="nf">take_glimpses_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">([</span><span class="s1">&#39;attended&#39;</span><span class="p">,</span> <span class="s1">&#39;preprocessed_attended&#39;</span><span class="p">,</span> <span class="s1">&#39;attended_mask&#39;</span><span class="p">]</span> <span class="o">+</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">state_names</span><span class="p">)</span></div>
+
+    <span class="nd">@application</span><span class="p">(</span><span class="n">outputs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;weighted_averages&#39;</span><span class="p">,</span> <span class="s1">&#39;weights&#39;</span><span class="p">])</span>
+    <span class="k">def</span> <span class="nf">initial_glimpses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">attended</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">tensor</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">attended_dim</span><span class="p">)),</span>
+                <span class="n">tensor</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">attended</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))]</span>
+
+    <span class="nd">@application</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;attended&#39;</span><span class="p">],</span> <span class="n">outputs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;preprocessed_attended&#39;</span><span class="p">])</span>
+    <span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attended</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Preprocess the sequence for computing attention weights.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        attended : :class:`~tensor.TensorVariable`</span>
+<span class="sd">            The attended sequence, time is the 1-st dimension.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attended_transformer</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">attended</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SequenceMultiContentAttention.get_dim"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.attention.SequenceMultiContentAttention.get_dim">[docs]</a>    <span class="k">def</span> <span class="nf">get_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;weighted_averages&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attended_dim</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;weights&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">SequenceContentAttention</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_dim</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="MultiShallowEnergyComputer"><a class="viewcode-back" href="../../../../cam.sgnmt.blocks.html#cam.sgnmt.blocks.attention.MultiShallowEnergyComputer">[docs]</a><span class="k">class</span> <span class="nc">MultiShallowEnergyComputer</span><span class="p">(</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">Initializable</span><span class="p">,</span> <span class="n">Feedforward</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A simple energy computer: first tanh, then weighted sum.&quot;&quot;&quot;</span>
+    <span class="nd">@lazy</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_att_weights</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_att_weights</span> <span class="o">=</span> <span class="n">n_att_weights</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ShallowEnergyComputer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">Tanh</span><span class="p">()</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span> <span class="n">Linear</span><span class="p">(</span><span class="n">use_bias</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">input_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">input_dim</span>
+
+    <span class="nd">@input_dim.setter</span>
+    <span class="k">def</span> <span class="nf">input_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">output_dim</span>
+
+    <span class="nd">@output_dim.setter</span>
+    <span class="k">def</span> <span class="nf">output_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="n">value</span></div>
+        
 </pre></div>
 
            </div>
