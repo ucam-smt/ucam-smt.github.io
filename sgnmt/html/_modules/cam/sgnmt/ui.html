@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.ui &mdash; SGNMT 0.2 documentation</title>
+  <title>cam.sgnmt.ui &mdash; SGNMT 0.3 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.2 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 0.3 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.2
+                0.3
               </div>
             
           
@@ -786,6 +786,9 @@
                         <span class="s2">&quot;* &#39;nmt&#39;: neural machine translation predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;         Options: nmt_config, nmt_path, gnmt_beta, &quot;</span>
                         <span class="s2">&quot;nmt_model_selector, cache_nmt_posteriors.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;t2t&#39;: Tensor2Tensor predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: t2t_usr_dir, t2t_model, &quot;</span>
+                        <span class="s2">&quot;t2t_problem, t2t_hparams_set, t2t_checkpoint_dir</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;srilm&#39;: n-gram language model.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: srilm_path, srilm_order</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;nplm&#39;: neural n-gram language model (NPLM).</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -956,6 +959,23 @@
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is greater than zero, add a coverage &quot;</span>
                        <span class="s2">&quot;penalization term following Googles NMT (Wu et al., &quot;</span>
                        <span class="s2">&quot;2016) to the NMT score.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_usr_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the t2t predictor. See the &quot;</span>
+                       <span class="s2">&quot;--t2t_usr_dir argument in tensor2tensor.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_model&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;transformer&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the t2t predictor. Name of the &quot;</span>
+                       <span class="s2">&quot;tensor2tensor model.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_problem&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;translate_ende_wmt32k&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the t2t predictor. Name of the &quot;</span>
+                       <span class="s2">&quot;tensor2tensor problem.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_hparams_set&quot;</span><span class="p">,</span>
+                       <span class="n">default</span><span class="o">=</span><span class="s2">&quot;transformer_base_single_gpu&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the t2t predictor. Name of the &quot;</span>
+                       <span class="s2">&quot;tensor2tensor hparams set.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_checkpoint_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the t2t predictor. Path to the &quot;</span>
+                       <span class="s2">&quot;tensor2tensor checkpoint directory. Same as &quot;</span>
+                       <span class="s2">&quot;--output_dir in t2t_trainer.&quot;</span><span class="p">)</span>
 
     <span class="c1"># Length predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Length predictor options&#39;</span><span class="p">)</span>
@@ -1194,7 +1214,19 @@
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_path</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --nmt_path for the </span><span class="si">%s</span><span class="s2"> nmt&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_engine</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --nmt_engine for the </span><span class="si">%s</span><span class="s2"> nmt&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>                        
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --nmt_engine for the </span><span class="si">%s</span><span class="s2"> nmt&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_model</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --t2t_model for the </span><span class="si">%s</span><span class="s2"> t2t predictor&quot;</span>
+                        <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_problem</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --t2t_problem for the </span><span class="si">%s</span><span class="s2"> t2t predictor&quot;</span>
+                        <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_hparams_set</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --t2t_hparams_set for the </span><span class="si">%s</span><span class="s2"> t2t &quot;</span>
+                        <span class="s2">&quot;predictor&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_checkpoint_dir</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --t2t_checkpoint_dir for the </span><span class="si">%s</span><span class="s2"> t2t &quot;</span>
+                        <span class="s2">&quot;predictor&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_config</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If the --predictors string contains more than &quot;</span>
                         <span class="s2">&quot;one rnnlm predictor, you can specify the configuration &quot;</span>
@@ -1259,7 +1291,7 @@
 
 
 <div class="viewcode-block" id="validate_args"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.validate_args">[docs]</a><span class="k">def</span> <span class="nf">validate_args</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Some very rudimental sanity checks for configuration options.</span>
+    <span class="sd">&quot;&quot;&quot;Some rudimentary sanity checks for configuration options.</span>
 <span class="sd">    This method directly prints help messages to the user. In case of fatal</span>
 <span class="sd">    errors, it terminates using ``logging.fatal()``</span>
 <span class="sd">    </span>
@@ -1309,7 +1341,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, University of Cambridge.
+        &copy; Copyright 2017, University of Cambridge.
 
     </p>
   </div>
@@ -1331,7 +1363,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.2',
+            VERSION:'0.3',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

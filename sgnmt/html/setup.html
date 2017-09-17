@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Installation &mdash; SGNMT 0.2 documentation</title>
+  <title>Installation &mdash; SGNMT 0.3 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.2 documentation" href="index.html"/>
+    <link rel="top" title="SGNMT 0.3 documentation" href="index.html"/>
         <link rel="next" title="Tutorial" href="tutorial.html"/>
         <link rel="prev" title="SGNMT" href="index.html"/> 
 
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.2
+                0.3
               </div>
             
           
@@ -87,6 +87,8 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#installing-dependencies">Installing dependencies</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#installing-openfst">Installing OpenFST</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-tensor2tensor">Installing Tensor2Tensor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-tensorflow-not-t2t">Installing TensorFlow (not T2T)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#installing-blocks">Installing Blocks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#installing-srilm">Installing SRILM</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#installing-nplm">Installing NPLM</a></li>
@@ -148,52 +150,82 @@
             
   <div class="section" id="installation">
 <span id="setup-label"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>The latest SGNMT version is available on github:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ git clone https://github.com/ucam-smt/sgnmt.git
+</pre></div>
+</div>
 <div class="section" id="installing-dependencies">
 <h2>Installing dependencies<a class="headerlink" href="#installing-dependencies" title="Permalink to this headline">¶</a></h2>
 <p>SGNMT depends on the following libraries:</p>
 <ul class="simple">
 <li><a class="reference external" href="http://openfst.org/">OpenFST</a> for reading and writing FSTs (e.g. translation lattices) (&gt;=1.5.4)</li>
+<li>Optional: <a class="reference external" href="https://github.com/tensorflow/tensor2tensor">Tensor2Tensor</a> for a wide range of different sequence models (&gt;=1.2.2)</li>
+<li>Optional: <a class="reference external" href="https://github.com/ehasler/tensorflow">Eva Hasler&#8217;s TensorFlow fork</a> for an extended version of TensorFlow&#8217;s seq2seq tutorial (latest)</li>
 <li>Optional: <a class="reference external" href="http://blocks.readthedocs.io/en/latest/">Blocks</a> for neural machine translation support based on Theano (&gt;=0.1)</li>
 <li>Optional: <a class="reference external" href="https://github.com/desilinguist/swig-srilm">srilm-swig</a> for reading ARPA language model files</li>
 <li>Optional: <a class="reference external" href="http://nlg.isi.edu/software/nplm/">NPLM</a> for using feed-forward neural language models (&gt;=0.3)</li>
 </ul>
 <div class="section" id="installing-openfst">
 <h3>Installing OpenFST<a class="headerlink" href="#installing-openfst" title="Permalink to this headline">¶</a></h3>
-<p>We recommend to install <a class="reference external" href="http://openfst.org/twiki/bin/view/FST/FstDownload">OpenFST 1.5.4</a>. Make
+<p>We recommend to install <a class="reference external" href="http://openfst.org/twiki/bin/view/FST/FstDownload">OpenFST &gt;=1.5.4</a>. Make
 sure to enable the Python support when compiling OpenFST:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span>$ ./configure --enable-far --enable-python
 $ make
 $ make install
 </pre></div>
 </div>
-<p>SGNMT requires OpenFST 1.5.4 because it is based on the extended Python API added in this version. For more information
-see the documentation for the <a class="reference external" href="http://www.openfst.org/twiki/bin/view/FST/PythonExtension">OpenFST Python extension</a>.</p>
-<p>Newer OpenFST versions might not work since the Python API is under constant change.</p>
 <p>If you wish to use SGNMT in combination with the hierachical phrase-pased SMT system <a class="reference external" href="http://ucam-smt.github.io/">HiFST</a>,
 you can directly use the OpenFST installation under <em>externals/</em> in the HiFST installation directory. This will make
 it possible to create translation lattices with tropicalsparsetuple arcs with SGNMT to keep predictor scores separated
 (see <em>fst</em> output format).</p>
+<p><em>Tested versions: OpenFST 1.5.4, OpenFST 1.6.3</em></p>
+</div>
+<div class="section" id="installing-tensor2tensor">
+<h3>Installing Tensor2Tensor<a class="headerlink" href="#installing-tensor2tensor" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="https://github.com/tensorflow/tensor2tensor">Tensor2Tensor</a> is a TensorFlow-based library with support of various neural
+sequence models. SGNMT can access models trained with tensor2tensor via the <em>t2t</em> predictor. Follow the
+<a class="reference external" href="https://github.com/tensorflow/tensor2tensor#installation">tensor2tensor installation instructions</a> to install t2t and
+TensorFlow, and call SGNMT from the same environment. Note that SGNMT supports the <code class="docutils literal"><span class="pre">--t2t_usr_dir</span></code> argument to extend the
+registry of T2T to your custom directory.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The Tensor2Tensor code base is still under constant change, and SGNMT might not be compatible with the latest version.
+The latest tensor2tensor version which is supported by SGNMT is available in <a class="reference external" href="https://github.com/fstahlberg/tensor2tensor">this fork</a>.</p>
+</div>
+<p><em>Tested versions: Tensor2Tensor 1.2.2, TensorFlow 1.3</em></p>
+</div>
+<div class="section" id="installing-tensorflow-not-t2t">
+<h3>Installing TensorFlow (not T2T)<a class="headerlink" href="#installing-tensorflow-not-t2t" title="Permalink to this headline">¶</a></h3>
+<p>The TensorFlow-based <code class="docutils literal"><span class="pre">nmt</span></code> and <code class="docutils literal"><span class="pre">rnnlm</span></code> predictors are based on <a class="reference external" href="https://github.com/ehasler/tensorflow">Eva Hasler&#8217;s TensorFlow fork</a>
+which extends the seq2seq tutorial to reproduce the Bahdanau-style architecture.</p>
+<p><strong>Note</strong>: You don&#8217;t need this fork if you access TensorFlow only over the Tensor2Tensor library.</p>
+<p><em>Tested versions: latest</em></p>
 </div>
 <div class="section" id="installing-blocks">
 <h3>Installing Blocks<a class="headerlink" href="#installing-blocks" title="Permalink to this headline">¶</a></h3>
 <p>Follow the <a class="reference external" href="http://blocks.readthedocs.io/en/latest/setup.html">instructions</a> in
-the blocks documentation to install the blocks framework and all its dependencies.</p>
+the Blocks documentation to install the Blocks framework and all its dependencies.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p>It might be necessary to install the HDF5 development files before installing blocks, e.g. with:</p>
+<p>It might be necessary to install the HDF5 development files before installing Blocks, e.g. with:</p>
 <div class="last highlight-default"><div class="highlight"><pre><span></span>$ sudo apt-get install libhdf5-dev
 </pre></div>
 </div>
 </div>
 <div class="admonition tip">
 <p class="first admonition-title">Tip</p>
-<p>Make sure that all dependencies of blocks are updated. On systems where you don&#8217;t have root access,
+<p>Make sure that all dependencies of Blocks are updated. On systems where you don&#8217;t have root access,
 use the pip options <code class="docutils literal"><span class="pre">--user</span></code> and <code class="docutils literal"><span class="pre">--force-reinstall</span></code> to install updated packages locally.</p>
 <p class="last"><a class="reference external" href="https://www.continuum.io/">Anaconda</a> is another good option for
 local installations as it already sets up all packages Theano and Blocks depend on correctly. You still need
 to install Blocks with the <a class="reference external" href="http://blocks.readthedocs.io/en/latest/setup.html">pip command</a> using
 Anaconda&#8217;s pip.</p>
 </div>
+<p>You&#8217;ll also need to add <code class="docutils literal"><span class="pre">on_unused_input='ignore'</span></code> to your Theano flags as discussed <a class="reference external" href="https://github.com/mila-udem/blocks-examples/issues/58">here</a>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ export THEANO_FLAGS=&quot;on_unused_input=&#39;ignore&#39;&quot;
+</pre></div>
+</div>
+<p><em>Tested versions: Blocks 0.1, Blocks 0.2, Theano 0.8, Theano 0.9</em></p>
 </div>
 <div class="section" id="installing-srilm">
 <h3>Installing SRILM<a class="headerlink" href="#installing-srilm" title="Permalink to this headline">¶</a></h3>
@@ -221,6 +253,7 @@ is compiled as position independent code using <code class="docutils literal"><s
 <div class="highlight-default"><div class="highlight"><pre><span></span>$ make python
 </pre></div>
 </div>
+<p><em>Tested versions: srilm 1.7.1</em></p>
 </div>
 <div class="section" id="installing-nplm">
 <h3>Installing NPLM<a class="headerlink" href="#installing-nplm" title="Permalink to this headline">¶</a></h3>
@@ -228,6 +261,7 @@ is compiled as position independent code using <code class="docutils literal"><s
 use the <a class="reference external" href="https://github.com/ucam-smt/nplm">UCAM NPLM fork</a> from Gonzalo Iglesias for threadsafety and efficiency.
 If you are using nplm 0.3 there might be a bug in the Python module that prevents the nplm predictor from reading model files.
 Try to replace <em>nplm.py</em> in the <em>python/</em> directory of your NPLM installation with <a class="reference external" href="http:///ucam-smt.io/sgnmt/html/_static/nplm.py">this file</a>.</p>
+<p><em>Tested versions: nplm 0.3</em></p>
 </div>
 </div>
 <div class="section" id="setting-up-sgnmt">
@@ -243,10 +277,6 @@ $ export PYTHONPATH=/path/to/swig-srilm/:/path/to/nplm/python/:$PYTHONPATH
 $ export PYTHONPATH=/path/to/openfst/lib/python2.7/site-packages:$PYTHONPATH
 </pre></div>
 </div>
-<p>For setting up blocks, you&#8217;ll also need to add <code class="docutils literal"><span class="pre">on_unused_input='ignore'</span></code> to your Theano flags as discussed <a class="reference external" href="https://github.com/mila-udem/blocks-examples/issues/58">here</a>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ export THEANO_FLAGS=&quot;on_unused_input=&#39;ignore&#39;&quot;
-</pre></div>
-</div>
 <p>Clone the GIT repository and try to start <code class="docutils literal"><span class="pre">decode.py</span></code> and <code class="docutils literal"><span class="pre">train.py</span></code>:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span>$ git clone https://github.com/ucam-smt/sgnmt.git
 $ cd sgnmt
@@ -255,7 +285,7 @@ $ python decode.py --help
 </pre></div>
 </div>
 <p>If you see the help texts for both commands, you are ready for the <a class="reference internal" href="tutorial.html#tutorial-label"><span class="std std-ref">Tutorial</span></a>. Otherwise, there is probably
-something wrong with your Blocks or OpenFST installation.</p>
+something wrong with your OpenFST installation.</p>
 </div>
 </div>
 
@@ -278,7 +308,7 @@ something wrong with your Blocks or OpenFST installation.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, University of Cambridge.
+        &copy; Copyright 2017, University of Cambridge.
 
     </p>
   </div>
@@ -300,7 +330,7 @@ something wrong with your Blocks or OpenFST installation.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2',
+            VERSION:'0.3',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

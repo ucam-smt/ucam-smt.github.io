@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decoding.core &mdash; SGNMT 0.2 documentation</title>
+  <title>cam.sgnmt.decoding.core &mdash; SGNMT 0.3 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.2 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.3 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.2
+                0.3
               </div>
             
           
@@ -635,20 +635,32 @@
 <span class="sd">        have non-zero probability. This set of words is then passed</span>
 <span class="sd">        through to the open vocabulary predictors.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">words</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">arr_lengths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">dict_words</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">posteriors</span><span class="p">):</span>
             <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="n">bounded_predictors</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> <span class="o">==</span> <span class="n">NEG_INF</span><span class="p">:</span> <span class="c1"># Restrict to this</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">words</span><span class="p">:</span>
-                    <span class="n">words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">words</span> <span class="o">=</span> <span class="n">words</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">words</span><span class="p">:</span> <span class="c1"># Special case empty set: no word is possible</span>
-                    <span class="k">return</span> <span class="nb">set</span><span class="p">([</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">words</span><span class="p">:</span> <span class="c1"># If no restricting predictor, use union</span>
-            <span class="n">words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posteriors</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-            <span class="k">for</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="n">posteriors</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-                <span class="n">words</span> <span class="o">=</span> <span class="n">words</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">posterior_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_words</span><span class="p">:</span>
+                        <span class="n">dict_words</span> <span class="o">=</span> <span class="n">posterior_words</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">dict_words</span> <span class="o">=</span> <span class="n">dict_words</span> <span class="o">&amp;</span> <span class="n">posterior_words</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_words</span><span class="p">:</span> 
+                        <span class="k">return</span> <span class="bp">None</span>
+                <span class="k">else</span><span class="p">:</span> <span class="c1"># We record min and max lengths for array posteriors.</span>
+                    <span class="n">arr_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">dict_words</span><span class="p">:</span> <span class="c1"># Dictionary restrictions</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">arr_lengths</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">dict_words</span>
+            <span class="n">min_arr_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">arr_lengths</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">dict_words</span> <span class="k">if</span> <span class="n">w</span> <span class="o">&lt;</span> <span class="n">min_arr_length</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">arr_lengths</span><span class="p">:</span> <span class="c1"># Array restrictions</span>
+            <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">arr_lengths</span><span class="p">))</span>
+        <span class="c1"># No restrictions, use union</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posteriors</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">for</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="n">posteriors</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">words</span> <span class="o">=</span> <span class="n">words</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">words</span>
     
 <div class="viewcode-block" id="Decoder.apply_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.apply_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">apply_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -668,6 +680,8 @@
         <span class="n">bounded_posteriors</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span> <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">bounded_predictors</span><span class="p">]</span>
         <span class="n">non_zero_words</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_non_zero_words</span><span class="p">(</span><span class="n">bounded_predictors</span><span class="p">,</span>
                                                   <span class="n">bounded_posteriors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">non_zero_words</span><span class="p">:</span> <span class="c1"># Special case: no word is possible</span>
+            <span class="n">non_zero_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
         <span class="c1"># Add unbounded predictors and unk probabilities</span>
         <span class="n">posteriors</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">unk_probs</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1055,7 +1069,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, University of Cambridge.
+        &copy; Copyright 2017, University of Cambridge.
 
     </p>
   </div>
@@ -1077,7 +1091,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.2',
+            VERSION:'0.3',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

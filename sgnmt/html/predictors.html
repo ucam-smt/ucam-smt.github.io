@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Predictors &mdash; SGNMT 0.2 documentation</title>
+  <title>Predictors &mdash; SGNMT 0.3 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.2 documentation" href="index.html"/>
+    <link rel="top" title="SGNMT 0.3 documentation" href="index.html"/>
         <link rel="next" title="Decoders" href="decoders.html"/>
         <link rel="prev" title="Command-line reference" href="command_line.html"/> 
 
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.2
+                0.3
               </div>
             
           
@@ -102,6 +102,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-predictors-ngram-module">cam.sgnmt.predictors.ngram module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-predictors-tf-nmt-module">cam.sgnmt.predictors.tf_nmt module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-predictors-tf-rnnlm-module">cam.sgnmt.predictors.tf_rnnlm module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-predictors-tf-t2t-module">cam.sgnmt.predictors.tf_t2t module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-predictors-tokenization-module">cam.sgnmt.predictors.tokenization module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
@@ -169,16 +170,19 @@ If vocabulary sizes differ among predictors, we fill in gaps with predictor UNK 
 <h2>Available predictors<a class="headerlink" href="#available-predictors" title="Permalink to this headline">¶</a></h2>
 <p>The following predictors are available:</p>
 <ul>
-<li><p class="first"><strong>nmt</strong>: neural machine translation predictor.</p>
-<p>Options: <code class="docutils literal"><span class="pre">nmt_config</span></code>, <code class="docutils literal"><span class="pre">nmt_path</span></code>, <code class="docutils literal"><span class="pre">nmt_model_selector</span></code>, <code class="docutils literal"><span class="pre">cache_nmt_posteriors</span></code></p>
+<li><p class="first"><strong>nmt</strong>: neural machine translation predictor. Requires Blocks/Theano or TensorFlow.</p>
+<p>Options: <code class="docutils literal"><span class="pre">nmt_config</span></code>, <code class="docutils literal"><span class="pre">nmt_path</span></code>, <code class="docutils literal"><span class="pre">nmt_model_selector</span></code>, <code class="docutils literal"><span class="pre">cache_nmt_posteriors</span></code>, <code class="docutils literal"><span class="pre">nmt_engine</span></code></p>
 </li>
-<li><p class="first"><strong>srilm</strong>: n-gram language model.</p>
+<li><p class="first"><strong>t2t</strong>: Predictor for tensor2tensor models. Requires Tensor2Tensor.</p>
+<p>Options: <code class="docutils literal"><span class="pre">t2t_usr_dir</span></code>, <code class="docutils literal"><span class="pre">t2t_model</span></code>, <code class="docutils literal"><span class="pre">t2t_problem</span></code>, <code class="docutils literal"><span class="pre">t2t_hparams_set</span></code>, <code class="docutils literal"><span class="pre">t2t_checkpoint_dir</span></code>, <code class="docutils literal"><span class="pre">t2t_src_vocab_size</span></code>, <code class="docutils literal"><span class="pre">t2t_trg_vocab_size</span></code></p>
+</li>
+<li><p class="first"><strong>srilm</strong>: n-gram language model. Requires swig-srilm.</p>
 <p>Options: <code class="docutils literal"><span class="pre">srilm_path</span></code>, <code class="docutils literal"><span class="pre">srilm_order</span></code></p>
 </li>
-<li><p class="first"><strong>nplm</strong>: neural n-gram language model (NPLM).</p>
+<li><p class="first"><strong>nplm</strong>: neural n-gram language model. Requires nplm.</p>
 <p>Options: <code class="docutils literal"><span class="pre">nplm_path</span></code>, <code class="docutils literal"><span class="pre">normalize_nplm_probs</span></code></p>
 </li>
-<li><p class="first"><strong>rnnlm</strong>: RNN language model based on TensorFlow.</p>
+<li><p class="first"><strong>rnnlm</strong>: RNN language model following Zaremba et al. (2014). Requires TensorFlow.</p>
 <p>Options: <code class="docutils literal"><span class="pre">rnnlm_config,</span> <span class="pre">rnnlm_path</span></code></p>
 </li>
 <li><p class="first"><strong>forced</strong>: Forced decoding with one reference</p>
@@ -2711,6 +2715,71 @@ model given the current history</p>
 <div class="section" id="cam-sgnmt-predictors-tf-rnnlm-module">
 <h3>cam.sgnmt.predictors.tf_rnnlm module<a class="headerlink" href="#cam-sgnmt-predictors-tf-rnnlm-module" title="Permalink to this headline">¶</a></h3>
 </div>
+<div class="section" id="cam-sgnmt-predictors-tf-t2t-module">
+<h3>cam.sgnmt.predictors.tf_t2t module<a class="headerlink" href="#cam-sgnmt-predictors-tf-t2t-module" title="Permalink to this headline">¶</a></h3>
+<p>This is the interface to the tensor2tensor library.</p>
+<p><a class="reference external" href="https://github.com/tensorflow/tensor2tensor">https://github.com/tensorflow/tensor2tensor</a></p>
+<p>Alternatively, you may use the following fork which has been tested in
+combination with SGNMT.</p>
+<p><a class="reference external" href="https://github.com/fstahlberg/tensor2tensor">https://github.com/fstahlberg/tensor2tensor</a></p>
+<p>This predictor can read any model trained with tensor2tensor which
+includes the transformer model, convolutional models, and RNN-based
+sequence models.</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">T2TPredictor</code><span class="sig-paren">(</span><em>t2t_usr_dir</em>, <em>model_name</em>, <em>problem_name</em>, <em>hparams_set_name</em>, <em>checkpoint_dir</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
+<p>This predictor implements scoring with Tensor2Tensor models. We
+follow the decoder implementation in T2T and do not reuse network
+states in decoding. We rather compute the full forward pass along
+the current history. Therefore, the decoder state is simply the
+the full history of consumed words.</p>
+<dl class="method">
+<dt>
+<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.consume"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.get_state"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.initialize"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.is_equal"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Returns true if the state is the same</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.predict_next"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.reset"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Empty method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.set_state"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Set the predictor state.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="cam-sgnmt-predictors-tokenization-module">
 <h3>cam.sgnmt.predictors.tokenization module<a class="headerlink" href="#cam-sgnmt-predictors-tokenization-module" title="Permalink to this headline">¶</a></h3>
 <p>This module contains wrapper predictors which support decoding with
@@ -3015,7 +3084,7 @@ added to <code class="docutils literal"><span class="pre">blocks.ui</span></code
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, University of Cambridge.
+        &copy; Copyright 2017, University of Cambridge.
 
     </p>
   </div>
@@ -3037,7 +3106,7 @@ added to <code class="docutils literal"><span class="pre">blocks.ui</span></code
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2',
+            VERSION:'0.3',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
