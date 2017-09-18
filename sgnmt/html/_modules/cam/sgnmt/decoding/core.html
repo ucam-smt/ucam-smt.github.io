@@ -634,34 +634,67 @@
         <span class="sd">&quot;&quot;&quot;Get the set of words from the predictor posteriors which </span>
 <span class="sd">        have non-zero probability. This set of words is then passed</span>
 <span class="sd">        through to the open vocabulary predictors.</span>
+
+<span class="sd">        This method assumes that both arguments are not empty.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bounded_predictors (list): Tuples of (Predictor, weight)</span>
+<span class="sd">            bounded_posteriors (list): Corresponding posteriors.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Iterable with all words with non-zero probability.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">restricted</span><span class="p">,</span> <span class="n">unrestricted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_restricted_posteriors</span><span class="p">(</span>
+            <span class="n">bounded_predictors</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">restricted</span><span class="p">:</span> <span class="c1"># No restrictions: use union of keys</span>
+            <span class="n">key_sets</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">max_arr_length</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="n">unrestricted</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">key_sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="o">.</span><span class="n">viewkeys</span><span class="p">())</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">max_arr_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">max_arr_length</span><span class="p">:</span>
+                <span class="n">key_sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">key_sets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">key_sets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="n">key_sets</span><span class="p">)</span>
+        <span class="c1"># Calculate the common subset of restricting posteriors</span>
         <span class="n">arr_lengths</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">dict_words</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">posteriors</span><span class="p">):</span>
-            <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="n">bounded_predictors</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> <span class="o">==</span> <span class="n">NEG_INF</span><span class="p">:</span> <span class="c1"># Restrict to this</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                    <span class="n">posterior_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_words</span><span class="p">:</span>
-                        <span class="n">dict_words</span> <span class="o">=</span> <span class="n">posterior_words</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">dict_words</span> <span class="o">=</span> <span class="n">dict_words</span> <span class="o">&amp;</span> <span class="n">posterior_words</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_words</span><span class="p">:</span> 
-                        <span class="k">return</span> <span class="bp">None</span>
-                <span class="k">else</span><span class="p">:</span> <span class="c1"># We record min and max lengths for array posteriors.</span>
-                    <span class="n">arr_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="n">restricted</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">posterior_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_words</span><span class="p">:</span>
+                    <span class="n">dict_words</span> <span class="o">=</span> <span class="n">posterior_words</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dict_words</span> <span class="o">=</span> <span class="n">dict_words</span> <span class="o">&amp;</span> <span class="n">posterior_words</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_words</span><span class="p">:</span> 
+                    <span class="k">return</span> <span class="bp">None</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># We record min and max lengths for array posteriors.</span>
+                <span class="n">arr_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">dict_words</span><span class="p">:</span> <span class="c1"># Dictionary restrictions</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">arr_lengths</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">dict_words</span>
             <span class="n">min_arr_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">arr_lengths</span><span class="p">)</span>
             <span class="k">return</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">dict_words</span> <span class="k">if</span> <span class="n">w</span> <span class="o">&lt;</span> <span class="n">min_arr_length</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">arr_lengths</span><span class="p">:</span> <span class="c1"># Array restrictions</span>
-            <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">arr_lengths</span><span class="p">))</span>
-        <span class="c1"># No restrictions, use union</span>
-        <span class="n">words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posteriors</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-        <span class="k">for</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="n">posteriors</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-            <span class="n">words</span> <span class="o">=</span> <span class="n">words</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">words</span>
+        <span class="c1"># Array restrictions</span>
+        <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">arr_lengths</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_split_restricted_posteriors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictors</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper method for _get_non_zero_words(). Splits the</span>
+<span class="sd">        given list of posteriors into unrestricting and restricting</span>
+<span class="sd">        ones. Restricting posteriors have UNK scores of -inf.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">restricted</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">unrestricted</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">posteriors</span><span class="p">):</span>
+            <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="n">predictors</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> <span class="o">==</span> <span class="n">NEG_INF</span><span class="p">:</span>
+                <span class="n">restricted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unrestricted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">restricted</span><span class="p">,</span> <span class="n">unrestricted</span>
     
 <div class="viewcode-block" id="Decoder.apply_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.apply_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">apply_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get the distribution over the next word by combining the</span>

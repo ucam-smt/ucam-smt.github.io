@@ -803,7 +803,7 @@ wherever possible.</p>
 is the standard bow predictor and the bowsearch predictor which first
 does an unrestricted search to construct a skeleton and then restricts
 the order of words by that skeleton (in addition to the bag
-restriction)</p>
+restriction).</p>
 <dl class="class">
 <dt>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.bow.</code><code class="descname">BagOfWordsPredictor</code><span class="sig-paren">(</span><em>trg_test_file</em>, <em>accept_subsets=False</em>, <em>accept_duplicates=False</em>, <em>heuristic_scores_file=''</em>, <em>collect_stats_strategy='best'</em>, <em>heuristic_add_consumed=False</em>, <em>heuristic_add_remaining=True</em>, <em>diversity_heuristic_factor=-1.0</em>, <em>equivalence_vocab=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/bow.html#BagOfWordsPredictor"><span class="viewcode-link">[source]</span></a></dt>
@@ -1285,7 +1285,7 @@ does not have to score all of them</td>
 <div class="section" id="cam-sgnmt-predictors-ffnnlm-module">
 <h3>cam.sgnmt.predictors.ffnnlm module<a class="headerlink" href="#cam-sgnmt-predictors-ffnnlm-module" title="Permalink to this headline">¶</a></h3>
 <p>This module integrates neural language models, for example feed-
-forward language models like NPLM. It depends on the python interface
+forward language models like NPLM. It depends on the Python interface
 to NPLM.</p>
 <p><a class="reference external" href="http://nlg.isi.edu/software/nplm/">http://nlg.isi.edu/software/nplm/</a></p>
 <dl class="class">
@@ -2720,14 +2720,14 @@ model given the current history</p>
 <p>This is the interface to the tensor2tensor library.</p>
 <p><a class="reference external" href="https://github.com/tensorflow/tensor2tensor">https://github.com/tensorflow/tensor2tensor</a></p>
 <p>Alternatively, you may use the following fork which has been tested in
-combination with SGNMT.</p>
+combination with SGNMT:</p>
 <p><a class="reference external" href="https://github.com/fstahlberg/tensor2tensor">https://github.com/fstahlberg/tensor2tensor</a></p>
 <p>This predictor can read any model trained with tensor2tensor which
 includes the transformer model, convolutional models, and RNN-based
 sequence models.</p>
 <dl class="class">
 <dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">T2TPredictor</code><span class="sig-paren">(</span><em>t2t_usr_dir</em>, <em>model_name</em>, <em>problem_name</em>, <em>hparams_set_name</em>, <em>checkpoint_dir</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor"><span class="viewcode-link">[source]</span></a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">T2TPredictor</code><span class="sig-paren">(</span><em>t2t_usr_dir</em>, <em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>problem_name</em>, <em>hparams_set_name</em>, <em>checkpoint_dir</em>, <em>t2t_unk_id=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Bases: <a class="reference internal" href="cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This predictor implements scoring with Tensor2Tensor models. We
 follow the decoder implementation in T2T and do not reuse network
@@ -2737,33 +2737,38 @@ the full history of consumed words.</p>
 <dl class="method">
 <dt>
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.consume"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
+<dd><p>Append <code class="docutils literal"><span class="pre">word</span></code> to the current history.</p>
+</dd></dl>
 
 <dl class="method">
 <dt>
 <code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.get_state"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
+<dd><p>The predictor state is the complete history.</p>
+</dd></dl>
 
 <dl class="method">
 <dt>
 <code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
+<dd><p>Fetch posterior[t2t_unk_id] or return NEG_INF if None.</p>
+</dd></dl>
 
 <dl class="method">
 <dt>
 <code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.initialize"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
+<dd><p>Set src_sentence, reset consumed.</p>
+</dd></dl>
 
 <dl class="method">
 <dt>
 <code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.is_equal"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Returns true if the state is the same</p>
+<dd><p>Returns true if the history is the same</p>
 </dd></dl>
 
 <dl class="method">
 <dt>
 <code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.predict_next"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
+<dd><p>Call the T2T model in self.mon_sess.</p>
+</dd></dl>
 
 <dl class="method">
 <dt>
@@ -2774,9 +2779,21 @@ the full history of consumed words.</p>
 <dl class="method">
 <dt>
 <code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.set_state"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Set the predictor state.</p>
+<dd><p>The predictor state is the complete history.</p>
 </dd></dl>
 
+<dl class="attribute">
+<dt>
+<code class="descname">t2t_initialized</code><em class="property"> = False</em></dt>
+<dd><p>Set to true after first constructor call.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">log_prob_from_logits</code><span class="sig-paren">(</span><em>logits</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#log_prob_from_logits"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Softmax function.</p>
 </dd></dl>
 
 </div>

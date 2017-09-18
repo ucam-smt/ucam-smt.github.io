@@ -137,7 +137,7 @@
             
   <h1>Source code for cam.sgnmt.predictors.ffnnlm</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;This module integrates neural language models, for example feed-</span>
-<span class="sd">forward language models like NPLM. It depends on the python interface</span>
+<span class="sd">forward language models like NPLM. It depends on the Python interface</span>
 <span class="sd">to NPLM.</span>
 
 <span class="sd">http://nlg.isi.edu/software/nplm/</span>
@@ -151,8 +151,6 @@
     <span class="kn">import</span> <span class="nn">nplm</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="k">pass</span> <span class="c1"># Deal with it in decode.py</span>
-
-<span class="n">NEG_INF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="NPLMPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ffnnlm.NPLMPredictor">[docs]</a><span class="k">class</span> <span class="nc">NPLMPredictor</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
@@ -188,7 +186,7 @@
         <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_id</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> 
                 <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">bos_id</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span> 
                 <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">eos_id</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">):</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;NPLM token for UNK, BOS, EOS inconsistent with GNMT&quot;</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;NPLM reserved word IDs inconsistent with SGNMT&quot;</span><span class="p">)</span>
     
 <div class="viewcode-block" id="NPLMPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ffnnlm.NPLMPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set the n-gram history to initial value.</span>
@@ -219,7 +217,7 @@
         
 <div class="viewcode-block" id="NPLMPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ffnnlm.NPLMPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Use NPLM UNK score if exists &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="NPLMPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ffnnlm.NPLMPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Extend current history by ``word`` &quot;&quot;&quot;</span>

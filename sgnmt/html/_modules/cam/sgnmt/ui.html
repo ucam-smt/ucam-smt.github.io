@@ -139,6 +139,8 @@
 <span></span><span class="sd">&quot;&quot;&quot;This module handles configuration and user interface when using </span>
 <span class="sd">blocks. ``yaml`` and ``ArgumentParser`` are used for parsing config</span>
 <span class="sd">files and command line arguments.</span>
+
+<span class="sd">TODO: Remove Blocks dependency</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">argparse</span>
@@ -204,7 +206,7 @@
     <span class="k">return</span> <span class="n">config</span></div>
 
 
-<div class="viewcode-block" id="get_train_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_train_parser">[docs]</a><span class="k">def</span> <span class="nf">get_train_parser</span><span class="p">():</span>
+<div class="viewcode-block" id="get_blocks_train_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_blocks_train_parser">[docs]</a><span class="k">def</span> <span class="nf">get_blocks_train_parser</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Get the parser object for NMT training configuration. &quot;&quot;&quot;</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span><span class="n">str2bool</span><span class="p">)</span>
@@ -301,7 +303,7 @@
     <span class="k">return</span> <span class="n">parser</span></div>
 
 
-<div class="viewcode-block" id="get_align_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_align_parser">[docs]</a><span class="k">def</span> <span class="nf">get_align_parser</span><span class="p">():</span>
+<div class="viewcode-block" id="get_blocks_align_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_blocks_align_parser">[docs]</a><span class="k">def</span> <span class="nf">get_blocks_align_parser</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Get the parser object for NMT alignment configuration. &quot;&quot;&quot;</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span><span class="n">str2bool</span><span class="p">)</span>
@@ -341,7 +343,7 @@
     <span class="k">return</span> <span class="n">parser</span></div>
 
 
-<div class="viewcode-block" id="get_batch_decode_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_batch_decode_parser">[docs]</a><span class="k">def</span> <span class="nf">get_batch_decode_parser</span><span class="p">():</span>
+<div class="viewcode-block" id="get_blocks_batch_decode_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_blocks_batch_decode_parser">[docs]</a><span class="k">def</span> <span class="nf">get_blocks_batch_decode_parser</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Get the parser object for NMT batch decoding. &quot;&quot;&quot;</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span><span class="n">str2bool</span><span class="p">)</span>
@@ -437,13 +439,14 @@
                         <span class="s2">&quot;instead of their string representations.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--en_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED: Old name for --src_test&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--indexing_scheme&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;blocks&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;blocks&#39;</span><span class="p">,</span> <span class="s1">&#39;tf&#39;</span><span class="p">,</span> <span class="s1">&#39;t2t&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter defines the reserved IDs.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;blocks&#39;: eps,unk: 0, &lt;s&gt;: 1, &lt;/s&gt;: 2.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;tf&#39;: unk: 3, &lt;s&gt;: 1, &lt;/s&gt;: 2.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;t2t&#39;: unk: 3, &lt;s&gt;: 2, &lt;/s&gt;: 1.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--legacy_indexing&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the set of reserved word indices. The &quot;</span>
-                        <span class="s2">&quot;standard convention is:</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;0: unk/eps, 1: &lt;s&gt;, 2: &lt;/s&gt;.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;Older systems use the TensorFlow scheme:&quot;</span>
-                        <span class="s2">&quot;0: pad, 1: &lt;s&gt;, 2: &lt;/s&gt;, 3: unk.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;Set this parameter to true to use the old scheme.&quot;</span><span class="p">)</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED: Use --indexing_scheme=tf instead&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--input_method&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;file&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dummy&#39;</span><span class="p">,</span> <span class="s1">&#39;file&#39;</span><span class="p">,</span> <span class="s1">&#39;shell&#39;</span><span class="p">,</span> <span class="s1">&#39;stdin&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter controls how the input to GNMT &quot;</span>
@@ -976,6 +979,10 @@
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the t2t predictor. Path to the &quot;</span>
                        <span class="s2">&quot;tensor2tensor checkpoint directory. Same as &quot;</span>
                        <span class="s2">&quot;--output_dir in t2t_trainer.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_src_vocab_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;T2T source vocabulary size&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_trg_vocab_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;T2T target vocabulary size&quot;</span><span class="p">)</span>
 
     <span class="c1"># Length predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Length predictor options&#39;</span><span class="p">)</span>
@@ -1227,6 +1234,12 @@
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_checkpoint_dir</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --t2t_checkpoint_dir for the </span><span class="si">%s</span><span class="s2"> t2t &quot;</span>
                         <span class="s2">&quot;predictor&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_src_vocab_size</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --t2t_src_vocab_size for the </span><span class="si">%s</span><span class="s2"> t2t &quot;</span>
+                        <span class="s2">&quot;predictor&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_trg_vocab_size</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --t2t_trg_vocab_size for the </span><span class="si">%s</span><span class="s2"> t2t &quot;</span>
+                        <span class="s2">&quot;predictor&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_config</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If the --predictors string contains more than &quot;</span>
                         <span class="s2">&quot;one rnnlm predictor, you can specify the configuration &quot;</span>
@@ -1285,6 +1298,8 @@
         <span class="n">args</span><span class="o">.</span><span class="n">trg_idxmap</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">fr_idxmap</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">length_normalization</span><span class="p">:</span>
         <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">=</span> <span class="s2">&quot;length_norm&quot;</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">legacy_indexing</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">=</span> <span class="s2">&quot;tf&quot;</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">output_fst_unk_id</span><span class="p">:</span>
         <span class="n">args</span><span class="o">.</span><span class="n">fst_unk_id</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">output_fst_unk_id</span> 
     <span class="k">return</span> <span class="n">args</span></div>
@@ -1299,10 +1314,11 @@
 <span class="sd">        args (object):  Configuration as returned by ``get_args``</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">depr</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;en_test&#39;</span><span class="p">,</span> <span class="s1">&#39;fr_test&#39;</span><span class="p">,</span>
-                 <span class="s1">&#39;length_normalization&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;length_normalization&#39;</span><span class="p">,</span> <span class="s1">&#39;legacy_indexing&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;en_idxmap&#39;</span><span class="p">,</span> <span class="s1">&#39;fr_idxmap&#39;</span><span class="p">]:</span>
         <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">depr</span><span class="p">):</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using deprecated argument </span><span class="si">%s</span><span class="s2">.&quot;</span> <span class="o">%</span> <span class="n">depr</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using deprecated argument </span><span class="si">%s</span><span class="s2">. Please check the &quot;</span>
+                         <span class="s2">&quot;documentation for the replacement.&quot;</span> <span class="o">%</span> <span class="n">depr</span><span class="p">)</span>
     <span class="c1"># Validate --range</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">input_method</span> <span class="o">==</span> <span class="s1">&#39;shell&#39;</span><span class="p">:</span>
