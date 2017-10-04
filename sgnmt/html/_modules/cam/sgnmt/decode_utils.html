@@ -1,0 +1,907 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.decode_utils &mdash; SGNMT 0.3 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.3 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.decode_utils</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.decode_utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;This module is the bridge between the command line configuration of</span>
+<span class="sd">the decode.py script and the SGNMT software architecture consisting of</span>
+<span class="sd">decoders, predictors, and output handlers. A common use case is to call</span>
+<span class="sd">`create_decoder()` first, which reads the SGNMT configuration and loads</span>
+<span class="sd">the right predictors and decoding strategy with the right arguments.</span>
+<span class="sd">The actual decoding is implemented in `do_decode()`. See `decode.py`</span>
+<span class="sd">to learn how to use this module.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.nmt</span> <span class="kn">import</span> <span class="n">blocks_get_nmt_predictor</span><span class="p">,</span> \
+                                 <span class="n">blocks_get_nmt_vanilla_decoder</span><span class="p">,</span> \
+    <span class="n">blocks_get_default_nmt_config</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding</span> <span class="kn">import</span> <span class="n">core</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.astar</span> <span class="kn">import</span> <span class="n">AstarDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.beam</span> <span class="kn">import</span> <span class="n">BeamDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.bigramgreedy</span> <span class="kn">import</span> <span class="n">BigramGreedyDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.bow</span> <span class="kn">import</span> <span class="n">BOWDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.bucket</span> <span class="kn">import</span> <span class="n">BucketDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">UnboundedVocabularyPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.dfs</span> <span class="kn">import</span> <span class="n">DFSDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.flip</span> <span class="kn">import</span> <span class="n">FlipDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.greedy</span> <span class="kn">import</span> <span class="n">GreedyDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.heuristics</span> <span class="kn">import</span> <span class="n">GreedyHeuristic</span><span class="p">,</span> \
+                                         <span class="n">PredictorHeuristic</span><span class="p">,</span> \
+                                         <span class="n">ScorePerWordHeuristic</span><span class="p">,</span> <span class="n">StatsHeuristic</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.multisegbeam</span> <span class="kn">import</span> <span class="n">MultisegBeamDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.restarting</span> <span class="kn">import</span> <span class="n">RestartingDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.sepbeam</span> <span class="kn">import</span> <span class="n">SepBeamDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.syncbeam</span> <span class="kn">import</span> <span class="n">SyncBeamDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.output</span> <span class="kn">import</span> <span class="n">TextOutputHandler</span><span class="p">,</span> \
+                             <span class="n">NBestOutputHandler</span><span class="p">,</span> \
+                             <span class="n">FSTOutputHandler</span><span class="p">,</span> \
+                             <span class="n">StandardFSTOutputHandler</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.automata</span> <span class="kn">import</span> <span class="n">FstPredictor</span><span class="p">,</span> \
+                                         <span class="n">RtnPredictor</span><span class="p">,</span> \
+                                         <span class="n">NondeterministicFstPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.bow</span> <span class="kn">import</span> <span class="n">BagOfWordsPredictor</span><span class="p">,</span> \
+    <span class="n">BagOfWordsSearchPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.ffnnlm</span> <span class="kn">import</span> <span class="n">NPLMPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.forced</span> <span class="kn">import</span> <span class="n">ForcedPredictor</span><span class="p">,</span> <span class="n">ForcedLstPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.grammar</span> <span class="kn">import</span> <span class="n">RuleXtractPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.length</span> <span class="kn">import</span> <span class="n">WordCountPredictor</span><span class="p">,</span> <span class="n">NBLengthPredictor</span><span class="p">,</span> \
+    <span class="n">ExternalLengthPredictor</span><span class="p">,</span> <span class="n">NgramCountPredictor</span><span class="p">,</span> <span class="n">UnkCountPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.misc</span> <span class="kn">import</span> <span class="n">UnboundedAltsrcPredictor</span><span class="p">,</span> <span class="n">AltsrcPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.vocabulary</span> <span class="kn">import</span> <span class="n">IdxmapPredictor</span><span class="p">,</span> \
+                                            <span class="n">UnboundedIdxmapPredictor</span><span class="p">,</span> \
+                                            <span class="n">UnkvocabPredictor</span><span class="p">,</span> \
+                                            <span class="n">SkipvocabPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.ngram</span> <span class="kn">import</span> <span class="n">SRILMPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_t2t</span> <span class="kn">import</span> <span class="n">T2TPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tokenization</span> <span class="kn">import</span> <span class="n">Word2charPredictor</span><span class="p">,</span> <span class="n">FSTTokPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.tf.interface</span> <span class="kn">import</span> <span class="n">tf_get_nmt_predictor</span><span class="p">,</span> <span class="n">tf_get_nmt_vanilla_decoder</span><span class="p">,</span> \
+    <span class="n">tf_get_rnnlm_predictor</span><span class="p">,</span> <span class="n">tf_get_default_nmt_config</span><span class="p">,</span> <span class="n">tf_get_rnnlm_prefix</span>
+
+
+<span class="n">args</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="sd">&quot;&quot;&quot;This variable is set to the global configuration when </span>
+<span class="sd">create_decoder() is called.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">_override_args_cnts</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">def</span> <span class="nf">_get_override_args</span><span class="p">(</span><span class="n">field</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is a helper function for arguments which can be overridden </span>
+<span class="sd">    when using multiple instances of the same predictor. E.g., it is </span>
+<span class="sd">    possible to use two fst predictors, and specify the path to the </span>
+<span class="sd">    first directory with --fst_path, and the path to the second </span>
+<span class="sd">    directory with --fst_path2.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        field (string):  Field in ``args`` for which also field2, </span>
+<span class="sd">                         field3... is also possible</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        object. If count smaller than 2, returns ``args.field``. </span>
+<span class="sd">        Otherwise, returns ``args.field+count`` if specified, or backup</span>
+<span class="sd">        to ``args.field``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">default</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">_override_args_cnts</span><span class="p">:</span>
+        <span class="n">_override_args_cnts</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">overriden</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%s%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">_override_args_cnts</span><span class="p">[</span><span class="n">field</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">overriden</span> <span class="k">if</span> <span class="n">overriden</span> <span class="k">else</span> <span class="n">default</span>
+    <span class="n">_override_args_cnts</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">default</span>
+
+
+<span class="k">def</span> <span class="nf">_parse_config_param</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This method parses arguments which specify model configurations.</span>
+<span class="sd">    It can point directly to a configuration file, or it can contain</span>
+<span class="sd">    direct settings such as &#39;param1=x,param2=y&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">add_config</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">parse_param_string</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="n">field</span><span class="p">))</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">default</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">add_config</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">):</span>
+                <span class="n">default</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">add_config</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">default</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)(</span><span class="n">add_config</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">default</span>
+
+
+<div class="viewcode-block" id="add_predictors"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.add_predictors">[docs]</a><span class="k">def</span> <span class="nf">add_predictors</span><span class="p">(</span><span class="n">decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds all enabled predictors to the ``decoder``. This function </span>
+<span class="sd">    makes heavy use of the global ``args`` which contains the</span>
+<span class="sd">    SGNMT configuration. Particularly, it reads out ``args.predictors``</span>
+<span class="sd">    and adds appropriate instances to ``decoder``.</span>
+<span class="sd">    TODO: Refactor this method as it is waaaay tooooo looong</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        decoder (Decoder):  Decoding strategy, see ``create_decoder()``.</span>
+<span class="sd">            This method will add predictors to this instance with</span>
+<span class="sd">            ``add_predictor()``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">preds</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Require at least one predictor! See the --predictors &quot;</span>
+                      <span class="s2">&quot;argument for more information.&quot;</span><span class="p">)</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">predictor_weights</span><span class="p">:</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">predictor_weights</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Specified </span><span class="si">%d</span><span class="s2"> predictors, but </span><span class="si">%d</span><span class="s2"> weights. Please &quot;</span>
+                      <span class="s2">&quot;revise the --predictors and --predictor_weights &quot;</span>
+                      <span class="s2">&quot;arguments&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">preds</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">)))</span>
+            <span class="k">return</span>
+    
+    <span class="n">pred_weight</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">pred</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">preds</span><span class="p">):</span> <span class="c1"># Add predictors one by one</span>
+            <span class="n">wrappers</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="s1">&#39;_&#39;</span> <span class="ow">in</span> <span class="n">pred</span><span class="p">:</span> 
+                <span class="c1"># Handle weights when we have wrapper predictors</span>
+                <span class="n">wrappers</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span>
+                <span class="n">pred</span> <span class="o">=</span> <span class="n">wrappers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">wrappers</span> <span class="o">=</span> <span class="n">wrappers</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">weights</span><span class="p">:</span>
+                    <span class="n">wrapper_weights</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weights</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)]</span>
+                    <span class="n">pred_weight</span> <span class="o">=</span> <span class="n">wrapper_weights</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">wrapper_weights</span> <span class="o">=</span> <span class="n">wrapper_weights</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">wrapper_weights</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">wrappers</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">weights</span><span class="p">:</span>
+                <span class="n">pred_weight</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">weights</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+
+            <span class="c1"># Create predictor instances for the string argument ``pred``</span>
+            <span class="k">if</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;nmt&quot;</span><span class="p">:</span>
+                <span class="n">nmt_engine</span> <span class="o">=</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nmt_engine&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">nmt_engine</span> <span class="o">==</span> <span class="s1">&#39;blocks&#39;</span><span class="p">:</span>
+                    <span class="n">nmt_config</span> <span class="o">=</span> <span class="n">_parse_config_param</span><span class="p">(</span>
+                        <span class="s2">&quot;nmt_config&quot;</span><span class="p">,</span> <span class="n">blocks_get_default_nmt_config</span><span class="p">())</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">blocks_get_nmt_predictor</span><span class="p">(</span>
+                        <span class="n">args</span><span class="p">,</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nmt_path&quot;</span><span class="p">),</span> <span class="n">nmt_config</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">nmt_engine</span> <span class="o">==</span> <span class="s1">&#39;tensorflow&#39;</span><span class="p">:</span>
+                    <span class="n">nmt_config</span> <span class="o">=</span> <span class="n">_parse_config_param</span><span class="p">(</span>
+                        <span class="s2">&quot;nmt_config&quot;</span><span class="p">,</span> <span class="n">tf_get_default_nmt_config</span><span class="p">())</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">tf_get_nmt_predictor</span><span class="p">(</span>
+                        <span class="n">args</span><span class="p">,</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nmt_path&quot;</span><span class="p">),</span> <span class="n">nmt_config</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">nmt_engine</span> <span class="o">!=</span> <span class="s1">&#39;none&#39;</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;NMT engine </span><span class="si">%s</span><span class="s2"> is not supported (yet)!&quot;</span> <span class="o">%</span> <span class="n">nmt_engine</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;t2t&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">T2TPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">t2t_usr_dir</span><span class="p">,</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_src_vocab_size&quot;</span><span class="p">),</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_trg_vocab_size&quot;</span><span class="p">),</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_model&quot;</span><span class="p">),</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_problem&quot;</span><span class="p">),</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_hparams_set&quot;</span><span class="p">),</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_checkpoint_dir&quot;</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;fst&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">FstPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;fst_path&quot;</span><span class="p">),</span>
+                                 <span class="n">args</span><span class="o">.</span><span class="n">use_fst_weights</span><span class="p">,</span>
+                                 <span class="n">args</span><span class="o">.</span><span class="n">normalize_fst_weights</span><span class="p">,</span>
+                                 <span class="n">skip_bos_weight</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">fst_skip_bos_weight</span><span class="p">,</span>
+                                 <span class="n">to_log</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">fst_to_log</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;nfst&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">NondeterministicFstPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;fst_path&quot;</span><span class="p">),</span>
+                                                 <span class="n">args</span><span class="o">.</span><span class="n">use_fst_weights</span><span class="p">,</span>
+                                                 <span class="n">args</span><span class="o">.</span><span class="n">normalize_fst_weights</span><span class="p">,</span>
+                                                 <span class="n">args</span><span class="o">.</span><span class="n">fst_skip_bos_weight</span><span class="p">,</span>
+                                                 <span class="n">to_log</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">fst_to_log</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;forced&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">ForcedPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">trg_test</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;bow&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">BagOfWordsPredictor</span><span class="p">(</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">trg_test</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">bow_accept_subsets</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">bow_accept_duplicates</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">heuristic_scores_file</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">collect_statistics</span><span class="p">,</span>
+                                <span class="s2">&quot;consumed&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">bow_heuristic_strategies</span><span class="p">,</span>
+                                <span class="s2">&quot;remaining&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">bow_heuristic_strategies</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">bow_diversity_heuristic_factor</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">bow_equivalence_vocab_size</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;bowsearch&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">BagOfWordsSearchPredictor</span><span class="p">(</span>
+                                <span class="n">decoder</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">trg_test</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">bow_accept_subsets</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">bow_accept_duplicates</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">heuristic_scores_file</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">collect_statistics</span><span class="p">,</span>
+                                <span class="s2">&quot;consumed&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">bow_heuristic_strategies</span><span class="p">,</span>
+                                <span class="s2">&quot;remaining&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">bow_heuristic_strategies</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">bow_diversity_heuristic_factor</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">bow_equivalence_vocab_size</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;forcedlst&quot;</span><span class="p">:</span>
+                <span class="n">feat_name</span> <span class="o">=</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;forcedlst_sparse_feat&quot;</span><span class="p">)</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">ForcedLstPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">trg_test</span><span class="p">,</span>
+                                       <span class="n">args</span><span class="o">.</span><span class="n">use_nbest_weights</span><span class="p">,</span>
+                                       <span class="n">feat_name</span> <span class="k">if</span> <span class="n">feat_name</span> <span class="k">else</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;rtn&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">RtnPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">rtn_path</span><span class="p">,</span>
+                                 <span class="n">args</span><span class="o">.</span><span class="n">use_rtn_weights</span><span class="p">,</span>
+                                 <span class="n">args</span><span class="o">.</span><span class="n">normalize_rtn_weights</span><span class="p">,</span>
+                                 <span class="n">to_log</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">fst_to_log</span><span class="p">,</span>
+                                 <span class="n">minimize_rtns</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">minimize_rtns</span><span class="p">,</span>
+                                 <span class="n">rmeps</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">remove_epsilon_in_rtns</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;srilm&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">SRILMPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">srilm_path</span><span class="p">,</span> 
+                                   <span class="n">args</span><span class="o">.</span><span class="n">srilm_order</span><span class="p">,</span> 
+                                   <span class="n">args</span><span class="o">.</span><span class="n">srilm_convert_to_ln</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;nplm&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">NPLMPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nplm_path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">normalize_nplm_probs</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;rnnlm&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">tf_get_rnnlm_predictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;rnnlm_path&quot;</span><span class="p">),</span>
+                                           <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;rnnlm_config&quot;</span><span class="p">),</span>
+                                           <span class="n">tf_get_rnnlm_prefix</span><span class="p">())</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;wc&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">WordCountPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">wc_word</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;ngramc&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">NgramCountPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;ngramc_path&quot;</span><span class="p">),</span>
+                                        <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;ngramc_order&quot;</span><span class="p">),</span>
+                                        <span class="n">args</span><span class="o">.</span><span class="n">ngramc_discount_factor</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;unkc&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">UnkCountPredictor</span><span class="p">(</span>
+                         <span class="n">args</span><span class="o">.</span><span class="n">unkc_src_vocab_size</span><span class="p">,</span> 
+                         <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">unk_count_lambdas</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)])</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;length&quot;</span><span class="p">:</span>
+                <span class="n">length_model_weights</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> 
+                                          <span class="n">args</span><span class="o">.</span><span class="n">length_model_weights</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">NBLengthPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">src_test_raw</span><span class="p">,</span> 
+                                      <span class="n">length_model_weights</span><span class="p">,</span> 
+                                      <span class="n">args</span><span class="o">.</span><span class="n">use_length_point_probs</span><span class="p">,</span>
+                                      <span class="n">args</span><span class="o">.</span><span class="n">length_model_offset</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;extlength&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">ExternalLengthPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">extlength_path</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;lrhiero&quot;</span><span class="p">:</span>
+                <span class="n">fw</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">grammar_feature_weights</span><span class="p">:</span>
+                    <span class="n">fw</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> 
+                            <span class="n">args</span><span class="o">.</span><span class="n">grammar_feature_weights</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">RuleXtractPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">rules_path</span><span class="p">,</span>
+                                        <span class="n">args</span><span class="o">.</span><span class="n">use_grammar_weights</span><span class="p">,</span>
+                                        <span class="n">fw</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;vanilla&quot;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Predictor &#39;</span><span class="si">%s</span><span class="s2">&#39; not available. Please check &quot;</span>
+                              <span class="s2">&quot;--predictors for spelling errors.&quot;</span> <span class="o">%</span> <span class="n">pred</span><span class="p">)</span>
+                <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
+                <span class="k">return</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span><span class="n">wrapper</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">wrappers</span><span class="p">):</span>
+                <span class="c1"># Embed predictor ``p`` into wrapper predictors if necessary</span>
+                <span class="c1"># TODO: Use wrapper_weights</span>
+                <span class="k">if</span> <span class="n">wrapper</span> <span class="o">==</span> <span class="s2">&quot;idxmap&quot;</span><span class="p">:</span>
+                    <span class="n">src_path</span> <span class="o">=</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;src_idxmap&quot;</span><span class="p">)</span>
+                    <span class="n">trg_path</span> <span class="o">=</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;trg_idxmap&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span> 
+                        <span class="n">p</span> <span class="o">=</span> <span class="n">UnboundedIdxmapPredictor</span><span class="p">(</span><span class="n">src_path</span><span class="p">,</span> <span class="n">trg_path</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> 
+                    <span class="k">else</span><span class="p">:</span> <span class="c1"># idxmap predictor for bounded predictors</span>
+                        <span class="n">p</span> <span class="o">=</span> <span class="n">IdxmapPredictor</span><span class="p">(</span><span class="n">src_path</span><span class="p">,</span> <span class="n">trg_path</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">wrapper</span> <span class="o">==</span> <span class="s2">&quot;altsrc&quot;</span><span class="p">:</span>
+                    <span class="n">src_test</span> <span class="o">=</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;altsrc_test&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span> 
+                        <span class="n">p</span> <span class="o">=</span> <span class="n">UnboundedAltsrcPredictor</span><span class="p">(</span><span class="n">src_test</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span> <span class="c1"># altsrc predictor for bounded predictors</span>
+                        <span class="n">p</span> <span class="o">=</span> <span class="n">AltsrcPredictor</span><span class="p">(</span><span class="n">src_test</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">wrapper</span> <span class="o">==</span> <span class="s2">&quot;word2char&quot;</span><span class="p">:</span>
+                    <span class="n">map_path</span> <span class="o">=</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;word2char_map&quot;</span><span class="p">)</span>
+                    <span class="c1"># word2char always wraps unbounded predictors</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">Word2charPredictor</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">wrapper</span> <span class="o">==</span> <span class="s2">&quot;skipvocab&quot;</span><span class="p">:</span>
+                    <span class="c1"># skipvocab always wraps unbounded predictors</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">SkipvocabPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">skipvocab_max_id</span><span class="p">,</span> 
+                                           <span class="n">args</span><span class="o">.</span><span class="n">skipvocab_stop_size</span><span class="p">,</span> 
+                                           <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span> 
+                                           <span class="n">p</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">wrapper</span> <span class="o">==</span> <span class="s2">&quot;fsttok&quot;</span><span class="p">:</span>
+                    <span class="n">fsttok_path</span> <span class="o">=</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;fsttok_path&quot;</span><span class="p">)</span>
+                    <span class="c1"># fsttok always wraps unbounded predictors</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">FSTTokPredictor</span><span class="p">(</span><span class="n">fsttok_path</span><span class="p">,</span>
+                                        <span class="n">args</span><span class="o">.</span><span class="n">fst_unk_id</span><span class="p">,</span>
+                                        <span class="n">args</span><span class="o">.</span><span class="n">fsttok_max_pending_score</span><span class="p">,</span>
+                                        <span class="n">p</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">wrapper</span> <span class="o">==</span> <span class="s2">&quot;unkvocab&quot;</span><span class="p">:</span>
+                    <span class="c1"># unkvocab always wraps bounded predictors</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">UnkvocabPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">trg_vocab_size</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Predictor wrapper &#39;</span><span class="si">%s</span><span class="s2">&#39; not available. &quot;</span>
+                                  <span class="s2">&quot;Please double-check --predictors for &quot;</span>
+                                  <span class="s2">&quot;spelling errors.&quot;</span> <span class="o">%</span> <span class="n">wrapper</span><span class="p">)</span>
+                    <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
+                    <span class="k">return</span>
+            <span class="n">decoder</span><span class="o">.</span><span class="n">add_predictor</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">pred_weight</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Added predictor {} with weight {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> 
+                                                                    <span class="n">pred_weight</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;One of the files required for setting up the &quot;</span>
+                      <span class="s2">&quot;predictors could not be read: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+        <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">NameError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find external library: </span><span class="si">%s</span><span class="s2">. Please make sure &quot;</span>
+                      <span class="s2">&quot;that your PYTHONPATH and LD_LIBRARY_PATH contains all &quot;</span>
+                      <span class="s2">&quot;paths required for the predictors.&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+        <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;A number format error occurred while configuring the &quot;</span>
+                      <span class="s2">&quot;predictors: </span><span class="si">%s</span><span class="s2">. Please double-check all integer- or &quot;</span>
+                      <span class="s2">&quot;float-valued parameters such as --predictor_weights and&quot;</span>
+                      <span class="s2">&quot; try again. Stack trace: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+        <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;An unexpected </span><span class="si">%s</span><span class="s2"> has occurred while setting up the pre&quot;</span>
+                      <span class="s2">&quot;dictors: </span><span class="si">%s</span><span class="s2"> Stack trace: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span>
+                                                       <span class="n">e</span><span class="p">,</span>
+                                                       <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+        <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="create_decoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.create_decoder">[docs]</a><span class="k">def</span> <span class="nf">create_decoder</span><span class="p">(</span><span class="n">new_args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates the ``Decoder`` instance. This specifies the search </span>
+<span class="sd">    strategy used to traverse the space spanned by the predictors. This</span>
+<span class="sd">    method relies on the global ``args`` variable.</span>
+<span class="sd">    </span>
+<span class="sd">    TODO: Refactor to avoid long argument lists</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        new_args: Command line arguments</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Decoder. Instance of the search strategy</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">args</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">new_args</span>
+    <span class="c1"># Create decoder instance and add predictors</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;greedy&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">GreedyDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;beam&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">BeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">decoder_diversity_factor</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;multisegbeam&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">MultisegBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                                      <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
+                                      <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
+                                      <span class="n">args</span><span class="o">.</span><span class="n">multiseg_tokenizations</span><span class="p">,</span>
+                                      <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
+                                      <span class="n">args</span><span class="o">.</span><span class="n">max_word_len</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;syncbeam&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">SyncBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                                  <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
+                                  <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
+                                  <span class="n">args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">,</span>
+                                  <span class="n">args</span><span class="o">.</span><span class="n">decoder_diversity_factor</span><span class="p">,</span>
+                                  <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
+                                  <span class="n">args</span><span class="o">.</span><span class="n">sync_symbol</span><span class="p">,</span>
+                                  <span class="n">args</span><span class="o">.</span><span class="n">max_word_len</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;sepbeam&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">SepBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                                 <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
+                                 <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
+                                 <span class="n">args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">,</span>
+                                 <span class="n">args</span><span class="o">.</span><span class="n">decoder_diversity_factor</span><span class="p">,</span>
+                                 <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;dfs&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">DFSDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> 
+                             <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
+                             <span class="n">args</span><span class="o">.</span><span class="n">max_node_expansions</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;restarting&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">RestartingDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">max_node_expansions</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">low_decoder_memory</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">restarting_node_score</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">stochastic_decoder</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">decode_always_single_step</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bow&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">BOWDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                             <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
+                             <span class="n">args</span><span class="o">.</span><span class="n">max_node_expansions</span><span class="p">,</span>
+                             <span class="n">args</span><span class="o">.</span><span class="n">stochastic_decoder</span><span class="p">,</span>
+                             <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
+                             <span class="n">args</span><span class="o">.</span><span class="n">decode_always_single_step</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;flip&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">FlipDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">trg_test</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">max_node_expansions</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">flip_strategy</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bigramgreedy&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">BigramGreedyDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                                      <span class="n">args</span><span class="o">.</span><span class="n">trg_test</span><span class="p">,</span>
+                                      <span class="n">args</span><span class="o">.</span><span class="n">max_node_expansions</span><span class="p">,</span>
+                                      <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bucket&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">BucketDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">max_node_expansions</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">low_decoder_memory</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">decoder_diversity_factor</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">stochastic_decoder</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">bucket_selector</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">bucket_score_strategy</span><span class="p">,</span>
+                                <span class="n">args</span><span class="o">.</span><span class="n">collect_statistics</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;astar&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">AstarDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;vanilla&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">construct_nmt_vanilla_decoder</span><span class="p">()</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="s2">&quot;vanilla&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Decoder </span><span class="si">%s</span><span class="s2"> not available. Please double-check the &quot;</span>
+                      <span class="s2">&quot;--decoder parameter.&quot;</span> <span class="o">%</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span><span class="p">)</span>
+    <span class="n">add_predictors</span><span class="p">(</span><span class="n">decoder</span><span class="p">)</span>
+    
+    <span class="c1"># Add heuristics for search strategies like A*</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">heuristics</span><span class="p">:</span>
+        <span class="n">add_heuristics</span><span class="p">(</span><span class="n">decoder</span><span class="p">)</span>
+    
+    <span class="c1"># Update start sentence id if necessary</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
+        <span class="n">idx</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>  
+        <span class="n">decoder</span><span class="o">.</span><span class="n">set_start_sen_id</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># -1 because indices start with 1</span>
+    <span class="k">return</span> <span class="n">decoder</span></div>
+
+
+<div class="viewcode-block" id="construct_nmt_vanilla_decoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.construct_nmt_vanilla_decoder">[docs]</a><span class="k">def</span> <span class="nf">construct_nmt_vanilla_decoder</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Creates the vanilla NMT decoder which bypasses the predictor </span>
+<span class="sd">    framework. It uses the template methods ``get_nmt_vanilla_decoder``</span>
+<span class="sd">    for uniform access to the blocks or tensorflow frameworks.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        NMT vanilla decoder using all specified NMT models, or None if</span>
+<span class="sd">        an error occurred.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">is_nmt</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;nmt&quot;</span> <span class="o">==</span> <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)]</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">is_nmt</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_nmt</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Vanilla decoder can only be used with nmt predictors&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">None</span>
+    <span class="n">nmt_specs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">nmt_engine</span> <span class="o">==</span> <span class="s1">&#39;blocks&#39;</span><span class="p">:</span>
+        <span class="n">get_default_nmt_config</span> <span class="o">=</span> <span class="n">blocks_get_default_nmt_config</span>
+        <span class="n">get_nmt_vanilla_decoder</span> <span class="o">=</span> <span class="n">blocks_get_nmt_vanilla_decoder</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">nmt_engine</span> <span class="o">==</span> <span class="s1">&#39;tensorflow&#39;</span><span class="p">:</span>
+        <span class="n">get_default_nmt_config</span> <span class="o">=</span> <span class="n">tf_get_default_nmt_config</span>
+        <span class="n">get_nmt_vanilla_decoder</span> <span class="o">=</span> <span class="n">tf_get_nmt_vanilla_decoder</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n</span><span class="p">):</span> 
+        <span class="n">nmt_specs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nmt_path&quot;</span><span class="p">),</span>
+                          <span class="n">_parse_config_param</span><span class="p">(</span><span class="s2">&quot;nmt_config&quot;</span><span class="p">,</span>
+                                              <span class="n">get_default_nmt_config</span><span class="p">())))</span>
+    <span class="k">return</span> <span class="n">get_nmt_vanilla_decoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">nmt_specs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="add_heuristics"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.add_heuristics">[docs]</a><span class="k">def</span> <span class="nf">add_heuristics</span><span class="p">(</span><span class="n">decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds all enabled heuristics to the ``decoder``. This is relevant</span>
+<span class="sd">    for heuristic based search strategies like A*. This method relies </span>
+<span class="sd">    on the global ``args`` variable and reads out ``args.heuristics``.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        decoder (Decoder):  Decoding strategy, see ``create_decoder()``.</span>
+<span class="sd">            This method will add heuristics to this instance with</span>
+<span class="sd">            ``add_heuristic()``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">heuristic_predictors</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+        <span class="n">h_predictors</span> <span class="o">=</span> <span class="n">decoder</span><span class="o">.</span><span class="n">predictors</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">h_predictors</span> <span class="o">=</span> <span class="p">[</span><span class="n">decoder</span><span class="o">.</span><span class="n">predictors</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">)]</span>
+                            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">heuristic_predictors</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)]</span>
+    <span class="n">decoder</span><span class="o">.</span><span class="n">set_heuristic_predictors</span><span class="p">(</span><span class="n">h_predictors</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">heuristics</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;greedy&#39;</span><span class="p">:</span>
+            <span class="n">decoder</span><span class="o">.</span><span class="n">add_heuristic</span><span class="p">(</span><span class="n">GreedyHeuristic</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                                                  <span class="n">args</span><span class="o">.</span><span class="n">cache_heuristic_estimates</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;predictor&#39;</span><span class="p">:</span>
+            <span class="n">decoder</span><span class="o">.</span><span class="n">add_heuristic</span><span class="p">(</span><span class="n">PredictorHeuristic</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;stats&#39;</span><span class="p">:</span>
+            <span class="n">decoder</span><span class="o">.</span><span class="n">add_heuristic</span><span class="p">(</span><span class="n">StatsHeuristic</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">heuristic_scores_file</span><span class="p">,</span>
+                                                 <span class="n">args</span><span class="o">.</span><span class="n">collect_statistics</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;scoreperword&#39;</span><span class="p">:</span>
+            <span class="n">decoder</span><span class="o">.</span><span class="n">add_heuristic</span><span class="p">(</span><span class="n">ScorePerWordHeuristic</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Heuristic </span><span class="si">%s</span><span class="s2"> not available. Please double-check &quot;</span>
+                          <span class="s2">&quot;the --heuristics parameter.&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_output_handlers"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.create_output_handlers">[docs]</a><span class="k">def</span> <span class="nf">create_output_handlers</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Creates the output handlers defined in the ``io`` module. </span>
+<span class="sd">    These handlers create output files in different formats from the</span>
+<span class="sd">    decoding results.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        args: Global command line arguments.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        list. List of output handlers according --outputs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">outputs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">trg_map</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">start_sen_id</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
+        <span class="n">idx</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+        <span class="n">start_sen_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span> <span class="c1"># -1 because --range indices start with 1</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">output_path</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">output_path</span> <span class="o">%</span> <span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">output_path</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span>
+            <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TextOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">trg_map</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nbest&quot;</span><span class="p">:</span>
+            <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NBestOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">),</span>
+                                              <span class="n">start_sen_id</span><span class="p">,</span>
+                                              <span class="n">trg_map</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;fst&quot;</span><span class="p">:</span>
+            <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FSTOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
+                                            <span class="n">start_sen_id</span><span class="p">,</span>
+                                            <span class="n">args</span><span class="o">.</span><span class="n">fst_unk_id</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;sfst&quot;</span><span class="p">:</span>
+            <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">StandardFSTOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
+                                                    <span class="n">start_sen_id</span><span class="p">,</span>
+                                                    <span class="n">args</span><span class="o">.</span><span class="n">fst_unk_id</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Output format </span><span class="si">%s</span><span class="s2"> not available. Please double-check&quot;</span>
+                          <span class="s2">&quot; the --outputs parameter.&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">outputs</span></div>
+
+
+<span class="k">def</span> <span class="nf">_get_sentence_indices</span><span class="p">(</span><span class="n">range_param</span><span class="p">,</span> <span class="n">src_sentences</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper method for ``do_decode`` which returns the indices of the</span>
+<span class="sd">    sentence to decode</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        range_param (string): ``--range`` parameter from config</span>
+<span class="sd">        src_sentences (list):  A list of strings. The strings are the</span>
+<span class="sd">                               source sentences with word indices to </span>
+<span class="sd">                               translate (e.g. &#39;1 123 432 2&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
+                <span class="n">from_idx</span><span class="p">,</span><span class="n">to_idx</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">from_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">)</span>
+                <span class="n">to_idx</span> <span class="o">=</span> <span class="n">from_idx</span>
+            <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">from_idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">to_idx</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Invalid value for --range: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">src_sentences</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Input method dummy requires --range&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src_sentences</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_get_text_output_handler</span><span class="p">(</span><span class="n">output_handlers</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">output_handler</span> <span class="ow">in</span> <span class="n">output_handlers</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_handler</span><span class="p">,</span> <span class="n">TextOutputHandler</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">output_handler</span>
+    <span class="k">return</span> <span class="bp">None</span>
+
+
+<div class="viewcode-block" id="do_decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.do_decode">[docs]</a><span class="k">def</span> <span class="nf">do_decode</span><span class="p">(</span><span class="n">decoder</span><span class="p">,</span> 
+              <span class="n">output_handlers</span><span class="p">,</span> 
+              <span class="n">src_sentences</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This method contains the main decoding loop. It iterates through</span>
+<span class="sd">    ``src_sentences`` and applies ``decoder.decode()`` to each of them.</span>
+<span class="sd">    At the end, it calls the output handlers to create output files.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        decoder (Decoder):  Current decoder instance</span>
+<span class="sd">        output_handlers (list):  List of output handlers, see</span>
+<span class="sd">                                 ``create_output_handlers()``</span>
+<span class="sd">        src_sentences (list):  A list of strings. The strings are the</span>
+<span class="sd">                               source sentences with word indices to </span>
+<span class="sd">                               translate (e.g. &#39;1 123 432 2&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">decoder</span><span class="o">.</span><span class="n">has_predictors</span><span class="p">():</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Decoding cancelled because of an error in the &quot;</span>
+                      <span class="s2">&quot;predictor configuration.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">all_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">text_output_handler</span> <span class="o">=</span> <span class="n">_get_text_output_handler</span><span class="p">(</span><span class="n">output_handlers</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">text_output_handler</span><span class="p">:</span>
+        <span class="n">text_output_handler</span><span class="o">.</span><span class="n">open_file</span><span class="p">()</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Start time: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">start_time</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">sen_idx</span> <span class="ow">in</span> <span class="n">_get_sentence_indices</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">,</span> <span class="n">src_sentences</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">src_sentences</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+                <span class="n">src</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence (ID: </span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">src</span> <span class="o">=</span> <span class="n">src_sentences</span><span class="p">[</span><span class="n">sen_idx</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">src</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">src_lst</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src</span><span class="p">)):</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence, input </span><span class="si">%d</span><span class="s2"> (ID: </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                                                           <span class="n">idx</span><span class="p">,</span> 
+                                                           <span class="n">sen_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                                                           <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">[</span><span class="n">idx</span><span class="p">])))</span>
+                        <span class="n">src_lst</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">src</span><span class="p">[</span><span class="n">idx</span><span class="p">]])</span>
+                    <span class="n">src</span> <span class="o">=</span> <span class="n">src_lst</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence (ID: </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> 
+                                                                 <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">)))</span>
+                    <span class="n">src</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">src</span><span class="p">]</span>
+            <span class="n">start_hypo_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">decoder</span><span class="o">.</span><span class="n">apply_predictors_count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">src</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="c1"># Don&#39;t apply wordmap for multiple inputs</span>
+                <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypo</span> <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">&gt;</span> <span class="n">args</span><span class="o">.</span><span class="n">min_score</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypo</span> 
+                         <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">apply_src_wmap</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
+                            <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">&gt;</span> <span class="n">args</span><span class="o">.</span><span class="n">min_score</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;No translation found for ID </span><span class="si">%d</span><span class="s2">!&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stats (ID: </span><span class="si">%d</span><span class="s2">): score=&lt;not-found&gt; &quot;</span>
+                         <span class="s2">&quot;num_expansions=</span><span class="si">%d</span><span class="s2"> &quot;</span>
+                         <span class="s2">&quot;time=</span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                                        <span class="n">decoder</span><span class="o">.</span><span class="n">apply_predictors_count</span><span class="p">,</span>
+                                        <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_hypo_time</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">text_output_handler</span><span class="p">:</span>
+                    <span class="n">text_output_handler</span><span class="o">.</span><span class="n">write_empty_line</span><span class="p">()</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">remove_eos</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> 
+                            <span class="ow">and</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">):</span>
+                        <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">nbest</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">hypos</span> <span class="o">=</span> <span class="n">hypos</span><span class="p">[:</span><span class="n">args</span><span class="o">.</span><span class="n">nbest</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">!=</span> <span class="s1">&#39;sum&#39;</span> 
+                    <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">apply_combination_scheme_to_partial_hypos</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                    <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_full</span><span class="p">(</span>
+                                                        <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span>
+                                                        <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span>
+                <span class="n">hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">hypo</span><span class="p">:</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">:</span>
+                <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">convert_to_char_level</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">]</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Decoded (ID: </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                    <span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">utils</span><span class="o">.</span><span class="n">apply_trg_wmap</span><span class="p">(</span><span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span> 
+                                         <span class="p">{}</span> <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">)))</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stats (ID: </span><span class="si">%d</span><span class="s2">): score=</span><span class="si">%f</span><span class="s2"> &quot;</span>
+                         <span class="s2">&quot;num_expansions=</span><span class="si">%d</span><span class="s2"> &quot;</span>
+                         <span class="s2">&quot;time=</span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                                        <span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span>
+                                        <span class="n">decoder</span><span class="o">.</span><span class="n">apply_predictors_count</span><span class="p">,</span>
+                                        <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_hypo_time</span><span class="p">))</span>
+            <span class="n">all_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypos</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Write text output as we go</span>
+                <span class="k">if</span> <span class="n">text_output_handler</span><span class="p">:</span>
+                    <span class="n">text_output_handler</span><span class="o">.</span><span class="n">write_hypos</span><span class="p">([</span><span class="n">hypos</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;I/O error </span><span class="si">%d</span><span class="s2"> occurred when creating output files: </span><span class="si">%s</span><span class="s2">&quot;</span>
+                            <span class="o">%</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">e</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Number format error at sentence id </span><span class="si">%d</span><span class="s2">: </span><span class="si">%s</span><span class="s2">, &quot;</span>
+                          <span class="s2">&quot;Stack trace: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> 
+                                               <span class="n">e</span><span class="p">,</span>
+                                               <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;An unexpected </span><span class="si">%s</span><span class="s2"> error has occurred at sentence id &quot;</span>
+                          <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">: </span><span class="si">%s</span><span class="s2">, Stack trace: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span>
+                                                       <span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                                                       <span class="n">e</span><span class="p">,</span>
+                                                       <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Decoding finished. Time: </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">output_handler</span> <span class="ow">in</span> <span class="n">output_handlers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">output_handler</span> <span class="o">==</span> <span class="n">text_output_handler</span><span class="p">:</span>
+                <span class="n">output_handler</span><span class="o">.</span><span class="n">close_file</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">output_handler</span><span class="o">.</span><span class="n">write_hypos</span><span class="p">(</span><span class="n">all_hypos</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;I/O error </span><span class="si">%s</span><span class="s2"> occurred when creating output files: </span><span class="si">%s</span><span class="s2">&quot;</span>
+                      <span class="o">%</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">e</span><span class="p">))</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

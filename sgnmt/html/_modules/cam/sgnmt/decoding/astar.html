@@ -157,17 +157,11 @@
 <span class="sd">    decode on cyclic lattices with the fst predictor.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
-                 <span class="n">decoder_args</span><span class="p">,</span> 
-                 <span class="n">capacity</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
-                 <span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> 
-                 <span class="n">early_stopping</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
-                 <span class="n">nbest</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Creates a new A* decoder instance</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new A* decoder instance. The following values are</span>
+<span class="sd">        fetched from `decoder_args`:</span>
 <span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
-<span class="sd">                                   from the configuration API..</span>
+<span class="sd">            beam (int): Maximum number of active hypotheses.</span>
 <span class="sd">            pure_heuristic_scores (bool): For standard A* set this to</span>
 <span class="sd">                                          false. If set to true, partial</span>
 <span class="sd">                                          hypo scores are ignored when</span>
@@ -184,12 +178,17 @@
 <span class="sd">                         complete hypothesis. With an admissible</span>
 <span class="sd">                         heuristic, this will yield an exact n-best</span>
 <span class="sd">                         list.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from the configuration API.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">AstarDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nbest</span> <span class="o">=</span> <span class="n">nbest</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">capacity</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">early_stopping</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="n">pure_heuristic_scores</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nbest</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">nbest</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">beam</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">early_stopping</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span>
     
     <span class="k">def</span> <span class="nf">_get_combined_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="n">est_score</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>

@@ -1,0 +1,551 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.vocabulary &mdash; SGNMT 0.3 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.3 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.vocabulary</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.vocabulary</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Predictor wrappers in this module work with the vocabulary of the</span>
+<span class="sd">wrapped predictor. An example is the idxmap wrapper which makes it</span>
+<span class="sd">possible to use an alternative word map.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span>
+
+
+<div class="viewcode-block" id="IdxmapPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor">[docs]</a><span class="k">class</span> <span class="nc">IdxmapPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This wrapper predictor can be applied to slave predictors which</span>
+<span class="sd">    use different wmaps than SGNMT. It translates between SGNMT word </span>
+<span class="sd">    indices and predictors indices each time the predictor is called.</span>
+<span class="sd">    This mapping is transparent to both the decoder and the wrapped</span>
+<span class="sd">    slave predictor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">src_idxmap_path</span><span class="p">,</span>
+                 <span class="n">trgt_idxmap_path</span><span class="p">,</span>
+                 <span class="n">slave_predictor</span><span class="p">,</span>
+                 <span class="n">slave_weight</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new idxmap wrapper predictor. The index maps have</span>
+<span class="sd">        to be plain text files, each line containing the mapping from</span>
+<span class="sd">        a SGNMT word index to the slave predictor word index.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_idxmap_path (string): Path to the source index map</span>
+<span class="sd">            trgt_idxmap_path (string): Path to the target index map</span>
+<span class="sd">            slave_predictor (Predictor): Instance of the predictor with</span>
+<span class="sd">                                         a different wmap than SGNMT</span>
+<span class="sd">            slave_weight (float): Slave predictor weight</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IdxmapPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_weight</span> <span class="o">=</span> <span class="n">slave_weight</span>
+        <span class="c1"># src_map goes from sgnmt index -&gt; slave index for the source </span>
+        <span class="c1"># trgt map goes from sgnmt index -&gt; slave index for the target </span>
+        <span class="c1"># trgt map_inverse goes from slave index -&gt; sgnmt index for the target </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_map</span><span class="p">(</span><span class="n">src_idxmap_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_map</span><span class="p">(</span><span class="n">trgt_idxmap_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_map_inverse</span> <span class="o">=</span> <span class="p">{</span><span class="n">slave_idx</span><span class="p">:</span> <span class="n">gnmt_idx</span> 
+                        <span class="k">for</span> <span class="n">gnmt_idx</span><span class="p">,</span> <span class="n">slave_idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_map</span><span class="p">)}</span>
+    
+<div class="viewcode-block" id="IdxmapPredictor.load_map"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.load_map">[docs]</a>    <span class="k">def</span> <span class="nf">load_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load a index map file. Mappings should be bijections, but</span>
+<span class="sd">        there is no sanity check in place to verify this.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            path (string): Path to the mapping file</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dict. Mapping from SGNMT index to slave predictor index</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span>
+                    <span class="ow">or</span> <span class="n">d</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span>
+                    <span class="ow">or</span> <span class="n">d</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">]</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">):</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span>
+                   <span class="s2">&quot;idxmap </span><span class="si">%s</span><span class="s2"> contains non-identical maps for reserved indices&quot;</span>
+                        <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Loaded wmap from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">if</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">d</span> <span class="k">else</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span></div>
+    
+<div class="viewcode-block" id="IdxmapPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">src_map</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                                            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">src_sentence</span><span class="p">])</span></div>
+    
+<div class="viewcode-block" id="IdxmapPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_map_inverse</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_weight</span> <span class="o">*</span> <span class="n">prob</span> 
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">prob</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_iterable</span><span class="p">(</span><span class="n">posterior</span><span class="p">)}</span></div>
+        
+<div class="viewcode-block" id="IdxmapPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;ATTENTION: We should translate the posterior array </span>
+<span class="sd">        back to slave predictor indices. However, the unk_id is </span>
+<span class="sd">        translated to the identical index, and others normally do not</span>
+<span class="sd">        matter when computing the UNK probability. Therefore, we </span>
+<span class="sd">        refrain from a complete conversion and pass through</span>
+<span class="sd">        ``posterior`` without changing its word indices.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="IdxmapPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_map</span><span class="p">[</span><span class="n">word</span><span class="p">])</span></div>
+    
+<div class="viewcode-block" id="IdxmapPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="IdxmapPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="IdxmapPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="IdxmapPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="n">old_sen</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_map</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">old_sen</span><span class="p">]</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="n">old_sen</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="IdxmapPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">src_map</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> 
+                                                    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">src_sentence</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="IdxmapPredictor.set_current_sen_id"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur_sen_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We need to override this method to propagate current\_</span>
+<span class="sd">        sentence_id to the slave predictor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IdxmapPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="IdxmapPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">)</span></div></div>
+        
+
+<div class="viewcode-block" id="UnboundedIdxmapPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnboundedIdxmapPredictor">[docs]</a><span class="k">class</span> <span class="nc">UnboundedIdxmapPredictor</span><span class="p">(</span><span class="n">IdxmapPredictor</span><span class="p">,</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class is a version of ``IdxmapPredictor`` for unbounded </span>
+<span class="sd">    vocabulary predictors. This needs an adjusted ``predict_next`` </span>
+<span class="sd">    method to pass through the set of target words to score correctly.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">src_idxmap_path</span><span class="p">,</span>
+                 <span class="n">trgt_idxmap_path</span><span class="p">,</span>
+                 <span class="n">slave_predictor</span><span class="p">,</span>
+                 <span class="n">slave_weight</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to ``IdxmapPredictor.__init__`` &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">UnboundedIdxmapPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">src_idxmap_path</span><span class="p">,</span>
+                                                       <span class="n">trgt_idxmap_path</span><span class="p">,</span>
+                                                       <span class="n">slave_predictor</span><span class="p">,</span>
+                                                       <span class="n">slave_weight</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UnboundedIdxmapPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnboundedIdxmapPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trgt_words</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_map</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> 
+                                                       <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">trgt_words</span><span class="p">])</span>
+        <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_map_inverse</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span>
+                                          <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_weight</span><span class="o">*</span><span class="n">prob</span> 
+                            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">prob</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_iterable</span><span class="p">(</span><span class="n">posterior</span><span class="p">)}</span></div></div>
+
+
+<div class="viewcode-block" id="UnkvocabPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor">[docs]</a><span class="k">class</span> <span class="nc">UnkvocabPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;If the predictor wrapped by the unkvocab wrapper produces an UNK</span>
+<span class="sd">    with predict next, this wrapper adds explicit NEG_INF scores to all</span>
+<span class="sd">    in-vocabulary words not in its posterior. This can control which </span>
+<span class="sd">    words are matched by the UNK scores of other predictors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_vocab_size</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new unkvocab wrapper predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trg_vocab_size (int): Size of the target vocabulary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">UnkvocabPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span> <span class="o">=</span> <span class="n">trg_vocab_size</span>
+    
+<div class="viewcode-block" id="UnkvocabPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="UnkvocabPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+ 
+<div class="viewcode-block" id="UnkvocabPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor. If the posterior from the</span>
+<span class="sd">        slave predictor contains util.UNK_ID, add NEG_INF for all </span>
+<span class="sd">        word ids lower than trg_vocab_size that are not already</span>
+<span class="sd">        defined &quot;&quot;&quot;</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">:</span>
+                    <span class="n">posterior</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">return</span> <span class="n">posterior</span></div>
+        
+<div class="viewcode-block" id="UnkvocabPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="UnkvocabPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="UnkvocabPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="UnkvocabPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="UnkvocabPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="UnkvocabPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="UnkvocabPredictor.set_current_sen_id"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur_sen_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We need to override this method to propagate current\_</span>
+<span class="sd">        sentence_id to the slave predictor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">UnkvocabPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="UnkvocabPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SkipvocabInternalHypothesis"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabInternalHypothesis">[docs]</a><span class="k">class</span> <span class="nc">SkipvocabInternalHypothesis</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper class for internal beam search in skipvocab.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">predictor_state</span><span class="p">,</span> <span class="n">word_to_consume</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor_state</span> <span class="o">=</span> <span class="n">predictor_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="n">word_to_consume</span></div>
+
+    
+<div class="viewcode-block" id="SkipvocabPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor">[docs]</a><span class="k">class</span> <span class="nc">SkipvocabPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor wrapper masks predictors with a larger vocabulary</span>
+<span class="sd">    than the SGNMT vocabulary. The SGNMT OOV words are not scored with </span>
+<span class="sd">    UNK scores from the other predictors like usual, but are hidden by </span>
+<span class="sd">    this wrapper. Therefore, this wrapper does not produce any word</span>
+<span class="sd">    from the larger vocabulary, but searches internally until enough</span>
+<span class="sd">    in-vocabulary word scores are collected from the wrapped predictor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_id</span><span class="p">,</span> <span class="n">stop_size</span><span class="p">,</span> <span class="n">beam</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new skipvocab wrapper predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            max_id (int): All words greater than this are skipped</span>
+<span class="sd">            stop_size (int): Stop internal beam search when the best</span>
+<span class="sd">                             stop_size words are in-vocabulary</span>
+<span class="sd">            beam (int): Beam size of internal beam search</span>
+<span class="sd">            slave_predictor (Predictor): Wrapped predictor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SkipvocabPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_id</span> <span class="o">=</span> <span class="n">max_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_size</span> <span class="o">=</span> <span class="n">stop_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam</span> <span class="o">=</span> <span class="n">beam</span>
+    
+<div class="viewcode-block" id="SkipvocabPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="SkipvocabPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SkipvocabPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_is_stopping_posterior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_iterable</span><span class="p">(</span><span class="n">posterior</span><span class="p">),</span>
+                              <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="o">-</span><span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">])[:</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_size</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">word</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_id</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span>
+ 
+<div class="viewcode-block" id="SkipvocabPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method first performs beam search internally to update</span>
+<span class="sd">        the slave predictor state to a point where the best stop_size </span>
+<span class="sd">        entries in the predict_next() return value are in-vocabulary</span>
+<span class="sd">        (bounded by max_id). Then, it returns the slave posterior in </span>
+<span class="sd">        that state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">SkipvocabInternalHypothesis</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> 
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">(),</span>
+                                             <span class="bp">None</span><span class="p">)]</span>
+        <span class="n">best_score</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="n">best_predictor_state</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">best_posterior</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">while</span> <span class="n">hypos</span> <span class="ow">and</span> <span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="n">best_score</span><span class="p">:</span>
+            <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span>
+                    <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_state</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
+                <span class="n">posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+                <span class="n">pred_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span>
+                <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_stopping_posterior</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> 
+                        <span class="ow">and</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="n">best_score</span><span class="p">):</span>
+                    <span class="c1"># This is the new best result of the internal beam search</span>
+                    <span class="n">best_score</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span>
+                    <span class="n">best_predictor_state</span> <span class="o">=</span> <span class="n">pred_state</span>
+                    <span class="n">best_posterior</span> <span class="o">=</span> <span class="n">posterior</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Look for ways to expand this hypo with OOV words.</span>
+                    <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_iterable</span><span class="p">(</span><span class="n">posterior</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">word</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_id</span><span class="p">:</span>
+                            <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SkipvocabInternalHypothesis</span><span class="p">(</span>
+                                <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">+</span> <span class="n">score</span><span class="p">,</span> <span class="n">pred_state</span><span class="p">,</span> <span class="n">word</span><span class="p">))</span>
+            <span class="n">next_hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="o">-</span><span class="n">h</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+            <span class="n">hypos</span> <span class="o">=</span> <span class="n">next_hypos</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">beam</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">best_predictor_state</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">best_posterior</span></div>
+        
+<div class="viewcode-block" id="SkipvocabPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="SkipvocabPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="SkipvocabPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SkipvocabPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SkipvocabPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SkipvocabPredictor.set_current_sen_id"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur_sen_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We need to override this method to propagate current\_</span>
+<span class="sd">        sentence_id to the slave predictor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SkipvocabPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="SkipvocabPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">)</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

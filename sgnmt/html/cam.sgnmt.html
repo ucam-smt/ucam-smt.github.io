@@ -102,6 +102,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cam-sgnmt-decode-module">cam.sgnmt.decode module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-cam.sgnmt.decode_utils">cam.sgnmt.decode_utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-cam.sgnmt.output">cam.sgnmt.output module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-cam.sgnmt.ui">cam.sgnmt.ui module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-cam.sgnmt.utils">cam.sgnmt.utils module</a></li>
@@ -230,6 +231,7 @@
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.predictors.html#cam-sgnmt-predictors-tf-rnnlm-module">cam.sgnmt.predictors.tf_rnnlm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.predictors.html#module-cam.sgnmt.predictors.tf_t2t">cam.sgnmt.predictors.tf_t2t module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.predictors.html#module-cam.sgnmt.predictors.tokenization">cam.sgnmt.predictors.tokenization module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.predictors.html#module-cam.sgnmt.predictors.vocabulary">cam.sgnmt.predictors.vocabulary module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.predictors.html#module-cam.sgnmt.predictors">Module contents</a></li>
 </ul>
 </li>
@@ -247,6 +249,139 @@
 </div>
 <div class="section" id="cam-sgnmt-decode-module">
 <h2>cam.sgnmt.decode module<a class="headerlink" href="#cam-sgnmt-decode-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-cam.sgnmt.decode_utils">
+<span id="cam-sgnmt-decode-utils-module"></span><h2>cam.sgnmt.decode_utils module<a class="headerlink" href="#module-cam.sgnmt.decode_utils" title="Permalink to this headline">¶</a></h2>
+<p>This module is the bridge between the command line configuration of
+the decode.py script and the SGNMT software architecture consisting of
+decoders, predictors, and output handlers. A common use case is to call
+<cite>create_decoder()</cite> first, which reads the SGNMT configuration and loads
+the right predictors and decoding strategy with the right arguments.
+The actual decoding is implemented in <cite>do_decode()</cite>. See <cite>decode.py</cite>
+to learn how to use this module.</p>
+<dl class="function">
+<dt id="cam.sgnmt.decode_utils.add_heuristics">
+<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">add_heuristics</code><span class="sig-paren">(</span><em>decoder</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decode_utils.html#add_heuristics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decode_utils.add_heuristics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds all enabled heuristics to the <code class="docutils literal"><span class="pre">decoder</span></code>. This is relevant
+for heuristic based search strategies like A*. This method relies
+on the global <code class="docutils literal"><span class="pre">args</span></code> variable and reads out <code class="docutils literal"><span class="pre">args.heuristics</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decoder</strong> (<a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><em>Decoder</em></a>) &#8211; Decoding strategy, see <code class="docutils literal"><span class="pre">create_decoder()</span></code>.
+This method will add heuristics to this instance with
+<code class="docutils literal"><span class="pre">add_heuristic()</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decode_utils.add_predictors">
+<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">add_predictors</code><span class="sig-paren">(</span><em>decoder</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decode_utils.html#add_predictors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decode_utils.add_predictors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds all enabled predictors to the <code class="docutils literal"><span class="pre">decoder</span></code>. This function
+makes heavy use of the global <code class="docutils literal"><span class="pre">args</span></code> which contains the
+SGNMT configuration. Particularly, it reads out <code class="docutils literal"><span class="pre">args.predictors</span></code>
+and adds appropriate instances to <code class="docutils literal"><span class="pre">decoder</span></code>.
+TODO: Refactor this method as it is waaaay tooooo looong</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decoder</strong> (<a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><em>Decoder</em></a>) &#8211; Decoding strategy, see <code class="docutils literal"><span class="pre">create_decoder()</span></code>.
+This method will add predictors to this instance with
+<code class="docutils literal"><span class="pre">add_predictor()</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="data">
+<dt id="cam.sgnmt.decode_utils.args">
+<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">args</code><em class="property"> = None</em><a class="headerlink" href="#cam.sgnmt.decode_utils.args" title="Permalink to this definition">¶</a></dt>
+<dd><p>This variable is set to the global configuration when
+create_decoder() is called.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decode_utils.construct_nmt_vanilla_decoder">
+<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">construct_nmt_vanilla_decoder</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decode_utils.html#construct_nmt_vanilla_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decode_utils.construct_nmt_vanilla_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the vanilla NMT decoder which bypasses the predictor
+framework. It uses the template methods <code class="docutils literal"><span class="pre">get_nmt_vanilla_decoder</span></code>
+for uniform access to the blocks or tensorflow frameworks.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">NMT vanilla decoder using all specified NMT models, or None if
+an error occurred.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decode_utils.create_decoder">
+<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">create_decoder</code><span class="sig-paren">(</span><em>new_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decode_utils.html#create_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decode_utils.create_decoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the <code class="docutils literal"><span class="pre">Decoder</span></code> instance. This specifies the search
+strategy used to traverse the space spanned by the predictors. This
+method relies on the global <code class="docutils literal"><span class="pre">args</span></code> variable.</p>
+<p>TODO: Refactor to avoid long argument lists</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>new_args</strong> &#8211; Command line arguments</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Decoder. Instance of the search strategy</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decode_utils.create_output_handlers">
+<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">create_output_handlers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decode_utils.html#create_output_handlers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decode_utils.create_output_handlers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the output handlers defined in the <code class="docutils literal"><span class="pre">io</span></code> module.
+These handlers create output files in different formats from the
+decoding results.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>args</strong> &#8211; Global command line arguments.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list. List of output handlers according &#8211;outputs</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decode_utils.do_decode">
+<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">do_decode</code><span class="sig-paren">(</span><em>decoder</em>, <em>output_handlers</em>, <em>src_sentences</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decode_utils.html#do_decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decode_utils.do_decode" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method contains the main decoding loop. It iterates through
+<code class="docutils literal"><span class="pre">src_sentences</span></code> and applies <code class="docutils literal"><span class="pre">decoder.decode()</span></code> to each of them.
+At the end, it calls the output handlers to create output files.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>decoder</strong> (<a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><em>Decoder</em></a>) &#8211; Current decoder instance</li>
+<li><strong>output_handlers</strong> (<em>list</em>) &#8211; List of output handlers, see
+<code class="docutils literal"><span class="pre">create_output_handlers()</span></code></li>
+<li><strong>src_sentences</strong> (<em>list</em>) &#8211; A list of strings. The strings are the
+source sentences with word indices to
+translate (e.g. &#8216;1 123 432 2&#8217;)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="module-cam.sgnmt.output">
 <span id="cam-sgnmt-output-module"></span><h2>cam.sgnmt.output module<a class="headerlink" href="#module-cam.sgnmt.output" title="Permalink to this headline">¶</a></h2>
@@ -728,7 +863,7 @@ classes.</p>
 
 <dl class="data">
 <dt id="cam.sgnmt.utils.TMP_FILENAME">
-<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">TMP_FILENAME</code><em class="property"> = '/tmp/sgnmt.4159.fst'</em><a class="headerlink" href="#cam.sgnmt.utils.TMP_FILENAME" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">TMP_FILENAME</code><em class="property"> = '/tmp/sgnmt.11385.fst'</em><a class="headerlink" href="#cam.sgnmt.utils.TMP_FILENAME" title="Permalink to this definition">¶</a></dt>
 <dd><p>Temporary file name to use if an FST file is zipped.</p>
 </dd></dl>
 

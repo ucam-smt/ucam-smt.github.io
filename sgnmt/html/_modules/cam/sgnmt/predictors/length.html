@@ -614,7 +614,101 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ngrams</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hist_long</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:]):</span>
                 <span class="k">return</span> <span class="bp">False</span>
         <span class="k">return</span> <span class="bp">True</span></div></div>
+
+
+<div class="viewcode-block" id="UnkCountPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.UnkCountPredictor">[docs]</a><span class="k">class</span> <span class="nc">UnkCountPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor regulates the number of UNKs in the output. We </span>
+<span class="sd">    assume that the number of UNKs in the target sentence is Poisson </span>
+<span class="sd">    distributed. This predictor is configured with n lambdas for</span>
+<span class="sd">    0,1,...,&gt;=n-1 UNKs in the source sentence. &quot;&quot;&quot;</span>
     
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_vocab_size</span><span class="p">,</span> <span class="n">lambdas</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes the UNK count predictor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            src_vocab_size (int): Size of source language vocabulary.</span>
+<span class="sd">                                  Indices greater than this are </span>
+<span class="sd">                                  considered as UNK.</span>
+<span class="sd">            lambdas (list): List of floats. The first entry is the </span>
+<span class="sd">                            lambda parameter given that the number of</span>
+<span class="sd">                            unks in the source sentence is 0 etc. The</span>
+<span class="sd">                            last float is lambda given that the source</span>
+<span class="sd">                            sentence has more than n-1 unks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span> <span class="o">=</span> <span class="n">src_vocab_size</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">UnkCountPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        
+<div class="viewcode-block" id="UnkCountPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.UnkCountPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Always returns 0 (= log 1) except for the first time &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_prob</span>
+        <span class="k">return</span> <span class="mf">0.0</span></div>
+    
+<div class="viewcode-block" id="UnkCountPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.UnkCountPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set score for EOS to the number of consumed words &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span><span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_unk</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_prob_idx</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_prob</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">consumed_prob</span><span class="p">}</span></div>
+    
+<div class="viewcode-block" id="UnkCountPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.UnkCountPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Count UNKs in ``src_sentence`` and reset counters.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Count UNKs in this list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">src_n_unk</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">src_sentence</span> <span class="k">if</span> <span class="n">w</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> 
+                                                    <span class="ow">or</span> <span class="n">w</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">src_n_unk</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_unk</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_poisson_prob</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Mode at lambda is the maximum of the poisson function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_prob_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_poisson_prob</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_prob_idx</span><span class="p">)</span>
+        <span class="n">ceil_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_poisson_prob</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_prob_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ceil_prob</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_prob</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_prob</span> <span class="o">=</span> <span class="n">ceil_prob</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_prob_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_prob_idx</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consumed_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_prob</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_poisson_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the log of the poisson probability for n events. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">n</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n</span><span class="p">)])</span>
+    
+<div class="viewcode-block" id="UnkCountPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.UnkCountPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Increases unk counter by one if ``word`` is unk.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): Increase counter if ``word`` is UNK</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_unk</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_prob_idx</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">consumed_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_unk</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_poisson_prob</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_unk</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="UnkCountPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.UnkCountPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the number of consumed words &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_unk</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">consumed_prob</span></div>
+    
+<div class="viewcode-block" id="UnkCountPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.UnkCountPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the number of consumed words &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_unk</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">consumed_prob</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="UnkCountPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.UnkCountPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="UnkCountPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.UnkCountPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the state is the same&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+
+
 </pre></div>
 
            </div>
