@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decoding.beam &mdash; SGNMT 0.3 documentation</title>
+  <title>cam.sgnmt.decoding.beam &mdash; SGNMT 0.4 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.3 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.4 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.3
+                0.4
               </div>
             
           
@@ -85,10 +85,11 @@
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
 </ul>
@@ -147,23 +148,19 @@
 
 
 <div class="viewcode-block" id="BeamDecoder"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.beam.BeamDecoder">[docs]</a><span class="k">class</span> <span class="nc">BeamDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;This decoder implements vanilla beam search. &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;This decoder implements standard beam search and several</span>
+<span class="sd">    variants of it such as diversity promoting beam search and beam</span>
+<span class="sd">    search with heuristic future cost estimates. This implementation</span>
+<span class="sd">    supports risk-free pruning and hypotheses recombination.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">decoder_args</span><span class="p">,</span>
-                 <span class="n">hypo_recombination</span><span class="p">,</span>
-                 <span class="n">beam_size</span><span class="p">,</span>
-                 <span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> 
-                 <span class="n">diversity_factor</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
-                 <span class="n">early_stopping</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Creates a new beam decoder instance</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new beam decoder instance. The following values</span>
+<span class="sd">        are fetched from `decoder_args`:</span>
 <span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
-<span class="sd">                                   from the configuration API.</span>
 <span class="sd">            hypo_recombination (bool): Activates hypo recombination </span>
-<span class="sd">            beam_size (int): Absolute beam size. A beam of 12 means</span>
-<span class="sd">                             that we keep track of 12 active hypothesis</span>
+<span class="sd">            beam (int): Absolute beam size. A beam of 12 means</span>
+<span class="sd">                        that we keep track of 12 active hypotheses</span>
 <span class="sd">            pure_heuristic_scores (bool): Hypotheses to keep in the beam</span>
 <span class="sd">                                          are normally selected </span>
 <span class="sd">                                          according the sum of partial</span>
@@ -183,22 +180,31 @@
 <span class="sd">                                   only interested in the single best</span>
 <span class="sd">                                   decoding result. If you want to </span>
 <span class="sd">                                   create full 12-best lists, disable</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from the configuration API.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">BeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">diversity_factor</span> <span class="o">=</span> <span class="n">diversity_factor</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">diverse_decoding</span> <span class="o">=</span> <span class="p">(</span><span class="n">diversity_factor</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">diversity_factor</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diversity_factor</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">decoder_diversity_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diverse_decoding</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diversity_factor</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diversity_factor</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Diversity promoting beam search is not implemented &quot;</span>
                           <span class="s2">&quot;yet&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span> <span class="o">=</span> <span class="n">beam_size</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span> <span class="o">=</span> <span class="n">hypo_recombination</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_best_eos</span> <span class="k">if</span> <span class="n">early_stopping</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_eos</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span> <span class="o">=</span> <span class="n">early_stopping</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">hypo_recombination</span> 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Risk-free beam-search pruning enabled&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="n">pure_heuristic_scores</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">beam</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">hypo_recombination</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_best_eos</span> 
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Risk-free beam-search pruning enabled&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_eos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span>
     
     <span class="k">def</span> <span class="nf">_get_combined_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combines hypo score with future cost estimates.&quot;&quot;&quot;</span>
         <span class="n">est_score</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">est_score</span> <span class="o">+</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span>
@@ -274,16 +280,14 @@
         <span class="k">return</span> <span class="n">new_hypos</span>
 
     <span class="k">def</span> <span class="nf">_get_next_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">all_hypos</span><span class="p">,</span> <span class="n">all_scores</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get hypos for the next beam iteration. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Get hypos for the next iteration. &quot;&quot;&quot;</span>
         <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-                        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">all_scores</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:]</span>
-                        <span class="k">if</span> <span class="n">all_hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">all_scores</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:]]</span>
         <span class="n">hypos</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">hypos</span>
     
     <span class="k">def</span> <span class="nf">_register_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Updates best_scores and min_score.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Updates best_scores and min_score. &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span><span class="p">:</span>
             <span class="k">return</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
@@ -365,7 +369,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.3',
+            VERSION:'0.4',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

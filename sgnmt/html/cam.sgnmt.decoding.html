@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decoding package &mdash; SGNMT 0.3 documentation</title>
+  <title>cam.sgnmt.decoding package &mdash; SGNMT 0.4 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.3 documentation" href="index.html"/>
+    <link rel="top" title="SGNMT 0.4 documentation" href="index.html"/>
         <link rel="up" title="cam.sgnmt package" href="cam.sgnmt.html"/>
         <link rel="next" title="cam.sgnmt.misc package" href="cam.sgnmt.misc.html"/>
         <link rel="prev" title="cam.sgnmt.blocks.alignment package" href="cam.sgnmt.blocks.alignment.html"/> 
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.3
+                0.4
               </div>
             
           
@@ -87,10 +87,11 @@
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adding_components.html">Tutorial: Adding new components</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="decoders.html">Decoders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Common issues</a></li>
 <li class="toctree-l1"><a class="reference internal" href="publications.html">Publications</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="cam.sgnmt.html">All modules</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="cam.sgnmt.html#subpackages">Subpackages</a><ul class="current">
@@ -207,9 +208,12 @@ decode on cyclic lattices with the fst predictor.</p>
 <p>Implementation of the beam search strategy</p>
 <dl class="class">
 <dt id="cam.sgnmt.decoding.beam.BeamDecoder">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.beam.</code><code class="descname">BeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em>, <em>hypo_recombination</em>, <em>beam_size</em>, <em>pure_heuristic_scores=False</em>, <em>diversity_factor=-1.0</em>, <em>early_stopping=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/beam.html#BeamDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.beam.BeamDecoder" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.beam.</code><code class="descname">BeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/beam.html#BeamDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.beam.BeamDecoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Decoder</span></code></a></p>
-<p>This decoder implements vanilla beam search.</p>
+<p>This decoder implements standard beam search and several
+variants of it such as diversity promoting beam search and beam
+search with heuristic future cost estimates. This implementation
+supports risk-free pruning and hypotheses recombination.</p>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.beam.BeamDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/beam.html#BeamDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.beam.BeamDecoder.decode" title="Permalink to this definition">¶</a></dt>
@@ -1098,7 +1102,7 @@ predictor scores</li>
 <p>Implementation of the dfs search strategy</p>
 <dl class="class">
 <dt id="cam.sgnmt.decoding.dfs.DFSDecoder">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.dfs.</code><code class="descname">DFSDecoder</code><span class="sig-paren">(</span><em>decoder_args</em>, <em>early_stopping=True</em>, <em>max_expansions=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/dfs.html#DFSDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.dfs.DFSDecoder" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.dfs.</code><code class="descname">DFSDecoder</code><span class="sig-paren">(</span><em>decoder_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/dfs.html#DFSDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.dfs.DFSDecoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Decoder</span></code></a></p>
 <p>This decoder implements depth first search without using
 heuristics. This is the most efficient search algorithm for
@@ -1878,7 +1882,7 @@ synchronization symbol.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.3',
+            VERSION:'0.4',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
