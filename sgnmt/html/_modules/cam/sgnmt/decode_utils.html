@@ -189,7 +189,8 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.forced</span> <span class="kn">import</span> <span class="n">ForcedPredictor</span><span class="p">,</span> <span class="n">ForcedLstPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.grammar</span> <span class="kn">import</span> <span class="n">RuleXtractPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.length</span> <span class="kn">import</span> <span class="n">WordCountPredictor</span><span class="p">,</span> <span class="n">NBLengthPredictor</span><span class="p">,</span> \
-    <span class="n">ExternalLengthPredictor</span><span class="p">,</span> <span class="n">NgramCountPredictor</span><span class="p">,</span> <span class="n">UnkCountPredictor</span><span class="p">,</span> <span class="n">BracketPredictor</span>
+    <span class="n">ExternalLengthPredictor</span><span class="p">,</span> <span class="n">NgramCountPredictor</span><span class="p">,</span> <span class="n">UnkCountPredictor</span><span class="p">,</span> \
+    <span class="n">BracketPredictor</span><span class="p">,</span> <span class="n">NgramizePredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.misc</span> <span class="kn">import</span> <span class="n">UnboundedAltsrcPredictor</span><span class="p">,</span> <span class="n">AltsrcPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.vocabulary</span> <span class="kn">import</span> <span class="n">IdxmapPredictor</span><span class="p">,</span> \
                                             <span class="n">UnboundedIdxmapPredictor</span><span class="p">,</span> \
@@ -198,6 +199,7 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.ngram</span> <span class="kn">import</span> <span class="n">SRILMPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_t2t</span> <span class="kn">import</span> <span class="n">T2TPredictor</span><span class="p">,</span> <span class="n">T2TBFSLayerbylayerPredictor</span><span class="p">,</span> \
                                         <span class="n">T2TDFSLayerbylayerPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_nizza</span> <span class="kn">import</span> <span class="n">NizzaPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tokenization</span> <span class="kn">import</span> <span class="n">Word2charPredictor</span><span class="p">,</span> <span class="n">FSTTokPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.tf.interface</span> <span class="kn">import</span> <span class="n">tf_get_nmt_predictor</span><span class="p">,</span> <span class="n">tf_get_nmt_vanilla_decoder</span><span class="p">,</span> \
     <span class="n">tf_get_rnnlm_predictor</span><span class="p">,</span> <span class="n">tf_get_default_nmt_config</span><span class="p">,</span> <span class="n">tf_get_rnnlm_prefix</span>
@@ -307,9 +309,16 @@
                         <span class="n">args</span><span class="p">,</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nmt_path&quot;</span><span class="p">),</span> <span class="n">nmt_config</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">nmt_engine</span> <span class="o">!=</span> <span class="s1">&#39;none&#39;</span><span class="p">:</span>
                     <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;NMT engine </span><span class="si">%s</span><span class="s2"> is not supported (yet)!&quot;</span> <span class="o">%</span> <span class="n">nmt_engine</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;nizza&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">NizzaPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_src_vocab_size&quot;</span><span class="p">),</span>
+                                   <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">),</span>
+                                   <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nizza_model&quot;</span><span class="p">),</span>
+                                   <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nizza_hparams_set&quot;</span><span class="p">),</span>
+                                   <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nizza_checkpoint_dir&quot;</span><span class="p">),</span>
+                                   <span class="n">single_cpu_thread</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">single_cpu_thread</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;t2t&quot;</span><span class="p">:</span>
-                <span class="n">p</span> <span class="o">=</span> <span class="n">T2TPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_src_vocab_size&quot;</span><span class="p">),</span>
-                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_trg_vocab_size&quot;</span><span class="p">),</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">T2TPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_src_vocab_size&quot;</span><span class="p">),</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">),</span>
                                  <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_model&quot;</span><span class="p">),</span>
                                  <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_problem&quot;</span><span class="p">),</span>
                                  <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_hparams_set&quot;</span><span class="p">),</span>
@@ -320,8 +329,8 @@
                                  <span class="n">pop_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;bfslayerbylayer&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">T2TBFSLayerbylayerPredictor</span><span class="p">(</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_src_vocab_size&quot;</span><span class="p">),</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_trg_vocab_size&quot;</span><span class="p">),</span>
+                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_src_vocab_size&quot;</span><span class="p">),</span>
+                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">),</span>
                          <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_model&quot;</span><span class="p">),</span>
                          <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_problem&quot;</span><span class="p">),</span>
                          <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_hparams_set&quot;</span><span class="p">),</span>
@@ -336,8 +345,8 @@
                          <span class="n">terminal_strategy</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">layerbylayer_terminal_strategy</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;dfslayerbylayer&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">T2TDFSLayerbylayerPredictor</span><span class="p">(</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_src_vocab_size&quot;</span><span class="p">),</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_trg_vocab_size&quot;</span><span class="p">),</span>
+                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_src_vocab_size&quot;</span><span class="p">),</span>
+                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">),</span>
                          <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_model&quot;</span><span class="p">),</span>
                          <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_problem&quot;</span><span class="p">),</span>
                          <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_hparams_set&quot;</span><span class="p">),</span>
@@ -352,7 +361,8 @@
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;bracket&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">BracketPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span><span class="p">,</span>
                                      <span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">,</span>
-                                     <span class="n">max_depth</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_depth</span><span class="p">)</span>
+                                     <span class="n">max_depth</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_depth</span><span class="p">,</span>
+                                     <span class="n">extlength_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">extlength_path</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;fst&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">FstPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;fst_path&quot;</span><span class="p">),</span>
                                  <span class="n">args</span><span class="o">.</span><span class="n">use_fst_weights</span><span class="p">,</span>
@@ -377,7 +387,7 @@
                                 <span class="s2">&quot;consumed&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">bow_heuristic_strategies</span><span class="p">,</span>
                                 <span class="s2">&quot;remaining&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">bow_heuristic_strategies</span><span class="p">,</span>
                                 <span class="n">args</span><span class="o">.</span><span class="n">bow_diversity_heuristic_factor</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">bow_equivalence_vocab_size</span><span class="p">)</span>
+                                <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">))</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;bowsearch&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">BagOfWordsSearchPredictor</span><span class="p">(</span>
                                 <span class="n">decoder</span><span class="p">,</span>
@@ -390,7 +400,7 @@
                                 <span class="s2">&quot;consumed&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">bow_heuristic_strategies</span><span class="p">,</span>
                                 <span class="s2">&quot;remaining&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">bow_heuristic_strategies</span><span class="p">,</span>
                                 <span class="n">args</span><span class="o">.</span><span class="n">bow_diversity_heuristic_factor</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">bow_equivalence_vocab_size</span><span class="p">)</span>
+                                <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">))</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;forcedlst&quot;</span><span class="p">:</span>
                 <span class="n">feat_name</span> <span class="o">=</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;forcedlst_sparse_feat&quot;</span><span class="p">)</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">ForcedLstPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">trg_test</span><span class="p">,</span>
@@ -421,7 +431,7 @@
                                         <span class="n">args</span><span class="o">.</span><span class="n">ngramc_discount_factor</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;unkc&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">UnkCountPredictor</span><span class="p">(</span>
-                         <span class="n">args</span><span class="o">.</span><span class="n">unkc_src_vocab_size</span><span class="p">,</span> 
+                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_src_vocab_size&quot;</span><span class="p">),</span> 
                          <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">unk_count_lambdas</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)])</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;length&quot;</span><span class="p">:</span>
                 <span class="n">length_model_weights</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> 
@@ -480,6 +490,11 @@
                                         <span class="n">args</span><span class="o">.</span><span class="n">fst_unk_id</span><span class="p">,</span>
                                         <span class="n">args</span><span class="o">.</span><span class="n">fsttok_max_pending_score</span><span class="p">,</span>
                                         <span class="n">p</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">wrapper</span> <span class="o">==</span> <span class="s2">&quot;ngramize&quot;</span><span class="p">:</span>
+                    <span class="c1"># ngramize always wraps bounded predictors</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">NgramizePredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ngramize_min_order</span><span class="p">,</span> 
+                                          <span class="n">args</span><span class="o">.</span><span class="n">ngramize_max_order</span><span class="p">,</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">max_len_factor</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">wrapper</span> <span class="o">==</span> <span class="s2">&quot;unkvocab&quot;</span><span class="p">:</span>
                     <span class="c1"># unkvocab always wraps bounded predictors</span>
                     <span class="n">p</span> <span class="o">=</span> <span class="n">UnkvocabPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">trg_vocab_size</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
@@ -495,6 +510,9 @@
     <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;One of the files required for setting up the &quot;</span>
                       <span class="s2">&quot;predictors could not be read: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+        <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Invalid arguments for one of the predictors: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
         <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
     <span class="k">except</span> <span class="ne">NameError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find external library: </span><span class="si">%s</span><span class="s2">. Please make sure &quot;</span>

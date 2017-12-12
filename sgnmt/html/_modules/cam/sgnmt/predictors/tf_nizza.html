@@ -1,0 +1,349 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.tf_nizza &mdash; SGNMT 0.3.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.3.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.tf_nizza</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.tf_nizza</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module integrates Nizza alignment models.</span>
+
+<span class="sd">https://github.com/fstahlberg/nizza</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.python.training</span> <span class="kn">import</span> <span class="n">saver</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.python.training</span> <span class="kn">import</span> <span class="n">training</span>
+    <span class="c1"># Requires nizza</span>
+    <span class="kn">from</span> <span class="nn">nizza</span> <span class="kn">import</span> <span class="n">registry</span>
+    <span class="kn">from</span> <span class="nn">nizza.utils</span> <span class="kn">import</span> <span class="n">common_utils</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span> <span class="c1"># Deal with it in decode.py</span>
+
+
+<div class="viewcode-block" id="NizzaPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.NizzaPredictor">[docs]</a><span class="k">class</span> <span class="nc">NizzaPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor uses Nizza alignment models to derive a posterior over</span>
+<span class="sd">    the target vocabulary for the next position. It mainly relies on the</span>
+<span class="sd">    predict_next_word() implementation of Nizza models.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_vocab_size</span><span class="p">,</span> <span class="n">trg_vocab_size</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> 
+                 <span class="n">hparams_set_name</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="p">,</span> <span class="n">single_cpu_thread</span><span class="p">,</span>
+                 <span class="n">nizza_unk_id</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes a nizza predictor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            src_vocab_size (int): Source vocabulary size (called inputs_vocab_size</span>
+<span class="sd">                in nizza)</span>
+<span class="sd">            trg_vocab_size (int): Target vocabulary size (called targets_vocab_size</span>
+<span class="sd">                in nizza)</span>
+<span class="sd">            model_name (string): Name of the nizza model</span>
+<span class="sd">            hparams_set_name (string): Name of the nizza hyper-parameter set</span>
+<span class="sd">            checkpoint_dir (string): Path to the Nizza checkpoint directory. The </span>
+<span class="sd">                                     predictor will load the top most checkpoint in </span>
+<span class="sd">                                     the `checkpoints` file.</span>
+<span class="sd">            single_cpu_thread (bool): If true, prevent tensorflow from</span>
+<span class="sd">                                      doing multithreading.</span>
+<span class="sd">            nizza_unk_id (int): If set, use this as UNK id. Otherwise, the</span>
+<span class="sd">                nizza is assumed to have no UNKs</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            IOError if checkpoint file not found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NizzaPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/checkpoint&quot;</span> <span class="o">%</span> <span class="n">checkpoint_dir</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Checkpoint file </span><span class="si">%s</span><span class="s2">/checkpoint not found!&quot;</span> 
+                          <span class="o">%</span> <span class="n">checkpoint_dir</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">IOError</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_single_cpu_thread</span> <span class="o">=</span> <span class="n">single_cpu_thread</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nizza_unk_id</span> <span class="o">=</span> <span class="n">nizza_unk_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">predictor_graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">predictor_graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">()</span> <span class="k">as</span> <span class="n">g</span><span class="p">:</span>
+            <span class="n">hparams</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_registered_hparams_set</span><span class="p">(</span><span class="n">hparams_set_name</span><span class="p">)</span>
+            <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;inputs_vocab_size&quot;</span><span class="p">,</span> <span class="n">src_vocab_size</span><span class="p">)</span>
+            <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;targets_vocab_size&quot;</span><span class="p">,</span> <span class="n">trg_vocab_size</span><span class="p">)</span>
+            <span class="n">run_config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">contrib</span><span class="o">.</span><span class="n">learn</span><span class="o">.</span><span class="n">RunConfig</span><span class="p">()</span>
+            <span class="n">run_config</span> <span class="o">=</span> <span class="n">run_config</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">model_dir</span><span class="o">=</span><span class="n">checkpoint_dir</span><span class="p">)</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_registered_model</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">hparams</span><span class="p">,</span> <span class="n">run_config</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span>
+                                              <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_inputs&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span> 
+                                               <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_targets&quot;</span><span class="p">)</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> 
+                        <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">,</span> <span class="mi">0</span><span class="p">)}</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">estimator</span><span class="o">.</span><span class="n">ModeKeys</span><span class="o">.</span><span class="n">PREDICT</span>
+            <span class="n">precomputed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">precompute</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">hparams</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_probs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">predict_next_word</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">hparams</span><span class="p">,</span> <span class="n">precomputed</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_session</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_session_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates the session config with t2t default parameters.&quot;&quot;&quot;</span>
+        <span class="n">graph_options</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">GraphOptions</span><span class="p">(</span><span class="n">optimizer_options</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">OptimizerOptions</span><span class="p">(</span>
+            <span class="n">opt_level</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">OptimizerOptions</span><span class="o">.</span><span class="n">L1</span><span class="p">,</span> <span class="n">do_function_inlining</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_cpu_thread</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span>
+                <span class="n">intra_op_parallelism_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">inter_op_parallelism_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">allow_soft_placement</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">graph_options</span><span class="o">=</span><span class="n">graph_options</span><span class="p">,</span>
+                <span class="n">log_device_placement</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gpu_options</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">GPUOptions</span><span class="p">(</span>
+                <span class="n">per_process_gpu_memory_fraction</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span>
+                <span class="n">allow_soft_placement</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">graph_options</span><span class="o">=</span><span class="n">graph_options</span><span class="p">,</span>
+                <span class="n">gpu_options</span><span class="o">=</span><span class="n">gpu_options</span><span class="p">,</span>
+                <span class="n">log_device_placement</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">config</span>
+
+<div class="viewcode-block" id="NizzaPredictor.create_session"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.create_session">[docs]</a>    <span class="k">def</span> <span class="nf">create_session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a MonitoredSession for this predictor.&quot;&quot;&quot;</span>
+        <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">saver</span><span class="o">.</span><span class="n">latest_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">training</span><span class="o">.</span><span class="n">MonitoredSession</span><span class="p">(</span>
+            <span class="n">session_creator</span><span class="o">=</span><span class="n">training</span><span class="o">.</span><span class="n">ChiefSessionCreator</span><span class="p">(</span>
+                <span class="n">checkpoint_filename_with_path</span><span class="o">=</span><span class="n">checkpoint_path</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_session_config</span><span class="p">()))</span></div>
+
+<div class="viewcode-block" id="NizzaPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fetch posterior[t2t_unk_id] or return NEG_INF if None.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nizza_unk_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">return</span> <span class="n">posterior</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_nizza_unk_id</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="NizzaPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Call the T2T model in self.mon_sess.&quot;&quot;&quot;</span>
+        <span class="n">log_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_probs</span><span class="p">,</span>
+            <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span> <span class="o">+</span> <span class="p">[</span><span class="n">common_utils</span><span class="o">.</span><span class="n">PAD_ID</span><span class="p">]})</span>
+        <span class="n">log_probs</span><span class="p">[</span><span class="n">common_utils</span><span class="o">.</span><span class="n">PAD_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>  <span class="c1"># Mask padding</span>
+        <span class="k">return</span> <span class="n">log_probs</span></div>
+    
+<div class="viewcode-block" id="NizzaPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set src_sentence, reset consumed.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span> <span class="o">=</span> <span class="n">src_sentence</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="NizzaPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Append ``word`` to the current history.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="NizzaPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The predictor state is the complete history.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span></div>
+    
+<div class="viewcode-block" id="NizzaPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The predictor state is the complete history.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="NizzaPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="NizzaPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the history is the same &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.3.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
