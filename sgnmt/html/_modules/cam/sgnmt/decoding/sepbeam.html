@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decoding.sepbeam &mdash; SGNMT 0.3.1 documentation</title>
+  <title>cam.sgnmt.decoding.sepbeam &mdash; SGNMT 0.3.2 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.3.1 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.3.2 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.3.1
+                0.3.2
               </div>
             
           
@@ -89,6 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
@@ -167,49 +168,14 @@
 <span class="sd">    strategy.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">decoder_args</span><span class="p">,</span>
-                 <span class="n">hypo_recombination</span><span class="p">,</span>
-                 <span class="n">beam_size</span><span class="p">,</span>
-                 <span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> 
-                 <span class="n">diversity_factor</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
-                 <span class="n">early_stopping</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Creates a new beam decoder instance with explicit</span>
-<span class="sd">        synchronization symbol.</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
-<span class="sd">                                   from the configuration API.</span>
-<span class="sd">            hypo_recombination (bool): Activates hypo recombination </span>
-<span class="sd">            beam_size (int): Absolute beam size. A beam of 12 means</span>
-<span class="sd">                             that we keep track of 12 active hypothesis</span>
-<span class="sd">            pure_heuristic_scores (bool): Hypotheses to keep in the beam</span>
-<span class="sd">                                          are normally selected </span>
-<span class="sd">                                          according the sum of partial</span>
-<span class="sd">                                          hypo score and future cost</span>
-<span class="sd">                                          estimates. If set to true, </span>
-<span class="sd">                                          partial hypo scores are </span>
-<span class="sd">                                          ignored.</span>
-<span class="sd">            diversity_factor (float): If this is set to a positive </span>
-<span class="sd">                                      value we add diversity promoting</span>
-<span class="sd">                                      penalization terms to the partial</span>
-<span class="sd">                                      hypothesis scores following Li</span>
-<span class="sd">                                      and Jurafsky, 2016</span>
-<span class="sd">            early_stopping (bool): If true, we stop when the best</span>
-<span class="sd">                                   scoring hypothesis ends with &lt;/S&gt;.</span>
-<span class="sd">                                   If false, we stop when all hypotheses</span>
-<span class="sd">                                   end with &lt;/S&gt;. Enable if you are</span>
-<span class="sd">                                   only interested in the single best</span>
-<span class="sd">                                   decoding result. If you want to </span>
-<span class="sd">                                   create full 12-best lists, disable</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new beam decoder instance for system level </span>
+<span class="sd">        combination. See the docstring of the BeamDecoder constructor</span>
+<span class="sd">        for a description of which arguments are fetched from</span>
+<span class="sd">        `decoder_args`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">SepBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">,</span>
-                                              <span class="n">hypo_recombination</span><span class="p">,</span>
-                                              <span class="n">beam_size</span><span class="p">,</span>
-                                              <span class="n">pure_heuristic_scores</span><span class="p">,</span> 
-                                              <span class="n">diversity_factor</span><span class="p">,</span>
-                                              <span class="n">early_stopping</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">hypo_recombination</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SepBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Hypothesis recombination is not applicable &quot;</span>
                          <span class="s2">&quot;to the sepbeam decoder.&quot;</span><span class="p">)</span>
     
@@ -266,7 +232,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, University of Cambridge.
+        &copy; Copyright 2018, University of Cambridge.
 
     </p>
   </div>
@@ -288,7 +254,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.3.1',
+            VERSION:'0.3.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

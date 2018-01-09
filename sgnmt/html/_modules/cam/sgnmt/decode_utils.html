@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decode_utils &mdash; SGNMT 0.3.1 documentation</title>
+  <title>cam.sgnmt.decode_utils &mdash; SGNMT 0.3.2 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.3.1 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 0.3.2 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.3.1
+                0.3.2
               </div>
             
           
@@ -89,6 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Common issues</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../publications.html">Publications</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.html">All modules</a></li>
@@ -175,6 +176,7 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.multisegbeam</span> <span class="kn">import</span> <span class="n">MultisegBeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.restarting</span> <span class="kn">import</span> <span class="n">RestartingDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.sepbeam</span> <span class="kn">import</span> <span class="n">SepBeamDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.syntaxbeam</span> <span class="kn">import</span> <span class="n">SyntaxBeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.syncbeam</span> <span class="kn">import</span> <span class="n">SyncBeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.output</span> <span class="kn">import</span> <span class="n">TextOutputHandler</span><span class="p">,</span> \
                              <span class="n">NBestOutputHandler</span><span class="p">,</span> \
@@ -561,21 +563,11 @@
                                       <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
                                       <span class="n">args</span><span class="o">.</span><span class="n">max_word_len</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;syncbeam&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">SyncBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
-                                  <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
-                                  <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
-                                  <span class="n">args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">,</span>
-                                  <span class="n">args</span><span class="o">.</span><span class="n">decoder_diversity_factor</span><span class="p">,</span>
-                                  <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
-                                  <span class="n">args</span><span class="o">.</span><span class="n">sync_symbol</span><span class="p">,</span>
-                                  <span class="n">args</span><span class="o">.</span><span class="n">max_word_len</span><span class="p">)</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">SyncBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;sepbeam&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">SepBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
-                                 <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
-                                 <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
-                                 <span class="n">args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">,</span>
-                                 <span class="n">args</span><span class="o">.</span><span class="n">decoder_diversity_factor</span><span class="p">,</span>
-                                 <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">)</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">SepBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;syntaxbeam&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">SyntaxBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;dfs&quot;</span><span class="p">:</span>
         <span class="n">decoder</span> <span class="o">=</span> <span class="n">DFSDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;restarting&quot;</span><span class="p">:</span>
@@ -910,7 +902,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, University of Cambridge.
+        &copy; Copyright 2018, University of Cambridge.
 
     </p>
   </div>
@@ -932,7 +924,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.3.1',
+            VERSION:'0.3.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

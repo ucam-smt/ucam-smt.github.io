@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Command-line reference &mdash; SGNMT 0.3.1 documentation</title>
+  <title>Command-line reference &mdash; SGNMT 0.3.2 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.3.1 documentation" href="index.html"/>
+    <link rel="top" title="SGNMT 0.3.2 documentation" href="index.html"/>
         <link rel="next" title="Predictors" href="predictors.html"/>
         <link rel="prev" title="Tutorial: Adding new components" href="adding_components.html"/> 
 
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.3.1
+                0.3.2
               </div>
             
           
@@ -96,6 +96,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Common issues</a></li>
 <li class="toctree-l1"><a class="reference internal" href="publications.html">Publications</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cam.sgnmt.html">All modules</a></li>
@@ -166,7 +167,7 @@ For a quick overview of available parameters use <code class="docutils literal">
                  <span class="p">[</span><span class="o">--</span><span class="n">input_method</span> <span class="p">{</span><span class="n">dummy</span><span class="p">,</span><span class="n">file</span><span class="p">,</span><span class="n">shell</span><span class="p">,</span><span class="n">stdin</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">log_sum</span> <span class="p">{</span><span class="n">tropical</span><span class="p">,</span><span class="n">log</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">single_cpu_thread</span> <span class="n">SINGLE_CPU_THREAD</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">beam</span> <span class="n">BEAM</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">decoder</span> <span class="p">{</span><span class="n">greedy</span><span class="p">,</span><span class="n">beam</span><span class="p">,</span><span class="n">multisegbeam</span><span class="p">,</span><span class="n">syncbeam</span><span class="p">,</span><span class="n">sepbeam</span><span class="p">,</span><span class="n">dfs</span><span class="p">,</span><span class="n">restarting</span><span class="p">,</span><span class="n">bow</span><span class="p">,</span><span class="n">flip</span><span class="p">,</span><span class="n">bucket</span><span class="p">,</span><span class="n">bigramgreedy</span><span class="p">,</span><span class="n">astar</span><span class="p">,</span><span class="n">vanilla</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">decoder</span> <span class="p">{</span><span class="n">greedy</span><span class="p">,</span><span class="n">beam</span><span class="p">,</span><span class="n">multisegbeam</span><span class="p">,</span><span class="n">syncbeam</span><span class="p">,</span><span class="n">sepbeam</span><span class="p">,</span><span class="n">syntaxbeam</span><span class="p">,</span><span class="n">dfs</span><span class="p">,</span><span class="n">restarting</span><span class="p">,</span><span class="n">bow</span><span class="p">,</span><span class="n">flip</span><span class="p">,</span><span class="n">bucket</span><span class="p">,</span><span class="n">bigramgreedy</span><span class="p">,</span><span class="n">astar</span><span class="p">,</span><span class="n">vanilla</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">hypo_recombination</span> <span class="n">HYPO_RECOMBINATION</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">allow_unk_in_output</span> <span class="n">ALLOW_UNK_IN_OUTPUT</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">max_node_expansions</span> <span class="n">MAX_NODE_EXPANSIONS</span><span class="p">]</span>
@@ -511,6 +512,7 @@ In shell and stdin mode you can change SGNMT options on the fly: Beginning a lin
 * &#8216;restarting&#8217;: Like DFS but with better admissible pruning behavior.
 * &#8216;multisegbeam&#8217;: Beam search for predictors with multiple tokenizations ([sub]word/char-levels).
 * &#8216;syncbeam&#8217;: beam search which compares after consuming a special synchronization symbol instead of after each iteration.
+* &#8216;syntaxbeam&#8217;: beam search which ensures terminal symbol diversity.
 * &#8216;sepbeam&#8217;: Associates predictors with hypos in beam search and applies only one predictor instead of all for hypo expansion.
 * &#8216;bow&#8217;: Restarting decoder optimized for bag-of-words problems.
 * &#8216;flip&#8217;: This decoder works only for bag problems. It traverses the search space by switching two words in the hypothesis. Do not use bow predictor.
@@ -518,7 +520,7 @@ In shell and stdin mode you can change SGNMT options on the fly: Beginning a lin
 * &#8216;bigramgreedy&#8217;: Works best for bag problems. Collects bigram statistics and constructs hypos to score by greedily selecting high scoring bigrams. Do not use bow predictor with this search strategy.
 * &#8216;astar&#8217;: A* search. The heuristic function is configured using the &#8211;heuristics options.
 * &#8216;vanilla&#8217;: Original blocks beam decoder. This bypasses the predictor framework and directly performs pure NMT beam decoding on the GPU. Use this when you do pure NMT decoding as this is usually faster then using a single nmt predictor as the search can be parallelized on the GPU.</p>
-<p class="last">Possible choices: greedy, beam, multisegbeam, syncbeam, sepbeam, dfs, restarting, bow, flip, bucket, bigramgreedy, astar, vanilla</p>
+<p class="last">Possible choices: greedy, beam, multisegbeam, syncbeam, sepbeam, syntaxbeam, dfs, restarting, bow, flip, bucket, bigramgreedy, astar, vanilla</p>
 </td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--hypo_recombination=False</span></kbd></td>
@@ -871,7 +873,7 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--syntax_pop_id=-1</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Must be set to a positive values if the layerbylayer predictor uses POP attention. This is also used for the closing bracket in linearised trees</td></tr>
+<tr><td>&nbsp;</td><td>ID of the closing bracket in output syntax trees. layerbylayer and t2t predictors support single integer values. The bracket predictor can take a comma-separated list of integers.</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--syntax_max_terminal_id=30003</span></kbd></td>
 </tr>
@@ -2966,7 +2968,7 @@ NMT.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, University of Cambridge.
+        &copy; Copyright 2018, University of Cambridge.
 
     </p>
   </div>
@@ -2988,7 +2990,7 @@ NMT.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.3.1',
+            VERSION:'0.3.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

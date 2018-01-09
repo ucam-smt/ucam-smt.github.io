@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.ui &mdash; SGNMT 0.3.1 documentation</title>
+  <title>cam.sgnmt.ui &mdash; SGNMT 0.3.2 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.3.1 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 0.3.2 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.3.1
+                0.3.2
               </div>
             
           
@@ -89,6 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Common issues</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../publications.html">Publications</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.html">All modules</a></li>
@@ -170,16 +171,26 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">YAML_AVAILABLE</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Install PyYAML in order to use config files.&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">args</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">)</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">config_file</span>
         <span class="nb">delattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s1">&#39;config_file&#39;</span><span class="p">)</span>
         <span class="n">arg_dict</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">__dict__</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+            <span class="n">_load_config_file</span><span class="p">(</span><span class="n">arg_dict</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">args</span></div>
+
+
+<span class="k">def</span> <span class="nf">_load_config_file</span><span class="p">(</span><span class="n">arg_dict</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;config_file&quot;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">sub_path</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+                    <span class="n">_load_config_file</span><span class="p">(</span><span class="n">arg_dict</span><span class="p">,</span> <span class="n">sub_path</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
                 <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
                     <span class="n">arg_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">arg_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
-    <span class="k">return</span> <span class="n">args</span></div>
 
 
 <div class="viewcode-block" id="parse_param_string"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.parse_param_string">[docs]</a><span class="k">def</span> <span class="nf">parse_param_string</span><span class="p">(</span><span class="n">param</span><span class="p">):</span>
@@ -419,8 +430,7 @@
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;General options&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--config_file&#39;</span><span class="p">,</span> 
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Configuration file in standard .ini format. NOTE:&quot;</span>
-                        <span class="s2">&quot; Configuration file overrides command line arguments&quot;</span><span class="p">,</span>
-                        <span class="nb">type</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">FileType</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">))</span>
+                        <span class="s2">&quot; Configuration file overrides command line arguments&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--verbosity&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span> <span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="s1">&#39;warn&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Log level: debug,info,warn,error&quot;</span><span class="p">)</span>
@@ -491,6 +501,7 @@
                                  <span class="s1">&#39;multisegbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;syncbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;sepbeam&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;syntaxbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;dfs&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;restarting&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;bow&#39;</span><span class="p">,</span>
@@ -517,6 +528,8 @@
                         <span class="s2">&quot;* &#39;syncbeam&#39;: beam search which compares after &quot;</span>
                         <span class="s2">&quot;consuming a special synchronization symbol instead &quot;</span>
                         <span class="s2">&quot;of after each iteration.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;syntaxbeam&#39;: beam search which ensures terminal &quot;</span>
+                        <span class="s2">&quot;symbol diversity.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;sepbeam&#39;: Associates predictors with hypos in &quot;</span>
                         <span class="s2">&quot;beam search and applies only one predictor instead &quot;</span>
                         <span class="s2">&quot;of all for hypo expansion.</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -1023,10 +1036,11 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_root_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Must be set for the layerbylayer predictor. ID &quot;</span>
                        <span class="s2">&quot;of the initial target root label.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_pop_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Must be set to a positive values if the &quot;</span>
-                       <span class="s2">&quot;layerbylayer predictor uses POP attention. This is &quot;</span>
-                       <span class="s2">&quot;also used for the closing bracket in linearised trees&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_pop_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;-1&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;ID of the closing bracket in output syntax trees.&quot;</span>
+                       <span class="s2">&quot; layerbylayer and t2t predictors support single &quot;</span>
+                       <span class="s2">&quot;integer values. The bracket predictor can take a comma&quot;</span>
+                       <span class="s2">&quot;-separated list of integers.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_max_terminal_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30003</span><span class="p">,</span>
                        <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;All token IDs larger than this are considered to &quot;</span>
@@ -1454,7 +1468,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, University of Cambridge.
+        &copy; Copyright 2018, University of Cambridge.
 
     </p>
   </div>
@@ -1476,7 +1490,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.3.1',
+            VERSION:'0.3.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

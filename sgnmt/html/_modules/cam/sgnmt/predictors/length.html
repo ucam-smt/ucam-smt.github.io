@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.length &mdash; SGNMT 0.3.1 documentation</title>
+  <title>cam.sgnmt.predictors.length &mdash; SGNMT 0.3.2 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.3.1 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.3.2 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.3.1
+                0.3.2
               </div>
             
           
@@ -89,6 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
@@ -741,8 +742,8 @@
 <span class="sd">        Args:</span>
 <span class="sd">            max_terminal_id (int): All IDs greater than this are </span>
 <span class="sd">                brackets</span>
-<span class="sd">            closing_bracket_id (int): All brackets except this one are </span>
-<span class="sd">                opening</span>
+<span class="sd">            closing_bracket_id (string): All brackets except these ones are </span>
+<span class="sd">                opening. Comma-separated list of integers.</span>
 <span class="sd">            max_depth (int): If positive, restrict the maximum depth</span>
 <span class="sd">            extlength_path (string): If this is set, restrict the </span>
 <span class="sd">                number of terminals to the distribution specified in</span>
@@ -752,7 +753,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">BracketPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> <span class="o">=</span> <span class="n">max_terminal_id</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_id</span> <span class="o">=</span> <span class="n">closing_bracket_id</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">closing_bracket_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">closing_bracket_id</span><span class="p">)]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span> <span class="o">=</span> <span class="n">max_depth</span> <span class="k">if</span> <span class="n">max_depth</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1000000</span>
         <span class="k">if</span> <span class="n">extlength_path</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> <span class="o">=</span> <span class="n">load_external_lengths</span><span class="p">(</span><span class="n">extlength_path</span><span class="p">)</span>
@@ -772,6 +776,9 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_no_closing_bracket</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span><span class="p">}</span>
     
 <div class="viewcode-block" id="BracketPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;If the maximum depth is reached, exclude all opening</span>
@@ -786,8 +793,9 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="c1"># Balanced: Score EOS with extlengths, supress closing bracket</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span><span class="p">:</span>  <span class="c1"># Initial predict next call</span>
-                <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_id</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">,</span> 
-                        <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">}</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_closing_bracket</span><span class="p">()</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+                <span class="k">return</span> <span class="n">ret</span>
             <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span> 
                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">}</span>
@@ -797,13 +805,14 @@
                 <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span><span class="p">):</span>
             <span class="c1"># Do not allow opening brackets</span>
             <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">w</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span> 
-                <span class="k">if</span> <span class="n">w</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> <span class="ow">and</span> <span class="n">w</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_id</span><span class="p">})</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">w</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> 
+                    <span class="ow">and</span> <span class="ow">not</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span><span class="p">)})</span>
         <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> 
                 <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">==</span> <span class="mi">1</span> 
                 <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">&gt;</span> <span class="mi">0</span> 
                 <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span><span class="p">):</span>
             <span class="c1"># Do not allow to go back to depth 0 with wrong number of terminals</span>
-            <span class="n">ret</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_no_closing_bracket</span><span class="p">())</span>
         <span class="k">return</span> <span class="n">ret</span></div>
         
 <div class="viewcode-block" id="BracketPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
@@ -814,7 +823,7 @@
     
 <div class="viewcode-block" id="BracketPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Updates current depth and the number of consumed terminals.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_id</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">-=</span> <span class="mi">1</span>
@@ -935,7 +944,7 @@
         <span class="k">for</span> <span class="n">order</span><span class="p">,</span> <span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">unk_scores</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">this_scores</span><span class="p">,</span> 
                                                          <span class="n">this_unk_scores</span><span class="p">)):</span>
             <span class="k">if</span> <span class="n">scores</span> <span class="ow">and</span> <span class="n">order</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_order</span><span class="p">:</span>
-                <span class="n">score_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">this_scores</span><span class="p">)</span>
+                <span class="n">score_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
                 <span class="n">combined_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">score_matrix</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
                 <span class="n">combined_unk_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">unk_scores</span><span class="p">))</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">combined_scores</span><span class="p">:</span>
@@ -988,7 +997,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, University of Cambridge.
+        &copy; Copyright 2018, University of Cambridge.
 
     </p>
   </div>
@@ -1010,7 +1019,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.3.1',
+            VERSION:'0.3.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
