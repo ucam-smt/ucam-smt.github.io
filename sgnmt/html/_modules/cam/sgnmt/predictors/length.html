@@ -373,7 +373,7 @@
 
 
 <div class="viewcode-block" id="WordCountPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor">[docs]</a><span class="k">class</span> <span class="nc">WordCountPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;This predictor adds the number of words as feature. &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;This predictor adds the (negative) number of words as feature. &quot;&quot;&quot;</span>
     
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new word count predictor instance.</span>
@@ -728,126 +728,6 @@
         <span class="sd">&quot;&quot;&quot;Returns true if the state is the same&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
 
-
-<div class="viewcode-block" id="BracketPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor">[docs]</a><span class="k">class</span> <span class="nc">BracketPredictor</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;This predictor constrains the output to well-formed bracket</span>
-<span class="sd">    expressions. It also allows to specify the number of terminals with</span>
-<span class="sd">    an external length distribution file.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_terminal_id</span><span class="p">,</span> <span class="n">closing_bracket_id</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> 
-                 <span class="n">extlength_path</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Creates a new bracket predictor.</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            max_terminal_id (int): All IDs greater than this are </span>
-<span class="sd">                brackets</span>
-<span class="sd">            closing_bracket_id (string): All brackets except these ones are </span>
-<span class="sd">                opening. Comma-separated list of integers.</span>
-<span class="sd">            max_depth (int): If positive, restrict the maximum depth</span>
-<span class="sd">            extlength_path (string): If this is set, restrict the </span>
-<span class="sd">                number of terminals to the distribution specified in</span>
-<span class="sd">                the referenced file. Terminals can be implicit: We</span>
-<span class="sd">                count a single terminal between each adjacent opening</span>
-<span class="sd">                and closing bracket.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">BracketPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> <span class="o">=</span> <span class="n">max_terminal_id</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">closing_bracket_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">closing_bracket_id</span><span class="p">)]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span> <span class="o">=</span> <span class="n">max_depth</span> <span class="k">if</span> <span class="n">max_depth</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1000000</span>
-        <span class="k">if</span> <span class="n">extlength_path</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> <span class="o">=</span> <span class="n">load_external_lengths</span><span class="p">(</span><span class="n">extlength_path</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> <span class="o">=</span> <span class="bp">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="mi">1000000</span>
-    
-<div class="viewcode-block" id="BracketPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Sets the current depth to 0.</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            src_sentence (list): Not used</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span> <span class="o">=</span> <span class="bp">True</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span><span class="p">)</span></div>
-
-    <span class="k">def</span> <span class="nf">_no_closing_bracket</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span><span class="p">}</span>
-    
-<div class="viewcode-block" id="BracketPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;If the maximum depth is reached, exclude all opening</span>
-<span class="sd">        brackets. If history is not balanced, exclude EOS. If the</span>
-<span class="sd">        current depth is zero, exclude closing brackets.</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            words (list): Set of words to score</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            dict.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="c1"># Balanced: Score EOS with extlengths, supress closing bracket</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span><span class="p">:</span>  <span class="c1"># Initial predict next call</span>
-                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_closing_bracket</span><span class="p">()</span>
-                <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
-                <span class="k">return</span> <span class="n">ret</span>
-            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span> 
-                       <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">}</span>
-        <span class="c1"># Unbalanced: do not allow EOS</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">}</span>
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span> 
-                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span><span class="p">):</span>
-            <span class="c1"># Do not allow opening brackets</span>
-            <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">w</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span> 
-                <span class="k">if</span> <span class="p">(</span><span class="n">w</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> 
-                    <span class="ow">and</span> <span class="ow">not</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span><span class="p">)})</span>
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> 
-                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">==</span> <span class="mi">1</span> 
-                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">&gt;</span> <span class="mi">0</span> 
-                <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span><span class="p">):</span>
-            <span class="c1"># Do not allow to go back to depth 0 with wrong number of terminals</span>
-            <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_no_closing_bracket</span><span class="p">())</span>
-        <span class="k">return</span> <span class="n">ret</span></div>
-        
-<div class="viewcode-block" id="BracketPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Always returns 0.0&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> 
-        <span class="k">return</span> <span class="mf">0.0</span></div>
-    
-<div class="viewcode-block" id="BracketPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Updates current depth and the number of consumed terminals.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">-=</span> <span class="mi">1</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span> <span class="o">=</span> <span class="bp">False</span>
-        <span class="k">elif</span> <span class="n">word</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span> <span class="o">=</span> <span class="bp">True</span></div>
-    
-<div class="viewcode-block" id="BracketPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns the current depth and number of consumed terminals&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span></div>
-    
-<div class="viewcode-block" id="BracketPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Sets the current depth and number of consumed terminals&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span> <span class="o">=</span> <span class="n">state</span></div>
-
-<div class="viewcode-block" id="BracketPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Empty.&quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
-    
-<div class="viewcode-block" id="BracketPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.BracketPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Trivial implementation&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
-
     
 <div class="viewcode-block" id="NgramizePredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.NgramizePredictor">[docs]</a><span class="k">class</span> <span class="nc">NgramizePredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This wrapper extracts n-gram posteriors from a predictor which</span>
@@ -886,9 +766,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">NgramizePredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">max_order</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;ngramize_max_order must be positive.&quot;</span><span class="p">)</span>
+             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;max_ngram_order must be positive.&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">min_order</span> <span class="o">&gt;</span> <span class="n">max_order</span><span class="p">:</span>
-             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;ngramize_min_order greater than max_order.&quot;</span><span class="p">)</span>
+             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;min_ngram_order greater than max_order.&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_history_length</span> <span class="o">=</span> <span class="n">max_order</span> <span class="o">-</span> <span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">min_order</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">min_order</span><span class="p">)</span>

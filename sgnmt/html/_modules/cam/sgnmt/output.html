@@ -158,6 +158,18 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">codecs</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+
+
+<span class="k">def</span> <span class="nf">_mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">exception</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">EEXIST</span><span class="p">:</span>
+            <span class="k">raise</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Output </span><span class="si">%s</span><span class="s2"> directory &#39;</span><span class="si">%s</span><span class="s2">&#39; already exists.&quot;</span> 
+                         <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
 
 
 <div class="viewcode-block" id="OutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.OutputHandler">[docs]</a><span class="k">class</span> <span class="nc">OutputHandler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -273,6 +285,133 @@
                 <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span></div></div>
 
 
+<div class="viewcode-block" id="TimeCSVOutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.TimeCSVOutputHandler">[docs]</a><span class="k">class</span> <span class="nc">TimeCSVOutputHandler</span><span class="p">(</span><span class="n">OutputHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Produces one CSV file for each sentence. The CSV files contain</span>
+<span class="sd">    the predictor score breakdown for each translation prefix length.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">predictor_names</span><span class="p">,</span> <span class="n">start_sen_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a Moses n-best list output handler.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            path (string):  Path to the n-best file to write</span>
+<span class="sd">            predictor_names: Names of the predictors whose scores</span>
+<span class="sd">                             should be included in the score breakdown</span>
+<span class="sd">                             in the n-best list</span>
+<span class="sd">            start_sen_id: ID of the first sentence</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TimeCSVOutputHandler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_pattern</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;/</span><span class="si">%d</span><span class="s2">.csv&quot;</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_sen_id</span> <span class="o">=</span> <span class="n">start_sen_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">name_count</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">predictor_names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">name_count</span><span class="p">:</span>
+                <span class="n">name_count</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">final_name</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">name_count</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">final_name</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">name_count</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">final_name</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="TimeCSVOutputHandler.write_hypos"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.TimeCSVOutputHandler.write_hypos">[docs]</a>    <span class="k">def</span> <span class="nf">write_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">all_hypos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes ngram files for each sentence in ``all_hypos``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            all_hypos (list): list of nbest lists of hypotheses</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            OSError. If the directory could not be created</span>
+<span class="sd">            IOError. If something goes wrong while writing to the disk</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;TimeCSV&quot;</span><span class="p">)</span>
+        <span class="n">sen_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_sen_id</span>
+        <span class="n">n_predictors</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span><span class="p">)</span>
+        <span class="n">placeholder</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">-&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_predictors</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">hypos</span> <span class="ow">in</span> <span class="n">all_hypos</span><span class="p">:</span>
+            <span class="n">sen_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_pattern</span> <span class="o">%</span> <span class="n">sen_idx</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">hypo_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hypos</span><span class="p">)</span>
+                <span class="c1"># Headers</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Time&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">hypo_count</span><span class="p">):</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">-</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> 
+                                       <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span><span class="p">]))</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">-</span><span class="si">%d</span><span class="s2">_weight&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> 
+                                       <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span><span class="p">]))</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">max_len</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span> <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">max_len</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">pos</span><span class="p">))</span>
+                    <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">pos</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">):</span>
+                            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">placeholder</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">pred_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">):</span>
+                                <span class="n">acc_pred_score</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">s</span><span class="p">[</span><span class="n">pred_idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[:</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+                                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">acc_pred_score</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">pred_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">):</span>
+                                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[</span><span class="n">pos</span><span class="p">][</span><span class="n">pred_idx</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="NgramOutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.NgramOutputHandler">[docs]</a><span class="k">class</span> <span class="nc">NgramOutputHandler</span><span class="p">(</span><span class="n">OutputHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This output handler extracts MBR-style ngram posteriors from the </span>
+<span class="sd">    hypotheses returned by the decoder. The hypothesis scores are assumed to</span>
+<span class="sd">    be loglikelihoods, which we renormalize to make sure that we operate on a</span>
+<span class="sd">    valid distribution. The scores produced by the output handler are </span>
+<span class="sd">    probabilities of an ngram being in the translation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">min_order</span><span class="p">,</span> <span class="n">max_order</span><span class="p">,</span> <span class="n">start_sen_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates an ngram output handler.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            path (string):  Path to the ngram directory to create</span>
+<span class="sd">            min_order (int):  Minimum order of extracted ngrams</span>
+<span class="sd">            max_order (int):  Maximum order of extracted ngrams</span>
+<span class="sd">            start_sen_id (int):  ID of the first sentence</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NgramOutputHandler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_order</span> <span class="o">=</span> <span class="n">min_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_order</span> <span class="o">=</span> <span class="n">max_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_sen_id</span> <span class="o">=</span> <span class="n">start_sen_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_pattern</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;/</span><span class="si">%d</span><span class="s2">.txt&quot;</span> 
+      
+<div class="viewcode-block" id="NgramOutputHandler.write_hypos"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.NgramOutputHandler.write_hypos">[docs]</a>    <span class="k">def</span> <span class="nf">write_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">all_hypos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes ngram files for each sentence in ``all_hypos``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            all_hypos (list): list of nbest lists of hypotheses</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            OSError. If the directory could not be created</span>
+<span class="sd">            IOError. If something goes wrong while writing to the disk</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;ngram&quot;</span><span class="p">)</span>
+        <span class="n">sen_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_sen_id</span>
+        <span class="k">for</span> <span class="n">hypos</span> <span class="ow">in</span> <span class="n">all_hypos</span><span class="p">:</span>
+            <span class="n">sen_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">([</span><span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">])</span>
+            <span class="n">normed_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">-</span> <span class="n">total</span> <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">]</span>
+            <span class="n">ngrams</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+            <span class="c1"># Collect ngrams</span>
+            <span class="k">for</span> <span class="n">hypo_idx</span><span class="p">,</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">hypos</span><span class="p">):</span>
+                <span class="n">sen_eos</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">]</span> <span class="o">+</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sen_eos</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">hist</span> <span class="o">=</span> <span class="n">sen_eos</span><span class="p">[:</span><span class="n">pos</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="n">ngram</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">hist</span><span class="p">[</span><span class="o">-</span><span class="n">order</span><span class="p">:]))</span>
+                        <span class="n">ngrams</span><span class="p">[</span><span class="n">ngram</span><span class="p">][</span><span class="n">hypo_idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_pattern</span> <span class="o">%</span> <span class="n">sen_idx</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">ngram</span><span class="p">,</span> <span class="n">hypo_indices</span> <span class="ow">in</span> <span class="n">ngrams</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="n">ngram_score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span>
+                       <span class="p">[</span><span class="n">normed_scores</span><span class="p">[</span><span class="n">hypo_idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">hypo_idx</span> <span class="ow">in</span> <span class="n">hypo_indices</span><span class="p">]))</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%f</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">ngram</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">ngram_score</span><span class="p">)))</span></div></div>
+
+
 <div class="viewcode-block" id="FSTOutputHandler"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.output.FSTOutputHandler">[docs]</a><span class="k">class</span> <span class="nc">FSTOutputHandler</span><span class="p">(</span><span class="n">OutputHandler</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This output handler creates FSTs with with sparse tuple arcs </span>
 <span class="sd">    from the n-best lists from the decoder. The predictor scores are </span>
@@ -324,14 +463,7 @@
 <span class="sd">            OSError. If the directory could not be created</span>
 <span class="sd">            IOError. If something goes wrong while writing to the disk</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">exception</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">EEXIST</span><span class="p">:</span>
-                <span class="k">raise</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-                        <span class="s2">&quot;Output FST directory </span><span class="si">%s</span><span class="s2"> already exists.&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">_mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;FST&quot;</span><span class="p">)</span>
         <span class="n">fst_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_sen_id</span>
         <span class="k">for</span> <span class="n">hypos</span> <span class="ow">in</span> <span class="n">all_hypos</span><span class="p">:</span>
             <span class="n">fst_idx</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -400,14 +532,7 @@
 <span class="sd">            OSError. If the directory could not be created</span>
 <span class="sd">            IOError. If something goes wrong while writing to the disk</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">exception</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">EEXIST</span><span class="p">:</span>
-                <span class="k">raise</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-                        <span class="s2">&quot;Output FST directory </span><span class="si">%s</span><span class="s2"> already exists.&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">_mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;FST&quot;</span><span class="p">)</span>
         <span class="n">fst_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_sen_id</span>
         <span class="k">for</span> <span class="n">hypos</span> <span class="ow">in</span> <span class="n">all_hypos</span><span class="p">:</span>
             <span class="n">fst_idx</span> <span class="o">+=</span> <span class="mi">1</span>

@@ -502,6 +502,7 @@
                                  <span class="s1">&#39;syncbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;sepbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;syntaxbeam&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;combibeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;dfs&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;restarting&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;bow&#39;</span><span class="p">,</span>
@@ -533,6 +534,8 @@
                         <span class="s2">&quot;* &#39;sepbeam&#39;: Associates predictors with hypos in &quot;</span>
                         <span class="s2">&quot;beam search and applies only one predictor instead &quot;</span>
                         <span class="s2">&quot;of all for hypo expansion.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;combibeam&#39;: Applies combination_scheme at each &quot;</span>
+                        <span class="s2">&quot;time step.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;bow&#39;: Restarting decoder optimized for bag-of-words &quot;</span>
                         <span class="s2">&quot;problems.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;flip&#39;: This decoder works only for bag problems. &quot;</span>
@@ -772,7 +775,10 @@
                         <span class="s2">&quot;* &#39;fst&#39;: Translation lattices in OpenFST &quot;</span>
                         <span class="s2">&quot;format with sparse tuple arcs.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;sfst&#39;: Translation lattices in OpenFST &quot;</span>
-                        <span class="s2">&quot;format with standard arcs (i.e. combined scores).</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;format with standard arcs (i.e. combined scores).</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;timecsv&#39;: Generate CSV files with separate &quot;</span>
+                        <span class="s2">&quot;predictor scores for each time step.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;ngram&#39;: MBR-style n-gram posteriors.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;The path to the output files can be specified with &quot;</span>
                         <span class="s2">&quot;--output_path&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--remove_eos&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
@@ -832,8 +838,10 @@
                         <span class="s2">&quot;layerbylayer_terminal_strategy, syntax_max_depth, &quot;</span>
                         <span class="s2">&quot;pred_src_vocab_size, pred_trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;bracket&#39;: Well-formed bracketing.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;         Options: syntax_max_terminal_id, &quot;</span>
+                        <span class="s2">&quot;             Options: syntax_max_terminal_id, &quot;</span>
                         <span class="s2">&quot;syntax_pop_id, syntax_max_depth, extlength_path</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;osm&#39;: Well-formed operation sequences.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: None</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;srilm&#39;: n-gram language model.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: srilm_path, srilm_order</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;nplm&#39;: neural n-gram language model (NPLM).</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -911,8 +919,8 @@
                         <span class="s2">&quot;skipvocab_stop_size</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;ngramize&#39;: Extracts n-gram posterior from &quot;</span>
                         <span class="s2">&quot;predictors without token-level history.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;               Options: ngramize_min_order, &quot;</span>
-                        <span class="s2">&quot;ngramize_max_order, max_len_factor</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;               Options: min_ngram_order, &quot;</span>
+                        <span class="s2">&quot;max_ngram_order, max_len_factor</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;Note that you can use multiple instances of the same &quot;</span>
                         <span class="s2">&quot;predictor. For example, &#39;nmt,nmt,nmt&#39; can be used &quot;</span>
@@ -947,7 +955,8 @@
                         <span class="s2">&quot;* &#39;reduced&#39;: Normalize to vocabulary defined by the &quot;</span>
                         <span class="s2">&quot;open vocabulary predictors at each time step.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--combination_scheme&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;sum&quot;</span><span class="p">,</span>
-                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="s1">&#39;length_norm&#39;</span><span class="p">,</span> <span class="s1">&#39;bayesian&#39;</span><span class="p">],</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="s1">&#39;length_norm&#39;</span><span class="p">,</span> <span class="s1">&#39;bayesian&#39;</span><span class="p">,</span> 
+                          <span class="s1">&#39;bayesian_loglin&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter controls how the combined &quot;</span>
                         <span class="s2">&quot;hypothesis score is calculated from the predictor &quot;</span>
                         <span class="s2">&quot;scores and weights.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
@@ -957,13 +966,9 @@
                         <span class="s2">&quot;hypotheses.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;bayesian&#39;: Apply the Bayesian LM interpolation &quot;</span>
                         <span class="s2">&quot;scheme from Allauzen and Riley to interpolate the &quot;</span>
-                        <span class="s2">&quot;predictor scores&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--apply_combination_scheme_to_partial_hypos&quot;</span><span class="p">,</span> 
-                        <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If true, apply the combination scheme specified &quot;</span>
-                        <span class="s2">&quot;with --combination_scheme after each node expansion. &quot;</span>
-                        <span class="s2">&quot;If false, apply it only to complete hypotheses at &quot;</span>
-                        <span class="s2">&quot;the end of decoding&quot;</span><span class="p">)</span>
+                        <span class="s2">&quot;predictor scores</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bayesian_loglin&#39;: Like bayesian, but retain &quot;</span>
+                        <span class="s2">&quot;loglinear framework.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--pred_src_vocab_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Predictor source vocabulary size. Used by the &quot;</span>
                         <span class="s2">&quot;bow, bowsearch, t2t, nizza, unkc predictors.&quot;</span><span class="p">)</span>
@@ -1134,10 +1139,12 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramc_order&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If positive, count only ngrams of the specified &quot;</span>
                        <span class="s2">&quot;Order. Otherwise, count all ngrams&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramize_min_order&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Minimum ngram order for ngramize wrapper&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramize_max_order&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum ngram order for ngramize wrapper&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--min_ngram_order&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Minimum ngram order for ngramize wrapper and &quot;</span>
+                       <span class="s2">&quot;ngram output format&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_ngram_order&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum ngram order for ngramize wrapper amd &quot;</span>
+                       <span class="s2">&quot;ngram output format&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramc_discount_factor&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is non-negative, discount ngram counts &quot;</span>
                        <span class="s2">&quot;by this factor each time the ngram is consumed&quot;</span><span class="p">)</span>

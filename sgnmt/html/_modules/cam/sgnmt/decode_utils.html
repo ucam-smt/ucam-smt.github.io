@@ -178,8 +178,11 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.sepbeam</span> <span class="kn">import</span> <span class="n">SepBeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.syntaxbeam</span> <span class="kn">import</span> <span class="n">SyntaxBeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.syncbeam</span> <span class="kn">import</span> <span class="n">SyncBeamDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.combibeam</span> <span class="kn">import</span> <span class="n">CombiBeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.output</span> <span class="kn">import</span> <span class="n">TextOutputHandler</span><span class="p">,</span> \
                              <span class="n">NBestOutputHandler</span><span class="p">,</span> \
+                             <span class="n">NgramOutputHandler</span><span class="p">,</span> \
+                             <span class="n">TimeCSVOutputHandler</span><span class="p">,</span> \
                              <span class="n">FSTOutputHandler</span><span class="p">,</span> \
                              <span class="n">StandardFSTOutputHandler</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.automata</span> <span class="kn">import</span> <span class="n">FstPredictor</span><span class="p">,</span> \
@@ -192,7 +195,8 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.grammar</span> <span class="kn">import</span> <span class="n">RuleXtractPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.length</span> <span class="kn">import</span> <span class="n">WordCountPredictor</span><span class="p">,</span> <span class="n">NBLengthPredictor</span><span class="p">,</span> \
     <span class="n">ExternalLengthPredictor</span><span class="p">,</span> <span class="n">NgramCountPredictor</span><span class="p">,</span> <span class="n">UnkCountPredictor</span><span class="p">,</span> \
-    <span class="n">BracketPredictor</span><span class="p">,</span> <span class="n">NgramizePredictor</span>
+    <span class="n">NgramizePredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.structure</span> <span class="kn">import</span> <span class="n">BracketPredictor</span><span class="p">,</span> <span class="n">OSMPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.misc</span> <span class="kn">import</span> <span class="n">UnboundedAltsrcPredictor</span><span class="p">,</span> <span class="n">AltsrcPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.vocabulary</span> <span class="kn">import</span> <span class="n">IdxmapPredictor</span><span class="p">,</span> \
                                             <span class="n">UnboundedIdxmapPredictor</span><span class="p">,</span> \
@@ -365,6 +369,8 @@
                                      <span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">,</span>
                                      <span class="n">max_depth</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_depth</span><span class="p">,</span>
                                      <span class="n">extlength_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">extlength_path</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;osm&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">OSMPredictor</span><span class="p">()</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;fst&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">FstPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;fst_path&quot;</span><span class="p">),</span>
                                  <span class="n">args</span><span class="o">.</span><span class="n">use_fst_weights</span><span class="p">,</span>
@@ -494,8 +500,8 @@
                                         <span class="n">p</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">wrapper</span> <span class="o">==</span> <span class="s2">&quot;ngramize&quot;</span><span class="p">:</span>
                     <span class="c1"># ngramize always wraps bounded predictors</span>
-                    <span class="n">p</span> <span class="o">=</span> <span class="n">NgramizePredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ngramize_min_order</span><span class="p">,</span> 
-                                          <span class="n">args</span><span class="o">.</span><span class="n">ngramize_max_order</span><span class="p">,</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">NgramizePredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">min_ngram_order</span><span class="p">,</span> 
+                                          <span class="n">args</span><span class="o">.</span><span class="n">max_ngram_order</span><span class="p">,</span>
                                           <span class="n">args</span><span class="o">.</span><span class="n">max_len_factor</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">wrapper</span> <span class="o">==</span> <span class="s2">&quot;unkvocab&quot;</span><span class="p">:</span>
                     <span class="c1"># unkvocab always wraps bounded predictors</span>
@@ -568,6 +574,8 @@
         <span class="n">decoder</span> <span class="o">=</span> <span class="n">SepBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;syntaxbeam&quot;</span><span class="p">:</span>
         <span class="n">decoder</span> <span class="o">=</span> <span class="n">SyntaxBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;combibeam&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">CombiBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;dfs&quot;</span><span class="p">:</span>
         <span class="n">decoder</span> <span class="o">=</span> <span class="n">DFSDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;restarting&quot;</span><span class="p">:</span>
@@ -722,6 +730,15 @@
             <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NBestOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">),</span>
                                               <span class="n">start_sen_id</span><span class="p">,</span>
                                               <span class="n">trg_map</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;ngram&quot;</span><span class="p">:</span>
+            <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NgramOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
+                                              <span class="n">args</span><span class="o">.</span><span class="n">min_ngram_order</span><span class="p">,</span>
+                                              <span class="n">args</span><span class="o">.</span><span class="n">max_ngram_order</span><span class="p">,</span>
+                                              <span class="n">start_sen_id</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;timecsv&quot;</span><span class="p">:</span>
+            <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TimeCSVOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> 
+                                                <span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">),</span>
+                                                <span class="n">start_sen_id</span><span class="p">))</span>
         <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;fst&quot;</span><span class="p">:</span>
             <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FSTOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
                                             <span class="n">start_sen_id</span><span class="p">,</span>
@@ -842,12 +859,10 @@
                         <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">nbest</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">hypos</span> <span class="o">=</span> <span class="n">hypos</span><span class="p">[:</span><span class="n">args</span><span class="o">.</span><span class="n">nbest</span><span class="p">]</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">!=</span> <span class="s1">&#39;sum&#39;</span> 
-                    <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">apply_combination_scheme_to_partial_hypos</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">!=</span> <span class="s1">&#39;sum&#39;</span><span class="p">:</span> 
                 <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
                     <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_full</span><span class="p">(</span>
-                                                        <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span>
-                                                        <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span>
+                            <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
                 <span class="n">hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">hypo</span><span class="p">:</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">:</span>
                 <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">convert_to_char_level</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">]</span>

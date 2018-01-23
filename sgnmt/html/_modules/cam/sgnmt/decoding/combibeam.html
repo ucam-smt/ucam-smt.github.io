@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.decoding.combibeam &mdash; SGNMT 0.3.2 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.3.2 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.decoding.combibeam</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.decoding.combibeam</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Implementation of beam search which applies combination_sheme at</span>
+<span class="sd">each timestep.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.beam</span> <span class="kn">import</span> <span class="n">BeamDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding</span> <span class="kn">import</span> <span class="n">core</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+
+<div class="viewcode-block" id="CombiBeamDecoder"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.combibeam.CombiBeamDecoder">[docs]</a><span class="k">class</span> <span class="nc">CombiBeamDecoder</span><span class="p">(</span><span class="n">BeamDecoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This beam search implementation is a modification to the hypo</span>
+<span class="sd">    expansion strategy. Rather than selecting hypotheses based on</span>
+<span class="sd">    the sum of the previous hypo scores and the current one, we</span>
+<span class="sd">    apply combination_scheme in each time step. This makes it possible</span>
+<span class="sd">    to use schemes like Bayesian combination on the word rather than</span>
+<span class="sd">    the full sentence level.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new beam decoder instance. In addition to the </span>
+<span class="sd">        constructor of `BeamDecoder`, the following values are fetched </span>
+<span class="sd">        from `decoder_args`:</span>
+<span class="sd">        </span>
+<span class="sd">            combination_scheme (string): breakdown2score strategy</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CombiBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;length_norm&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_length_norm</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;bayesian_loglin&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_bayesian_loglin</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;bayesian&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_bayesian</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;sum&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_sum</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using the sum combination strategy has no effect &quot;</span>
+                          <span class="s2">&quot;under the combibeam decoder.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">_expand_hypo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the best beam size expansions of ``hypo``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypo (PartialHypothesis): Hypothesis to expans</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. List of child hypotheses</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># Consume if cheap expand</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
+            <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">posterior</span><span class="p">,</span> <span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
+        <span class="n">expanded_hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypo</span><span class="o">.</span><span class="n">cheap_expand</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="n">w</span><span class="p">])</span> 
+                          <span class="k">for</span> <span class="n">w</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_iterable</span><span class="p">(</span><span class="n">posterior</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">expanded_hypo</span> <span class="ow">in</span> <span class="n">expanded_hypos</span><span class="p">:</span>
+            <span class="n">expanded_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span><span class="p">(</span>
+                    <span class="n">expanded_hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">expanded_hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span>
+        <span class="n">expanded_hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="o">-</span><span class="n">x</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">expanded_hypos</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">]</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.3.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

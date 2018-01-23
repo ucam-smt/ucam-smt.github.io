@@ -1,0 +1,438 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.structure &mdash; SGNMT 0.3.2 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.3.2 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.structure</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.structure</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module implements constraints which assure that highly structured</span>
+<span class="sd">output is well-formatted. For example, the bracket predictor checks for</span>
+<span class="sd">balanced bracket expressions, and the OSM predictor prevents any sequence</span>
+<span class="sd">of operations which cannot be compiled to a string.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="n">OSM_EOP_ID</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">OSM_GAP_ID</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">OSM_JUMP_FWD_ID</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">OSM_JUMP_BWD_ID</span> <span class="o">=</span> <span class="mi">7</span>
+
+
+<div class="viewcode-block" id="load_external_lengths"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.load_external_lengths">[docs]</a><span class="k">def</span> <span class="nf">load_external_lengths</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads a length distribution from a plain text file. The file</span>
+<span class="sd">    must contain blank separated &lt;length&gt;:&lt;score&gt; pairs in each line.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path (string): Path to the length file.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        list of dicts mapping a length to its scores, one dict for each</span>
+<span class="sd">        sentence.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lengths</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+                <span class="k">if</span> <span class="s1">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">pair</span><span class="p">:</span>
+                    <span class="n">length</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+                    <span class="n">scores</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">length</span><span class="p">)]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">scores</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">pair</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">lengths</span></div>
+
+
+<div class="viewcode-block" id="OSMPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor">[docs]</a><span class="k">class</span> <span class="nc">OSMPredictor</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor applies the following constraints to an OSM output:</span>
+
+<span class="sd">      - The number of EOP (end-of-phrase) tokens must not exceed the number</span>
+<span class="sd">        of source tokens.</span>
+<span class="sd">      - JUMP_FWD and JUMP_BWD tokens are constraint to avoid jumping out of</span>
+<span class="sd">        bounds.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new osm predictor.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">OSMPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="OSMPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets the number of source tokens.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="OSMPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Apply OSM constraints.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            words (list): Set of words to score</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_len</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">OSM_EOP_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">OSM_JUMP_FWD_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+        
+<div class="viewcode-block" id="OSMPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Always returns 0.0&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">0.0</span></div>
+    
+<div class="viewcode-block" id="OSMPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates the number of holes, EOPs, and the head position.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_EOP_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_GAP_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_JUMP_FWD_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_JUMP_BWD_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">-=</span> <span class="mi">1</span></div>
+    
+<div class="viewcode-block" id="OSMPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span></div>
+    
+<div class="viewcode-block" id="OSMPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="OSMPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="OSMPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Trivial implementation&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+
+
+<div class="viewcode-block" id="BracketPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.BracketPredictor">[docs]</a><span class="k">class</span> <span class="nc">BracketPredictor</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor constrains the output to well-formed bracket</span>
+<span class="sd">    expressions. It also allows to specify the number of terminals with</span>
+<span class="sd">    an external length distribution file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_terminal_id</span><span class="p">,</span> <span class="n">closing_bracket_id</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> 
+                 <span class="n">extlength_path</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new bracket predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            max_terminal_id (int): All IDs greater than this are </span>
+<span class="sd">                brackets</span>
+<span class="sd">            closing_bracket_id (string): All brackets except these ones are </span>
+<span class="sd">                opening. Comma-separated list of integers.</span>
+<span class="sd">            max_depth (int): If positive, restrict the maximum depth</span>
+<span class="sd">            extlength_path (string): If this is set, restrict the </span>
+<span class="sd">                number of terminals to the distribution specified in</span>
+<span class="sd">                the referenced file. Terminals can be implicit: We</span>
+<span class="sd">                count a single terminal between each adjacent opening</span>
+<span class="sd">                and closing bracket.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BracketPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> <span class="o">=</span> <span class="n">max_terminal_id</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">closing_bracket_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">closing_bracket_id</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span> <span class="o">=</span> <span class="n">max_depth</span> <span class="k">if</span> <span class="n">max_depth</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1000000</span>
+        <span class="k">if</span> <span class="n">extlength_path</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> <span class="o">=</span> <span class="n">load_external_lengths</span><span class="p">(</span><span class="n">extlength_path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="mi">1000000</span>
+    
+<div class="viewcode-block" id="BracketPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.BracketPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets the current depth to 0.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_no_closing_bracket</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span><span class="p">}</span>
+    
+<div class="viewcode-block" id="BracketPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.BracketPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If the maximum depth is reached, exclude all opening</span>
+<span class="sd">        brackets. If history is not balanced, exclude EOS. If the</span>
+<span class="sd">        current depth is zero, exclude closing brackets.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            words (list): Set of words to score</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Balanced: Score EOS with extlengths, supress closing bracket</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span><span class="p">:</span>  <span class="c1"># Initial predict next call</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_closing_bracket</span><span class="p">()</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+                <span class="k">return</span> <span class="n">ret</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span> 
+                       <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">}</span>
+        <span class="c1"># Unbalanced: do not allow EOS</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span> 
+                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span><span class="p">):</span>
+            <span class="c1"># Do not allow opening brackets</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">w</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span> 
+                <span class="k">if</span> <span class="p">(</span><span class="n">w</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> 
+                    <span class="ow">and</span> <span class="ow">not</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span><span class="p">)})</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length_scores</span> 
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">==</span> <span class="mi">1</span> 
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">&gt;</span> <span class="mi">0</span> 
+                <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_length_scores</span><span class="p">):</span>
+            <span class="c1"># Do not allow to go back to depth 0 with wrong number of terminals</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_no_closing_bracket</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+        
+<div class="viewcode-block" id="BracketPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.BracketPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Always returns 0.0&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> 
+        <span class="k">return</span> <span class="mf">0.0</span></div>
+    
+<div class="viewcode-block" id="BracketPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.BracketPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates current depth and the number of consumed terminals.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span> <span class="o">=</span> <span class="bp">True</span></div>
+    
+<div class="viewcode-block" id="BracketPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.BracketPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the current depth and number of consumed terminals&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span></div>
+    
+<div class="viewcode-block" id="BracketPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.BracketPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets the current depth and number of consumed terminals&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_depth</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_terminals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ends_with_opening</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="BracketPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.BracketPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="BracketPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.BracketPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Trivial implementation&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+
+    
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.3.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

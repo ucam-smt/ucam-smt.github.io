@@ -97,6 +97,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-bigramgreedy-module">cam.sgnmt.decoding.bigramgreedy module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-bow-module">cam.sgnmt.decoding.bow module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-bucket-module">cam.sgnmt.decoding.bucket module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-combibeam-module">cam.sgnmt.decoding.combibeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-core-module">cam.sgnmt.decoding.core module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-decoder-module">cam.sgnmt.decoding.decoder module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-dfs-module">cam.sgnmt.decoding.dfs module</a></li>
@@ -173,6 +174,7 @@ Decoders are specified using the <code class="docutils literal"><span class="pre
 <li><strong>sepbeam</strong>: Associates predictors with hypos in beam search and applies only one predictor instead of all for hypo expansion.</li>
 <li><strong>syncbeam</strong>: Beam search which compares after consuming a special synchronization symbol instead of after each iteration.</li>
 <li><strong>syntaxbeam</strong>: Beam search which ensures diversity amongst terminal symbol histories.</li>
+<li><strong>combibeam</strong>: Beam search which applies <code class="docutils literal"><span class="pre">--combination_scheme</span></code> at each time step.</li>
 <li><strong>multisegbeam</strong>: Beam search with multiple segmentations.</li>
 <li><strong>dfs</strong>: Depth-first search. This should be used for exact decoding or the complete enumeration of the search space.
 but it cannot be used if the search space is too large (like for unrestricted NMT) as it performs exhaustive search.
@@ -393,6 +395,23 @@ epsilon</p>
 <dd><p>Decodes a single source sentence.</p>
 </dd></dl>
 
+</dd></dl>
+
+</div>
+<div class="section" id="cam-sgnmt-decoding-combibeam-module">
+<h3>cam.sgnmt.decoding.combibeam module<a class="headerlink" href="#cam-sgnmt-decoding-combibeam-module" title="Permalink to this headline">¶</a></h3>
+<p>Implementation of beam search which applies combination_sheme at
+each timestep.</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.combibeam.</code><code class="descname">CombiBeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combibeam.html#CombiBeamDecoder"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.beam.BeamDecoder" title="cam.sgnmt.decoding.beam.BeamDecoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.beam.BeamDecoder</span></code></a></p>
+<p>This beam search implementation is a modification to the hypo
+expansion strategy. Rather than selecting hypotheses based on
+the sum of the previous hypo scores and the current one, we
+apply combination_scheme in each time step. This makes it possible
+to use schemes like Bayesian combination on the word rather than
+the full sentence level.</p>
 </dd></dl>
 
 </div>
@@ -914,13 +933,6 @@ tokenized on the character instead of the word level.</td>
 <dd><p>Represents a partial hypothesis in various decoders.</p>
 <dl class="method">
 <dt>
-<code class="descname">add_score_breakdown</code><span class="sig-paren">(</span><em>added_scores</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis.add_score_breakdown"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Helper function for adding the word level score breakdowns
-for the newly added word to the hypothesis score breakdown.</p>
-</dd></dl>
-
-<dl class="method">
-<dt>
 <code class="descname">cheap_expand</code><span class="sig-paren">(</span><em>word</em>, <em>score</em>, <em>score_breakdown</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis.cheap_expand"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Creates a new partial hypothesis adding a new word to the
 translation prefix with given probability. Does NOT update the
@@ -988,7 +1000,7 @@ the new word</li>
 
 <dl class="function">
 <dt>
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_bayesian</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_bayesian"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_bayesian</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_bayesian"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>This realizes score combination following the Bayesian LM
 interpolation scheme from (Allauzen and Riley, 2011)</p>
 <blockquote>
@@ -1009,6 +1021,11 @@ weighted sum of the scores in
 <code class="docutils literal"><span class="pre">score_breakdown</span></code>. Not used.</li>
 <li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
 predictor scores</li>
+<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
+assume that this function has been called in the</p>
+<blockquote>
+<div>previous time step.</div></blockquote>
+</li>
 </ul>
 </td>
 </tr>
@@ -1021,7 +1038,15 @@ predictor scores</li>
 
 <dl class="function">
 <dt>
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_full</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em><span class="sig-paren">)</span></dt>
+<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_bayesian_loglin</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_bayesian_loglin"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Like bayesian combination scheme, but uses loglinear model
+combination rather than linear interpolation weights</p>
+<p>TODO: Implement incremental version of it, write weights into breakdowns.</p>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_full</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span></dt>
 <dd><p>Implements the combination scheme &#8216;sum&#8217; by always returning
 <code class="docutils literal"><span class="pre">working_score</span></code>. This function is designed to be assigned to
 the globals <code class="docutils literal"><span class="pre">breakdown2score_partial</span></code> or <code class="docutils literal"><span class="pre">breakdown2score_full</span></code></p>
@@ -1034,7 +1059,12 @@ the globals <code class="docutils literal"><span class="pre">breakdown2score_par
 weighted sum of the scores in
 <code class="docutils literal"><span class="pre">score_breakdown</span></code></li>
 <li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
-predictor scores</li>
+predictor scores (not used).</li>
+<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
+assume that this function has been called in the</p>
+<blockquote>
+<div>previous time step (not used).</div></blockquote>
+</li>
 </ul>
 </td>
 </tr>
@@ -1047,7 +1077,7 @@ predictor scores</li>
 
 <dl class="function">
 <dt>
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_length_norm</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_length_norm"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_length_norm</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_length_norm"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Implements the combination scheme &#8216;length_norm&#8217; by normalizing
 the sum of the predictor scores by the length of the current
 sequence (i.e. the length of <code class="docutils literal"><span class="pre">score_breakdown</span></code>. This function is
@@ -1064,6 +1094,11 @@ weighted sum of the scores in
 <code class="docutils literal"><span class="pre">score_breakdown</span></code>. Not used.</li>
 <li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
 predictor scores</li>
+<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
+assume that this function has been called in the</p>
+<blockquote>
+<div>previous time step (not used).</div></blockquote>
+</li>
 </ul>
 </td>
 </tr>
@@ -1076,14 +1111,7 @@ predictor scores</li>
 
 <dl class="function">
 <dt>
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_partial</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em><span class="sig-paren">)</span></dt>
-<dd><p>The function breakdown2score_full is called at each creation of a
-full hypothesis, i.e. only once per hypothesis</p>
-</dd></dl>
-
-<dl class="function">
-<dt>
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_sum</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_sum"><span class="viewcode-link">[source]</span></a></dt>
+<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_sum</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_sum"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Implements the combination scheme &#8216;sum&#8217; by always returning
 <code class="docutils literal"><span class="pre">working_score</span></code>. This function is designed to be assigned to
 the globals <code class="docutils literal"><span class="pre">breakdown2score_partial</span></code> or <code class="docutils literal"><span class="pre">breakdown2score_full</span></code></p>
@@ -1096,7 +1124,12 @@ the globals <code class="docutils literal"><span class="pre">breakdown2score_par
 weighted sum of the scores in
 <code class="docutils literal"><span class="pre">score_breakdown</span></code></li>
 <li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
-predictor scores</li>
+predictor scores (not used).</li>
+<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
+assume that this function has been called in the</p>
+<blockquote>
+<div>previous time step (not used).</div></blockquote>
+</li>
 </ul>
 </td>
 </tr>
