@@ -144,11 +144,8 @@
 <span class="sd">of operations which cannot be compiled to a string.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">logging</span>
-
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
 <span class="n">OSM_EOP_ID</span> <span class="o">=</span> <span class="mi">4</span>
 <span class="n">OSM_GAP_ID</span> <span class="o">=</span> <span class="mi">5</span>
@@ -181,7 +178,7 @@
     <span class="k">return</span> <span class="n">lengths</span></div>
 
 
-<div class="viewcode-block" id="OSMPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor">[docs]</a><span class="k">class</span> <span class="nc">OSMPredictor</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+<div class="viewcode-block" id="OSMPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor">[docs]</a><span class="k">class</span> <span class="nc">OSMPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This predictor applies the following constraints to an OSM output:</span>
 
 <span class="sd">      - The number of EOP (end-of-phrase) tokens must not exceed the number</span>
@@ -193,6 +190,15 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new osm predictor.&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">OSMPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">illegal_sequences</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="n">OSM_JUMP_FWD_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_BWD_ID</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_FWD_ID</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">OSM_JUMP_FWD_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_FWD_ID</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">OSM_JUMP_FWD_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_BWD_ID</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_FWD_ID</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_BWD_ID</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">]</span>
+        <span class="p">]</span>
     
 <div class="viewcode-block" id="OSMPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sets the number of source tokens.</span>
@@ -203,13 +209,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">src_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">=</span> <span class="mi">0</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span></div>
 
-<div class="viewcode-block" id="OSMPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+<div class="viewcode-block" id="OSMPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Apply OSM constraints.</span>
 <span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            words (list): Set of words to score</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            dict.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -222,6 +227,10 @@
             <span class="n">ret</span><span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span><span class="p">:</span>
             <span class="n">ret</span><span class="p">[</span><span class="n">OSM_JUMP_FWD_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">illegal_sequences</span><span class="p">:</span>
+            <span class="n">hist</span> <span class="o">=</span> <span class="n">seq</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">hist</span><span class="p">):]</span> <span class="o">==</span> <span class="n">hist</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">seq</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
         <span class="k">return</span> <span class="n">ret</span></div>
         
 <div class="viewcode-block" id="OSMPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
@@ -230,6 +239,8 @@
     
 <div class="viewcode-block" id="OSMPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Updates the number of holes, EOPs, and the head position.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">!=</span> <span class="n">OSM_EOP_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_EOP_ID</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">elif</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_GAP_ID</span><span class="p">:</span>
@@ -251,6 +262,200 @@
         <span class="k">pass</span></div>
     
 <div class="viewcode-block" id="OSMPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Trivial implementation&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+
+
+<div class="viewcode-block" id="ForcedOSMPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.ForcedOSMPredictor">[docs]</a><span class="k">class</span> <span class="nc">ForcedOSMPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor allows forced decoding with an OSM output, which</span>
+<span class="sd">    essentially means running the OSM in alignment mode. This predictor</span>
+<span class="sd">    assumes well-formed operation sequences. Please combine this</span>
+<span class="sd">    predictor with the osm constraint predictor to satisfy this</span>
+<span class="sd">    requirement. The state of this predictor is the compiled version of</span>
+<span class="sd">    the current history. It allows terminal symbols which are </span>
+<span class="sd">    consistent with the reference. The end-of-sentence symbol is</span>
+<span class="sd">    supressed until all words in the reference have been consumed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_test_file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new forcedosm predictor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            trg_test_file (string): Path to the plain text file with </span>
+<span class="sd">                                    the target sentences. Must have the</span>
+<span class="sd">                                    same number of lines as the number</span>
+<span class="sd">                                    of source sentences to decode</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ForcedOSMPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">trg_test_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> 
+                            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()])</span>
+    
+<div class="viewcode-block" id="ForcedOSMPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.ForcedOSMPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Resets compiled and head.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;X&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span> </div>
+
+    <span class="k">def</span> <span class="nf">_is_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the compiled sentence contains the right</span>
+<span class="sd">        number of terminals.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_terminals</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span> <span class="k">if</span> <span class="n">s</span> <span class="o">!=</span> <span class="s2">&quot;X&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">n_terminals</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_generate_alignments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">align_stub</span><span class="o">=</span><span class="p">[],</span> <span class="n">compiled_start_pos</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> 
+                             <span class="n">sentence_start_pos</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">compiled_start_pos</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;X&#39;</span><span class="p">:</span>
+                <span class="n">word</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="n">pos</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">sen_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">sentence_start_pos</span><span class="p">,</span> 
+                                      <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">sen_pos</span><span class="p">]</span> <span class="o">==</span> <span class="n">word</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_generate_alignments</span><span class="p">(</span>
+                            <span class="n">align_stub</span> <span class="o">+</span> <span class="p">[(</span><span class="n">pos</span><span class="p">,</span> <span class="n">sen_pos</span><span class="p">)],</span>
+                            <span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                            <span class="n">sen_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alignments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">align_stub</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_align</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">possible_words</span> <span class="o">=</span> <span class="p">[</span><span class="nb">set</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">))]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alignments</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_generate_alignments</span><span class="p">(</span><span class="n">align_stub</span><span class="o">=</span><span class="p">[])</span>
+        <span class="k">for</span> <span class="n">alignment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alignments</span><span class="p">:</span>
+            <span class="n">alignment</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">)))</span>
+            <span class="n">prev_compiled_pos</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">prev_sentence_pos</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="k">for</span> <span class="n">compiled_pos</span><span class="p">,</span> <span class="n">sentence_pos</span> <span class="ow">in</span> <span class="n">alignment</span><span class="p">:</span>
+               <span class="n">section_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">prev_sentence_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">sentence_pos</span><span class="p">])</span>
+               <span class="k">if</span> <span class="n">section_words</span><span class="p">:</span>
+                   <span class="n">seen_gap</span> <span class="o">=</span> <span class="bp">False</span>
+                   <span class="k">for</span> <span class="n">section_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">prev_compiled_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> 
+                                             <span class="n">compiled_pos</span><span class="p">):</span>
+                       <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="n">section_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
+                           <span class="k">if</span> <span class="n">seen_gap</span><span class="p">:</span>
+                               <span class="n">possible_words</span><span class="p">[</span><span class="n">section_pos</span><span class="p">]</span> <span class="o">|=</span> <span class="n">section_words</span>
+                           <span class="k">else</span><span class="p">:</span>
+                               <span class="n">possible_words</span><span class="p">[</span><span class="n">section_pos</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">prev_sentence_pos</span> 
+                                                         <span class="o">+</span> <span class="n">section_pos</span> 
+                                                         <span class="o">-</span> <span class="n">prev_compiled_pos</span><span class="p">])</span>
+                               <span class="n">seen_gap</span> <span class="o">=</span> <span class="bp">True</span>
+               <span class="n">prev_compiled_pos</span> <span class="o">=</span> <span class="n">compiled_pos</span>
+               <span class="n">prev_sentence_pos</span> <span class="o">=</span> <span class="n">sentence_pos</span>
+        <span class="k">return</span> <span class="n">possible_words</span>
+            
+
+    <span class="k">def</span> <span class="nf">_align_old</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Aligns the compiled string to the reference and returns the</span>
+<span class="sd">        possible words at each position.&quot;&quot;&quot;</span>
+        <span class="n">possible_words</span> <span class="o">=</span> <span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">)</span> 
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">))]</span> <span class="c1"># Initially no constraints</span>
+        <span class="c1"># Constrain words before first gap</span>
+        <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">):</span>
+            <span class="n">possible_words</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">pos</span><span class="p">]])</span>
+            <span class="k">if</span> <span class="n">symbol</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="c1"># Constrain using terminalls in self.compiled</span>
+        <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">symbol</span> <span class="o">!=</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span> <span class="c1"># Propagate this constraint</span>
+                <span class="n">isymb</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+                <span class="n">possible_words</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+                <span class="n">first_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">isymb</span><span class="p">)</span>
+                <span class="n">last_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">)</span> <span class="o">-</span> \
+                        <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">isymb</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="c1"># First, a coarse constraint which disallows changing order</span>
+                <span class="n">rm_after</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[:</span><span class="n">first_idx</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">isymb</span><span class="p">])</span> \
+                    <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">first_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:])</span>
+                <span class="n">rm_before</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">last_idx</span><span class="p">:]</span> <span class="o">+</span> <span class="p">[</span><span class="n">isymb</span><span class="p">])</span> \
+                    <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[:</span><span class="n">last_idx</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">before_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+                    <span class="n">possible_words</span><span class="p">[</span><span class="n">before_pos</span><span class="p">]</span> <span class="o">-=</span> <span class="n">rm_before</span>
+                <span class="k">for</span> <span class="n">after_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">)):</span>
+                    <span class="n">possible_words</span><span class="p">[</span><span class="n">after_pos</span><span class="p">]</span> <span class="o">-=</span> <span class="n">rm_after</span>
+                <span class="c1"># Then, we refine constraints until the nearest gap</span>
+                <span class="k">if</span> <span class="n">first_idx</span> <span class="o">==</span> <span class="n">last_idx</span><span class="p">:</span>
+                    <span class="n">cur_idx</span> <span class="o">=</span> <span class="n">first_idx</span> <span class="o">-</span> <span class="mi">1</span>
+                    <span class="k">for</span> <span class="n">before_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pos</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="n">before_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
+                            <span class="k">break</span>
+                        <span class="n">possible_words</span><span class="p">[</span><span class="n">before_pos</span><span class="p">]</span> <span class="o">&amp;=</span> <span class="nb">set</span><span class="p">(</span>
+                                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">cur_idx</span><span class="p">]])</span>
+                        <span class="n">cur_idx</span> <span class="o">-=</span> <span class="mi">1</span>
+                    <span class="n">cur_idx</span> <span class="o">=</span> <span class="n">first_idx</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="k">for</span> <span class="n">after_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">)):</span>
+                        <span class="k">if</span> <span class="n">cur_idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">):</span>
+                            <span class="n">constraint</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">constraint</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">cur_idx</span><span class="p">]])</span>
+                        <span class="n">possible_words</span><span class="p">[</span><span class="n">after_pos</span><span class="p">]</span> <span class="o">&amp;=</span> <span class="n">constraint</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="n">after_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
+                            <span class="k">break</span>
+                        <span class="n">cur_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">possible_words</span>
+                
+        
+
+<div class="viewcode-block" id="ForcedOSMPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.ForcedOSMPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Apply word reference constraints.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="n">OSM_EOP_ID</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+        <span class="n">possible_words</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_align</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">possible_words</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">]:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">OSM_GAP_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">possible_words</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">]):</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">possible_words</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">+</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">OSM_JUMP_FWD_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_complete</span><span class="p">():</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">possible_words</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">]:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+        
+<div class="viewcode-block" id="ForcedOSMPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.ForcedOSMPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Always returns -inf.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span></div>
+
+    <span class="k">def</span> <span class="nf">_jump_op</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">+=</span> <span class="n">step</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">+=</span> <span class="n">step</span>
+
+    <span class="k">def</span> <span class="nf">_insert_op</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">op</span><span class="p">]</span> <span class="o">+</span> \
+                        <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">+=</span> <span class="mi">1</span>
+    
+<div class="viewcode-block" id="ForcedOSMPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.ForcedOSMPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates the compiled string and the head position.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_GAP_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_insert_op</span><span class="p">(</span><span class="s2">&quot;X&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_JUMP_FWD_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_jump_op</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_JUMP_BWD_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_jump_op</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="o">!=</span> <span class="n">OSM_EOP_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_insert_op</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">word</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="ForcedOSMPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.ForcedOSMPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span></div>
+    
+<div class="viewcode-block" id="ForcedOSMPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.ForcedOSMPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="ForcedOSMPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.ForcedOSMPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Trivial implementation&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
 

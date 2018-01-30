@@ -1134,6 +1134,7 @@ is required when a new set of sentences is to be decoded, e.g.
 to reset the sentence counter in the fst predictor to load the
 correct lattice. This function is NOT called each time before
 decoding a single sentence. See <code class="docutils literal"><span class="pre">initialize()</span></code> for this.</p>
+<p>The default implementation is an empty method.</p>
 </dd></dl>
 
 <dl class="method">
@@ -2632,9 +2633,79 @@ current depth is zero, exclude closing brackets.</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="cam.sgnmt.predictors.structure.ForcedOSMPredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.structure.</code><code class="descname">ForcedOSMPredictor</code><span class="sig-paren">(</span><em>trg_test_file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
+<p>This predictor allows forced decoding with an OSM output, which
+essentially means running the OSM in alignment mode. This predictor
+assumes well-formed operation sequences. Please combine this
+predictor with the osm constraint predictor to satisfy this
+requirement. The state of this predictor is the compiled version of
+the current history. It allows terminal symbols which are
+consistent with the reference. The end-of-sentence symbol is
+supressed until all words in the reference have been consumed.</p>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.structure.ForcedOSMPredictor.consume">
+<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor.consume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the compiled string and the head position.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.structure.ForcedOSMPredictor.get_state">
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor.get_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.structure.ForcedOSMPredictor.get_unk_probability">
+<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor.get_unk_probability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Always returns -inf.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.structure.ForcedOSMPredictor.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets compiled and head.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>src_sentence</strong> (<em>list</em>) &#8211; Not used</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.structure.ForcedOSMPredictor.is_equal">
+<code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor.is_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor.is_equal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trivial implementation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.structure.ForcedOSMPredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply word reference constraints.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">dict.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.structure.ForcedOSMPredictor.set_state">
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor.set_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="cam.sgnmt.predictors.structure.OSMPredictor">
 <em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.structure.</code><code class="descname">OSMPredictor</code><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#OSMPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.OSMPredictor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.UnboundedVocabularyPredictor" title="cam.sgnmt.predictors.core.UnboundedVocabularyPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.UnboundedVocabularyPredictor</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This predictor applies the following constraints to an OSM output:</p>
 <ul class="simple">
 <li>The number of EOP (end-of-phrase) tokens must not exceed the number
@@ -2681,15 +2752,13 @@ bounds.</li>
 
 <dl class="method">
 <dt id="cam.sgnmt.predictors.structure.OSMPredictor.predict_next">
-<code class="descname">predict_next</code><span class="sig-paren">(</span><em>words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#OSMPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.OSMPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#OSMPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.OSMPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply OSM constraints.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>words</strong> (<em>list</em>) &#8211; Set of words to score</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">dict.</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">dict.</td>
 </tr>
 </tbody>
 </table>
@@ -2732,9 +2801,73 @@ sentence.</td>
 <p>This module integrates Nizza alignment models.</p>
 <p><a class="reference external" href="https://github.com/fstahlberg/nizza">https://github.com/fstahlberg/nizza</a></p>
 <dl class="class">
+<dt id="cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_nizza.</code><code class="descname">BaseNizzaPredictor</code><span class="sig-paren">(</span><em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>hparams_set_name</em>, <em>checkpoint_dir</em>, <em>single_cpu_thread</em>, <em>nizza_unk_id=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#BaseNizzaPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
+<p>Common functionality for Nizza based predictors. This includes
+loading checkpoints, creating sessions, and creating computation
+graphs.</p>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor.create_session">
+<code class="descname">create_session</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#BaseNizzaPredictor.create_session"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor.create_session" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a MonitoredSession for this predictor.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor.get_unk_probability">
+<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#BaseNizzaPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor.get_unk_probability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch posterior[t2t_unk_id] or return NEG_INF if None.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_nizza.</code><code class="descname">LexNizzaPredictor</code><span class="sig-paren">(</span><em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>hparams_set_name</em>, <em>checkpoint_dir</em>, <em>single_cpu_thread</em>, <em>alpha</em>, <em>beta</em>, <em>shortlist_strategies</em>, <em>nizza_unk_id=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#LexNizzaPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor" title="cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor</span></code></a></p>
+<p>This predictor is only compatible to Model1-like Nizza models
+which return lexical translation probabilities in precompute(). The
+predictor keeps a list of the same length as the source sentence
+and initializes it with zeros. At each timestep it updates this list
+by the lexical scores Model1 assigned to the last consumed token.
+The predictor score aims to bring up all entries in the list, and
+thus serves as a coverage mechanism over the source sentence.</p>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.consume">
+<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#LexNizzaPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.consume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update coverage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.get_state">
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#LexNizzaPredictor.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.get_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>The predictor state is the coverage vector.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#LexNizzaPredictor.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set src_sentence, reset consumed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#LexNizzaPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict record scores.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.set_state">
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#LexNizzaPredictor.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.set_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>The predictor state is the coverage vector.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="cam.sgnmt.predictors.tf_nizza.NizzaPredictor">
 <em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_nizza.</code><code class="descname">NizzaPredictor</code><span class="sig-paren">(</span><em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>hparams_set_name</em>, <em>checkpoint_dir</em>, <em>single_cpu_thread</em>, <em>nizza_unk_id=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#NizzaPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.NizzaPredictor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor" title="cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor</span></code></a></p>
 <p>This predictor uses Nizza alignment models to derive a posterior over
 the target vocabulary for the next position. It mainly relies on the
 predict_next_word() implementation of Nizza models.</p>
@@ -2745,21 +2878,9 @@ predict_next_word() implementation of Nizza models.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="cam.sgnmt.predictors.tf_nizza.NizzaPredictor.create_session">
-<code class="descname">create_session</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#NizzaPredictor.create_session"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.create_session" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a MonitoredSession for this predictor.</p>
-</dd></dl>
-
-<dl class="method">
 <dt id="cam.sgnmt.predictors.tf_nizza.NizzaPredictor.get_state">
 <code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#NizzaPredictor.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.get_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>The predictor state is the complete history.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="cam.sgnmt.predictors.tf_nizza.NizzaPredictor.get_unk_probability">
-<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#NizzaPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.get_unk_probability" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fetch posterior[t2t_unk_id] or return NEG_INF if None.</p>
 </dd></dl>
 
 <dl class="method">
@@ -2778,12 +2899,6 @@ predict_next_word() implementation of Nizza models.</p>
 <dt id="cam.sgnmt.predictors.tf_nizza.NizzaPredictor.predict_next">
 <code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#NizzaPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
 <dd><p>Call the T2T model in self.mon_sess.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="cam.sgnmt.predictors.tf_nizza.NizzaPredictor.reset">
-<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#NizzaPredictor.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.reset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Empty method.</p>
 </dd></dl>
 
 <dl class="method">

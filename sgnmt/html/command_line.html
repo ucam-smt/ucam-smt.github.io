@@ -220,7 +220,9 @@ For a quick overview of available parameters use <code class="docutils literal">
                  <span class="p">[</span><span class="o">--</span><span class="n">nizza_model</span> <span class="n">NIZZA_MODEL</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">nizza_hparams_set</span> <span class="n">NIZZA_HPARAMS_SET</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">nizza_checkpoint_dir</span> <span class="n">NIZZA_CHECKPOINT_DIR</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">src_test_raw</span> <span class="n">SRC_TEST_RAW</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">lexnizza_shortlist_strategies</span> <span class="n">LEXNIZZA_SHORTLIST_STRATEGIES</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">lexnizza_alpha</span> <span class="n">LEXNIZZA_ALPHA</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">lexnizza_beta</span> <span class="n">LEXNIZZA_BETA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_test_raw</span> <span class="n">SRC_TEST_RAW</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">length_model_weights</span> <span class="n">LENGTH_MODEL_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">use_length_point_probs</span> <span class="n">USE_LENGTH_POINT_PROBS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">length_model_offset</span> <span class="n">LENGTH_MODEL_OFFSET</span><span class="p">]</span>
@@ -722,6 +724,8 @@ The path to the output files can be specified with &#8211;output_path</td></tr>
          Options: t2t_usr_dir, t2t_model, t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, pred_src_vocab_size, pred_trg_vocab_size
 * &#8216;nizza&#8217;: Nizza alignment models.
            Options: nizza_model, nizza_hparams_set, nizza_checkpoint_dir, pred_src_vocab_size, pred_trg_vocab_size
+* &#8216;lexnizza&#8217;: Uses Nizza lexical scores for checking the source word coverage.
+           Options: nizza_model, nizza_hparams_set, nizza_checkpoint_dir, pred_src_vocab_size, pred_trg_vocab_size
 * &#8216;bfslayerbylayer&#8217;: Layerbylayer models (BFS).
                   Options: t2t_usr_dir, t2t_model, t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, syntax_root_id, syntax_max_terminal_id, syntax_terminal_list, syntax_pop_id,layerbylayer_terminal_strategy, syntax_max_depth, pred_src_vocab_size, pred_trg_vocab_size
 * &#8216;dfslayerbylayer&#8217;: Layerbylayer models (DFS).
@@ -730,6 +734,8 @@ The path to the output files can be specified with &#8211;output_path</td></tr>
              Options: syntax_max_terminal_id, syntax_pop_id, syntax_max_depth, extlength_path
 * &#8216;osm&#8217;: Well-formed operation sequences.
          Options: None
+* &#8216;forcedosm&#8217;: Forced decoding under OSM. Use in combination with osm predictor.
+         Options: trg_test
 * &#8216;srilm&#8217;: n-gram language model.
           Options: srilm_path, srilm_order
 * &#8216;nplm&#8217;: neural n-gram language model (NPLM).
@@ -853,7 +859,7 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--gnmt_beta=0.0</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>If this is greater than zero, add a coverage penalization term following Google&#8217;s NMT (Wu et al., 2016) to the NMT score.</td></tr>
+<tr><td>&nbsp;</td><td>If this is greater than zero, add a coverage penalization term following Google&#8217;s NMT (Wu et al., 2016) to the NMT score. Only works for the Blocks NMT predictor.</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--layerbylayer_terminal_strategy=force</span></kbd></td>
 </tr>
@@ -922,6 +928,20 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <kbd><span class="option">--nizza_checkpoint_dir=</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Available for the nizza predictor. Path to the nizza checkpoint directory. Same as &#8211;model_dir in nizza_trainer.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--lexnizza_shortlist_strategies=top5,prob0.5</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Comma-separated list of strategies to extract a short list of likely translations from lexical Model1 scores. Strategies are combined using the union operation. Available strategies:
+* top&lt;N&gt;: Select the top N words.
+* prob&lt;p&gt;: Select the top words such that their  combined probability mass is greater than p.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--lexnizza_alpha=1.0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Score of each word which matches a short list.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--lexnizza_beta=3.0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Penalty for each uncovered word at the end.</td></tr>
 </tbody>
 </table>
 </dd>

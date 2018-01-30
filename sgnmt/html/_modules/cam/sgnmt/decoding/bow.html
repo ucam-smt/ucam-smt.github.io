@@ -200,39 +200,36 @@
 <span class="sd">    Therefore, you still need to use the bow predictor.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
-                 <span class="n">decoder_args</span><span class="p">,</span>
-                 <span class="n">hypo_recombination</span><span class="p">,</span>
-                 <span class="n">max_expansions</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-                 <span class="n">stochastic</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                 <span class="n">early_stopping</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                 <span class="n">always_single_step</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Creates a new bag decoder.</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new bag decoder. The following values</span>
+<span class="sd">        are fetched from `decoder_args`:</span>
 <span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
-<span class="sd">                                   from the configuration API.</span>
 <span class="sd">            hypo_recombination (bool): Activates hypo recombination</span>
-<span class="sd">            max_expansions (int): Maximum number of node expansions for</span>
-<span class="sd">                                  inadmissible pruning.</span>
-<span class="sd">            stochastic (bool): If true, select the next node to restart</span>
-<span class="sd">                               from randomly. If false, take the one</span>
-<span class="sd">                               with the best node score</span>
+<span class="sd">            max_node_expansions (int): Maximum number of node expansions </span>
+<span class="sd">                                       for inadmissible pruning.</span>
+<span class="sd">            stochastic_decoder (bool): If true, select the next node to </span>
+<span class="sd">                                       restart from randomly. If false, </span>
+<span class="sd">                                       take the one with the best </span>
+<span class="sd">                                       node score</span>
 <span class="sd">            early_stopping (bool): Activates inadmissible pruning. Do</span>
 <span class="sd">                                   not use if you have positive scores</span>
-<span class="sd">            always_single_step (bool): If true, we do only a single </span>
+<span class="sd">            decode_always_single_step (bool): If true, we do only a single </span>
 <span class="sd">                                       expansion from the backtraced</span>
 <span class="sd">                                       node and select a new node. If</span>
 <span class="sd">                                       false, we perform greedy </span>
 <span class="sd">                                       decoding from that node until</span>
 <span class="sd">                                       we reach a final node</span>
+<span class="sd">                                       </span>
+<span class="sd">        Args:</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from the configuration API.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">BOWDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span> 
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions_param</span> <span class="o">=</span> <span class="n">max_expansions</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">early_stopping</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span> <span class="o">=</span> <span class="n">hypo_recombination</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">always_single_step</span> <span class="o">=</span> <span class="n">always_single_step</span>
-        <span class="k">if</span> <span class="n">stochastic</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions_param</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">max_node_expansions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">early_stopping</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">hypo_recombination</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">always_single_step</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">decode_always_single_step</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">stochastic_decoder</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">select_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select_node_stochastic</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">select_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select_node_max</span>

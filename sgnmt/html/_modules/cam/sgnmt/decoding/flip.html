@@ -190,29 +190,21 @@
 <span class="sd">    scores.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
-                 <span class="n">decoder_args</span><span class="p">,</span>
-                 <span class="n">trg_test_file</span><span class="p">,</span> 
-                 <span class="n">max_expansions</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                 <span class="n">early_stopping</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                 <span class="n">flip_strategy</span><span class="o">=</span><span class="s1">&#39;move&#39;</span><span class="p">,</span>
-                 <span class="n">always_greedy</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">,</span> <span class="n">always_greedy</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new flip decoder. Do not use this decoder in </span>
 <span class="sd">        combination with the bow predictor as it inherently already</span>
-<span class="sd">        satisfies the bag-of-word constrains.</span>
+<span class="sd">        satisfies the bag-of-word constrains. The following values</span>
+<span class="sd">        are fetched from `decoder_args`:</span>
 <span class="sd">        </span>
+<span class="sd">            trg_test(string): Path to a plain text file which </span>
+<span class="sd">                              defines the bag of words</span>
+<span class="sd">            max_node_expansions (int): Maximum number of node expansions </span>
+<span class="sd">                                       for inadmissible pruning.</span>
+<span class="sd">            early_stopping (boolean): Activates admissible pruning</span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            decoder_args (object): Decoder configuration passed through</span>
 <span class="sd">                                   from the configuration API.</span>
-<span class="sd">            trg_test_file (string): Path to a plain text file which </span>
-<span class="sd">                                    defines the bag of words</span>
-<span class="sd">            max_expansions (int): Maximum number of node expansions for</span>
-<span class="sd">                                  inadmissible pruning.</span>
-<span class="sd">            early_stopping (boolean): Activates admissible pruning</span>
-<span class="sd">            flip_strategy (string): How the search space is traversed.</span>
-<span class="sd">                                   &#39;move&#39; moves one token to another</span>
-<span class="sd">                                   position, &#39;flip&#39; switches the</span>
-<span class="sd">                                   positions of two target tokens</span>
 <span class="sd">            always_greedy (boolean): Per default, the flip decoder does</span>
 <span class="sd">                                     forced decoding along the complete</span>
 <span class="sd">                                     candidate sentence. Set to True to</span>
@@ -220,14 +212,14 @@
 <span class="sd">                                     backtraced node instead</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">FlipDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span> 
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions_param</span> <span class="o">=</span> <span class="n">max_expansions</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">early_stopping</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions_param</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">max_node_expansions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">early_stopping</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">always_greedy</span> <span class="o">=</span> <span class="n">always_greedy</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">trg_test_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">decoder_args</span><span class="o">.</span><span class="n">trg_test</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">flip_strategy</span> <span class="o">==</span> <span class="s1">&#39;flip&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">flip_strategy</span> <span class="o">==</span> <span class="s1">&#39;flip&#39;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_extract_candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_candidates_flip</span>
-        <span class="k">elif</span> <span class="n">flip_strategy</span> <span class="o">==</span> <span class="s1">&#39;move&#39;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">flip_strategy</span> <span class="o">==</span> <span class="s1">&#39;move&#39;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_extract_candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_candidates_move</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Unknown flip strategy!&quot;</span><span class="p">)</span>

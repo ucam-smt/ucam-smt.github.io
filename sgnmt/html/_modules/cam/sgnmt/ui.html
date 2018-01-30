@@ -823,6 +823,11 @@
                         <span class="s2">&quot;           Options: nizza_model, nizza_hparams_set, &quot;</span>
                         <span class="s2">&quot;nizza_checkpoint_dir, pred_src_vocab_size, &quot;</span>
                         <span class="s2">&quot;pred_trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;lexnizza&#39;: Uses Nizza lexical scores for checking &quot;</span>
+                        <span class="s2">&quot;the source word coverage.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;           Options: nizza_model, nizza_hparams_set, &quot;</span>
+                        <span class="s2">&quot;nizza_checkpoint_dir, pred_src_vocab_size, &quot;</span>
+                        <span class="s2">&quot;pred_trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;bfslayerbylayer&#39;: Layerbylayer models (BFS).</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;                  Options: t2t_usr_dir, t2t_model, &quot;</span>
                         <span class="s2">&quot;t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, &quot;</span>
@@ -842,6 +847,9 @@
                         <span class="s2">&quot;syntax_pop_id, syntax_max_depth, extlength_path</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;osm&#39;: Well-formed operation sequences.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;         Options: None</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;forcedosm&#39;: Forced decoding under OSM. Use in &quot;</span>
+                        <span class="s2">&quot;combination with osm predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: trg_test</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;srilm&#39;: n-gram language model.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: srilm_path, srilm_order</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;nplm&#39;: neural n-gram language model (NPLM).</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -1023,7 +1031,8 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--gnmt_beta&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is greater than zero, add a coverage &quot;</span>
                        <span class="s2">&quot;penalization term following Google&#39;s NMT (Wu et al., &quot;</span>
-                       <span class="s2">&quot;2016) to the NMT score.&quot;</span><span class="p">)</span>
+                       <span class="s2">&quot;2016) to the NMT score. Only works for the Blocks &quot;</span>
+                       <span class="s2">&quot;NMT predictor.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--layerbylayer_terminal_strategy&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;force&quot;</span><span class="p">,</span> 
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;force&#39;</span><span class="p">,</span> <span class="s1">&#39;skip&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Strategy for dealing with terminals as parents &quot;</span>
@@ -1089,6 +1098,19 @@
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the nizza predictor. Path to the &quot;</span>
                        <span class="s2">&quot;nizza checkpoint directory. Same as &quot;</span>
                        <span class="s2">&quot;--model_dir in nizza_trainer.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_shortlist_strategies&quot;</span><span class="p">,</span> 
+                       <span class="n">default</span><span class="o">=</span><span class="s2">&quot;top5,prob0.5&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma-separated list of strategies to extract &quot;</span>
+                       <span class="s2">&quot;a short list of likely translations from lexical &quot;</span>
+                       <span class="s2">&quot;Model1 scores. Strategies are combined using the &quot;</span>
+                       <span class="s2">&quot;union operation. Available strategies:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                       <span class="s2">&quot;* top&lt;N&gt;: Select the top N words.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                       <span class="s2">&quot;* prob&lt;p&gt;: Select the top words such that their &quot;</span>
+                       <span class="s2">&quot; combined probability mass is greater than p.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_alpha&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Score of each word which matches a short list.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_beta&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Penalty for each uncovered word at the end.&quot;</span><span class="p">)</span>
 
     <span class="c1"># Length predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Length predictor options&#39;</span><span class="p">)</span>
