@@ -104,6 +104,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-flip-module">cam.sgnmt.decoding.flip module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-greedy-module">cam.sgnmt.decoding.greedy module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-heuristics-module">cam.sgnmt.decoding.heuristics module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-mbrbeam-module">cam.sgnmt.decoding.mbrbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-multisegbeam-module">cam.sgnmt.decoding.multisegbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-restarting-module">cam.sgnmt.decoding.restarting module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-sepbeam-module">cam.sgnmt.decoding.sepbeam module</a></li>
@@ -174,6 +175,7 @@ Decoders are specified using the <code class="docutils literal"><span class="pre
 <li><strong>sepbeam</strong>: Associates predictors with hypos in beam search and applies only one predictor instead of all for hypo expansion.</li>
 <li><strong>syncbeam</strong>: Beam search which compares after consuming a special synchronization symbol instead of after each iteration.</li>
 <li><strong>syntaxbeam</strong>: Beam search which ensures diversity amongst terminal symbol histories.</li>
+<li><strong>mbrbeam</strong>: Diversity encouraging beam search which maximizes the expected BLEU.</li>
 <li><strong>combibeam</strong>: Beam search which applies <code class="docutils literal"><span class="pre">--combination_scheme</span></code> at each time step.</li>
 <li><strong>multisegbeam</strong>: Beam search with multiple segmentations.</li>
 <li><strong>dfs</strong>: Depth-first search. This should be used for exact decoding or the complete enumeration of the search space.
@@ -1420,6 +1422,28 @@ sentences</p>
 <dt>
 <code class="descname">notify</code><span class="sig-paren">(</span><em>message</em>, <em>message_type=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#StatsHeuristic.notify"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Passing through to the unigram table <code class="docutils literal"><span class="pre">self.estimates</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="cam-sgnmt-decoding-mbrbeam-module">
+<h3>cam.sgnmt.decoding.mbrbeam module<a class="headerlink" href="#cam-sgnmt-decoding-mbrbeam-module" title="Permalink to this headline">¶</a></h3>
+<p>This beam search uses an MBR-based criterion at each time step.</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.mbrbeam.</code><code class="descname">MBRBeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/mbrbeam.html#MBRBeamDecoder"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.beam.BeamDecoder" title="cam.sgnmt.decoding.beam.BeamDecoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.beam.BeamDecoder</span></code></a></p>
+<p>The MBR-based beam decoder does not select the n most likely
+hypotheses in each timestep. Instead, it tries to find a subset
+with n elements which maximizes the expected maximum BLEU of one
+of the selected hypos. In other words, we optimize the oracle
+BLEU of the n-best list at each time step, where the n-best list
+consists of the active hypotheses in the beam.</p>
+<dl class="method">
+<dt>
+<code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/mbrbeam.html#MBRBeamDecoder.decode"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Decodes a single source sentence using beam search.</p>
 </dd></dl>
 
 </dd></dl>
