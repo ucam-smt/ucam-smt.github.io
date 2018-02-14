@@ -105,6 +105,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cam-sgnmt-decode-module">cam.sgnmt.decode module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-cam.sgnmt.decode_utils">cam.sgnmt.decode_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cam-sgnmt-extract-scores-along-reference-module">cam.sgnmt.extract_scores_along_reference module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-cam.sgnmt.output">cam.sgnmt.output module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-cam.sgnmt.ui">cam.sgnmt.ui module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-cam.sgnmt.utils">cam.sgnmt.utils module</a></li>
@@ -203,6 +204,7 @@
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.flip">cam.sgnmt.decoding.flip module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.greedy">cam.sgnmt.decoding.greedy module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.heuristics">cam.sgnmt.decoding.heuristics module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.mbrbeam">cam.sgnmt.decoding.mbrbeam module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.multisegbeam">cam.sgnmt.decoding.multisegbeam module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.restarting">cam.sgnmt.decoding.restarting module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.sepbeam">cam.sgnmt.decoding.sepbeam module</a></li>
@@ -307,7 +309,25 @@ This method will add predictors to this instance with
 <dt id="cam.sgnmt.decode_utils.args">
 <code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">args</code><em class="property"> = None</em><a class="headerlink" href="#cam.sgnmt.decode_utils.args" title="Permalink to this definition">¶</a></dt>
 <dd><p>This variable is set to the global configuration when
-create_decoder() is called.</p>
+base_init().</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decode_utils.base_init">
+<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">base_init</code><span class="sig-paren">(</span><em>new_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decode_utils.html#base_init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decode_utils.base_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function should be called before accessing any other
+function in this module. It initializes the <cite>args</cite> variable on
+which all the create_* factory functions rely on as configuration
+object, and it sets up global function pointers and variables for
+basic things like the indexing scheme, logging verbosity, etc.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>new_args</strong> &#8211; Configuration object from the argument parser.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -329,7 +349,7 @@ an error occurred.</td>
 
 <dl class="function">
 <dt id="cam.sgnmt.decode_utils.create_decoder">
-<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">create_decoder</code><span class="sig-paren">(</span><em>new_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decode_utils.html#create_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decode_utils.create_decoder" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">create_decoder</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decode_utils.html#create_decoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decode_utils.create_decoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates the <code class="docutils literal"><span class="pre">Decoder</span></code> instance. This specifies the search
 strategy used to traverse the space spanned by the predictors. This
 method relies on the global <code class="docutils literal"><span class="pre">args</span></code> variable.</p>
@@ -338,9 +358,7 @@ method relies on the global <code class="docutils literal"><span class="pre">arg
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>new_args</strong> &#8211; Command line arguments</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Decoder. Instance of the search strategy</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Decoder. Instance of the search strategy</td>
 </tr>
 </tbody>
 </table>
@@ -388,6 +406,30 @@ translate (e.g. &#8216;1 123 432 2&#8217;)</li>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="cam.sgnmt.decode_utils.get_sentence_indices">
+<code class="descclassname">cam.sgnmt.decode_utils.</code><code class="descname">get_sentence_indices</code><span class="sig-paren">(</span><em>range_param</em>, <em>src_sentences</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decode_utils.html#get_sentence_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decode_utils.get_sentence_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper method for <code class="docutils literal"><span class="pre">do_decode</span></code> which returns the indices of the
+sentence to decode</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>range_param</strong> (<em>string</em>) &#8211; <code class="docutils literal"><span class="pre">--range</span></code> parameter from config</li>
+<li><strong>src_sentences</strong> (<em>list</em>) &#8211; A list of strings. The strings are the
+source sentences with word indices to
+translate (e.g. &#8216;1 123 432 2&#8217;)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="cam-sgnmt-extract-scores-along-reference-module">
+<h2>cam.sgnmt.extract_scores_along_reference module<a class="headerlink" href="#cam-sgnmt-extract-scores-along-reference-module" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-cam.sgnmt.output">
 <span id="cam-sgnmt-output-module"></span><h2>cam.sgnmt.output module<a class="headerlink" href="#module-cam.sgnmt.output" title="Permalink to this headline">¶</a></h2>
@@ -722,16 +764,13 @@ the predictor score breakdown for each translation prefix length.</p>
 <p>This module handles configuration and user interface when using
 blocks. <code class="docutils literal"><span class="pre">yaml</span></code> and <code class="docutils literal"><span class="pre">ArgumentParser</span></code> are used for parsing config
 files and command line arguments.</p>
-<p>TODO: Remove Blocks dependency</p>
 <dl class="function">
 <dt id="cam.sgnmt.ui.get_args">
 <code class="descclassname">cam.sgnmt.ui.</code><code class="descname">get_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/ui.html#get_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.ui.get_args" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the arguments for the current SGNMT run from both command
 line arguments and configuration files. This method contains all
 available SGNMT options, i.e. configuration is not encapsulated e.g.
-by predictors. Additionally, we add blocks NMT model options as
-parameters to specify how the loaded NMT model was trained. These
-are defined in <code class="docutils literal"><span class="pre">machine_translation.configurations</span></code>.</p>
+by predictors.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -740,24 +779,6 @@ are defined in <code class="docutils literal"><span class="pre">machine_translat
 </tr>
 </tbody>
 </table>
-</dd></dl>
-
-<dl class="function">
-<dt id="cam.sgnmt.ui.get_blocks_align_parser">
-<code class="descclassname">cam.sgnmt.ui.</code><code class="descname">get_blocks_align_parser</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/ui.html#get_blocks_align_parser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.ui.get_blocks_align_parser" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the parser object for NMT alignment configuration.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="cam.sgnmt.ui.get_blocks_batch_decode_parser">
-<code class="descclassname">cam.sgnmt.ui.</code><code class="descname">get_blocks_batch_decode_parser</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/ui.html#get_blocks_batch_decode_parser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.ui.get_blocks_batch_decode_parser" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the parser object for NMT batch decoding.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="cam.sgnmt.ui.get_blocks_train_parser">
-<code class="descclassname">cam.sgnmt.ui.</code><code class="descname">get_blocks_train_parser</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/ui.html#get_blocks_train_parser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.ui.get_blocks_train_parser" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the parser object for NMT training configuration.</p>
 </dd></dl>
 
 <dl class="function">
@@ -930,7 +951,7 @@ classes.</p>
 
 <dl class="data">
 <dt id="cam.sgnmt.utils.TMP_FILENAME">
-<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">TMP_FILENAME</code><em class="property"> = '/tmp/sgnmt.10196.fst'</em><a class="headerlink" href="#cam.sgnmt.utils.TMP_FILENAME" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">TMP_FILENAME</code><em class="property"> = '/tmp/sgnmt.6578.fst'</em><a class="headerlink" href="#cam.sgnmt.utils.TMP_FILENAME" title="Permalink to this definition">¶</a></dt>
 <dd><p>Temporary file name to use if an FST file is zipped.</p>
 </dd></dl>
 

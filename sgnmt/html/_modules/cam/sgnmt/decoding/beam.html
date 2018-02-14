@@ -237,13 +237,12 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># Consume if cheap expand</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
             <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="n">posterior</span><span class="p">,</span> <span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+        <span class="n">posterior</span><span class="p">,</span> <span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
         <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
-        <span class="n">top</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">hypo</span><span class="o">.</span><span class="n">cheap_expand</span><span class="p">(</span>
-                            <span class="n">trgt_word</span><span class="p">,</span>
-                            <span class="n">posterior</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">],</span>
-                            <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">])</span> <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">top</span><span class="p">]</span>
+                        <span class="n">trgt_word</span><span class="p">,</span>
+                        <span class="n">posterior</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">],</span>
+                        <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">])</span> <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">]</span>
     
     <span class="k">def</span> <span class="nf">_filter_equal_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">,</span> <span class="n">scores</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Apply hypo recombination to the hypotheses in ``hypos``.</span>

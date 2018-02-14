@@ -110,6 +110,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.flip">cam.sgnmt.decoding.flip module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.greedy">cam.sgnmt.decoding.greedy module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.heuristics">cam.sgnmt.decoding.heuristics module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.mbrbeam">cam.sgnmt.decoding.mbrbeam module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.multisegbeam">cam.sgnmt.decoding.multisegbeam module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.restarting">cam.sgnmt.decoding.restarting module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.sepbeam">cam.sgnmt.decoding.sepbeam module</a></li>
@@ -126,6 +127,7 @@
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#cam-sgnmt-decode-module">cam.sgnmt.decode module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.decode_utils">cam.sgnmt.decode_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#cam-sgnmt-extract-scores-along-reference-module">cam.sgnmt.extract_scores_along_reference module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.output">cam.sgnmt.output module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.ui">cam.sgnmt.ui module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.utils">cam.sgnmt.utils module</a></li>
@@ -509,19 +511,21 @@ predictor is going to be used to predict the next target word
 
 <dl class="method">
 <dt id="cam.sgnmt.decoding.core.Decoder.apply_predictors">
-<code class="descname">apply_predictors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.apply_predictors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Decoder.apply_predictors" title="Permalink to this definition">¶</a></dt>
+<code class="descname">apply_predictors</code><span class="sig-paren">(</span><em>top_n=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.apply_predictors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Decoder.apply_predictors" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the distribution over the next word by combining the
 predictor scores.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Two dicts. <code class="docutils literal"><span class="pre">combined</span></code> maps
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>top_n</strong> (<em>int</em>) &#8211; If positive, return only the best n words.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Two dicts. <code class="docutils literal"><span class="pre">combined</span></code> maps
 target word ids to the combined score, <code class="docutils literal"><span class="pre">score_breakdown</span></code>
 contains the scores for each predictor separately
 represented as tuples (unweighted_score, predictor_weight)</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">combined,score_breakdown</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">combined,score_breakdown</td>
 </tr>
 </tbody>
 </table>
@@ -1405,6 +1409,28 @@ sentences</p>
 <dt id="cam.sgnmt.decoding.heuristics.StatsHeuristic.notify">
 <code class="descname">notify</code><span class="sig-paren">(</span><em>message</em>, <em>message_type=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#StatsHeuristic.notify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.heuristics.StatsHeuristic.notify" title="Permalink to this definition">¶</a></dt>
 <dd><p>Passing through to the unigram table <code class="docutils literal"><span class="pre">self.estimates</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-cam.sgnmt.decoding.mbrbeam">
+<span id="cam-sgnmt-decoding-mbrbeam-module"></span><h2>cam.sgnmt.decoding.mbrbeam module<a class="headerlink" href="#module-cam.sgnmt.decoding.mbrbeam" title="Permalink to this headline">¶</a></h2>
+<p>This beam search uses an MBR-based criterion at each time step.</p>
+<dl class="class">
+<dt id="cam.sgnmt.decoding.mbrbeam.MBRBeamDecoder">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.mbrbeam.</code><code class="descname">MBRBeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/mbrbeam.html#MBRBeamDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.mbrbeam.MBRBeamDecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.beam.BeamDecoder" title="cam.sgnmt.decoding.beam.BeamDecoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.beam.BeamDecoder</span></code></a></p>
+<p>The MBR-based beam decoder does not select the n most likely
+hypotheses in each timestep. Instead, it tries to find a subset
+with n elements which maximizes the expected maximum BLEU of one
+of the selected hypos. In other words, we optimize the oracle
+BLEU of the n-best list at each time step, where the n-best list
+consists of the active hypotheses in the beam.</p>
+<dl class="method">
+<dt id="cam.sgnmt.decoding.mbrbeam.MBRBeamDecoder.decode">
+<code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/mbrbeam.html#MBRBeamDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.mbrbeam.MBRBeamDecoder.decode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decodes a single source sentence using beam search.</p>
 </dd></dl>
 
 </dd></dl>

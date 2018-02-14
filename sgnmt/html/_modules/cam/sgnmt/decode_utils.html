@@ -149,6 +149,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">codecs</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">traceback</span>
@@ -177,6 +178,7 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.restarting</span> <span class="kn">import</span> <span class="n">RestartingDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.sepbeam</span> <span class="kn">import</span> <span class="n">SepBeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.syntaxbeam</span> <span class="kn">import</span> <span class="n">SyntaxBeamDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.mbrbeam</span> <span class="kn">import</span> <span class="n">MBRBeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.syncbeam</span> <span class="kn">import</span> <span class="n">SyncBeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.combibeam</span> <span class="kn">import</span> <span class="n">CombiBeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.output</span> <span class="kn">import</span> <span class="n">TextOutputHandler</span><span class="p">,</span> \
@@ -204,8 +206,7 @@
                                             <span class="n">UnkvocabPredictor</span><span class="p">,</span> \
                                             <span class="n">SkipvocabPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.ngram</span> <span class="kn">import</span> <span class="n">SRILMPredictor</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_t2t</span> <span class="kn">import</span> <span class="n">T2TPredictor</span><span class="p">,</span> <span class="n">T2TBFSLayerbylayerPredictor</span><span class="p">,</span> \
-                                        <span class="n">T2TDFSLayerbylayerPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_t2t</span> <span class="kn">import</span> <span class="n">T2TPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_nizza</span> <span class="kn">import</span> <span class="n">NizzaPredictor</span><span class="p">,</span> <span class="n">LexNizzaPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tokenization</span> <span class="kn">import</span> <span class="n">Word2charPredictor</span><span class="p">,</span> <span class="n">FSTTokPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.tf.interface</span> <span class="kn">import</span> <span class="n">tf_get_nmt_predictor</span><span class="p">,</span> <span class="n">tf_get_nmt_vanilla_decoder</span><span class="p">,</span> \
@@ -214,8 +215,60 @@
 
 <span class="n">args</span> <span class="o">=</span> <span class="bp">None</span>
 <span class="sd">&quot;&quot;&quot;This variable is set to the global configuration when </span>
-<span class="sd">create_decoder() is called.</span>
+<span class="sd">base_init().</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="base_init"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.base_init">[docs]</a><span class="k">def</span> <span class="nf">base_init</span><span class="p">(</span><span class="n">new_args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function should be called before accessing any other</span>
+<span class="sd">    function in this module. It initializes the `args` variable on </span>
+<span class="sd">    which all the create_* factory functions rely on as configuration</span>
+<span class="sd">    object, and it sets up global function pointers and variables for</span>
+<span class="sd">    basic things like the indexing scheme, logging verbosity, etc.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        new_args: Configuration object from the argument parser.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">args</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">new_args</span>
+    <span class="c1"># UTF-8 support</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">getwriter</span><span class="p">(</span><span class="s1">&#39;UTF-8&#39;</span><span class="p">)(</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">getwriter</span><span class="p">(</span><span class="s1">&#39;UTF-8&#39;</span><span class="p">)(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">getreader</span><span class="p">(</span><span class="s1">&#39;UTF-8&#39;</span><span class="p">)(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;SGNMT is tested with Python 2.7, but you are using &quot;</span>
+                     <span class="s2">&quot;Python 3. Expect the unexpected or switch to 2.7.&quot;</span><span class="p">)</span>
+    <span class="c1"># Set up logger</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(levelname)s</span><span class="s1">: </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">==</span> <span class="s1">&#39;debug&#39;</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">==</span> <span class="s1">&#39;info&#39;</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">==</span> <span class="s1">&#39;warn&#39;</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARN</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">==</span> <span class="s1">&#39;error&#39;</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+    <span class="c1"># Set reserved word IDs</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">==</span> <span class="s1">&#39;blocks&#39;</span><span class="p">:</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">switch_to_blocks_indexing</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">==</span> <span class="s1">&#39;tf&#39;</span><span class="p">:</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">switch_to_tf_indexing</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">==</span> <span class="s1">&#39;t2t&#39;</span><span class="p">:</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">switch_to_t2t_indexing</span><span class="p">()</span>
+    <span class="c1"># Log summation (how to compute log(exp(l1)+exp(l2)) for log values l1,l2)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">log_sum</span> <span class="o">==</span> <span class="s1">&#39;tropical&#39;</span><span class="p">:</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum_tropical_semiring</span>
+    <span class="c1"># Predictor combination schemes</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;length_norm&#39;</span><span class="p">:</span>
+        <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_full</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_length_norm</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;bayesian_loglin&#39;</span><span class="p">:</span>
+        <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_full</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_bayesian_loglin</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;bayesian&#39;</span><span class="p">:</span>
+        <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_full</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_bayesian</span>  
+    <span class="n">ui</span><span class="o">.</span><span class="n">validate_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div>
+
 
 <span class="n">_override_args_cnts</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">def</span> <span class="nf">_get_override_args</span><span class="p">(</span><span class="n">field</span><span class="p">):</span>
@@ -332,8 +385,17 @@
                                       <span class="n">single_cpu_thread</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">single_cpu_thread</span><span class="p">,</span>
                                       <span class="n">alpha</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">lexnizza_alpha</span><span class="p">,</span>
                                       <span class="n">beta</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">lexnizza_beta</span><span class="p">,</span>
+                                      <span class="n">trg2src_model_name</span><span class="o">=</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">lexnizza_trg2src_model</span><span class="p">,</span> 
+                                      <span class="n">trg2src_hparams_set_name</span><span class="o">=</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">lexnizza_trg2src_hparams_set</span><span class="p">,</span>
+                                      <span class="n">trg2src_checkpoint_dir</span><span class="o">=</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">lexnizza_trg2src_checkpoint_dir</span><span class="p">,</span>
                                       <span class="n">shortlist_strategies</span><span class="o">=</span>
-                                          <span class="n">args</span><span class="o">.</span><span class="n">lexnizza_shortlist_strategies</span><span class="p">)</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">lexnizza_shortlist_strategies</span><span class="p">,</span>
+                                      <span class="n">max_shortlist_length</span><span class="o">=</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">lexnizza_max_shortlist_length</span><span class="p">,</span>
+                                      <span class="n">min_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">lexnizza_min_id</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;t2t&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">T2TPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_src_vocab_size&quot;</span><span class="p">),</span>
                                  <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">),</span>
@@ -345,37 +407,6 @@
                                  <span class="n">single_cpu_thread</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">single_cpu_thread</span><span class="p">,</span>
                                  <span class="n">max_terminal_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span><span class="p">,</span>
                                  <span class="n">pop_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;bfslayerbylayer&quot;</span><span class="p">:</span>
-                <span class="n">p</span> <span class="o">=</span> <span class="n">T2TBFSLayerbylayerPredictor</span><span class="p">(</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_src_vocab_size&quot;</span><span class="p">),</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">),</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_model&quot;</span><span class="p">),</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_problem&quot;</span><span class="p">),</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_hparams_set&quot;</span><span class="p">),</span>
-                         <span class="n">args</span><span class="o">.</span><span class="n">t2t_usr_dir</span><span class="p">,</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_checkpoint_dir&quot;</span><span class="p">),</span>
-                         <span class="n">single_cpu_thread</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">single_cpu_thread</span><span class="p">,</span>
-                         <span class="n">max_terminal_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span><span class="p">,</span>
-                         <span class="n">pop_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">,</span>
-                         <span class="n">root_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_root_id</span><span class="p">,</span>
-                         <span class="n">terminal_list</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_terminal_list</span><span class="p">,</span>
-                         <span class="n">max_depth</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_depth</span><span class="p">,</span>
-                         <span class="n">terminal_strategy</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">layerbylayer_terminal_strategy</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;dfslayerbylayer&quot;</span><span class="p">:</span>
-                <span class="n">p</span> <span class="o">=</span> <span class="n">T2TDFSLayerbylayerPredictor</span><span class="p">(</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_src_vocab_size&quot;</span><span class="p">),</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">),</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_model&quot;</span><span class="p">),</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_problem&quot;</span><span class="p">),</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_hparams_set&quot;</span><span class="p">),</span>
-                         <span class="n">args</span><span class="o">.</span><span class="n">t2t_usr_dir</span><span class="p">,</span>
-                         <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_checkpoint_dir&quot;</span><span class="p">),</span>
-                         <span class="n">single_cpu_thread</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">single_cpu_thread</span><span class="p">,</span>
-                         <span class="n">max_terminal_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span><span class="p">,</span>
-                         <span class="n">pop_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">,</span>
-                         <span class="n">root_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_root_id</span><span class="p">,</span>
-                         <span class="n">terminal_list</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_terminal_list</span><span class="p">,</span>
-                         <span class="n">max_depth</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_depth</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;bracket&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">BracketPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span><span class="p">,</span>
                                      <span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">,</span>
@@ -527,19 +558,20 @@
                     <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
                     <span class="k">return</span>
             <span class="n">decoder</span><span class="o">.</span><span class="n">add_predictor</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">pred_weight</span><span class="p">)</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Added predictor {} with weight {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> 
-                                                                    <span class="n">pred_weight</span><span class="p">))</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initialized predictor {} (weight: {})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                             <span class="n">pred</span><span class="p">,</span> <span class="n">pred_weight</span><span class="p">))</span>
     <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;One of the files required for setting up the &quot;</span>
                       <span class="s2">&quot;predictors could not be read: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
         <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
     <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Invalid arguments for one of the predictors: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Invalid argument for one of the predictors: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
         <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
     <span class="k">except</span> <span class="ne">NameError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find external library: </span><span class="si">%s</span><span class="s2">. Please make sure &quot;</span>
                       <span class="s2">&quot;that your PYTHONPATH and LD_LIBRARY_PATH contains all &quot;</span>
-                      <span class="s2">&quot;paths required for the predictors.&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+                      <span class="s2">&quot;paths required for the predictors. Stack trace: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> 
+                      <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
         <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span>
     <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;A number format error occurred while configuring the &quot;</span>
@@ -555,21 +587,16 @@
         <span class="n">decoder</span><span class="o">.</span><span class="n">remove_predictors</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="create_decoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.create_decoder">[docs]</a><span class="k">def</span> <span class="nf">create_decoder</span><span class="p">(</span><span class="n">new_args</span><span class="p">):</span>
+<div class="viewcode-block" id="create_decoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.create_decoder">[docs]</a><span class="k">def</span> <span class="nf">create_decoder</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Creates the ``Decoder`` instance. This specifies the search </span>
 <span class="sd">    strategy used to traverse the space spanned by the predictors. This</span>
 <span class="sd">    method relies on the global ``args`` variable.</span>
 <span class="sd">    </span>
 <span class="sd">    TODO: Refactor to avoid long argument lists</span>
 <span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        new_args: Command line arguments</span>
-<span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        Decoder. Instance of the search strategy</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">global</span> <span class="n">args</span>
-    <span class="n">args</span> <span class="o">=</span> <span class="n">new_args</span>
     <span class="c1"># Create decoder instance and add predictors</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;greedy&quot;</span><span class="p">:</span>
         <span class="n">decoder</span> <span class="o">=</span> <span class="n">GreedyDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
@@ -584,6 +611,8 @@
                                       <span class="n">args</span><span class="o">.</span><span class="n">max_word_len</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;syncbeam&quot;</span><span class="p">:</span>
         <span class="n">decoder</span> <span class="o">=</span> <span class="n">SyncBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;mbrbeam&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">MBRBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;sepbeam&quot;</span><span class="p">:</span>
         <span class="n">decoder</span> <span class="o">=</span> <span class="n">SepBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;syntaxbeam&quot;</span><span class="p">:</span>
@@ -756,7 +785,7 @@
     <span class="k">return</span> <span class="n">outputs</span></div>
 
 
-<span class="k">def</span> <span class="nf">_get_sentence_indices</span><span class="p">(</span><span class="n">range_param</span><span class="p">,</span> <span class="n">src_sentences</span><span class="p">):</span>
+<div class="viewcode-block" id="get_sentence_indices"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.get_sentence_indices">[docs]</a><span class="k">def</span> <span class="nf">get_sentence_indices</span><span class="p">(</span><span class="n">range_param</span><span class="p">,</span> <span class="n">src_sentences</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Helper method for ``do_decode`` which returns the indices of the</span>
 <span class="sd">    sentence to decode</span>
 <span class="sd">    </span>
@@ -780,7 +809,7 @@
     <span class="k">if</span> <span class="n">src_sentences</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Input method dummy requires --range&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[]</span>
-    <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src_sentences</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src_sentences</span><span class="p">))</span></div>
 
 
 <span class="k">def</span> <span class="nf">_get_text_output_handler</span><span class="p">(</span><span class="n">output_handlers</span><span class="p">):</span>
@@ -806,7 +835,7 @@
 <span class="sd">                               translate (e.g. &#39;1 123 432 2&#39;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">decoder</span><span class="o">.</span><span class="n">has_predictors</span><span class="p">():</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Decoding cancelled because of an error in the &quot;</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Terminated due to an error in the &quot;</span>
                       <span class="s2">&quot;predictor configuration.&quot;</span><span class="p">)</span>
         <span class="k">return</span>
     <span class="n">all_hypos</span> <span class="o">=</span> <span class="p">[]</span>
@@ -815,7 +844,7 @@
         <span class="n">text_output_handler</span><span class="o">.</span><span class="n">open_file</span><span class="p">()</span>
     <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Start time: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">start_time</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">sen_idx</span> <span class="ow">in</span> <span class="n">_get_sentence_indices</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">,</span> <span class="n">src_sentences</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">sen_idx</span> <span class="ow">in</span> <span class="n">get_sentence_indices</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">,</span> <span class="n">src_sentences</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">src_sentences</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
                 <span class="n">src</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>

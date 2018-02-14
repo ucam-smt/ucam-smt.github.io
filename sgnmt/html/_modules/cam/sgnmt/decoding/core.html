@@ -498,7 +498,6 @@
         <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
                 <span class="n">alphas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">p</span>
-        <span class="c1">#print(alphas)</span>
         <span class="n">alpha_part</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">alphas</span><span class="p">)</span>
         <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">alphas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">alpha_part</span> <span class="o">+</span> <span class="n">p</span> 
                 <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span>
@@ -700,6 +699,8 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">max_arr_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">max_arr_length</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="n">el</span> <span class="o">&lt;</span> <span class="n">max_arr_length</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">key_sets</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">)</span>
                 <span class="n">key_sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">))</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">key_sets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">key_sets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -741,9 +742,12 @@
                 <span class="n">unrestricted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">restricted</span><span class="p">,</span> <span class="n">unrestricted</span>
     
-<div class="viewcode-block" id="Decoder.apply_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.apply_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">apply_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Decoder.apply_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.apply_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">apply_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get the distribution over the next word by combining the</span>
 <span class="sd">        predictor scores.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            top_n (int): If positive, return only the best n words.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">            combined,score_breakdown: Two dicts. ``combined`` maps </span>
@@ -772,17 +776,23 @@
                 <span class="n">bounded_idx</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="n">posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
             <span class="n">unk_probs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span><span class="p">(</span>
+            <span class="n">non_zero_words</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">,</span> <span class="n">top_n</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_unk_in_output</span> <span class="ow">and</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
             <span class="k">del</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span>
             <span class="k">del</span> <span class="n">ret</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">top_n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">top_n</span><span class="p">:</span>
+            <span class="n">top</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">top_n</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">({</span><span class="n">w</span><span class="p">:</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">w</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">top</span><span class="p">},</span>
+                   <span class="p">{</span><span class="n">w</span><span class="p">:</span> <span class="n">ret</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">w</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">top</span><span class="p">})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">notify_observers</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_POSTERIOR</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ret</span></div>
     
     <span class="k">def</span> <span class="nf">_combine_posteriors_norm_none</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                                      <span class="n">non_zero_words</span><span class="p">,</span>
+                                       <span class="n">non_zero_words</span><span class="p">,</span>
                                       <span class="n">posteriors</span><span class="p">,</span>
-                                      <span class="n">unk_probs</span><span class="p">):</span>
+                                      <span class="n">unk_probs</span><span class="p">,</span>
+                                      <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Combine predictor posteriors according the normalization</span>
 <span class="sd">        scheme ``CLOSED_VOCAB_SCORE_NORM_NONE``. For more information</span>
 <span class="sd">        on closed vocabulary predictor score normalization see the </span>
@@ -794,10 +804,29 @@
 <span class="sd">                        with ``predict_next()``</span>
 <span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
 <span class="sd">                       with ``get_unk_probability``</span>
+<span class="sd">            top_n (int): If positive, return only top n words</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">,</span> <span class="nb">xrange</span><span class="p">)</span> <span class="ow">and</span> <span class="n">top_n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">n_words</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">)</span>
+            <span class="n">scaled_posteriors</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">posterior</span><span class="p">,</span> <span class="n">unk_prob</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                          <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_words</span><span class="p">,</span> <span class="n">unk_prob</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">posterior</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                        <span class="n">arr</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+                    <span class="n">scaled_posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arr</span> <span class="o">*</span> <span class="n">weight</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">n_unks</span> <span class="o">=</span> <span class="n">n_words</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">n_unks</span><span class="p">:</span>
+                        <span class="n">posterior</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span>
+                               <span class="n">posterior</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_unks</span><span class="p">,</span> <span class="n">unk_prob</span><span class="p">)))</span>
+                    <span class="n">scaled_posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span> <span class="o">*</span> <span class="n">weight</span><span class="p">)</span>
+            <span class="n">combined_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">scaled_posteriors</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">non_zero_words</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">combined_scores</span><span class="p">,</span> <span class="n">top_n</span><span class="p">)</span>
         <span class="n">combined</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">score_breakdown</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">non_zero_words</span><span class="p">:</span>
@@ -812,7 +841,8 @@
     <span class="k">def</span> <span class="nf">_combine_posteriors_norm_rescale_unk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                              <span class="n">non_zero_words</span><span class="p">,</span>
                                              <span class="n">posteriors</span><span class="p">,</span>
-                                             <span class="n">unk_probs</span><span class="p">):</span>
+                                             <span class="n">unk_probs</span><span class="p">,</span>
+                                             <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Combine predictor posteriors according the normalization</span>
 <span class="sd">        scheme ``CLOSED_VOCAB_SCORE_NORM_RESCALE_UNK``. For more </span>
 <span class="sd">        information on closed vocabulary predictor score normalization </span>
@@ -824,6 +854,7 @@
 <span class="sd">                        with ``predict_next()``</span>
 <span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
 <span class="sd">                       with ``get_unk_probability``</span>
+<span class="sd">            top_n (int): If positive, return only top n words</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
@@ -839,13 +870,15 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_none</span><span class="p">(</span>
                           <span class="n">non_zero_words</span><span class="p">,</span>
                           <span class="n">posteriors</span><span class="p">,</span>
-                          <span class="p">[</span><span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span> 
-                               <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">)])</span>
+                          <span class="p">[</span><span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
+                               <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">)],</span>
+                          <span class="n">top_n</span><span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">_combine_posteriors_norm_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                        <span class="n">non_zero_words</span><span class="p">,</span>
                                        <span class="n">posteriors</span><span class="p">,</span>
-                                       <span class="n">unk_probs</span><span class="p">):</span>
+                                       <span class="n">unk_probs</span><span class="p">,</span>
+                                       <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Combine predictor posteriors according the normalization</span>
 <span class="sd">        scheme ``CLOSED_VOCAB_SCORE_NORM_EXACT``. For more information</span>
 <span class="sd">        on closed vocabulary predictor score normalization see the </span>
@@ -857,6 +890,7 @@
 <span class="sd">                        with ``predict_next()``</span>
 <span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
 <span class="sd">                       with ``get_unk_probability``</span>
+<span class="sd">            top_n (int): Not implemented!</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
@@ -885,7 +919,8 @@
     <span class="k">def</span> <span class="nf">_combine_posteriors_norm_reduced</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                          <span class="n">non_zero_words</span><span class="p">,</span>
                                          <span class="n">posteriors</span><span class="p">,</span>
-                                         <span class="n">unk_probs</span><span class="p">):</span>
+                                         <span class="n">unk_probs</span><span class="p">,</span>
+                                         <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Combine predictor posteriors according the normalization</span>
 <span class="sd">        scheme ``CLOSED_VOCAB_SCORE_NORM_REDUCED``. For more information</span>
 <span class="sd">        on closed vocabulary predictor score normalization see the </span>
@@ -897,6 +932,7 @@
 <span class="sd">                        with ``predict_next()``</span>
 <span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
 <span class="sd">                       with ``get_unk_probability``</span>
+<span class="sd">            top_n (int): Not implemented!</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>

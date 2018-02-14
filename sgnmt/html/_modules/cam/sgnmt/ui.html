@@ -141,16 +141,11 @@
 <span></span><span class="sd">&quot;&quot;&quot;This module handles configuration and user interface when using </span>
 <span class="sd">blocks. ``yaml`` and ``ArgumentParser`` are used for parsing config</span>
 <span class="sd">files and command line arguments.</span>
-
-<span class="sd">TODO: Remove Blocks dependency</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">argparse</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">os</span>
-
-<span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.nmt</span> <span class="kn">import</span> <span class="n">blocks_add_nmt_config</span>
-
 
 <span class="n">YAML_AVAILABLE</span> <span class="o">=</span> <span class="bp">True</span>
 <span class="k">try</span><span class="p">:</span>
@@ -218,203 +213,6 @@
     <span class="k">return</span> <span class="n">config</span></div>
 
 
-<div class="viewcode-block" id="get_blocks_train_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_blocks_train_parser">[docs]</a><span class="k">def</span> <span class="nf">get_blocks_train_parser</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Get the parser object for NMT training configuration. &quot;&quot;&quot;</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span><span class="n">str2bool</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bokeh&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Use bokeh server for plotting&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--reshuffle&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Reshuffle before each epoch&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--slim_iteration_state&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Per default the iteration state stores the data &quot;</span>
-                        <span class="s2">&quot;stream and the main loop epoch iterator. Enabling &quot;</span>
-                        <span class="s2">&quot;this option only stores the epoch iterator. This &quot;</span>
-                        <span class="s2">&quot;results in a much smaller iteration state, but the &quot;</span>
-                        <span class="s2">&quot;data stream is reset after reloading. Normally, you &quot;</span>
-                        <span class="s2">&quot;can use slim iteration states if your data stream &quot;</span>
-                        <span class="s2">&quot;does reshuffling&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--reset_epoch&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Set epoch_started in main loop status to false. &quot;</span>
-                        <span class="s2">&quot;Sometimes required if you change training parameters &quot;</span>
-                        <span class="s2">&quot;such as --mono_data_integration&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--mono_data_integration&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
-                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">],</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter specifies how to use &quot;</span>
-                        <span class="s2">&quot;monolingual data. Currently, we only support &quot;</span>
-                        <span class="s2">&quot;using the target data.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;none&#39;: Do not use monolingual data</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--loss&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
-                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="s1">&#39;gleu&#39;</span><span class="p">],</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Training loss function.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;default&#39;: Standard loss function: squared error &quot;</span>
-                        <span class="s2">&quot;with target feature maps, else cross entropy</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;gleu&#39;: Reinforcement learning objective function &quot;</span>
-                        <span class="s2">&quot;as proposed by Wu et al., 2016 (Googles NMT)&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--add_mono_dummy_data&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If the method specified with mono_data_&quot;</span>
-                        <span class="s2">&quot;integration uses monolingual data, it usually &quot;</span>
-                        <span class="s2">&quot;combines synthetic and dummy source sentences. Set &quot;</span>
-                        <span class="s2">&quot;this to false to disable dummy source sentences.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--backtrans_nmt_config&quot;</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;A string describing the configuration of the &quot;</span>
-                        <span class="s2">&quot;back-translating NMT system. Syntax is equal to nmt_&quot;</span>
-                        <span class="s2">&quot;config2 in decode.py: Comma separated list of name-&quot;</span>
-                        <span class="s2">&quot;value pairs, where name is one of the NMT &quot;</span>
-                        <span class="s2">&quot;configuration parameters. E.g. saveto=train.back,&quot;</span>
-                        <span class="s2">&quot;src_vocab_size=50000,trg_vocab_size=50000&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--backtrans_reload_frequency&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The back-translating NMT model is reloaded every&quot;</span>
-                        <span class="s2">&quot; n updates. This is useful if the back-translating &quot;</span>
-                        <span class="s2">&quot;NMT system is currently trained by itself with the &quot;</span>
-                        <span class="s2">&quot;same policy. This enables us to train two NMT &quot;</span>
-                        <span class="s2">&quot;systems in opposite translation directions and &quot;</span>
-                        <span class="s2">&quot;benefit from gains in the other system immediately. &quot;</span>
-                        <span class="s2">&quot;Set to 0 to disable reloading&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--backtrans_store&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Write the back-translated sentences to the &quot;</span>
-                        <span class="s2">&quot;file system.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--backtrans_max_same_word&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Used for sanity check of the backtranslation. &quot;</span>
-                        <span class="s2">&quot;If the most frequent word in the backtranslated &quot;</span>
-                        <span class="s2">&quot;sentence has relative frequency higher than this, &quot;</span>
-                         <span class="s2">&quot;discard this sentence pair&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--learning_rate&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.002</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Learning rate for AdaGrad and Adam&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--prune_every&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Prune model every n iterations. Pruning is &quot;</span> 
-                        <span class="s2">&quot;disabled if this is &lt; 1&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--prune_reset_every&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Reset pruning statistics every n iterations. If &quot;</span> 
-                        <span class="s2">&quot;set to -1, use --prune_every&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--prune_n_steps&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of pruning steps until the target layer &quot;</span>
-                        <span class="s2">&quot;sizes should be reached&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--prune_layers&quot;</span><span class="p">,</span>  
-                        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;encfwdgru:1000,encbwdgru:1000,decgru:1000&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;A comma separated list of &lt;layer&gt;:&lt;size&gt; pairs. &quot;</span>
-                        <span class="s2">&quot;&lt;layer&gt; is one of &#39;encfwdgru&#39;, &#39;encbwdgru&#39;, &#39;decgru&#39;,&quot;</span>
-                        <span class="s2">&quot; &#39;decmaxout&#39; which should be shrunk to &lt;size&gt; during &quot;</span>
-                        <span class="s2">&quot;training. Pruned neurons are marked by setting all &quot;</span>
-                        <span class="s2">&quot;in- and output connection to zero.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--prune_layout_path&quot;</span><span class="p">,</span>  
-                        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;prune.layout&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Points to a file which defines which weight &quot;</span>
-                        <span class="s2">&quot;matrices are connected to which prunable layers. The &quot;</span>
-                        <span class="s2">&quot;rows/columns of these matrices are set to zero for &quot;</span>
-                        <span class="s2">&quot;all removed neurons. The format of this file is </span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;&lt;layer&gt; &lt;in|out&gt; &lt;mat_name&gt; &lt;dim&gt; &lt;start-idx&gt;=0.0</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;&lt;layer&gt; is one of the layer names specified via &quot;</span>
-                        <span class="s2">&quot;--prune_layers. Set &lt;start-idx&gt; to 0.5 to add an &quot;</span>
-                        <span class="s2">&quot;offset of half the matrix dimension to the indices.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--sampling_freq&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NOT USED, just to prevent old code from breaking&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--hook_samples&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NOT USED, just to prevent old code from breaking&quot;</span><span class="p">)</span>
-    <span class="n">blocks_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">parser</span></div>
-
-
-<div class="viewcode-block" id="get_blocks_align_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_blocks_align_parser">[docs]</a><span class="k">def</span> <span class="nf">get_blocks_align_parser</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Get the parser object for NMT alignment configuration. &quot;&quot;&quot;</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span><span class="n">str2bool</span><span class="p">)</span>
-    
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--iterations&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of optimization iterations for each token&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_model_selector&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;bleu&quot;</span><span class="p">,</span>
-                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="s1">&#39;bleu&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">],</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NMT training normally creates several files in &quot;</span>
-                        <span class="s2">&quot;the ./train/ directory from which we can load the NMT&quot;</span>
-                        <span class="s2">&quot; model. Possible options:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;params&#39;: Load parameters from params.npz. This is &quot;</span>
-                        <span class="s2">&quot;usually the most recent model.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;bleu&#39;: Load from the best_bleu_params_* file with &quot;</span>
-                        <span class="s2">&quot;the best BLEU score.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;time&#39;: Load from the most recent &quot;</span>
-                        <span class="s2">&quot;best_bleu_params_* file.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--alignment_model&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;nam&quot;</span><span class="p">,</span>
-                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;nam&#39;</span><span class="p">,</span> <span class="s1">&#39;nmt&#39;</span><span class="p">],</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the alignment model.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;nam&#39;: Neural alignment model. Similar to NMT but &quot;</span>
-                        <span class="s2">&quot;trains the alignment weights explicitly for each &quot;</span>
-                        <span class="s2">&quot;sentence pair instead of using the NMT attention &quot;</span>
-                        <span class="s2">&quot;model.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;nmt&#39;: Standard NMT attention model following &quot;</span>
-                        <span class="s2">&quot;Bahdanau et. al., 2015.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;sgnmt-out.</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the output files generated by SGNMT. You &quot;</span>
-                        <span class="s2">&quot;can use the placeholder </span><span class="si">%%</span><span class="s2">s for the format specifier.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--outputs&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma separated list of output formats: </span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;csv&#39;: Plain text file with alignment matrix</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;npy&#39;: Alignment matrices in numpy&#39;s npy format</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;align&#39;: Usual (Pharaoh) alignment format.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="n">blocks_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">parser</span></div>
-
-
-<div class="viewcode-block" id="get_blocks_batch_decode_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_blocks_batch_decode_parser">[docs]</a><span class="k">def</span> <span class="nf">get_blocks_batch_decode_parser</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Get the parser object for NMT batch decoding. &quot;&quot;&quot;</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span><span class="n">str2bool</span><span class="p">)</span>
-    
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;test_en&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to source test set. This is expected to be &quot;</span>
-                        <span class="s2">&quot;a plain text file with one source sentence in each &quot;</span>
-                        <span class="s2">&quot;line. Words need to be indexed, i.e. use word IDs &quot;</span>
-                        <span class="s2">&quot;instead of their string representations.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--range&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the range of sentences to be processed. &quot;</span>
-                         <span class="s2">&quot;Syntax is equal to HiFSTs printstrings and lmerts &quot;</span>
-                         <span class="s2">&quot;idxrange parameter: &lt;start-idx&gt;:&lt;end-idx&gt; (both &quot;</span>
-                         <span class="s2">&quot;inclusive, start with 1). E.g. 2:5 means: skip the &quot;</span>
-                         <span class="s2">&quot;first sentence, process next 4 sentences&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--enc_max_words&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum number of words in an encoder batch. &quot;</span>
-                        <span class="s2">&quot;These batches compute source side annotations. &quot;</span>
-                        <span class="s2">&quot;Encoder batches are clustered by source sentence &quot;</span>
-                        <span class="s2">&quot;length, so smaller batches are possible.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--min_jobs&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The CPU scheduler starts to construct small &quot;</span>
-                        <span class="s2">&quot;jobs when the total number of jobs in the pipelines &quot;</span>
-                        <span class="s2">&quot;is below this threshold. This prevents the computation &quot;</span>
-                        <span class="s2">&quot;thread from being idle, at the cost of smaller &quot;</span> 
-                        <span class="s2">&quot;batches&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_tasks_per_job&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">450</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The maximum number of tasks in a single decoder &quot;</span>
-                        <span class="s2">&quot;batch. Larger batches can exploit GPU parallelism &quot;</span>
-                        <span class="s2">&quot;more efficiently, but limit the flexibility of the &quot;</span>
-                        <span class="s2">&quot;CPU scheduler&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_tasks_per_state_update_job&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum number of tasks in a state update batch. &quot;</span>
-                        <span class="s2">&quot;Larger batches are more efficient to compute on the &quot;</span>
-                        <span class="s2">&quot;GPU, but delaying state updates for too long may &quot;</span>
-                        <span class="s2">&quot;lead to smaller forward pass jobs.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_rows_per_job&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum number of entries in a forward pass &quot;</span>
-                        <span class="s2">&quot;batch. Note that each task in the batch gets at least &quot;</span>
-                        <span class="s2">&quot;one entry, so this parameters applies only if there &quot;</span>
-                        <span class="s2">&quot;are less than this threshold tasks left.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--min_tasks_per_bucket&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Minimum number of tasks in a bucket. Large &quot;</span>
-                        <span class="s2">&quot;buckets give the CPU scheduler more flexibility, &quot;</span>
-                        <span class="s2">&quot;but more padding may be required on the source &quot;</span>
-                        <span class="s2">&quot;side, leading to more wasted computation.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--min_bucket_tolerance&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Minimum padding width in a bucket. Increasing &quot;</span>
-                        <span class="s2">&quot;this leads to larger buckets and more flexible &quot;</span>
-                        <span class="s2">&quot;scheduling and larger batches, but potentially &quot;</span>
-                        <span class="s2">&quot;more wasteful state update computation due to &quot;</span>
-                        <span class="s2">&quot;padding.&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--beam&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Size of the beam.&quot;</span><span class="p">)</span>
-    
-    <span class="n">blocks_add_nmt_config</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">parser</span></div>
-
-
 <div class="viewcode-block" id="get_parser"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.get_parser">[docs]</a><span class="k">def</span> <span class="nf">get_parser</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Get the parser object which is used to build the configuration</span>
 <span class="sd">    argument ``args``. This is a helper method for ``get_args()``</span>
@@ -443,7 +241,7 @@
                         <span class="s2">&quot;idxrange parameter: &lt;start-idx&gt;:&lt;end-idx&gt; (both &quot;</span>
                         <span class="s2">&quot;inclusive, start with 1). E.g. 2:5 means: skip the &quot;</span>
                         <span class="s2">&quot;first sentence, process next 4 sentences&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;test_en&quot;</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to source test set. This is expected to be &quot;</span>
                         <span class="s2">&quot;a plain text file with one source sentence in each &quot;</span>
                         <span class="s2">&quot;line. Words need to be indexed, i.e. use word IDs &quot;</span>
@@ -458,6 +256,9 @@
                         <span class="s2">&quot;* &#39;t2t&#39;: unk: 3, &lt;s&gt;: 2, &lt;/s&gt;: 1.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--legacy_indexing&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED: Use --indexing_scheme=tf instead&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ignore_sanity_checks&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;SGNMT terminates when a sanity check fails by &quot;</span>
+                       <span class="s2">&quot;default. Set this to true to ignore sanity checks.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--input_method&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;file&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dummy&#39;</span><span class="p">,</span> <span class="s1">&#39;file&#39;</span><span class="p">,</span> <span class="s1">&#39;shell&#39;</span><span class="p">,</span> <span class="s1">&#39;stdin&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter controls how the input to SGNMT &quot;</span>
@@ -501,6 +302,7 @@
                                  <span class="s1">&#39;multisegbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;syncbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;sepbeam&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;mbrbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;syntaxbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;combibeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;dfs&#39;</span><span class="p">,</span>
@@ -531,6 +333,8 @@
                         <span class="s2">&quot;of after each iteration.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;syntaxbeam&#39;: beam search which ensures terminal &quot;</span>
                         <span class="s2">&quot;symbol diversity.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;mbrbeam&#39;: Uses an MBR-based criterion to select &quot;</span>
+                        <span class="s2">&quot;the next hypotheses at each time step.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;sepbeam&#39;: Associates predictors with hypos in &quot;</span>
                         <span class="s2">&quot;beam search and applies only one predictor instead &quot;</span>
                         <span class="s2">&quot;of all for hypo expansion.</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -550,7 +354,7 @@
                         <span class="s2">&quot;Do not use bow predictor with this search strategy.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;astar&#39;: A* search. The heuristic function is &quot;</span>
                         <span class="s2">&quot;configured using the --heuristics options.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;vanilla&#39;: Original blocks beam decoder. This &quot;</span>
+                        <span class="s2">&quot;* &#39;vanilla&#39;: Original Blocks beam decoder. This &quot;</span>
                         <span class="s2">&quot;bypasses the predictor framework and directly &quot;</span>
                         <span class="s2">&quot;performs pure NMT beam decoding on the GPU. Use this &quot;</span>
                         <span class="s2">&quot;when you do pure NMT decoding as this is usually &quot;</span>
@@ -745,6 +549,10 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_word_len&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum length of a single word. Only applicable &quot;</span>
                        <span class="s2">&quot;to the decoders multisegbeam and syncbeam.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--mbrbeam_smooth_factor&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If positive, apply mix the evidence space &quot;</span>
+                       <span class="s2">&quot;distribution with the uniform distribution using &quot;</span>
+                       <span class="s2">&quot;this factor&quot;</span><span class="p">)</span>
 
     <span class="c1">## Output options</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Output options&#39;</span><span class="p">)</span>
@@ -827,21 +635,11 @@
                         <span class="s2">&quot;the source word coverage.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;           Options: nizza_model, nizza_hparams_set, &quot;</span>
                         <span class="s2">&quot;nizza_checkpoint_dir, pred_src_vocab_size, &quot;</span>
-                        <span class="s2">&quot;pred_trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;bfslayerbylayer&#39;: Layerbylayer models (BFS).</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;                  Options: t2t_usr_dir, t2t_model, &quot;</span>
-                        <span class="s2">&quot;t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, &quot;</span>
-                        <span class="s2">&quot;syntax_root_id, syntax_max_terminal_id, &quot;</span>
-                        <span class="s2">&quot;syntax_terminal_list, syntax_pop_id,&quot;</span>
-                        <span class="s2">&quot;layerbylayer_terminal_strategy, syntax_max_depth, &quot;</span>
-                        <span class="s2">&quot;pred_src_vocab_size, pred_trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;dfslayerbylayer&#39;: Layerbylayer models (DFS).</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;                  Options: t2t_usr_dir, t2t_model, &quot;</span>
-                        <span class="s2">&quot;t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, &quot;</span>
-                        <span class="s2">&quot;syntax_root_id, syntax_max_terminal_id, &quot;</span>
-                        <span class="s2">&quot;syntax_terminal_list, syntax_pop_id,&quot;</span>
-                        <span class="s2">&quot;layerbylayer_terminal_strategy, syntax_max_depth, &quot;</span>
-                        <span class="s2">&quot;pred_src_vocab_size, pred_trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;pred_trg_vocab_size, lexnizza_alpha, lexnizza_beta, &quot;</span>
+                        <span class="s2">&quot;lexnizza_shortlist_strategies, &quot;</span>
+                        <span class="s2">&quot;lexnizza_max_shortlist_length, lexnizza_trg2src_model, &quot;</span>
+                        <span class="s2">&quot;lexnizza_trg2src_hparams_set, lexnizza_trg2src_&quot;</span>
+                        <span class="s2">&quot;checkpoint_dir, lexnizza_min_id</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;bracket&#39;: Well-formed bracketing.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;             Options: syntax_max_terminal_id, &quot;</span>
                         <span class="s2">&quot;syntax_pop_id, syntax_max_depth, extlength_path</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -1033,16 +831,6 @@
                        <span class="s2">&quot;penalization term following Google&#39;s NMT (Wu et al., &quot;</span>
                        <span class="s2">&quot;2016) to the NMT score. Only works for the Blocks &quot;</span>
                        <span class="s2">&quot;NMT predictor.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--layerbylayer_terminal_strategy&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;force&quot;</span><span class="p">,</span> 
-                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;force&#39;</span><span class="p">,</span> <span class="s1">&#39;skip&#39;</span><span class="p">],</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Strategy for dealing with terminals as parents &quot;</span>
-                        <span class="s2">&quot;in layerbylayer predictors with POP attention.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;&#39;none&#39;: Treat terminal parents like any other token</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;&#39;force&#39;: Force the output to the terminal parent &quot;</span>
-                        <span class="s2">&quot;label.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;&#39;skip&#39;: Like &#39;force&#39;, but with log(1)=0 scores. This &quot;</span>
-                        <span class="s2">&quot;is usually faster, and must be used if the model is &quot;</span>
-                        <span class="s2">&quot;trained with use_loss_mask.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_max_depth&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum depth of generated trees. After this &quot;</span>
                        <span class="s2">&quot;depth is reached, only terminals and POP are allowed &quot;</span>
@@ -1098,8 +886,19 @@
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the nizza predictor. Path to the &quot;</span>
                        <span class="s2">&quot;nizza checkpoint directory. Same as &quot;</span>
                        <span class="s2">&quot;--model_dir in nizza_trainer.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_trg2src_model&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;model1&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the lexnizza predictor. Name of &quot;</span>
+                       <span class="s2">&quot;the target-to-source nizza model.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_trg2src_hparams_set&quot;</span><span class="p">,</span>
+                       <span class="n">default</span><span class="o">=</span><span class="s2">&quot;model1_default&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the lexnizza predictor. Name of &quot;</span>
+                       <span class="s2">&quot;the target-to-source nizza hparams set.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_trg2src_checkpoint_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the lexnizza predictor. Path to &quot;</span>
+                       <span class="s2">&quot;the target-to-source nizza checkpoint directory. Same &quot;</span>
+                       <span class="s2">&quot;as --model_dir in nizza_trainer.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_shortlist_strategies&quot;</span><span class="p">,</span> 
-                       <span class="n">default</span><span class="o">=</span><span class="s2">&quot;top5,prob0.5&quot;</span><span class="p">,</span>
+                       <span class="n">default</span><span class="o">=</span><span class="s2">&quot;top10&quot;</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma-separated list of strategies to extract &quot;</span>
                        <span class="s2">&quot;a short list of likely translations from lexical &quot;</span>
                        <span class="s2">&quot;Model1 scores. Strategies are combined using the &quot;</span>
@@ -1107,10 +906,17 @@
                        <span class="s2">&quot;* top&lt;N&gt;: Select the top N words.</span><span class="se">\n</span><span class="s2">&quot;</span>
                        <span class="s2">&quot;* prob&lt;p&gt;: Select the top words such that their &quot;</span>
                        <span class="s2">&quot; combined probability mass is greater than p.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_alpha&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_alpha&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Score of each word which matches a short list.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_beta&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_beta&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Penalty for each uncovered word at the end.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_max_shortlist_length&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If positive and a shortlist is longer than this &quot;</span>
+                        <span class="s2">&quot;limit, initialize the coverage vector at this &quot;</span>
+                        <span class="s2">&quot;position with 1&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_min_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Word IDs lower than this are not considered by &quot;</span>
+                        <span class="s2">&quot;lexnizza. Can be used to filter out frequent words.&quot;</span><span class="p">)</span>
 
     <span class="c1"># Length predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Length predictor options&#39;</span><span class="p">)</span>
@@ -1412,9 +1218,7 @@
     <span class="sd">&quot;&quot;&quot;Get the arguments for the current SGNMT run from both command</span>
 <span class="sd">    line arguments and configuration files. This method contains all</span>
 <span class="sd">    available SGNMT options, i.e. configuration is not encapsulated e.g.</span>
-<span class="sd">    by predictors. Additionally, we add blocks NMT model options as</span>
-<span class="sd">    parameters to specify how the loaded NMT model was trained. These</span>
-<span class="sd">    are defined in ``machine_translation.configurations``.</span>
+<span class="sd">    by predictors. </span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        object. Arguments object like for ``ArgumentParser``</span>
@@ -1473,18 +1277,28 @@
                 <span class="k">pass</span> <span class="c1"># Deal with it later</span>
         
     <span class="c1"># Some common pitfalls</span>
+    <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">False</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">input_method</span> <span class="o">==</span> <span class="s1">&#39;dummy&#39;</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;You are using the dummy input method but a low value &quot;</span>
                      <span class="s2">&quot;for max_len_factor (</span><span class="si">%d</span><span class="s2">). This means that decoding will &quot;</span>
                      <span class="s2">&quot;not consider hypotheses longer than </span><span class="si">%d</span><span class="s2"> tokens. Consider &quot;</span>
                      <span class="s2">&quot;increasing max_len_factor to the length longest relevant&quot;</span>
                      <span class="s2">&quot; hypothesis&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">max_len_factor</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">max_len_factor</span><span class="p">))</span>
+        <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">True</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;beam&quot;</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s2">&quot;length_norm&quot;</span>
                                <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">):</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;You are using beam search with length normalization but &quot;</span>
                      <span class="s2">&quot;with early stopping. All hypotheses found with beam &quot;</span>
                      <span class="s2">&quot;search with early stopping have the same length. You &quot;</span>
-                     <span class="s2">&quot;might want to disable early stopping.&quot;</span><span class="p">)</span></div>
+                     <span class="s2">&quot;might want to disable early stopping.&quot;</span><span class="p">)</span>
+        <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="s2">&quot;t2t&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">predictors</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">!=</span> <span class="s2">&quot;t2t&quot;</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;You are using the t2t predictor, but indexing_scheme &quot;</span>
+                     <span class="s2">&quot;is not set to t2t.&quot;</span><span class="p">)</span>
+        <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="n">sanity_check_failed</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">ignore_sanity_checks</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Sanity check failed (see warnings). If you want &quot;</span>
+            <span class="s2">&quot;to proceed despite these warnings, use --ignore_sanity_checks.&quot;</span><span class="p">)</span></div>
 
 </pre></div>
 

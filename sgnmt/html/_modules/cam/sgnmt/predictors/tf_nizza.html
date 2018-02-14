@@ -218,7 +218,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">precomputed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">precompute</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">hparams</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log_probs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span>
                 <span class="n">model</span><span class="o">.</span><span class="n">predict_next_word</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">hparams</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precomputed</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_session</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_session</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_session_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates the session config with t2t default parameters.&quot;&quot;&quot;</span>
@@ -241,9 +241,9 @@
                 <span class="n">log_device_placement</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">config</span>
 
-<div class="viewcode-block" id="BaseNizzaPredictor.create_session"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor.create_session">[docs]</a>    <span class="k">def</span> <span class="nf">create_session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="BaseNizzaPredictor.create_session"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor.create_session">[docs]</a>    <span class="k">def</span> <span class="nf">create_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a MonitoredSession for this predictor.&quot;&quot;&quot;</span>
-        <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">saver</span><span class="o">.</span><span class="n">latest_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span><span class="p">)</span>
+        <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">saver</span><span class="o">.</span><span class="n">latest_checkpoint</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">training</span><span class="o">.</span><span class="n">MonitoredSession</span><span class="p">(</span>
             <span class="n">session_creator</span><span class="o">=</span><span class="n">training</span><span class="o">.</span><span class="n">ChiefSessionCreator</span><span class="p">(</span>
                 <span class="n">checkpoint_filename_with_path</span><span class="o">=</span><span class="n">checkpoint_path</span><span class="p">,</span>
@@ -305,6 +305,10 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_vocab_size</span><span class="p">,</span> <span class="n">trg_vocab_size</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> 
                  <span class="n">hparams_set_name</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="p">,</span> <span class="n">single_cpu_thread</span><span class="p">,</span>
                  <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">shortlist_strategies</span><span class="p">,</span>
+                 <span class="n">trg2src_model_name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">trg2src_hparams_set_name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                 <span class="n">trg2src_checkpoint_dir</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                 <span class="n">max_shortlist_length</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">min_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                  <span class="n">nizza_unk_id</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Initializes a nizza predictor.</span>
 
@@ -324,6 +328,18 @@
 <span class="sd">            beta (float): Penalty for each uncovered word at the end</span>
 <span class="sd">            shortlist_strategies (string): Comma-separated list of shortlist</span>
 <span class="sd">                strategies.</span>
+<span class="sd">            trg2src_model_name (string): Name of the target2source nizza model</span>
+<span class="sd">            trg2src_hparams_set_name (string): Name of the nizza hyper-parameter set</span>
+<span class="sd">                                     for the target2source model</span>
+<span class="sd">            trg2src_checkpoint_dir (string): Path to the Nizza checkpoint directory</span>
+<span class="sd">                                     for the target2source model. The </span>
+<span class="sd">                                     predictor will load the top most checkpoint in </span>
+<span class="sd">                                     the `checkpoints` file.</span>
+<span class="sd">            max_shortlist_length (int): If a shortlist exceeds this limit,</span>
+<span class="sd">                initialize the initial coverage with 1 at this position. If</span>
+<span class="sd">                zero, do not apply any limit</span>
+<span class="sd">            min_id (int): Do not use IDs below this threshold (filters out most</span>
+<span class="sd">                frequent words).</span>
 <span class="sd">            nizza_unk_id (int): If set, use this as UNK id. Otherwise, the</span>
 <span class="sd">                nizza is assumed to have no UNKs</span>
 
@@ -334,11 +350,50 @@
                 <span class="n">src_vocab_size</span><span class="p">,</span> <span class="n">trg_vocab_size</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">hparams_set_name</span><span class="p">,</span> 
                 <span class="n">checkpoint_dir</span><span class="p">,</span> <span class="n">single_cpu_thread</span><span class="p">,</span> <span class="n">nizza_unk_id</span><span class="o">=</span><span class="n">nizza_unk_id</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha_is_zero</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">==</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shortlist_strategies</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">split_comma</span><span class="p">(</span><span class="n">shortlist_strategies</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_shortlist_length</span> <span class="o">=</span> <span class="n">max_shortlist_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_id</span> <span class="o">=</span> <span class="n">min_id</span>
+        <span class="k">if</span> <span class="n">trg2src_checkpoint_dir</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_trg2src</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">predictor_graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+            <span class="k">with</span> <span class="n">predictor_graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">()</span> <span class="k">as</span> <span class="n">g</span><span class="p">:</span>
+                <span class="n">hparams</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_registered_hparams_set</span><span class="p">(</span><span class="n">trg2src_hparams_set_name</span><span class="p">)</span>
+                <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;inputs_vocab_size&quot;</span><span class="p">,</span> <span class="n">trg_vocab_size</span><span class="p">)</span>
+                <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;targets_vocab_size&quot;</span><span class="p">,</span> <span class="n">src_vocab_size</span><span class="p">)</span>
+                <span class="n">run_config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">contrib</span><span class="o">.</span><span class="n">learn</span><span class="o">.</span><span class="n">RunConfig</span><span class="p">()</span>
+                <span class="n">run_config</span> <span class="o">=</span> <span class="n">run_config</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">model_dir</span><span class="o">=</span><span class="n">trg2src_checkpoint_dir</span><span class="p">)</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_registered_model</span><span class="p">(</span><span class="n">trg2src_model_name</span><span class="p">,</span> <span class="n">hparams</span><span class="p">,</span> <span class="n">run_config</span><span class="p">)</span>
+                <span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="n">trg_vocab_size</span><span class="p">),</span> <span class="mi">0</span><span class="p">)}</span>
+                <span class="n">mode</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">estimator</span><span class="o">.</span><span class="n">ModeKeys</span><span class="o">.</span><span class="n">PREDICT</span>
+                <span class="n">trg2src_lex_logits</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">precompute</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">hparams</span><span class="p">)</span>
+                <span class="c1"># Precompute trg2src partitions</span>
+                <span class="n">partitions</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_logsumexp</span><span class="p">(</span><span class="n">trg2src_lex_logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_trg2src_src_words_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span>
+                                                  <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_trg2src_src_words&quot;</span><span class="p">)</span>
+                <span class="c1"># trg2src_lex_logits has shape [1, trg_vocab_size, src_vocab_size]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trg2src_logits</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">trg2src_lex_logits</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trg2src_src_words_var</span><span class="p">)</span>
+                <span class="c1"># trg2src_logits has shape [len(src_words), trg_vocab_size]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trg2src_mon_sess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_session</span><span class="p">(</span><span class="n">trg2src_checkpoint_dir</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Precomputing lexnizza trg2src partitions...&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trg2src_partitions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg2src_mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">partitions</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_trg2src</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No target-to-source model specified for lexnizza.&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LexNizzaPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_is_zero</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span> 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nizza_unk_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">return</span> <span class="n">posterior</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_nizza_unk_id</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="LexNizzaPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Predict record scores.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_is_zero</span><span class="p">:</span>
+            <span class="n">n_uncovered</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coverage</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;0&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="n">n_uncovered</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">}</span>
         <span class="n">uncovered_scores</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">short_list_scores</span><span class="p">[</span><span class="n">src_pos</span><span class="p">]</span>
              <span class="k">for</span> <span class="n">src_pos</span><span class="p">,</span> <span class="n">is_covered</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coverage</span><span class="p">)</span>
              <span class="k">if</span> <span class="n">is_covered</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">]</span>
@@ -350,23 +405,48 @@
     
 <div class="viewcode-block" id="LexNizzaPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set src_sentence, reset consumed.&quot;&quot;&quot;</span>
-        <span class="n">lex_logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precomputed</span><span class="p">,</span>
-            <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">:</span> <span class="n">src_sentence</span><span class="p">})</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span> <span class="o">=</span> <span class="n">lex_logits</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-        <span class="n">src_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">coverage</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span> <span class="o">*</span> <span class="n">src_len</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filt_src_sentence</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">src_sentence</span> <span class="k">if</span> <span class="n">w</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_id</span><span class="p">]</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precomputed</span><span class="p">,</span>
+            <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filt_src_sentence</span><span class="p">})</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="c1"># scores has shape [src_sentence_len, trg_vocab_size]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_trg2src</span><span class="p">:</span>
+            <span class="n">trg2src_logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg2src_mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg2src_logits</span><span class="p">,</span>
+                <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_trg2src_src_words_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filt_src_sentence</span><span class="p">})</span>
+            <span class="n">src2trg_logits</span> <span class="o">=</span> <span class="n">scores</span>
+            <span class="n">src2trg_partitions</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">src2trg_logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="n">trg2src_logprobs</span> <span class="o">=</span> <span class="n">trg2src_logits</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg2src_partitions</span>
+            <span class="n">src2trg_logprobs</span> <span class="o">=</span> <span class="n">src2trg_logits</span> <span class="o">-</span> <span class="n">src2trg_partitions</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="n">src2trg_logprobs</span> <span class="o">+</span> <span class="n">trg2src_logprobs</span>
+        <span class="n">src_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filt_src_sentence</span><span class="p">)</span>
+        <span class="n">is_covered</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">short_lists</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">short_list_scores</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">src_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">src_len</span><span class="p">):</span>
-            <span class="n">shortlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_short_list</span><span class="p">(</span><span class="n">lex_logits</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">src_pos</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="n">shortlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_short_list</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">src_pos</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_shortlist_length</span> <span class="o">&gt;</span> <span class="mi">0</span> 
+                      <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">shortlist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_shortlist_length</span><span class="p">):</span>
+                <span class="n">is_covered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;1&quot;</span><span class="p">)</span>
+                <span class="n">shortlist</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">is_covered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;0&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">short_lists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shortlist</span><span class="p">)</span>
-            <span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">shortlist</span><span class="p">:</span>
-                <span class="n">scores</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">short_list_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_is_zero</span><span class="p">:</span>
+                <span class="n">alpha_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">shortlist</span><span class="p">:</span>
+                    <span class="n">alpha_scores</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">short_list_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">alpha_scores</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coverage</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">is_covered</span><span class="p">)</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Short list sizes: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
-                <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">))</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">short_lists</span><span class="p">]))</span></div>
-    
+                <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">))</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">short_lists</span><span class="p">]))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Initial coverage: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">coverage</span><span class="p">)</span></div>
+        <span class="c1">#print(&quot;SHORT LISTS&quot;)</span>
+        <span class="c1">#for w, l in zip(self.filt_src_sentence, self.short_lists):</span>
+        <span class="c1">#    print(&quot;\n\n%d&quot; % w)</span>
+        <span class="c1">#    if len(l) &lt; 40:</span>
+        <span class="c1">#        print(&quot; &quot;.join(map(str, l)))</span>
+              
 <div class="viewcode-block" id="LexNizzaPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Update coverage.&quot;&quot;&quot;</span>
         <span class="n">new_coverage</span> <span class="o">=</span> <span class="p">[]</span>
@@ -375,27 +455,48 @@
                 <span class="n">is_covered</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
             <span class="n">new_coverage</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">is_covered</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">coverage</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">new_coverage</span><span class="p">)</span></div>
+        <span class="c1">#logging.debug(&quot;Partial: %s&quot; % &quot; &quot;.join([str(self.filt_src_sentence[idx])  for idx, c in enumerate(self.coverage) if c == &quot;1&quot;]))</span>
+        <span class="c1">#logging.debug(self.coverage)</span>
 
     <span class="k">def</span> <span class="nf">_create_short_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logits</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a set of tokens which are likely translations.&quot;&quot;&quot;</span>
         <span class="n">words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">filt_logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">min_id</span><span class="p">:]</span>
         <span class="k">for</span> <span class="n">strat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shortlist_strategies</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">strat</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;top&quot;</span><span class="p">:</span>
                 <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">strat</span><span class="p">[</span><span class="mi">3</span><span class="p">:])</span>
-                <span class="n">words</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+                <span class="n">words</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">filt_logits</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
             <span class="k">elif</span> <span class="n">strat</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;prob&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">strat</span><span class="p">[</span><span class="mi">4</span><span class="p">:])</span>
-                <span class="n">unnorm_probs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+                <span class="n">unnorm_probs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">filt_logits</span><span class="p">)</span>
                 <span class="n">threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">unnorm_probs</span><span class="p">)</span> <span class="o">*</span> <span class="n">p</span>
                 <span class="n">acc</span> <span class="o">=</span> <span class="mf">0.0</span>
-                <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">logits</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">filt_logits</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
                     <span class="n">acc</span> <span class="o">+=</span> <span class="n">unnorm_probs</span><span class="p">[</span><span class="n">word</span><span class="p">]</span>
                     <span class="n">words</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">acc</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">:</span>
                         <span class="k">break</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Unknown shortlist strategy &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">strat</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_id</span><span class="p">:</span>
+            <span class="n">words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">w</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">min_id</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">words</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span>
         <span class="k">return</span> <span class="n">words</span>
+
+<div class="viewcode-block" id="LexNizzaPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We use the number of uncovered words times beta as heuristic</span>
+<span class="sd">        estimate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="n">n_uncovered</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">short_list</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">short_lists</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">w</span> <span class="ow">in</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">short_list</span><span class="p">):</span>
+                <span class="n">n_uncovered</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="n">n_uncovered</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">*</span> <span class="mf">0.1</span></div>
     
 <div class="viewcode-block" id="LexNizzaPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;The predictor state is the coverage vector.&quot;&quot;&quot;</span>
