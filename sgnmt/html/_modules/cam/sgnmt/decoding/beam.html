@@ -84,8 +84,9 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
@@ -162,6 +163,8 @@
 <span class="sd">            hypo_recombination (bool): Activates hypo recombination </span>
 <span class="sd">            beam (int): Absolute beam size. A beam of 12 means</span>
 <span class="sd">                        that we keep track of 12 active hypotheses</span>
+<span class="sd">            sub_beam (int): Number of children per hypothesis. Set to</span>
+<span class="sd">                            beam size if zero.</span>
 <span class="sd">            pure_heuristic_scores (bool): Hypotheses to keep in the beam</span>
 <span class="sd">                                          are normally selected </span>
 <span class="sd">                                          according the sum of partial</span>
@@ -193,6 +196,9 @@
             <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Diversity promoting beam search is not implemented &quot;</span>
                           <span class="s2">&quot;yet&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">beam</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sub_beam_size</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">sub_beam</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_beam_size</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sub_beam_size</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">beam</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">hypo_recombination</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">:</span>
@@ -237,7 +243,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># Consume if cheap expand</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
             <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="n">posterior</span><span class="p">,</span> <span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
+        <span class="n">posterior</span><span class="p">,</span> <span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_beam_size</span><span class="p">)</span>
         <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">hypo</span><span class="o">.</span><span class="n">cheap_expand</span><span class="p">(</span>
                         <span class="n">trgt_word</span><span class="p">,</span>

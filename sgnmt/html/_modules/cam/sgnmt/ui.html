@@ -84,8 +84,9 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial: Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../decoders.html">Decoders</a></li>
@@ -292,10 +293,6 @@
     
     <span class="c1">## Decoding options</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Decoding options&#39;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--beam&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Size of beam. Only used if --decoder is set to &quot;</span>
-                        <span class="s2">&quot;&#39;beam&#39; or &#39;astar&#39;. For &#39;astar&#39; it limits the capacity&quot;</span>
-                        <span class="s2">&quot; of the queue. Use --beam 0 for unlimited capacity.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--decoder&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;beam&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;greedy&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;beam&#39;</span><span class="p">,</span>
@@ -360,6 +357,15 @@
                         <span class="s2">&quot;when you do pure NMT decoding as this is usually &quot;</span>
                         <span class="s2">&quot;faster then using a single nmt predictor as the &quot;</span>
                         <span class="s2">&quot;search can be parallelized on the GPU.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--beam&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Size of beam. Only used if --decoder is set to &quot;</span>
+                        <span class="s2">&quot;&#39;beam&#39; or &#39;astar&#39;. For &#39;astar&#39; it limits the capacity&quot;</span>
+                        <span class="s2">&quot; of the queue. Use --beam 0 for unlimited capacity.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--sub_beam&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This denotes the maximum number of children of &quot;</span>
+                        <span class="s2">&quot;a partial hypothesis in beam-like decoders. If zero, &quot;</span>
+                        <span class="s2">&quot;this is set to --beam to reproduce standard beam &quot;</span>
+                        <span class="s2">&quot;search.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--hypo_recombination&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Activates hypothesis recombination. Has to be &quot;</span>
                         <span class="s2">&quot;supported by the decoder. Applicable to beam, &quot;</span>
@@ -587,6 +593,10 @@
                         <span class="s2">&quot;* &#39;timecsv&#39;: Generate CSV files with separate &quot;</span>
                         <span class="s2">&quot;predictor scores for each time step.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;ngram&#39;: MBR-style n-gram posteriors.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;For extract_scores_along_reference.py, select &quot;</span>
+                        <span class="s2">&quot;one of the following output formats:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;json&#39;: Dump data in pretty JSON format.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;pickle&#39;: Dump data as binary pickle.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;The path to the output files can be specified with &quot;</span>
                         <span class="s2">&quot;--output_path&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--remove_eos&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
@@ -987,7 +997,7 @@
 
     <span class="c1"># Forced predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Forced decoding predictor options&#39;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;test_fr&quot;</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to target test set (with integer tokens). &quot;</span>
                         <span class="s2">&quot;This is only required for the predictors &#39;forced&#39; &quot;</span>
                         <span class="s2">&quot;and &#39;forcedlst&#39;. For &#39;forcedlst&#39; this needs to point &quot;</span>

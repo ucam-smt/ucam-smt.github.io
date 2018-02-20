@@ -34,7 +34,7 @@
   
     <link rel="top" title="SGNMT 0.3.2 documentation" href="index.html"/>
         <link rel="next" title="Predictors" href="predictors.html"/>
-        <link rel="prev" title="Tutorial: Adding new components" href="adding_components.html"/> 
+        <link rel="prev" title="Tutorial: NMT decoding strategies" href="kyoto_nmt.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -85,8 +85,9 @@
             
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Command-line reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#decoding">Decoding</a></li>
 </ul>
@@ -150,10 +151,6 @@ For a quick overview of available parameters use <code class="docutils literal">
 </pre></div>
 </div>
 <p>The complete and detailed list of parameters is provided below.</p>
-<p>SGNMT supports NMT training with Blocks/Theano. However, this will be removed in
-future releases since Theano has been discontinued. We refer to other packages
-such as Tensor2Tensor or the seq2seq TF tutorial for training, which are
-supported by the SGNMT decoder.</p>
 <p>Besides <code class="docutils literal"><span class="pre">decode.py</span></code> following additional scripts are available:</p>
 <blockquote>
 <div><ul class="simple">
@@ -174,8 +171,9 @@ predictors along a reference decoding path. Can be used for tuning predictor wei
                  <span class="p">[</span><span class="o">--</span><span class="n">ignore_sanity_checks</span> <span class="n">IGNORE_SANITY_CHECKS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">input_method</span> <span class="p">{</span><span class="n">dummy</span><span class="p">,</span><span class="n">file</span><span class="p">,</span><span class="n">shell</span><span class="p">,</span><span class="n">stdin</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">log_sum</span> <span class="p">{</span><span class="n">tropical</span><span class="p">,</span><span class="n">log</span><span class="p">}]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">single_cpu_thread</span> <span class="n">SINGLE_CPU_THREAD</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">beam</span> <span class="n">BEAM</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">single_cpu_thread</span> <span class="n">SINGLE_CPU_THREAD</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">decoder</span> <span class="p">{</span><span class="n">greedy</span><span class="p">,</span><span class="n">beam</span><span class="p">,</span><span class="n">multisegbeam</span><span class="p">,</span><span class="n">syncbeam</span><span class="p">,</span><span class="n">sepbeam</span><span class="p">,</span><span class="n">mbrbeam</span><span class="p">,</span><span class="n">syntaxbeam</span><span class="p">,</span><span class="n">combibeam</span><span class="p">,</span><span class="n">dfs</span><span class="p">,</span><span class="n">restarting</span><span class="p">,</span><span class="n">bow</span><span class="p">,</span><span class="n">flip</span><span class="p">,</span><span class="n">bucket</span><span class="p">,</span><span class="n">bigramgreedy</span><span class="p">,</span><span class="n">astar</span><span class="p">,</span><span class="n">vanilla</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">beam</span> <span class="n">BEAM</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sub_beam</span> <span class="n">SUB_BEAM</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">hypo_recombination</span> <span class="n">HYPO_RECOMBINATION</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">allow_unk_in_output</span> <span class="n">ALLOW_UNK_IN_OUTPUT</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">max_node_expansions</span> <span class="n">MAX_NODE_EXPANSIONS</span><span class="p">]</span>
@@ -517,9 +515,6 @@ In shell and stdin mode you can change SGNMT options on the fly: Beginning a lin
 <col class="description" />
 <tbody valign="top">
 <tr><td class="option-group">
-<kbd><span class="option">--beam=12</span></kbd></td>
-<td>Size of beam. Only used if &#8211;decoder is set to &#8216;beam&#8217; or &#8216;astar&#8217;. For &#8216;astar&#8217; it limits the capacity of the queue. Use &#8211;beam 0 for unlimited capacity.</td></tr>
-<tr><td class="option-group">
 <kbd><span class="option">--decoder=beam</span></kbd></td>
 <td><p class="first">Strategy for traversing the search space which is spanned by the predictors.
 
@@ -541,6 +536,12 @@ In shell and stdin mode you can change SGNMT options on the fly: Beginning a lin
 * &#8216;vanilla&#8217;: Original Blocks beam decoder. This bypasses the predictor framework and directly performs pure NMT beam decoding on the GPU. Use this when you do pure NMT decoding as this is usually faster then using a single nmt predictor as the search can be parallelized on the GPU.</p>
 <p class="last">Possible choices: greedy, beam, multisegbeam, syncbeam, sepbeam, mbrbeam, syntaxbeam, combibeam, dfs, restarting, bow, flip, bucket, bigramgreedy, astar, vanilla</p>
 </td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--beam=12</span></kbd></td>
+<td>Size of beam. Only used if &#8211;decoder is set to &#8216;beam&#8217; or &#8216;astar&#8217;. For &#8216;astar&#8217; it limits the capacity of the queue. Use &#8211;beam 0 for unlimited capacity.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--sub_beam=0</span></kbd></td>
+<td>This denotes the maximum number of children of a partial hypothesis in beam-like decoders. If zero, this is set to &#8211;beam to reproduce standard beam search.</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--hypo_recombination=False</span></kbd></td>
 </tr>
@@ -712,6 +713,9 @@ Applicable to the bucket decoder, the heuristic of the bow predictor, and the he
 * &#8216;timecsv&#8217;: Generate CSV files with separate predictor scores for each time step.
 * &#8216;ngram&#8217;: MBR-style n-gram posteriors.
 
+For extract_scores_along_reference.py, select one of the following output formats:
+* &#8216;json&#8217;: Dump data in pretty JSON format.
+* &#8216;pickle&#8217;: Dump data as binary pickle.
 The path to the output files can be specified with &#8211;output_path</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--remove_eos=True</span></kbd></td>
@@ -1049,10 +1053,9 @@ Note that you can use multiple instances of the same predictor. For example, &#8
 <col class="option" />
 <col class="description" />
 <tbody valign="top">
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--trg_test=test_fr</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Path to target test set (with integer tokens). This is only required for the predictors &#8216;forced&#8217; and &#8216;forcedlst&#8217;. For &#8216;forcedlst&#8217; this needs to point to an n-best list in Moses format.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--trg_test=</span></kbd></td>
+<td>Path to target test set (with integer tokens). This is only required for the predictors &#8216;forced&#8217; and &#8216;forcedlst&#8217;. For &#8216;forcedlst&#8217; this needs to point to an n-best list in Moses format.</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--fr_test=</span></kbd></td>
 <td>DEPRECATED. Old name for &#8211;trg_test</td></tr>
@@ -2089,7 +2092,7 @@ Note that you can use multiple instances of the same predictor. For example, &#8
         <a href="predictors.html" class="btn btn-neutral float-right" title="Predictors" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="adding_components.html" class="btn btn-neutral" title="Tutorial: Adding new components" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="kyoto_nmt.html" class="btn btn-neutral" title="Tutorial: NMT decoding strategies" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
