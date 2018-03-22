@@ -213,6 +213,33 @@ symbols.</p>
 <p>This predictor can read determinized translation lattices. The
 predictor state consists of the current node. This is unique as the
 lattices are determinized.</p>
+<p>Creates a new fst predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fst_path</strong> (<em>string</em>) &#8211; Path to the FST file</li>
+<li><strong>use_weights</strong> (<em>bool</em>) &#8211; If false, replace all arc weights with
+0 (=log 1).</li>
+<li><strong>normalize_scores</strong> (<em>bool</em>) &#8211; If true, we normalize the weights
+on all outgoing arcs such that
+they sum up to 1</li>
+<li><strong>skip_bos_weight</strong> (<em>bool</em>) &#8211; Add the score at the &lt;S&gt; arc to the
+&lt;/S&gt; arc if this is false. This results
+in scores consistent with
+OpenFST&#8217;s replace operation,
+as &lt;S&gt; scores are normally
+ignored by SGNMT.</li>
+<li><strong>to_log</strong> (<em>bool</em>) &#8211; SGNMT uses normal log probs (scores) while
+arc weights in FSTs normally have cost (i.e.
+neg. log values) semantics. Therefore, if
+true, we multiply arc weights by -1.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.automata.FstPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/automata.html#FstPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.automata.FstPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -328,6 +355,29 @@ have no active node or fst.</td>
 lattices. In contrast to the fst predictor for deterministic
 lattices, we store a set of nodes which are all reachable from
 the start node through the current history.</p>
+<p>Creates a new nfst predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fst_path</strong> (<em>string</em>) &#8211; Path to the FST file</li>
+<li><strong>use_weights</strong> (<em>bool</em>) &#8211; If false, replace all arc weights with
+0 (=log 1).</li>
+<li><strong>normalize_scores</strong> (<em>bool</em>) &#8211; If true, we normalize the weights
+on all outgoing arcs such that
+they sum up to 1</li>
+<li><strong>skip_bos_weight</strong> (<em>bool</em>) &#8211; If true, set weights on &lt;S&gt; arcs
+to 0 (= log1)</li>
+<li><strong>to_log</strong> (<em>bool</em>) &#8211; SGNMT uses normal log probs (scores) while
+arc weights in FSTs normally have cost (i.e.
+neg. log values) semantics. Therefore, if
+true, we multiply arc weights by -1.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.automata.NondeterministicFstPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/automata.html#NondeterministicFstPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.automata.NondeterministicFstPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -455,6 +505,31 @@ history and search for the active nodes at each expansion. This is
 more expensive, but fstreplace might change state IDs so a list of
 active nodes might get corrupted.</p>
 <p>Note that this predictor does not support FSTs in gzip format.</p>
+<p>Creates a new RTN predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rtn_path</strong> (<em>string</em>) &#8211; Path to the RTN directory</li>
+<li><strong>use_weights</strong> (<em>bool</em>) &#8211; If false, replace all arc weights with
+0 (=log 1).</li>
+<li><strong>normalize_scores</strong> (<em>bool</em>) &#8211; If true, we normalize the weights
+on all outgoing arcs such that
+they sum up to 1</li>
+<li><strong>to_log</strong> (<em>bool</em>) &#8211; SGNMT uses normal log probs (scores) while
+arc weights in FSTs normally have cost (i.e.
+neg. log values) semantics. Therefore, if
+true, we multiply arc weights by -1.</li>
+<li><strong>minimize_rtns</strong> (<em>bool</em>) &#8211; Minimize the FST after each replace
+operation</li>
+<li><strong>rmeps</strong> (<em>bool</em>) &#8211; Remove epsilons in the FST after each replace
+operation</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.automata.RtnPredictor.add_to_label_fst_map_recursive">
 <code class="descname">add_to_label_fst_map_recursive</code><span class="sig-paren">(</span><em>label_fst_map</em>, <em>visited_nodes</em>, <em>root_node</em>, <em>acc_weight</em>, <em>history</em>, <em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/automata.html#RtnPredictor.add_to_label_fst_map_recursive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.automata.RtnPredictor.add_to_label_fst_map_recursive" title="Permalink to this definition">¶</a></dt>
@@ -572,6 +647,31 @@ network in NMT. This predictor heavily relies on the NMT example in
 blocks. Note that this predictor cannot be used in combination with
 a target side sparse feature map. See
 <code class="docutils literal"><span class="pre">BlocksUnboundedNMTPredictor</span></code> for that case.</p>
+<p>Creates a new NMT predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>nmt_model_path</strong> (<em>string</em>) &#8211; Path to the NMT model file (.npz)</li>
+<li><strong>gnmt_beta</strong> (<em>float</em>) &#8211; If greater than 0.0, add a Google NMT
+style coverage penalization term (Wu et
+al., 2016) to the predictive scores</li>
+<li><strong>enable_cache</strong> (<em>bool</em>) &#8211; The NMT predictor usually has a very
+limited vocabulary size, and a large
+number of UNKs in hypotheses. This
+enables reusing already computed
+predictor states for hypotheses which
+differ only by NMT OOV words.</li>
+<li><strong>config</strong> (<em>dict</em>) &#8211; NMT configuration</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">ValueError. If a target sparse feature map is defined</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.blocks_nmt.BlocksNMTPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/blocks_nmt.html#BlocksNMTPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.blocks_nmt.BlocksNMTPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -668,6 +768,19 @@ unbounded vocabulary. Therefore, this predictor can only be used
 when other predictors (like fst) define the words to score. Using
 this predictor is mandatory when a target sparse feature map is
 provided.</p>
+<p>Creates a new NMT predictor with unbounded vocabulary.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nmt_model_path</strong> (<em>string</em>) &#8211; Path to the NMT model file (.npz)</li>
+<li><strong>config</strong> (<em>dict</em>) &#8211; NMT configuration,</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.blocks_nmt.BlocksUnboundedNMTPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/blocks_nmt.html#BlocksUnboundedNMTPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.blocks_nmt.BlocksUnboundedNMTPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -724,6 +837,7 @@ replace the <code class="docutils literal"><span class="pre">search()</span></co
 generates the posteriors for the next word. Thus, it fits in the
 predictor framework. We try to use <code class="docutils literal"><span class="pre">BeamSearch</span></code> functionality
 wherever possible.</p>
+<p>Calls the <code class="docutils literal"><span class="pre">BeamSearch</span></code> constructor</p>
 </dd></dl>
 
 <dl class="class">
@@ -731,6 +845,7 @@ wherever possible.</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.blocks_nmt.</code><code class="descname">MyopticSparseSearch</code><span class="sig-paren">(</span><em>samples</em>, <em>trg_sparse_feat_map</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/blocks_nmt.html#MyopticSparseSearch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.blocks_nmt.MyopticSparseSearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="cam.sgnmt.blocks.html#cam.sgnmt.blocks.sparse_search.SparseBeamSearch" title="cam.sgnmt.blocks.sparse_search.SparseBeamSearch"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.blocks.sparse_search.SparseBeamSearch</span></code></a></p>
 <p>Variant of <code class="docutils literal"><span class="pre">MyopticSearch</span></code> for target side sparse features.</p>
+<p>Calls the <code class="docutils literal"><span class="pre">SparseBeamSearch</span></code> constructor</p>
 </dd></dl>
 
 </div>
@@ -749,6 +864,57 @@ restriction).</p>
 not enforce the word order in the reference. Therefore, it assigns
 1 to all hypotheses which have the words in the reference in any
 order, and -inf to all other hypos.</p>
+<p>Creates a new bag-of-words predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>trg_test_file</strong> (<em>string</em>) &#8211; Path to the plain text file with
+the target sentences. Must have the
+same number of lines as the number
+of source sentences to decode. The
+word order in the target sentences
+is not relevant for this predictor.</li>
+<li><strong>accept_subsets</strong> (<em>bool</em>) &#8211; If true, this predictor permits
+EOS even if the bag is not fully
+consumed yet</li>
+<li><strong>accept_duplicates</strong> (<em>bool</em>) &#8211; If true, counts are not updated
+when a word is consumed. This
+means that we allow a word in a
+bag to appear multiple times</li>
+<li><strong>heuristic_scores_file</strong> (<em>string</em>) &#8211; Path to the unigram scores
+which are used if this
+predictor estimates future
+costs</li>
+<li><strong>collect_stats_strategy</strong> (<em>string</em>) &#8211; best, full, or all. Defines
+how unigram estimates are
+collected for heuristic</li>
+<li><strong>heuristic_add_consumed</strong> (<em>bool</em>) &#8211; Set to true to add the
+difference between actual
+partial score and unigram
+estimates of consumed words
+to the predictor heuristic</li>
+<li><strong>heuristic_add_remaining</strong> (<em>bool</em>) &#8211; Set to true to add the sum
+of unigram scores of words
+remaining in the bag to the
+predictor heuristic</li>
+<li><strong>diversity_heuristic_factor</strong> (<em>float</em>) &#8211; Factor for diversity
+heuristic which
+penalizes hypotheses
+with the same bag as
+full hypos</li>
+<li><strong>equivalence_vocab</strong> (<em>int</em>) &#8211; If positive, predictor states are
+considered equal if the the
+remaining words within that vocab
+and OOVs regarding this vocab are
+the same. Only relevant when using
+hypothesis recombination</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.bow.BagOfWordsPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/bow.html#BagOfWordsPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.bow.BagOfWordsPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -856,6 +1022,56 @@ Otherwise, return the list of keys in the bag.</p>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.bow.BagOfWordsPredictor" title="cam.sgnmt.predictors.bow.BagOfWordsPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.bow.BagOfWordsPredictor</span></code></a></p>
 <p>Combines the bag-of-words predictor with a proxy decoding pass
 which creates a skeleton translation.</p>
+<p>Creates a new bag-of-words predictor with pre search</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>main_decoder</strong> (<a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><em>Decoder</em></a>) &#8211; Reference to the main decoder
+instance, used to fetch the predictors</li>
+<li><strong>hypo_recombination</strong> (<em>bool</em>) &#8211; Activates hypo recombination for the
+pre decoder</li>
+<li><strong>trg_test_file</strong> (<em>string</em>) &#8211; Path to the plain text file with
+the target sentences. Must have the
+same number of lines as the number
+of source sentences to decode. The
+word order in the target sentences
+is not relevant for this predictor.</li>
+<li><strong>accept_subsets</strong> (<em>bool</em>) &#8211; If true, this predictor permits
+EOS even if the bag is not fully
+consumed yet</li>
+<li><strong>accept_duplicates</strong> (<em>bool</em>) &#8211; If true, counts are not updated
+when a word is consumed. This
+means that we allow a word in a
+bag to appear multiple times</li>
+<li><strong>heuristic_scores_file</strong> (<em>string</em>) &#8211; Path to the unigram scores
+which are used if this
+predictor estimates future
+costs</li>
+<li><strong>collect_stats_strategy</strong> (<em>string</em>) &#8211; best, full, or all. Defines
+how unigram estimates are
+collected for heuristic</li>
+<li><strong>heuristic_add_consumed</strong> (<em>bool</em>) &#8211; Set to true to add the
+difference between actual
+partial score and unigram
+estimates of consumed words
+to the predictor heuristic</li>
+<li><strong>heuristic_add_remaining</strong> (<em>bool</em>) &#8211; Set to true to add the sum
+of unigram scores of words
+remaining in the bag to the
+predictor heuristic</li>
+<li><strong>equivalence_vocab</strong> (<em>int</em>) &#8211; If positive, predictor states are
+considered equal if the the
+remaining words within that vocab
+and OOVs regarding this vocab are
+the same. Only relevant when using
+hypothesis recombination</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/bow.html#BagOfWordsSearchPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -927,6 +1143,7 @@ in between. <code class="docutils literal"><span class="pre">predict_next()</spa
 alternately. This holds even when using <code class="docutils literal"><span class="pre">get_state()</span></code> and
 <code class="docutils literal"><span class="pre">set_state()</span></code>: Loading/saving states is transparent to the
 predictor instance.</p>
+<p>Initializes <code class="docutils literal"><span class="pre">current_sen_id</span></code> with 0.</p>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.core.Predictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/core.html#Predictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.core.Predictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -1191,6 +1408,7 @@ Instead of listing the entire ngram vocabulary, we run srilm only
 on the words which are possible according other predictor (e.g. fst
 or nmt). This is realized by introducing the <code class="docutils literal"><span class="pre">trgt_words</span></code>
 argument to <code class="docutils literal"><span class="pre">predict_next</span></code>.</p>
+<p>Initializes <code class="docutils literal"><span class="pre">current_sen_id</span></code> with 0.</p>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.core.UnboundedVocabularyPredictor.predict_next">
 <code class="descname">predict_next</code><span class="sig-paren">(</span><em>trgt_words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/core.html#UnboundedVocabularyPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.core.UnboundedVocabularyPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
@@ -1236,6 +1454,24 @@ predictor because it is more efficient to score only a subset of
 the vocabulary. This predictor uses the python interface to NPLM
 from</p>
 <p><a class="reference external" href="http://nlg.isi.edu/software/nplm/">http://nlg.isi.edu/software/nplm/</a></p>
+<p>Creates a new NPLM predictor instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>string</em>) &#8211; Path to the NPLM model file</li>
+<li><strong>normalize_scores</strong> (<em>bool</em>) &#8211; Whether to renormalize scores s.t.
+scores returned by <code class="docutils literal"><span class="pre">predict_next</span></code>
+sum up to 1</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">NameError. If NPLM is not installed</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.ffnnlm.NPLMPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/ffnnlm.html#NPLMPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.ffnnlm.NPLMPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -1303,7 +1539,7 @@ multiple references in form of a n-best list (forcedlst
 <code class="docutils literal"><span class="pre">ForcedLstPredictor</span></code>).</p>
 <dl class="class">
 <dt id="cam.sgnmt.predictors.forced.ForcedLstPredictor">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.forced.</code><code class="descname">ForcedLstPredictor</code><span class="sig-paren">(</span><em>trg_test_file</em>, <em>use_scores=True</em>, <em>feat_name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/forced.html#ForcedLstPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.forced.ForcedLstPredictor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.forced.</code><code class="descname">ForcedLstPredictor</code><span class="sig-paren">(</span><em>trg_test_file</em>, <em>use_scores=True</em>, <em>match_unk=False</em>, <em>feat_name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/forced.html#ForcedLstPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.forced.ForcedLstPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This predictor can be used for direct n-best list rescoring. In
 contrast to the <code class="docutils literal"><span class="pre">ForcedPredictor</span></code>, it reads an n-best list in
@@ -1318,6 +1554,29 @@ Last column: score</p>
 list</p>
 <p>TODO: Would be much more efficient to use Tries for
 cur_trgt_sentences instead of a flat list.</p>
+<p>Creates a new n-best rescoring predictor instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>trg_test_file</strong> (<em>string</em>) &#8211; Path to the n-best list</li>
+<li><strong>use_scores</strong> (<em>bool</em>) &#8211; Whether to use the scores from the
+n-best list. If false, use uniform
+scores of 0 (=log 1).</li>
+<li><strong>match_unk</strong> (<em>bool</em>) &#8211; If true, allow any word where the n-best
+list contains UNK.</li>
+<li><strong>feat_name</strong> (<em>string</em>) &#8211; Instead of the combined score in the
+last column of the Moses n-best list,
+we can use one of the sparse features.
+Set this to the name of the feature
+(denoted as &lt;name&gt;= in the n-best list)
+if you wish to do that.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.forced.ForcedLstPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/forced.html#ForcedLstPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.forced.ForcedLstPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -1391,6 +1650,18 @@ organize the target sentences in a Trie</p>
 <p>This predictor realizes forced decoding. It stores one target
 sentence for each source sentence and outputs predictive probability
 1 along this path, and 0 otherwise.</p>
+<p>Creates a new forced decoding predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trg_test_file</strong> (<em>string</em>) &#8211; Path to the plain text file with
+the target sentences. Must have the
+same number of lines as the number
+of source sentences to decode</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.forced.ForcedPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/forced.html#ForcedPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.forced.ForcedPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -1491,6 +1762,15 @@ c) allow spurious ambiguity</p>
 added, we do hypo combination by combining the costs and retraining
 only one of them. Internally, the hypotheses are stored in a list
 sorted by the sum of the translation prefix</p>
+<p>Creates a new <code class="docutils literal"><span class="pre">Cell</span></code> with only one hypothesis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>init_hypo</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.grammar.LRHieroHypothesis" title="cam.sgnmt.predictors.grammar.LRHieroHypothesis"><em>LRHieroHypothesis</em></a>) &#8211; Initial hypothesis</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.grammar.Cell.add">
 <code class="descname">add</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/grammar.html#Cell.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.grammar.Cell.add" title="Permalink to this definition">¶</a></dt>
@@ -1545,6 +1825,23 @@ interval [a,b]</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.grammar.</code><code class="descname">LRHieroHypothesis</code><span class="sig-paren">(</span><em>trgt_prefix</em>, <em>spans</em>, <em>cost</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/grammar.html#LRHieroHypothesis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.grammar.LRHieroHypothesis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents a LRHiero hypothesis, which is defined by the
 accumulated cost, the target prefix, and open source spans.</p>
+<p>Creates a new LRHiero hypothesis</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>trgt_prefix</strong> (<em>list</em>) &#8211; Target side translation prefix, i.e.
+the partial target sentence which is
+translated so far</li>
+<li><strong>spans</strong> (<em>list</em>) &#8211; List of spans which are not covered yet, in
+left-to-right order on target side</li>
+<li><strong>cost</strong> (<em>float</em>) &#8211; Cost of this partial hypothesis</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.grammar.LRHieroHypothesis.is_final">
 <code class="descname">is_final</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/grammar.html#LRHieroHypothesis.is_final"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.grammar.LRHieroHypothesis.is_final" title="Permalink to this definition">¶</a></dt>
@@ -1566,6 +1863,21 @@ accumulated cost, the target prefix, and open source spans.</p>
 sequences of integers. NTs are indicated with negative sign. The
 <code class="docutils literal"><span class="pre">trgt_src_map</span></code> defines which NT on the target side belongs to
 which NT on the source side.</p>
+<p>Creates a new rule.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rhs_src</strong> (<em>list</em>) &#8211; Source on the right hand side of the rule</li>
+<li><strong>rhs_trgt</strong> (<em>list</em>) &#8211; Target on the right hand side of the rule</li>
+<li><strong>trgt_src_map</strong> (<em>dict</em>) &#8211; Defines which NT on the target side
+belongs to which NT on the source side</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.predictors.grammar.Rule.last_id">
 <code class="descname">last_id</code><em class="property"> = 0</em><a class="headerlink" href="#cam.sgnmt.predictors.grammar.Rule.last_id" title="Permalink to this definition">¶</a></dt>
@@ -1578,6 +1890,8 @@ which NT on the source side.</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.grammar.</code><code class="descname">RuleSet</code><a class="reference internal" href="_modules/cam/sgnmt/predictors/grammar.html#RuleSet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.grammar.RuleSet" title="Permalink to this definition">¶</a></dt>
 <dd><p>This class stores the set of rules and provides efficient retrieval and
 matching functionality</p>
+<p>Initializes the set by setting up the trie data structure
+for storing the rules.</p>
 <dl class="attribute">
 <dt id="cam.sgnmt.predictors.grammar.RuleSet.INF">
 <code class="descname">INF</code><em class="property"> = 10000</em><a class="headerlink" href="#cam.sgnmt.predictors.grammar.RuleSet.INF" title="Permalink to this definition">¶</a></dt>
@@ -1713,6 +2027,25 @@ Maryam Siahbani, Baskaran Sankaran and Anoop Sarkar.
 EMNLP 2013. Oct 18-21, 2013. Seattle, USA.</div></blockquote>
 <p>without cube pruning, but it is extended to an arbitrary number of
 non-terminals as produced with ruleXtract.</p>
+<p>Creates a new hiero predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>ruleXtract_path</strong> (<em>string</em>) &#8211; Path to the rules file</li>
+<li><strong>use_weights</strong> (<em>bool</em>) &#8211; If false, set all hypothesis scores
+uniformly to 0 (= log 1). If true,
+use the rule weights to compute
+hypothesis scores</li>
+<li><strong>feature_weights</strong> (<em>list</em>) &#8211; Rule feature weights to compute
+the rule scores. If this is none
+we use uniform weights</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.grammar.RuleXtractPredictor.build_posterior">
 <code class="descname">build_posterior</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/grammar.html#RuleXtractPredictor.build_posterior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.grammar.RuleXtractPredictor.build_posterior" title="Permalink to this definition">¶</a></dt>
@@ -1784,6 +2117,20 @@ Normally, p is just a single NT symbol. However, if there is
 ambiguity with how to apply a rule to a span (e.g.
 rule X -&gt; X the X to span foo the bar the baz) we allow to resolve
 them later on demand. In this case, p = X the X</p>
+<p>Fully initializes a new <code class="docutils literal"><span class="pre">Span</span></code> instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>p</strong> (<em>list</em>) &#8211; See class docstring for <code class="docutils literal"><span class="pre">Span</span></code></li>
+<li><strong>borders</strong> (<em>tuple</em>) &#8211; (begin, end) with begin inclusive and end
+exclusive</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="class">
@@ -1793,6 +2140,16 @@ them later on demand. In this case, p = X the X</p>
 symbol sequences with certain lengths when searching.
 Note: This trie does not implement edge collapsing - each edge is
 labeled with exactly one word</p>
+<p>Creates an empty trie data structure.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>span_len_range</strong> (<em>tuple</em>) &#8211; minimum and maximum span lengths
+for non-terminal symbols</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.grammar.Trie.add">
 <code class="descname">add</code><span class="sig-paren">(</span><em>seq</em>, <em>element</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/grammar.html#Trie.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.grammar.Trie.add" title="Permalink to this definition">¶</a></dt>
@@ -1887,6 +2244,16 @@ lengths from an external file. The file contains blank separated
 length:score pairs in each line which define the length
 distribution. The predictor adds the specified scores directly
 to the EOS score.</p>
+<p>Creates a external length distribution predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>string</em>) &#8211; Path to the file with target sentence length
+distributions.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.length.ExternalLengthPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/length.html#ExternalLengthPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.length.ExternalLengthPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -1988,6 +2355,27 @@ src sentence:</p>
 </div>
 <p>The biases w10 and w11 are optional.</p>
 <p>The predictor predicts EOS with NB(#consumed_words,r,p)</p>
+<p>Creates a new target sentence length model predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>text_file</strong> (<em>string</em>) &#8211; Path to the text file with the
+unindexed source sentences, i.e. not
+using word ids</li>
+<li><strong>model_weights</strong> (<em>list</em>) &#8211; Weights w0 to w11 of the length
+model. See class docstring for more
+information</li>
+<li><strong>use_point_probs</strong> (<em>bool</em>) &#8211; Use point estimates for EOS token,
+0.0 otherwise</li>
+<li><strong>offset</strong> (<em>int</em>) &#8211; Subtract this from hypothesis length before
+applying the NB model</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.length.NBLengthPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/length.html#NBLengthPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.length.NBLengthPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2066,6 +2454,25 @@ representation of the source sentence to extract features.</p>
 <p>This predictor counts the number of n-grams in hypotheses. n-gram
 posteriors are loaded from a file. The predictor score is the sum of
 all n-gram posteriors in a hypothesis.</p>
+<p>Creates a new ngram count predictor instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>string</em>) &#8211; Path to the n-gram posteriors. File format:
+&lt;ngram&gt; : &lt;score&gt; (one ngram per line). Use
+placeholder %d for sentence id.</li>
+<li><strong>order</strong> (<em>int</em>) &#8211; If positive, count n-grams of the specified
+order. Otherwise, count all n-grams</li>
+<li><strong>discount_factor</strong> (<em>float</em>) &#8211; If non-negative, discount n-gram
+posteriors by this factor each time
+they are consumed</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.length.NgramCountPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/length.html#NgramCountPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.length.NgramCountPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2153,6 +2560,28 @@ n-gram scores returned by this predictor.</p>
 predictor feeds back the selected token in the history, ie. depends
 on the particular token which is provided via <cite>consume()</cite>.</p>
 <p>TODO: Make this wrapper work with slaves which return dicts.</p>
+<p>Creates a new ngramize wrapper predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>min_order</strong> (<em>int</em>) &#8211; Minimum n-gram order</li>
+<li><strong>max_order</strong> (<em>int</em>) &#8211; Maximum n-gram order</li>
+<li><strong>max_len_factor</strong> (<em>int</em>) &#8211; Stop the forward pass through the
+slave predictor after src_length
+times this factor</li>
+<li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Instance of the predictor which
+uses the source sentences in
+<code class="docutils literal"><span class="pre">src_test</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">AttributeError if order is not positive.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.length.NgramizePredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/length.html#NgramizePredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.length.NgramizePredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2224,6 +2653,25 @@ sentence_id to the slave predictor</p>
 assume that the number of UNKs in the target sentence is Poisson
 distributed. This predictor is configured with n lambdas for
 0,1,...,&gt;=n-1 UNKs in the source sentence.</p>
+<p>Initializes the UNK count predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src_vocab_size</strong> (<em>int</em>) &#8211; Size of source language vocabulary.
+Indices greater than this are
+considered as UNK.</li>
+<li><strong>lambdas</strong> (<em>list</em>) &#8211; List of floats. The first entry is the
+lambda parameter given that the number of
+unks in the source sentence is 0 etc. The
+last float is lambda given that the source
+sentence has more than n-1 unks.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.length.UnkCountPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/length.html#UnkCountPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.length.UnkCountPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2295,6 +2743,17 @@ distributed. This predictor is configured with n lambdas for
 <em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.length.</code><code class="descname">WordCountPredictor</code><span class="sig-paren">(</span><em>word=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/length.html#WordCountPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.length.WordCountPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This predictor adds the (negative) number of words as feature.</p>
+<p>Creates a new word count predictor instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>word</strong> (<em>int</em>) &#8211; If this is non-negative we count only the
+number of the specified word. If its
+negative, count all words</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.length.WordCountPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/length.html#WordCountPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.length.WordCountPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2377,6 +2836,22 @@ source file. The <code class="docutils literal"><span class="pre">src_sentence</
 <code class="docutils literal"><span class="pre">initialize_heuristic</span></code> are overridden with sentences loaded from
 the file specified via the argument <code class="docutils literal"><span class="pre">--altsrc_test</span></code>. All other
 methods are pass through calls to the slave predictor.</p>
+<p>Creates a new altsrc wrapper predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src_test</strong> (<em>string</em>) &#8211; Path to the text file with source
+sentences</li>
+<li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Instance of the predictor which
+uses the source sentences in
+<code class="docutils literal"><span class="pre">src_test</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.misc.AltsrcPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#AltsrcPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.AltsrcPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2455,6 +2930,7 @@ sentence_id to the slave predictor</p>
 <p>This class is a version of <code class="docutils literal"><span class="pre">AltsrcPredictor</span></code> for unbounded
 vocabulary predictors. This needs an adjusted <code class="docutils literal"><span class="pre">predict_next</span></code>
 method to pass through the set of target words to score correctly.</p>
+<p>Pass through to <code class="docutils literal"><span class="pre">AltsrcPredictor.__init__</span></code></p>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.misc.UnboundedAltsrcPredictor.predict_next">
 <code class="descname">predict_next</code><span class="sig-paren">(</span><em>trgt_words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#UnboundedAltsrcPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.UnboundedAltsrcPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
@@ -2481,6 +2957,22 @@ posterior.</p>
 <p>The predictor state is described by the n-gram history. The language
 model has to use word indices rather than the string word
 representations.</p>
+<p>Creates a new n-gram language model predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>string</em>) &#8211; Path to the ARPA language model file</li>
+<li><strong>ngram_order</strong> (<em>int</em>) &#8211; Order of the language model</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">NameError. If srilm-swig is not installed</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.ngram.SRILMPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/ngram.html#SRILMPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.ngram.SRILMPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2564,6 +3056,27 @@ of operations which cannot be compiled to a string.</p>
 <p>This predictor constrains the output to well-formed bracket
 expressions. It also allows to specify the number of terminals with
 an external length distribution file.</p>
+<p>Creates a new bracket predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max_terminal_id</strong> (<em>int</em>) &#8211; All IDs greater than this are
+brackets</li>
+<li><strong>closing_bracket_id</strong> (<em>string</em>) &#8211; All brackets except these ones are
+opening. Comma-separated list of integers.</li>
+<li><strong>max_depth</strong> (<em>int</em>) &#8211; If positive, restrict the maximum depth</li>
+<li><strong>extlength_path</strong> (<em>string</em>) &#8211; If this is set, restrict the
+number of terminals to the distribution specified in
+the referenced file. Terminals can be implicit: We
+count a single terminal between each adjacent opening
+and closing bracket.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.structure.BracketPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#BracketPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.BracketPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2646,6 +3159,18 @@ requirement. The state of this predictor is the compiled version of
 the current history. It allows terminal symbols which are
 consistent with the reference. The end-of-sentence symbol is
 supressed until all words in the reference have been consumed.</p>
+<p>Creates a new forcedosm predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trg_test_file</strong> (<em>string</em>) &#8211; Path to the plain text file with
+the target sentences. Must have the
+same number of lines as the number
+of source sentences to decode</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.structure.ForcedOSMPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2715,6 +3240,7 @@ of source tokens.</li>
 <li>JUMP_FWD and JUMP_BWD tokens are constraint to avoid jumping out of
 bounds.</li>
 </ul>
+<p>Creates a new osm predictor.</p>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.structure.OSMPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#OSMPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.OSMPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2809,6 +3335,33 @@ sentence.</td>
 <p>Common functionality for Nizza based predictors. This includes
 loading checkpoints, creating sessions, and creating computation
 graphs.</p>
+<p>Initializes a nizza predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>src_vocab_size</strong> (<em>int</em>) &#8211; Source vocabulary size (called inputs_vocab_size
+in nizza)</li>
+<li><strong>trg_vocab_size</strong> (<em>int</em>) &#8211; Target vocabulary size (called targets_vocab_size
+in nizza)</li>
+<li><strong>model_name</strong> (<em>string</em>) &#8211; Name of the nizza model</li>
+<li><strong>hparams_set_name</strong> (<em>string</em>) &#8211; Name of the nizza hyper-parameter set</li>
+<li><strong>checkpoint_dir</strong> (<em>string</em>) &#8211; Path to the Nizza checkpoint directory. The
+predictor will load the top most checkpoint in
+the <cite>checkpoints</cite> file.</li>
+<li><strong>single_cpu_thread</strong> (<em>bool</em>) &#8211; If true, prevent tensorflow from
+doing multithreading.</li>
+<li><strong>nizza_unk_id</strong> (<em>int</em>) &#8211; If set, use this as UNK id. Otherwise, the
+nizza is assumed to have no UNKs</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IOError if checkpoint file not found.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor.create_session">
 <code class="descname">create_session</code><span class="sig-paren">(</span><em>checkpoint_dir</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#BaseNizzaPredictor.create_session"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.BaseNizzaPredictor.create_session" title="Permalink to this definition">¶</a></dt>
@@ -2834,6 +3387,49 @@ and initializes it with zeros. At each timestep it updates this list
 by the lexical scores Model1 assigned to the last consumed token.
 The predictor score aims to bring up all entries in the list, and
 thus serves as a coverage mechanism over the source sentence.</p>
+<p>Initializes a nizza predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>src_vocab_size</strong> (<em>int</em>) &#8211; Source vocabulary size (called inputs_vocab_size
+in nizza)</li>
+<li><strong>trg_vocab_size</strong> (<em>int</em>) &#8211; Target vocabulary size (called targets_vocab_size
+in nizza)</li>
+<li><strong>model_name</strong> (<em>string</em>) &#8211; Name of the nizza model</li>
+<li><strong>hparams_set_name</strong> (<em>string</em>) &#8211; Name of the nizza hyper-parameter set</li>
+<li><strong>checkpoint_dir</strong> (<em>string</em>) &#8211; Path to the Nizza checkpoint directory. The
+predictor will load the top most checkpoint in
+the <cite>checkpoints</cite> file.</li>
+<li><strong>single_cpu_thread</strong> (<em>bool</em>) &#8211; If true, prevent tensorflow from
+doing multithreading.</li>
+<li><strong>alpha</strong> (<em>float</em>) &#8211; Score for each matching word</li>
+<li><strong>beta</strong> (<em>float</em>) &#8211; Penalty for each uncovered word at the end</li>
+<li><strong>shortlist_strategies</strong> (<em>string</em>) &#8211; Comma-separated list of shortlist
+strategies.</li>
+<li><strong>trg2src_model_name</strong> (<em>string</em>) &#8211; Name of the target2source nizza model</li>
+<li><strong>trg2src_hparams_set_name</strong> (<em>string</em>) &#8211; Name of the nizza hyper-parameter set
+for the target2source model</li>
+<li><strong>trg2src_checkpoint_dir</strong> (<em>string</em>) &#8211; Path to the Nizza checkpoint directory
+for the target2source model. The
+predictor will load the top most checkpoint in
+the <cite>checkpoints</cite> file.</li>
+<li><strong>max_shortlist_length</strong> (<em>int</em>) &#8211; If a shortlist exceeds this limit,
+initialize the initial coverage with 1 at this position. If
+zero, do not apply any limit</li>
+<li><strong>min_id</strong> (<em>int</em>) &#8211; Do not use IDs below this threshold (filters out most
+frequent words).</li>
+<li><strong>nizza_unk_id</strong> (<em>int</em>) &#8211; If set, use this as UNK id. Otherwise, the
+nizza is assumed to have no UNKs</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IOError if checkpoint file not found.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#LexNizzaPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.LexNizzaPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2885,6 +3481,33 @@ estimate.</p>
 <p>This predictor uses Nizza alignment models to derive a posterior over
 the target vocabulary for the next position. It mainly relies on the
 predict_next_word() implementation of Nizza models.</p>
+<p>Initializes a nizza predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>src_vocab_size</strong> (<em>int</em>) &#8211; Source vocabulary size (called inputs_vocab_size
+in nizza)</li>
+<li><strong>trg_vocab_size</strong> (<em>int</em>) &#8211; Target vocabulary size (called targets_vocab_size
+in nizza)</li>
+<li><strong>model_name</strong> (<em>string</em>) &#8211; Name of the nizza model</li>
+<li><strong>hparams_set_name</strong> (<em>string</em>) &#8211; Name of the nizza hyper-parameter set</li>
+<li><strong>checkpoint_dir</strong> (<em>string</em>) &#8211; Path to the Nizza checkpoint directory. The
+predictor will load the top most checkpoint in
+the <cite>checkpoints</cite> file.</li>
+<li><strong>single_cpu_thread</strong> (<em>bool</em>) &#8211; If true, prevent tensorflow from
+doing multithreading.</li>
+<li><strong>nizza_unk_id</strong> (<em>int</em>) &#8211; If set, use this as UNK id. Otherwise, the
+nizza is assumed to have no UNKs</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IOError if checkpoint file not found.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.tf_nizza.NizzaPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_nizza.html#NizzaPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_nizza.NizzaPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -2940,6 +3563,100 @@ combination with SGNMT:</p>
 <p>The t2t predictor can read any model trained with tensor2tensor which
 includes the transformer model, convolutional models, and RNN-based
 sequence models.</p>
+<dl class="class">
+<dt id="cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">FertilityT2TPredictor</code><span class="sig-paren">(</span><em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>problem_name</em>, <em>hparams_set_name</em>, <em>t2t_usr_dir</em>, <em>checkpoint_dir</em>, <em>t2t_unk_id=None</em>, <em>single_cpu_thread=False</em>, <em>max_terminal_id=-1</em>, <em>pop_id=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.tf_t2t.T2TPredictor" title="cam.sgnmt.predictors.tf_t2t.T2TPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.tf_t2t.T2TPredictor</span></code></a></p>
+<p>Use this predictor to integrate fertility models trained with
+T2T. Fertility models output the fertility for each source word
+instead of target words. We define the fertility of the i-th
+source word in a hypothesis as the number of tokens between the
+(i-1)-th and the i-th POP token.</p>
+<p>TODO: This is not SOLID (violates substitution principle)</p>
+<p>Creates a new T2T predictor. The constructor prepares the
+TensorFlow session for predict_next() calls. This includes:
+- Load hyper parameters from the given set (hparams)
+- Update registry, load T2T model
+- Create TF placeholders for source sequence and target prefix
+- Create computation graph for computing log probs.
+- Create a MonitoredSession object, which also handles</p>
+<blockquote>
+<div>restoring checkpoints.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src_vocab_size</strong> (<em>int</em>) &#8211; Source vocabulary size.</li>
+<li><strong>trg_vocab_size</strong> (<em>int</em>) &#8211; Target vocabulary size.</li>
+<li><strong>model_name</strong> (<em>string</em>) &#8211; T2T model name.</li>
+<li><strong>problem_name</strong> (<em>string</em>) &#8211; T2T problem name.</li>
+<li><strong>hparams_set_name</strong> (<em>string</em>) &#8211; T2T hparams set name.</li>
+<li><strong>t2t_usr_dir</strong> (<em>string</em>) &#8211; See &#8211;t2t_usr_dir in tensor2tensor.</li>
+<li><strong>checkpoint_dir</strong> (<em>string</em>) &#8211; Path to the T2T checkpoint
+directory. The predictor will load
+the top most checkpoint in the
+<cite>checkpoints</cite> file.</li>
+<li><strong>t2t_unk_id</strong> (<em>int</em>) &#8211; If set, use this ID to get UNK scores. If
+None, UNK is always scored with -inf.</li>
+<li><strong>single_cpu_thread</strong> (<em>bool</em>) &#8211; If true, prevent tensorflow from
+doing multithreading.</li>
+<li><strong>max_terminal_id</strong> (<em>int</em>) &#8211; If positive, maximum terminal ID. Needs to
+be set for syntax-based T2T models.</li>
+<li><strong>pop_id</strong> (<em>int</em>) &#8211; If positive, ID of the POP or closing bracket symbol.
+Needs to be set for syntax-based T2T models.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.consume">
+<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.consume" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.get_state">
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.get_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.get_unk_probability">
+<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.get_unk_probability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns self.other_scores[n_aligned_words].</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set src_sentence, compute fertilities for first src word.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.is_equal">
+<code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor.is_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.is_equal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if the history is the same</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns self.pop_scores[n_aligned_words] for POP and EOS.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.reset">
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Empty method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.set_state">
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.set_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <dl class="data">
 <dt id="cam.sgnmt.predictors.tf_t2t.POP">
 <code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">POP</code><em class="property"> = '##POP##'</em><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.POP" title="Permalink to this definition">¶</a></dt>
@@ -2955,6 +3672,43 @@ follow the decoder implementation in T2T and do not reuse network
 states in decoding. We rather compute the full forward pass along
 the current history. Therefore, the decoder state is simply the
 the full history of consumed words.</p>
+<p>Creates a new T2T predictor. The constructor prepares the
+TensorFlow session for predict_next() calls. This includes:
+- Load hyper parameters from the given set (hparams)
+- Update registry, load T2T model
+- Create TF placeholders for source sequence and target prefix
+- Create computation graph for computing log probs.
+- Create a MonitoredSession object, which also handles</p>
+<blockquote>
+<div>restoring checkpoints.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src_vocab_size</strong> (<em>int</em>) &#8211; Source vocabulary size.</li>
+<li><strong>trg_vocab_size</strong> (<em>int</em>) &#8211; Target vocabulary size.</li>
+<li><strong>model_name</strong> (<em>string</em>) &#8211; T2T model name.</li>
+<li><strong>problem_name</strong> (<em>string</em>) &#8211; T2T problem name.</li>
+<li><strong>hparams_set_name</strong> (<em>string</em>) &#8211; T2T hparams set name.</li>
+<li><strong>t2t_usr_dir</strong> (<em>string</em>) &#8211; See &#8211;t2t_usr_dir in tensor2tensor.</li>
+<li><strong>checkpoint_dir</strong> (<em>string</em>) &#8211; Path to the T2T checkpoint
+directory. The predictor will load
+the top most checkpoint in the
+<cite>checkpoints</cite> file.</li>
+<li><strong>t2t_unk_id</strong> (<em>int</em>) &#8211; If set, use this ID to get UNK scores. If
+None, UNK is always scored with -inf.</li>
+<li><strong>single_cpu_thread</strong> (<em>bool</em>) &#8211; If true, prevent tensorflow from
+doing multithreading.</li>
+<li><strong>max_terminal_id</strong> (<em>int</em>) &#8211; If positive, maximum terminal ID. Needs to
+be set for syntax-based T2T models.</li>
+<li><strong>pop_id</strong> (<em>int</em>) &#8211; If positive, ID of the POP or closing bracket symbol.
+Needs to be set for syntax-based T2T models.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.tf_t2t.T2TPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.T2TPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -3141,6 +3895,24 @@ consumed characters</li>
 <li>The output labels on the path to the node are consistent with the
 predictor states</li>
 </ul>
+<p>Constructor for the fsttok wrapper</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>string</em>) &#8211; Path to an FST which transduces characters
+to predictor tokens</li>
+<li><strong>fst_unk_id</strong> (<em>int</em>) &#8211; ID used to represent UNK in the FSTs
+(usually 999999998)</li>
+<li><strong>max_pending_score</strong> (<em>float</em>) &#8211; Maximum pending score in a
+<code class="docutils literal"><span class="pre">CombinedState</span></code> instance.</li>
+<li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Wrapped predictor</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.tokenization.FSTTokPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#FSTTokPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tokenization.FSTTokPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -3227,6 +3999,23 @@ mapping is done only on the target side, and the source sentences
 are passed through as they are. To use alternative tokenization on
 the source side, see the altsrc predictor wrapper. The word2char
 wrapper is always an <code class="docutils literal"><span class="pre">UnboundedVocabularyPredictor</span></code>.</p>
+<p>Creates a new word2char wrapper predictor. The map_path
+file has to be plain text files, each line containing the
+mapping from a word index to the character index sequence
+(format: word char1 char2... charn).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>map_path</strong> (<em>string</em>) &#8211; Path to the mapping file</li>
+<li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Instance of the predictor with
+a different wmap than SGNMT</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.tokenization.Word2charPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tokenization.html#Word2charPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tokenization.Word2charPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -3316,6 +4105,24 @@ use different wmaps than SGNMT. It translates between SGNMT word
 indices and predictors indices each time the predictor is called.
 This mapping is transparent to both the decoder and the wrapped
 slave predictor.</p>
+<p>Creates a new idxmap wrapper predictor. The index maps have
+to be plain text files, each line containing the mapping from
+a SGNMT word index to the slave predictor word index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src_idxmap_path</strong> (<em>string</em>) &#8211; Path to the source index map</li>
+<li><strong>trgt_idxmap_path</strong> (<em>string</em>) &#8211; Path to the target index map</li>
+<li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Instance of the predictor with
+a different wmap than SGNMT</li>
+<li><strong>slave_weight</strong> (<em>float</em>) &#8211; Slave predictor weight</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.vocabulary.IdxmapPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#IdxmapPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -3424,6 +4231,22 @@ UNK scores from the other predictors like usual, but are hidden by
 this wrapper. Therefore, this wrapper does not produce any word
 from the larger vocabulary, but searches internally until enough
 in-vocabulary word scores are collected from the wrapped predictor.</p>
+<p>Creates a new skipvocab wrapper predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max_id</strong> (<em>int</em>) &#8211; All words greater than this are skipped</li>
+<li><strong>stop_size</strong> (<em>int</em>) &#8211; Stop internal beam search when the best
+stop_size words are in-vocabulary</li>
+<li><strong>beam</strong> (<em>int</em>) &#8211; Beam size of internal beam search</li>
+<li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Wrapped predictor.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#SkipvocabPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -3504,6 +4327,7 @@ sentence_id to the slave predictor</p>
 <p>This class is a version of <code class="docutils literal"><span class="pre">IdxmapPredictor</span></code> for unbounded
 vocabulary predictors. This needs an adjusted <code class="docutils literal"><span class="pre">predict_next</span></code>
 method to pass through the set of target words to score correctly.</p>
+<p>Pass through to <code class="docutils literal"><span class="pre">IdxmapPredictor.__init__</span></code></p>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.vocabulary.UnboundedIdxmapPredictor.predict_next">
 <code class="descname">predict_next</code><span class="sig-paren">(</span><em>trgt_words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#UnboundedIdxmapPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.UnboundedIdxmapPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
@@ -3520,6 +4344,15 @@ method to pass through the set of target words to score correctly.</p>
 with predict next, this wrapper adds explicit NEG_INF scores to all
 in-vocabulary words not in its posterior. This can control which
 words are matched by the UNK scores of other predictors.</p>
+<p>Creates a new unkvocab wrapper predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trg_vocab_size</strong> (<em>int</em>) &#8211; Size of the target vocabulary</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#UnkvocabPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor.consume" title="Permalink to this definition">¶</a></dt>

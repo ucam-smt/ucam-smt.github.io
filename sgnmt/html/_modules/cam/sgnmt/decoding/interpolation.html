@@ -1,0 +1,411 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.decoding.interpolation &mdash; SGNMT 0.3.2 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.3.2 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.decoding.interpolation</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.decoding.interpolation</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains interpolation strategies. This is commonly </span>
+<span class="sd">specified via the --interpolation_strategy parameter.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># This is the TF backend needed for MoE interpolation</span>
+    <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.python.training</span> <span class="kn">import</span> <span class="n">saver</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.python.training</span> <span class="kn">import</span> <span class="n">training</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.contrib.training.python.training</span> <span class="kn">import</span> <span class="n">hparam</span>
+    <span class="c1"># Requires sgnmt_moe</span>
+    <span class="kn">from</span> <span class="nn">sgnmt_moe.model</span> <span class="kn">import</span> <span class="n">MOEModel</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span> <span class="c1"># Deal with it in decode.py</span>
+
+
+<div class="viewcode-block" id="InterpolationStrategy"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.interpolation.InterpolationStrategy">[docs]</a><span class="k">class</span> <span class="nc">InterpolationStrategy</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for interpolation strategies.&quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="InterpolationStrategy.find_weights"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.interpolation.InterpolationStrategy.find_weights">[docs]</a>    <span class="k">def</span> <span class="nf">find_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pred_weights</span><span class="p">,</span> <span class="n">non_zero_words</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find interpolation weights for the current prediction.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pred_weights (list): A prior predictor weights</span>
+<span class="sd">            non_zero_words (set): All words with positive probability</span>
+<span class="sd">            posteriors: Predictor posterior distributions calculated</span>
+<span class="sd">                        with ``predict_next()``</span>
+<span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
+<span class="sd">                       with ``get_unk_probability``</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list of floats. The predictor weights for this prediction.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ``NotImplementedError``: if the method is not implemented</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="FixedInterpolationStrategy"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.interpolation.FixedInterpolationStrategy">[docs]</a><span class="k">class</span> <span class="nc">FixedInterpolationStrategy</span><span class="p">(</span><span class="n">InterpolationStrategy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Null-object (GoF design pattern) implementation.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FixedInterpolationStrategy.find_weights"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.interpolation.FixedInterpolationStrategy.find_weights">[docs]</a>    <span class="k">def</span> <span class="nf">find_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pred_weights</span><span class="p">,</span> <span class="n">non_zero_words</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns ``pred_weights``.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">pred_weights</span></div></div>
+
+
+<div class="viewcode-block" id="MoEInterpolationStrategy"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.interpolation.MoEInterpolationStrategy">[docs]</a><span class="k">class</span> <span class="nc">MoEInterpolationStrategy</span><span class="p">(</span><span class="n">InterpolationStrategy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class implements a predictor-level Mixture of Experts (MoE)</span>
+<span class="sd">    model. In this scenario, we have a neural model which predicts </span>
+<span class="sd">    predictor weights from the predictor outputs. See the sgnmt_moe </span>
+<span class="sd">    project on how to train this gating network with TensorFlow.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_experts</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates the computation graph of the MoE network and loads</span>
+<span class="sd">        the checkpoint file. Following fields are fetched from ``args``</span>
+
+<span class="sd">            moe_config: Comma-separated &lt;key&gt;=&lt;value&gt; pairs specifying</span>
+<span class="sd">              the MoE network. See the command line arguments of </span>
+<span class="sd">              sgnmt_moe for a full description. Available keys:</span>
+<span class="sd">              vocab_size, embed_size, activation, hidden_layer_size,</span>
+<span class="sd">              preprocessing.</span>
+<span class="sd">            moe_checkpoint_dir (string): Checkpoint directory</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            num_experts (int): Number of predictors under the MoE model</span>
+<span class="sd">            args (object): SGNMT configuration object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MoEInterpolationStrategy</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">el</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">moe_config</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_single_cpu_thread</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">single_cpu_thread</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">moe_checkpoint_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_hparams</span><span class="p">(</span><span class="n">num_experts</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MOEModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;MoE HParams: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">moe_graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">moe_graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">()</span> <span class="k">as</span> <span class="n">g</span><span class="p">:</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">sess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_session</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_create_hparams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_experts</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates self.params.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">hparam</span><span class="o">.</span><span class="n">HParams</span><span class="p">(</span>
+          <span class="n">vocab_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;vocab_size&quot;</span><span class="p">,</span> <span class="s2">&quot;30003&quot;</span><span class="p">)),</span>
+          <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="c1"># Not used</span>
+          <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+          <span class="n">num_experts</span><span class="o">=</span><span class="n">num_experts</span><span class="p">,</span>
+          <span class="n">embed_filename</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+          <span class="n">embed_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embed_size&quot;</span><span class="p">,</span> <span class="s2">&quot;512&quot;</span><span class="p">)),</span>
+          <span class="n">activation</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;activation&quot;</span><span class="p">,</span> <span class="s2">&quot;relu&quot;</span><span class="p">),</span>
+          <span class="n">loss_strategy</span><span class="o">=</span><span class="s2">&quot;rank&quot;</span><span class="p">,</span> <span class="c1"># Not used</span>
+          <span class="n">hidden_layer_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hidden_layer_size&quot;</span><span class="p">,</span> <span class="s2">&quot;64&quot;</span><span class="p">)),</span>
+          <span class="n">preprocessing</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;preprocessing&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_session_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates the session config with t2t default parameters.&quot;&quot;&quot;</span>
+        <span class="n">graph_options</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">GraphOptions</span><span class="p">(</span><span class="n">optimizer_options</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">OptimizerOptions</span><span class="p">(</span>
+            <span class="n">opt_level</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">OptimizerOptions</span><span class="o">.</span><span class="n">L1</span><span class="p">,</span> <span class="n">do_function_inlining</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_cpu_thread</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span>
+                <span class="n">intra_op_parallelism_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">inter_op_parallelism_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">allow_soft_placement</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">graph_options</span><span class="o">=</span><span class="n">graph_options</span><span class="p">,</span>
+                <span class="n">log_device_placement</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gpu_options</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">GPUOptions</span><span class="p">(</span>
+                <span class="n">per_process_gpu_memory_fraction</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span>
+                <span class="n">allow_soft_placement</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">graph_options</span><span class="o">=</span><span class="n">graph_options</span><span class="p">,</span>
+                <span class="n">gpu_options</span><span class="o">=</span><span class="n">gpu_options</span><span class="p">,</span>
+                <span class="n">log_device_placement</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">config</span>
+
+    <span class="k">def</span> <span class="nf">_create_session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a MonitoredSession for this predictor.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">saver</span><span class="o">.</span><span class="n">latest_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">training</span><span class="o">.</span><span class="n">MonitoredSession</span><span class="p">(</span>
+                <span class="n">session_creator</span><span class="o">=</span><span class="n">training</span><span class="o">.</span><span class="n">ChiefSessionCreator</span><span class="p">(</span>
+                    <span class="n">checkpoint_filename_with_path</span><span class="o">=</span><span class="n">checkpoint_path</span><span class="p">,</span>
+                    <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_session_config</span><span class="p">()))</span>
+        <span class="k">except</span> <span class="n">tf</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">NotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find all variables of the computation &quot;</span>
+                <span class="s2">&quot;graph in the MoE checkpoint file. This means that the &quot;</span>
+                <span class="s2">&quot;checkpoint does not correspond to the model specification.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Could not initialize TF session for MoE.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_create_score_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">):</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">unk_probs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+                                      <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+        <span class="c1"># Scores has shape [n_predictors, vocab_size], fill it</span>
+        <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">posteriors</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">for</span>  <span class="n">w</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">posterior</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="n">scores</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)]</span> <span class="o">=</span> <span class="n">s</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">scores</span><span class="p">[</span><span class="n">row</span><span class="p">,:</span><span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="o">-</span><span class="mi">99</span><span class="p">,</span> <span class="n">posterior</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MoEInterpolationStrategy.find_weights"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.interpolation.MoEInterpolationStrategy.find_weights">[docs]</a>    <span class="k">def</span> <span class="nf">find_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pred_weights</span><span class="p">,</span> <span class="n">non_zero_words</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Runs the MoE model to find interpolation weights.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pred_weights (list): A prior predictor weights</span>
+<span class="sd">            non_zero_words (set): All words with positive probability</span>
+<span class="sd">            posteriors: Predictor posterior distributions calculated</span>
+<span class="sd">                        with ``predict_next()``</span>
+<span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
+<span class="sd">                       with ``get_unk_probability``</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list of floats. The predictor weights for this prediction.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ``NotImplementedError``: if the method is not implemented</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_score_matrix</span><span class="p">(</span><span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> 
+                                <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">expert_scores</span><span class="p">:</span> <span class="n">scores</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span></div></div>
+
+
+<div class="viewcode-block" id="EntropyInterpolationStrategy"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy">[docs]</a><span class="k">class</span> <span class="nc">EntropyInterpolationStrategy</span><span class="p">(</span><span class="n">InterpolationStrategy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The entropy interpolation strategy assigns weights to predictors</span>
+<span class="sd">    according the entropy of their posteriors to the other posteriors.</span>
+<span class="sd">    We first build a n x n square matrix of (cross-)entropies between </span>
+<span class="sd">    all predictors, and then weight according the row sums. </span>
+
+<span class="sd">    We assume that predictor weights are log probabilities.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="n">vocab_size</span>
+
+    <span class="k">def</span> <span class="nf">_create_score_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">):</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">unk_probs</span><span class="p">),</span>
+                                      <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+        <span class="c1"># Scores has shape [n_predictors, vocab_size], fill it</span>
+        <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">posteriors</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">for</span>  <span class="n">w</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">posterior</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="n">scores</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)]</span> <span class="o">=</span> <span class="n">s</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">scores</span><span class="p">[</span><span class="n">row</span><span class="p">,:</span><span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="o">-</span><span class="mi">99</span><span class="p">,</span> <span class="n">posterior</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scores</span>
+
+<div class="viewcode-block" id="EntropyInterpolationStrategy.find_weights"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy.find_weights">[docs]</a>    <span class="k">def</span> <span class="nf">find_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pred_weights</span><span class="p">,</span> <span class="n">non_zero_words</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">):</span>
+        <span class="n">logprobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_score_matrix</span><span class="p">(</span><span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">)</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logprobs</span><span class="p">)</span>
+        <span class="n">n_preds</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">)</span>
+        <span class="n">ents</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_preds</span><span class="p">,</span> <span class="n">n_preds</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">p_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_preds</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">q_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_preds</span><span class="p">):</span>
+                <span class="n">ents</span><span class="p">[</span><span class="n">p_idx</span><span class="p">,</span><span class="n">q_idx</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">probs</span><span class="p">[</span><span class="n">p_idx</span><span class="p">]</span> <span class="o">*</span> <span class="n">logprobs</span><span class="p">[</span><span class="n">q_idx</span><span class="p">])</span>
+                <span class="n">ents</span><span class="p">[</span><span class="n">p_idx</span><span class="p">,</span><span class="n">q_idx</span><span class="p">]</span> <span class="o">*=</span> <span class="n">pred_weights</span><span class="p">[</span><span class="n">p_idx</span><span class="p">]</span>
+        <span class="n">ent_weights</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ents</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">ent_weights</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">ent_weights</span><span class="p">)</span>
+        <span class="n">ent_weights</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ent_weights</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ent_weights</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.3.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

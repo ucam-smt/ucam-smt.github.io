@@ -192,12 +192,12 @@
         <span class="sd">&quot;&quot;&quot;Creates a new osm predictor.&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">OSMPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">illegal_sequences</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">[</span><span class="n">OSM_JUMP_FWD_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_BWD_ID</span><span class="p">],</span>
-            <span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_FWD_ID</span><span class="p">],</span>
-            <span class="p">[</span><span class="n">OSM_JUMP_FWD_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_FWD_ID</span><span class="p">],</span>
-            <span class="p">[</span><span class="n">OSM_JUMP_FWD_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_BWD_ID</span><span class="p">],</span>
-            <span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_FWD_ID</span><span class="p">],</span>
-            <span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_JUMP_BWD_ID</span><span class="p">],</span>
+            <span class="c1">#[OSM_JUMP_FWD_ID, OSM_JUMP_BWD_ID],</span>
+            <span class="c1">#[OSM_JUMP_BWD_ID, OSM_JUMP_FWD_ID],</span>
+            <span class="c1">#[OSM_JUMP_FWD_ID, OSM_GAP_ID, OSM_JUMP_FWD_ID],</span>
+            <span class="c1">#[OSM_JUMP_FWD_ID, OSM_GAP_ID, OSM_JUMP_BWD_ID],</span>
+            <span class="c1">#[OSM_JUMP_BWD_ID, OSM_GAP_ID, OSM_JUMP_FWD_ID],</span>
+            <span class="c1">#[OSM_JUMP_BWD_ID, OSM_GAP_ID, OSM_JUMP_BWD_ID],</span>
             <span class="p">[</span><span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">]</span>
         <span class="p">]</span>
     
@@ -221,9 +221,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_len</span><span class="p">:</span>
-            <span class="n">ret</span><span class="p">[</span><span class="n">OSM_EOP_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span> <span class="c1"># Force EOS</span>
+            <span class="c1">#ret[OSM_EOP_ID] = utils.NEG_INF</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+            <span class="c1">#ret[utils.EOS_ID] = 0.0</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">ret</span><span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span><span class="p">:</span>
@@ -236,6 +238,8 @@
         
 <div class="viewcode-block" id="OSMPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Always returns 0.0&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_len</span><span class="p">:</span> <span class="c1"># Force EOS</span>
+            <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
         <span class="k">return</span> <span class="mf">0.0</span></div>
     
 <div class="viewcode-block" id="OSMPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>

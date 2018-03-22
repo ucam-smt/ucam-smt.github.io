@@ -176,9 +176,10 @@
 <span id="cam-sgnmt-misc-sparse-module"></span><h2>cam.sgnmt.misc.sparse module<a class="headerlink" href="#module-cam.sgnmt.misc.sparse" title="Permalink to this headline">¶</a></h2>
 <p>This module adds support for sparse input or output features. In
 standard NMT we normally use a one-hot-representation, and input and
-output layers are lookup tables (embedding matrices). SGNMT supports
-explicit definition of word representations as sparse features, in
-which more than one neuron can be activated at a time.</p>
+output layers are lookup tables (embedding matrices). The Blocks
+NMT implementation in SGNMT supports explicit definition of word
+representations as sparse features, in which more than one neuron can
+be activated at a time.</p>
 <dl class="class">
 <dt id="cam.sgnmt.misc.sparse.FileBasedFeatMap">
 <em class="property">class </em><code class="descclassname">cam.sgnmt.misc.sparse.</code><code class="descname">FileBasedFeatMap</code><span class="sig-paren">(</span><em>dim</em>, <em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/sparse.html#FileBasedFeatMap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.sparse.FileBasedFeatMap" title="Permalink to this definition">¶</a></dt>
@@ -190,6 +191,22 @@ The mapping from word to feature is a simple dictionary lookup.</p>
 nearest neighbor implementation and does not require an exact
 match. However, in case of an exact match, is runs linearly in the
 number of non-zero entries in the vector.</p>
+<p>Loads the feature map from the file system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dim</strong> (<em>int</em>) &#8211; </li>
+<li><strong>path</strong> (<em>string</em>) &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IOError. If the file could not be loaded</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.misc.sparse.FileBasedFeatMap.sparse2nwords">
 <code class="descname">sparse2nwords</code><span class="sig-paren">(</span><em>feat</em>, <em>n=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/sparse.html#FileBasedFeatMap.sparse2nwords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.sparse.FileBasedFeatMap.sparse2nwords" title="Permalink to this definition">¶</a></dt>
@@ -214,6 +231,14 @@ number of non-zero entries in the vector.</p>
 <p>Can be used as replacement if a <code class="docutils literal"><span class="pre">SparseFeatMap</span></code> is required
 but you wish to use flat word ids. It overrides the dense methods
 with the identities.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dim</strong> (<em>int</em>) &#8211; not used</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.misc.sparse.FlatSparseFeatMap.dense2sparse">
 <code class="descname">dense2sparse</code><span class="sig-paren">(</span><em>dense</em>, <em>eps=0.3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/sparse.html#FlatSparseFeatMap.dense2sparse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.sparse.FlatSparseFeatMap.dense2sparse" title="Permalink to this definition">¶</a></dt>
@@ -277,6 +302,15 @@ with the identities.</p>
 <p>This is the super class for mapping strategies between sparse
 feature representations and symbolic word indices. The translation
 needs to be implemented in <code class="docutils literal"><span class="pre">sparse2word</span></code> and <code class="docutils literal"><span class="pre">word2sparse</span></code>.</p>
+<p>Initializes this map.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dim</strong> (<em>int</em>) &#8211; Dimensionality of the feature representation</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.misc.sparse.SparseFeatMap.dense2nwords">
 <code class="descname">dense2nwords</code><span class="sig-paren">(</span><em>feat</em>, <em>n=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/sparse.html#SparseFeatMap.dense2nwords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.sparse.SparseFeatMap.dense2nwords" title="Permalink to this definition">¶</a></dt>
@@ -491,6 +525,16 @@ vector if no representation found</td>
 <p>This is the null-object (GoF) implementation for
 <code class="docutils literal"><span class="pre">SparseFeatMap</span></code>. It corresponds to the usual one-hot
 representation.</p>
+<p>Pass through to <code class="docutils literal"><span class="pre">SparseFeatMap</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dim</strong> (<em>int</em>) &#8211; Dimensionality of the feature representation
+(should be the vocabulary size)</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.misc.sparse.TrivialSparseFeatMap.sparse2word">
 <code class="descname">sparse2word</code><span class="sig-paren">(</span><em>feat</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/sparse.html#TrivialSparseFeatMap.sparse2word"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.sparse.TrivialSparseFeatMap.sparse2word" title="Permalink to this definition">¶</a></dt>
@@ -602,6 +646,7 @@ implementation based on strings of integers.</p>
 <dt id="cam.sgnmt.misc.trie.SimpleNode">
 <em class="property">class </em><code class="descclassname">cam.sgnmt.misc.trie.</code><code class="descname">SimpleNode</code><a class="reference internal" href="_modules/cam/sgnmt/misc/trie.html#SimpleNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.trie.SimpleNode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Helper class representing a node in a <code class="docutils literal"><span class="pre">SimpleTrie</span></code></p>
+<p>Creates an empty node without children.</p>
 </dd></dl>
 
 <dl class="class">
@@ -619,6 +664,7 @@ in which most of the elements in the sequence are zero (see
 case, the key is a list of tuples [(dim1,val1),...(dimN,valN)].
 Internally, we store them as sequence &#8220;dim1 val1 dim2 val2...&#8221;
 Note that we assume that the tuples are ordered by dimension!</p>
+<p>Creates an empty Trie data structure.</p>
 <dl class="method">
 <dt id="cam.sgnmt.misc.trie.SimpleTrie.add">
 <code class="descname">add</code><span class="sig-paren">(</span><em>seq</em>, <em>element</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/trie.html#SimpleTrie.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.trie.SimpleTrie.add" title="Permalink to this definition">¶</a></dt>
@@ -768,6 +814,7 @@ decoder instance. This can be used for heuristics.</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.misc.unigram.</code><code class="descname">AllStatsUnigramTable</code><a class="reference internal" href="_modules/cam/sgnmt/misc/unigram.html#AllStatsUnigramTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.unigram.AllStatsUnigramTable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.misc.unigram.UnigramTable" title="cam.sgnmt.misc.unigram.UnigramTable"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.misc.unigram.UnigramTable</span></code></a></p>
 <p>This unigram table collect statistics from all partial hypos.</p>
+<p>Pass through to super class constructor.</p>
 <dl class="method">
 <dt id="cam.sgnmt.misc.unigram.AllStatsUnigramTable.notify">
 <code class="descname">notify</code><span class="sig-paren">(</span><em>message</em>, <em>message_type=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/unigram.html#AllStatsUnigramTable.notify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.unigram.AllStatsUnigramTable.notify" title="Permalink to this definition">¶</a></dt>
@@ -795,6 +842,7 @@ is <code class="docutils literal"><span class="pre">MESSAGE_TYPE_POSTERIOR</span
 <em class="property">class </em><code class="descclassname">cam.sgnmt.misc.unigram.</code><code class="descname">BestStatsUnigramTable</code><a class="reference internal" href="_modules/cam/sgnmt/misc/unigram.html#BestStatsUnigramTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.unigram.BestStatsUnigramTable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.misc.unigram.UnigramTable" title="cam.sgnmt.misc.unigram.UnigramTable"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.misc.unigram.UnigramTable</span></code></a></p>
 <p>This unigram table collect statistics from the best full hypo.</p>
+<p>Pass through to super class constructor.</p>
 <dl class="method">
 <dt id="cam.sgnmt.misc.unigram.BestStatsUnigramTable.notify">
 <code class="descname">notify</code><span class="sig-paren">(</span><em>message</em>, <em>message_type=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/unigram.html#BestStatsUnigramTable.notify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.unigram.BestStatsUnigramTable.notify" title="Permalink to this definition">¶</a></dt>
@@ -829,6 +877,7 @@ sentence pair.</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.misc.unigram.</code><code class="descname">FileUnigramTable</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/unigram.html#FileUnigramTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.unigram.FileUnigramTable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.misc.unigram.UnigramTable" title="cam.sgnmt.misc.unigram.UnigramTable"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.misc.unigram.UnigramTable</span></code></a></p>
 <p>Loads a unigram table from an external file.</p>
+<p>Loads the unigram table from <code class="docutils literal"><span class="pre">path</span></code>.</p>
 <dl class="method">
 <dt id="cam.sgnmt.misc.unigram.FileUnigramTable.reset">
 <code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/unigram.html#FileUnigramTable.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.unigram.FileUnigramTable.reset" title="Permalink to this definition">¶</a></dt>
@@ -841,6 +890,7 @@ sentence pair.</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.misc.unigram.</code><code class="descname">FullStatsUnigramTable</code><a class="reference internal" href="_modules/cam/sgnmt/misc/unigram.html#FullStatsUnigramTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.unigram.FullStatsUnigramTable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.misc.unigram.UnigramTable" title="cam.sgnmt.misc.unigram.UnigramTable"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.misc.unigram.UnigramTable</span></code></a></p>
 <p>This unigram table collect statistics from all full hypos.</p>
+<p>Pass through to super class constructor.</p>
 <dl class="method">
 <dt id="cam.sgnmt.misc.unigram.FullStatsUnigramTable.notify">
 <code class="descname">notify</code><span class="sig-paren">(</span><em>message</em>, <em>message_type=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/unigram.html#FullStatsUnigramTable.notify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.unigram.FullStatsUnigramTable.notify" title="Permalink to this definition">¶</a></dt>
@@ -870,6 +920,7 @@ is <code class="docutils literal"><span class="pre">MESSAGE_TYPE_FULL_HYPO</span
 <p>A unigram table stores unigram probabilities for a certain
 vocabulary. These statistics can be loaded from an external
 file (<code class="docutils literal"><span class="pre">FileUnigramTable</span></code>) or collected during decoding.</p>
+<p>Creates a unigram table without entries.</p>
 <dl class="method">
 <dt id="cam.sgnmt.misc.unigram.UnigramTable.estimate">
 <code class="descname">estimate</code><span class="sig-paren">(</span><em>word</em>, <em>default=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/misc/unigram.html#UnigramTable.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.misc.unigram.UnigramTable.estimate" title="Permalink to this definition">¶</a></dt>

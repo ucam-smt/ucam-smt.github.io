@@ -145,7 +145,7 @@
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.beam</span> <span class="kn">import</span> <span class="n">BeamDecoder</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding</span> <span class="kn">import</span> <span class="n">core</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding</span> <span class="kn">import</span> <span class="n">combination</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 
@@ -168,15 +168,17 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">CombiBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;length_norm&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_length_norm</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">combination</span><span class="o">.</span><span class="n">breakdown2score_length_norm</span>
         <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;bayesian_loglin&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_bayesian_loglin</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">combination</span><span class="o">.</span><span class="n">breakdown2score_bayesian_loglin</span>
         <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;bayesian&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_bayesian</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">combination</span><span class="o">.</span><span class="n">breakdown2score_bayesian</span>
         <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;sum&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_sum</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using the sum combination strategy has no effect &quot;</span>
-                          <span class="s2">&quot;under the combibeam decoder.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">breakdown2score</span> <span class="o">=</span> <span class="n">combination</span><span class="o">.</span><span class="n">breakdown2score_sum</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="s1">&#39;length_norm&#39;</span><span class="p">]:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using the </span><span class="si">%s</span><span class="s2"> combination strategy has no effect &quot;</span>
+                         <span class="s2">&quot;under the combibeam decoder.&quot;</span>
+                         <span class="o">%</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">combination_scheme</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span> <span class="o">=</span> <span class="bp">False</span>
 
     <span class="k">def</span> <span class="nf">_expand_hypo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>

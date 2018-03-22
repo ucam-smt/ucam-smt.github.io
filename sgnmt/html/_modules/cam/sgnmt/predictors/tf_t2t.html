@@ -493,6 +493,87 @@
         <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
 
 
+<div class="viewcode-block" id="FertilityT2TPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor">[docs]</a><span class="k">class</span> <span class="nc">FertilityT2TPredictor</span><span class="p">(</span><span class="n">T2TPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Use this predictor to integrate fertility models trained with </span>
+<span class="sd">    T2T. Fertility models output the fertility for each source word</span>
+<span class="sd">    instead of target words. We define the fertility of the i-th</span>
+<span class="sd">    source word in a hypothesis as the number of tokens between the </span>
+<span class="sd">    (i-1)-th and the i-th POP token.</span>
+
+<span class="sd">    TODO: This is not SOLID (violates substitution principle)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_update_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Call the T2T model in self.mon_sess to update pop_scores</span>
+<span class="sd">        and other_scores.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_probs</span><span class="p">,</span>
+           <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fertility_history</span> <span class="o">+</span> <span class="p">[</span><span class="n">text_encoder</span><span class="o">.</span><span class="n">PAD_ID</span><span class="p">]})</span>
+        <span class="n">fert_log_probs</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">log_probs</span><span class="p">[</span><span class="mi">4</span><span class="p">:]]</span> <span class="o">+</span> <span class="p">[</span><span class="n">log_probs</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]]</span>
+        <span class="n">fert_log_probs</span> <span class="o">=</span> <span class="n">fert_log_probs</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span>
+        <span class="n">prev_max</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="n">best_future</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fert_log_probs</span><span class="p">[:</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">prev_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">prev_max</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+            <span class="n">best_future</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prev_max</span><span class="p">)</span>
+        <span class="n">best_future</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pop_scores</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">other_scores</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">score</span><span class="p">,</span> <span class="n">best_future_score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fert_log_probs</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">best_future</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pop_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score</span> <span class="o">-</span> <span class="n">acc</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">other_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">best_future_score</span> <span class="o">-</span> <span class="n">acc</span><span class="p">)</span>
+            <span class="n">acc</span> <span class="o">=</span> <span class="n">best_future_score</span>
+    
+<div class="viewcode-block" id="FertilityT2TPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set src_sentence, compute fertilities for first src word.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fertility_history</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_aligned_words</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">oov_to_unk</span><span class="p">(</span>
+            <span class="n">src_sentence</span> <span class="o">+</span> <span class="p">[</span><span class="n">text_encoder</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">],</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_scores</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="FertilityT2TPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns self.pop_scores[n_aligned_words] for POP and EOS.&quot;&quot;&quot;</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pop_scores</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_aligned_words</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">:</span> <span class="n">score</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="n">score</span><span class="p">,</span> <span class="mi">6</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mi">7</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span></div>
+   
+<div class="viewcode-block" id="FertilityT2TPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_aligned_words</span>
+            <span class="k">if</span> <span class="n">target</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span><span class="p">:</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fertility_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_aligned_words</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_scores</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="o">!=</span> <span class="mi">6</span> <span class="ow">and</span> <span class="n">word</span> <span class="o">!=</span> <span class="mi">7</span><span class="p">:</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_aligned_words</span> <span class="o">+=</span> <span class="mi">1</span></div>
+    
+<div class="viewcode-block" id="FertilityT2TPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fertility_history</span><span class="p">,</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_aligned_words</span><span class="p">,</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">pop_scores</span><span class="p">,</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">other_scores</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="FertilityT2TPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fertility_history</span><span class="p">,</span> 
+         <span class="bp">self</span><span class="o">.</span><span class="n">n_aligned_words</span><span class="p">,</span> 
+         <span class="bp">self</span><span class="o">.</span><span class="n">pop_scores</span><span class="p">,</span> 
+         <span class="bp">self</span><span class="o">.</span><span class="n">other_scores</span><span class="p">)</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="FertilityT2TPredictor.reset"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="FertilityT2TPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the history is the same &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div>
+
+<div class="viewcode-block" id="FertilityT2TPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns self.other_scores[n_aligned_words].&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">other_scores</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_aligned_words</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>

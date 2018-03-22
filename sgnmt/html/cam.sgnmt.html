@@ -200,11 +200,13 @@
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.bow">cam.sgnmt.decoding.bow module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.bucket">cam.sgnmt.decoding.bucket module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.combibeam">cam.sgnmt.decoding.combibeam module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.combination">cam.sgnmt.decoding.combination module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.core">cam.sgnmt.decoding.core module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.dfs">cam.sgnmt.decoding.dfs module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.flip">cam.sgnmt.decoding.flip module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.greedy">cam.sgnmt.decoding.greedy module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.heuristics">cam.sgnmt.decoding.heuristics module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.interpolation">cam.sgnmt.decoding.interpolation module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.mbrbeam">cam.sgnmt.decoding.mbrbeam module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.multisegbeam">cam.sgnmt.decoding.multisegbeam module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.decoding.html#module-cam.sgnmt.decoding.restarting">cam.sgnmt.decoding.restarting module</a></li>
@@ -446,6 +448,7 @@ compile with <code class="docutils literal"><span class="pre">--enable_python</s
 <em class="property">class </em><code class="descclassname">cam.sgnmt.output.</code><code class="descname">AlignmentOutputHandler</code><a class="reference internal" href="_modules/cam/sgnmt/output.html#AlignmentOutputHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.AlignmentOutputHandler" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Interface for output handlers for alignments.</p>
+<p>Empty constructor</p>
 <dl class="method">
 <dt id="cam.sgnmt.output.AlignmentOutputHandler.write_alignments">
 <code class="descname">write_alignments</code><span class="sig-paren">(</span><em>alignments</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/output.html#AlignmentOutputHandler.write_alignments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.AlignmentOutputHandler.write_alignments" title="Permalink to this definition">¶</a></dt>
@@ -508,6 +511,20 @@ the sparse tuples corresponds to the order of the predictors in
 the <code class="docutils literal"><span class="pre">--predictors</span></code> argument.</p>
 <p>Note that the created FSTs use another ID for UNK to avoid
 confusion with the epsilon symbol used by OpenFST.</p>
+<p>Creates a sparse tuple FST output handler.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>string</em>) &#8211; Path to the VECLAT directory to create</li>
+<li><strong>start_sen_id</strong> (<em>int</em>) &#8211; ID of the first sentence</li>
+<li><strong>unk_id</strong> (<em>int</em>) &#8211; Id which should be used in the FST for UNK</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.output.FSTOutputHandler.write_hypos">
 <code class="descname">write_hypos</code><span class="sig-paren">(</span><em>all_hypos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/output.html#FSTOutputHandler.write_hypos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.FSTOutputHandler.write_hypos" title="Permalink to this definition">¶</a></dt>
@@ -550,6 +567,23 @@ entry is used to store the separated unnormalized predictor scores.
 Note that the sentence IDs are shifted: Moses n-best files start
 with the index 0, but in SGNMT and HiFST we usually refer to the
 first sentence with 1 (e.g. in lattice directories or &#8211;range)</p>
+<p>Creates a Moses n-best list output handler.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>string</em>) &#8211; Path to the n-best file to write</li>
+<li><strong>predictor_names</strong> &#8211; Names of the predictors whose scores
+should be included in the score breakdown
+in the n-best list</li>
+<li><strong>start_sen_id</strong> &#8211; ID of the first sentence</li>
+<li><strong>trg_wmap</strong> (<em>dict</em>) &#8211; (Inverse) word map for target language</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.output.NBestOutputHandler.write_hypos">
 <code class="descname">write_hypos</code><span class="sig-paren">(</span><em>all_hypos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/output.html#NBestOutputHandler.write_hypos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.NBestOutputHandler.write_hypos" title="Permalink to this definition">¶</a></dt>
@@ -595,6 +629,21 @@ hypotheses returned by the decoder. The hypothesis scores are assumed to
 be loglikelihoods, which we renormalize to make sure that we operate on a
 valid distribution. The scores produced by the output handler are
 probabilities of an ngram being in the translation.</p>
+<p>Creates an ngram output handler.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>string</em>) &#8211; Path to the ngram directory to create</li>
+<li><strong>min_order</strong> (<em>int</em>) &#8211; Minimum order of extracted ngrams</li>
+<li><strong>max_order</strong> (<em>int</em>) &#8211; Maximum order of extracted ngrams</li>
+<li><strong>start_sen_id</strong> (<em>int</em>) &#8211; ID of the first sentence</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.output.NgramOutputHandler.write_hypos">
 <code class="descname">write_hypos</code><span class="sig-paren">(</span><em>all_hypos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/output.html#NgramOutputHandler.write_hypos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.NgramOutputHandler.write_hypos" title="Permalink to this definition">¶</a></dt>
@@ -623,6 +672,7 @@ probabilities of an ngram being in the translation.</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.output.</code><code class="descname">OutputHandler</code><a class="reference internal" href="_modules/cam/sgnmt/output.html#OutputHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.OutputHandler" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Interface for output handlers.</p>
+<p>Empty constructor</p>
 <dl class="method">
 <dt id="cam.sgnmt.output.OutputHandler.write_hypos">
 <code class="descname">write_hypos</code><span class="sig-paren">(</span><em>all_hypos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/output.html#OutputHandler.write_hypos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.OutputHandler.write_hypos" title="Permalink to this definition">¶</a></dt>
@@ -652,6 +702,20 @@ to <code class="docutils literal"><span class="pre">FSTOutputHandler</span></cod
 <code class="docutils literal"><span class="pre">--combination_scheme</span></code>.</p>
 <p>Note that the created FSTs use another ID for UNK to avoid
 confusion with the epsilon symbol used by OpenFST.</p>
+<p>Creates a standard arc FST output handler.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>string</em>) &#8211; Path to the fst directory to create</li>
+<li><strong>start_sen_id</strong> (<em>int</em>) &#8211; ID of the first sentence</li>
+<li><strong>unk_id</strong> (<em>int</em>) &#8211; Id which should be used in the FST for UNK</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.output.StandardFSTOutputHandler.write_hypos">
 <code class="descname">write_hypos</code><span class="sig-paren">(</span><em>all_hypos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/output.html#StandardFSTOutputHandler.write_hypos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.StandardFSTOutputHandler.write_hypos" title="Permalink to this definition">¶</a></dt>
@@ -707,6 +771,7 @@ you are planning to use them for further processing.</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.output.</code><code class="descname">TextOutputHandler</code><span class="sig-paren">(</span><em>path</em>, <em>trg_wmap</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/output.html#TextOutputHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.TextOutputHandler" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.output.OutputHandler" title="cam.sgnmt.output.OutputHandler"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.output.OutputHandler</span></code></a></p>
 <p>Writes the first best hypotheses to a plain text file</p>
+<p>Creates a plain text output handler to write to <code class="docutils literal"><span class="pre">path</span></code></p>
 <dl class="method">
 <dt id="cam.sgnmt.output.TextOutputHandler.close_file">
 <code class="descname">close_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/output.html#TextOutputHandler.close_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.TextOutputHandler.close_file" title="Permalink to this definition">¶</a></dt>
@@ -736,6 +801,22 @@ you are planning to use them for further processing.</p>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.output.OutputHandler" title="cam.sgnmt.output.OutputHandler"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.output.OutputHandler</span></code></a></p>
 <p>Produces one CSV file for each sentence. The CSV files contain
 the predictor score breakdown for each translation prefix length.</p>
+<p>Creates a Moses n-best list output handler.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>string</em>) &#8211; Path to the n-best file to write</li>
+<li><strong>predictor_names</strong> &#8211; Names of the predictors whose scores
+should be included in the score breakdown
+in the n-best list</li>
+<li><strong>start_sen_id</strong> &#8211; ID of the first sentence</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.output.TimeCSVOutputHandler.write_hypos">
 <code class="descname">write_hypos</code><span class="sig-paren">(</span><em>all_hypos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/output.html#TimeCSVOutputHandler.write_hypos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.output.TimeCSVOutputHandler.write_hypos" title="Permalink to this definition">¶</a></dt>
@@ -887,6 +968,7 @@ score breakdown.</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.utils.</code><code class="descname">Observable</code><a class="reference internal" href="_modules/cam/sgnmt/utils.html#Observable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.utils.Observable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>For the GoF design pattern observer</p>
+<p>Initializes the list of observers with an empty list</p>
 <dl class="method">
 <dt id="cam.sgnmt.utils.Observable.add_observer">
 <code class="descname">add_observer</code><span class="sig-paren">(</span><em>observer</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/utils.html#Observable.add_observer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.utils.Observable.add_observer" title="Permalink to this definition">¶</a></dt>
@@ -952,7 +1034,7 @@ classes.</p>
 
 <dl class="data">
 <dt id="cam.sgnmt.utils.TMP_FILENAME">
-<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">TMP_FILENAME</code><em class="property"> = '/tmp/sgnmt.29828.fst'</em><a class="headerlink" href="#cam.sgnmt.utils.TMP_FILENAME" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">cam.sgnmt.utils.</code><code class="descname">TMP_FILENAME</code><em class="property"> = '/tmp/sgnmt.10729.fst'</em><a class="headerlink" href="#cam.sgnmt.utils.TMP_FILENAME" title="Permalink to this definition">¶</a></dt>
 <dd><p>Temporary file name to use if an FST file is zipped.</p>
 </dd></dl>
 

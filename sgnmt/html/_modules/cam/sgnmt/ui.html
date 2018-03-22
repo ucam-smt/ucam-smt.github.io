@@ -551,7 +551,7 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--sync_symbol&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Used for the syncbeam decoder. Synchronization &quot;</span>
                        <span class="s2">&quot;symbol for hypothesis comparision. If negative, use &quot;</span>
-                       <span class="s2">&quot;the &lt;/w&gt; entry in --trg_cmap.&quot;</span><span class="p">)</span>
+                       <span class="s2">&quot;syntax_[min|max]_terminal_id.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_word_len&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum length of a single word. Only applicable &quot;</span>
                        <span class="s2">&quot;to the decoders multisegbeam and syncbeam.&quot;</span><span class="p">)</span>
@@ -559,6 +559,21 @@
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If positive, apply mix the evidence space &quot;</span>
                        <span class="s2">&quot;distribution with the uniform distribution using &quot;</span>
                        <span class="s2">&quot;this factor&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--mbrbeam_selection_strategy&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;oracle_bleu&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;bleu&#39;</span><span class="p">,</span><span class="s1">&#39;oracle_bleu&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the hypo selection strategy for mbrbeam.&quot;</span>
+                        <span class="s2">&quot; See the mbrbeam docstring for more information.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;&#39;bleu&#39;: Select the n best hypotheses with the best &quot;</span>
+                        <span class="s2">&quot;expected BLEU.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;&#39;oracle_bleu&#39;: Optimize the expected oracle BLEU &quot;</span>
+                        <span class="s2">&quot;score of the n-best list.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--mbrbeam_evidence_strategy&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;renorm&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;maxent&#39;</span><span class="p">,</span><span class="s1">&#39;renorm&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the way the evidence space is estimated &quot;</span>
+                        <span class="s2">&quot;for mbrbeam. See the mbrbeam docstring for more.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;&#39;maxent&#39;: Maximum entropy criterion on n-gram probs.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;&#39;renorm&#39;: Only use renormalized scores of the hypos &quot;</span>
+                        <span class="s2">&quot;which are currently in the beam.&quot;</span><span class="p">)</span>
 
     <span class="c1">## Output options</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Output options&#39;</span><span class="p">)</span>
@@ -637,6 +652,10 @@
                         <span class="s2">&quot;         Options: t2t_usr_dir, t2t_model, &quot;</span>
                         <span class="s2">&quot;t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, &quot;</span>
                         <span class="s2">&quot;pred_src_vocab_size, pred_trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;fertt2t&#39;: T2T predictor for fertility models.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;       Options: syntax_pop_id, t2t_usr_dir, t2t_model,&quot;</span>
+                        <span class="s2">&quot; t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, &quot;</span>
+                        <span class="s2">&quot;pred_src_vocab_size, pred_trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;nizza&#39;: Nizza alignment models.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;           Options: nizza_model, nizza_hparams_set, &quot;</span>
                         <span class="s2">&quot;nizza_checkpoint_dir, pred_src_vocab_size, &quot;</span>
@@ -668,8 +687,8 @@
                         <span class="s2">&quot;            Options: trg_test</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;forcedlst&#39;: Forced decoding with a Moses n-best &quot;</span>
                         <span class="s2">&quot;list (n-best list rescoring)</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;               Options: trg_test, &quot;</span>
-                        <span class="s2">&quot;forcedlst_sparse_feat, use_nbest_weights</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;               Options: trg_test, forcedlst_match_unk&quot;</span>
+                        <span class="s2">&quot; forcedlst_sparse_feat, use_nbest_weights</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;bow&#39;: Forced decoding with one bag-of-words ref.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;         Options: trg_test, heuristic_scores_file, &quot;</span>
                         <span class="s2">&quot;bow_heuristic_strategies, bow_accept_subsets, &quot;</span>
@@ -751,7 +770,36 @@
                         <span class="s2">&quot;--predictor_weights bla-weight_fst-weight,nmt-weight,&quot;</span>
                         <span class="s2">&quot; e.g. &#39;--predictor_weights 0.1_0.3,0.6&#39;. Default &quot;</span>
                         <span class="s2">&quot;(empty string) means that each predictor gets &quot;</span>
-                        <span class="s2">&quot;assigned the weight 1.&quot;</span><span class="p">)</span>
+                        <span class="s2">&quot;assigned the weight 1. You may specify a single &quot;</span>
+                        <span class="s2">&quot;weight for wrapped predictors (e.g. 0.3,0.6) if the &quot;</span>
+                        <span class="s2">&quot;wrapper is unweighted.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--interpolation_strategy&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter specifies how the predictor &quot;</span>
+                        <span class="s2">&quot;weights are used.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;&#39;fixed&#39;: Predictor weights do not change.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;&#39;entropy&#39;: Set predictor weight according the (cross-&quot;</span>
+                        <span class="s2">&quot;) entropy of its posterior to all other predictors.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;&#39;moe&#39;: Use a Mixture of Experts gating network &quot;</span>
+                        <span class="s2">&quot;to decide predictor weights at each time step. See &quot;</span>
+                        <span class="s2">&quot;the sgnmt_moe project on how to train it.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;Interpolation strategies can be specified for each &quot;</span>
+                        <span class="s2">&quot;predictor separately, eg &#39;fixed|moe,moe,fixed,moe,moe&#39;&quot;</span>
+                        <span class="s2">&quot; means that a MoE network with output dimensionality &quot;</span>
+                        <span class="s2">&quot;4 will decide for the 2nd, 4th, and 5th predictors, &quot;</span>
+                        <span class="s2">&quot;the 1st predictor mixes the prior weight with the MoE&quot;</span>
+                        <span class="s2">&quot; prediction, and the rest keep their weight from &quot;</span>
+                        <span class="s2">&quot;predictor_weights.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--interpolation_weights_mean&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;arith&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;arith&#39;</span><span class="p">,</span> <span class="s1">&#39;geo&#39;</span><span class="p">,</span> <span class="s1">&#39;prob&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Used when --interpolation_strategy contains |. &quot;</span>
+                        <span class="s2">&quot;Specifies the way interpolation weights are combined.&quot;</span>
+                        <span class="s2">&quot;&#39;arith&#39;metirc, &#39;geo&#39;metric, &#39;prob&#39;abilistic.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--moe_config&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only for MoE interpolation strategy: Semicolon-&quot;</span>
+                        <span class="s2">&quot;separated key=value pairs specifying the MoE network&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--moe_checkpoint_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only for MoE interpolation strategy: Path to &quot;</span>
+                        <span class="s2">&quot;the TensorFlow checkpoint directory.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--closed_vocabulary_normalization&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;exact&#39;</span><span class="p">,</span> <span class="s1">&#39;reduced&#39;</span><span class="p">,</span> <span class="s1">&#39;rescale_unk&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter specifies the way closed &quot;</span>
@@ -853,6 +901,11 @@
                        <span class="s2">&quot; layerbylayer and t2t predictors support single &quot;</span>
                        <span class="s2">&quot;integer values. The bracket predictor can take a comma&quot;</span>
                        <span class="s2">&quot;-separated list of integers.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_min_terminal_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                       <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;All token IDs smaller than this are considered to &quot;</span>
+                       <span class="s2">&quot;be non-terminal symbols except the ones specified by &quot;</span>
+                       <span class="s2">&quot;--syntax_terminal_list&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_max_terminal_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30003</span><span class="p">,</span>
                        <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;All token IDs larger than this are considered to &quot;</span>
@@ -1010,6 +1063,9 @@
                         <span class="s2">&quot; for nbest lists in sparse feature format, you can &quot;</span>
                         <span class="s2">&quot;specify the name of the features which should be &quot;</span>
                         <span class="s2">&quot;used instead.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--forcedlst_match_unk&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for forcedlst predictor. If true, &quot;</span>
+                        <span class="s2">&quot;allow any word where the n-best list has an UNK.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--use_nbest_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for forcedlst predictor. Whether &quot;</span>
                         <span class="s2">&quot;to use the scores in n-best lists.&quot;</span><span class="p">)</span>
@@ -1117,7 +1173,7 @@
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to normalize nplm probabilities over &quot;</span>
                         <span class="s2">&quot;the current unbounded predictor vocabulary.&quot;</span><span class="p">)</span>
     
-    <span class="c1"># Automaton predictors</span>
+    <span class="c1"># FSM predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;FST and RTN predictor options&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fst_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;fst/</span><span class="si">%d</span><span class="s2">.fst&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for fst and nfst predictor. Sets &quot;</span>

@@ -106,11 +106,13 @@
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.bow">cam.sgnmt.decoding.bow module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.bucket">cam.sgnmt.decoding.bucket module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.combibeam">cam.sgnmt.decoding.combibeam module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.combination">cam.sgnmt.decoding.combination module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.core">cam.sgnmt.decoding.core module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.dfs">cam.sgnmt.decoding.dfs module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.flip">cam.sgnmt.decoding.flip module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.greedy">cam.sgnmt.decoding.greedy module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.heuristics">cam.sgnmt.decoding.heuristics module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.interpolation">cam.sgnmt.decoding.interpolation module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.mbrbeam">cam.sgnmt.decoding.mbrbeam module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.multisegbeam">cam.sgnmt.decoding.multisegbeam module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-cam.sgnmt.decoding.restarting">cam.sgnmt.decoding.restarting module</a></li>
@@ -200,6 +202,39 @@ implementations. This A* implementation does not have a &#8216;closed
 set&#8217;, i.e. we do not keep track of already visited states. Make
 sure that your search space is acyclic (normally it is unless you
 decode on cyclic lattices with the fst predictor.</p>
+<p>Creates a new A* decoder instance. The following values are
+fetched from <cite>decoder_args</cite>:</p>
+<blockquote>
+<div><p>beam (int): Maximum number of active hypotheses.
+pure_heuristic_scores (bool): For standard A* set this to</p>
+<blockquote>
+<div>false. If set to true, partial
+hypo scores are ignored when
+scoring hypotheses.</div></blockquote>
+<dl class="docutils">
+<dt>early_stopping (bool): If this is true, partial hypotheses</dt>
+<dd>with score worse than the current
+best complete scores are not
+expanded. This applies when nbest is
+larger than one and inadmissible
+heuristics are used</dd>
+<dt>nbest (int): If this is set to a positive value, we do not</dt>
+<dd>stop decoding at the first complete path, but
+continue search until we collected this many
+complete hypothesis. With an admissible
+heuristic, this will yield an exact n-best
+list.</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.astar.AstarDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/astar.html#AstarDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.astar.AstarDecoder.decode" title="Permalink to this definition">¶</a></dt>
@@ -220,6 +255,46 @@ decode on cyclic lattices with the fst predictor.</p>
 variants of it such as diversity promoting beam search and beam
 search with heuristic future cost estimates. This implementation
 supports risk-free pruning and hypotheses recombination.</p>
+<p>Creates a new beam decoder instance. The following values
+are fetched from <cite>decoder_args</cite>:</p>
+<blockquote>
+<div><p>hypo_recombination (bool): Activates hypo recombination
+beam (int): Absolute beam size. A beam of 12 means</p>
+<blockquote>
+<div>that we keep track of 12 active hypotheses</div></blockquote>
+<dl class="docutils">
+<dt>sub_beam (int): Number of children per hypothesis. Set to</dt>
+<dd>beam size if zero.</dd>
+<dt>pure_heuristic_scores (bool): Hypotheses to keep in the beam</dt>
+<dd>are normally selected
+according the sum of partial
+hypo score and future cost
+estimates. If set to true,
+partial hypo scores are
+ignored.</dd>
+<dt>diversity_factor (float): If this is set to a positive</dt>
+<dd>value we add diversity promoting
+penalization terms to the partial
+hypothesis scores following Li
+and Jurafsky, 2016</dd>
+<dt>early_stopping (bool): If true, we stop when the best</dt>
+<dd>scoring hypothesis ends with &lt;/S&gt;.
+If false, we stop when all hypotheses
+end with &lt;/S&gt;. Enable if you are
+only interested in the single best
+decoding result. If you want to
+create full 12-best lists, disable</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.beam.BeamDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/beam.html#BeamDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.beam.BeamDecoder.decode" title="Permalink to this definition">¶</a></dt>
@@ -247,6 +322,28 @@ parameter as it is designed for fixed length decoding problems.</p>
 Do not use the bow predictor in combination with this decoder as
 it will hide the EOS scores which are important to estimate bigram
 scores.</p>
+<p>Creates a new bigram greedy decoder. Do not use this decoder
+in combination with the bow predictor as it inherently already
+satisfies the bag-of-word constrains. The following values
+are fetched from <cite>decoder_args</cite>:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>trg_test (string): Path to a plain text file which</dt>
+<dd>defines the bag of words</dd>
+<dt>max_node_expansions (int): Maximum number of node expansions</dt>
+<dd>for inadmissible pruning.</dd>
+</dl>
+<p>early_stopping (boolean): Activates admissible pruning</p>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.bigramgreedy.BigramGreedyDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/bigramgreedy.html#BigramGreedyDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.bigramgreedy.BigramGreedyDecoder.decode" title="Permalink to this definition">¶</a></dt>
@@ -280,6 +377,37 @@ parameter as it is designed for fixed length decoding problems.</p>
 <p>Also note that even if this decoder is designed for bag problems,
 it can be used even in case of variable length hypotheses.
 Therefore, you still need to use the bow predictor.</p>
+<p>Creates a new bag decoder. The following values
+are fetched from <cite>decoder_args</cite>:</p>
+<blockquote>
+<div><p>hypo_recombination (bool): Activates hypo recombination
+max_node_expansions (int): Maximum number of node expansions</p>
+<blockquote>
+<div>for inadmissible pruning.</div></blockquote>
+<dl class="docutils">
+<dt>stochastic_decoder (bool): If true, select the next node to</dt>
+<dd>restart from randomly. If false,
+take the one with the best
+node score</dd>
+<dt>early_stopping (bool): Activates inadmissible pruning. Do</dt>
+<dd>not use if you have positive scores</dd>
+<dt>decode_always_single_step (bool): If true, we do only a single</dt>
+<dd>expansion from the backtraced
+node and select a new node. If
+false, we perform greedy
+decoding from that node until
+we reach a final node</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.bow.BOWDecoder.create_initial_node">
 <code class="descname">create_initial_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/bow.html#BOWDecoder.create_initial_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.bow.BOWDecoder.create_initial_node" title="Permalink to this definition">¶</a></dt>
@@ -337,6 +465,22 @@ object in the search tree.</p>
 <dd><p><em>dict</em> &#8211; Dictionary of unexplored outgoing arcs</p>
 </dd></dl>
 
+<p>Creates a new search tree node. All outgoing arcs are set to
+active by default.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>hypo</strong> (<a class="reference internal" href="#cam.sgnmt.decoding.core.PartialHypothesis" title="cam.sgnmt.decoding.core.PartialHypothesis"><em>PartialHypothesis</em></a>) &#8211; Hypothesis corresponding to this node</li>
+<li><strong>posterior</strong> (<em>dict</em>) &#8211; Scores on outgoing arcs</li>
+<li><strong>score_breakdown</strong> (<em>dict</em>) &#8211; Score breakdowns for outgoing arcs</li>
+<li><strong>prev_nodes</strong> (<em>list</em>) &#8211; Path from the root to this node</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>
@@ -382,6 +526,65 @@ epsilon</p>
 </dl>
 </li>
 </ul>
+<p>Create a new bucket decoder</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</li>
+<li><strong>hypo_recombination</strong> (<em>boolean</em>) &#8211; Activates hypothesis
+recombination. Hypos are
+tested only within a bucket</li>
+<li><strong>max_expansions</strong> (<em>int</em>) &#8211; Maximum number of node expansions for
+inadmissible pruning.</li>
+<li><strong>low_memory_mode</strong> (<em>bool</em>) &#8211; Switch on low memory mode at cost
+of some computational overhead.
+Limits the number of hypotheses in
+each bucket to the number of
+remaining node expansions</li>
+<li><strong>beam</strong> (<em>int</em>) &#8211; Number of hypotheses which get expanded at once
+after selecting a bucket.</li>
+<li><strong>pure_heuristic_scores</strong> (<em>bool</em>) &#8211; If false, hypos are scored
+with partial score plus
+future cost estimates. If
+true, only the future cost
+estimates are used</li>
+<li><strong>diversity_factor</strong> (<em>float</em>) &#8211; If this is set to a positive
+value, we reorder hypos in a
+bucket by adding a term which
+counts how many hypos with the
+same parent have been expanded
+already</li>
+<li><strong>early_stopping</strong> (<em>boolean</em>) &#8211; Admissible pruning (works only if
+scores are non-positive)</li>
+<li><strong>stochastic</strong> (<em>boolean</em>) &#8211; Stochastic bucket selection. If the
+bucket selector is not &#8216;difference&#8217;,
+this results in random bucket
+selection. If <code class="docutils literal"><span class="pre">bucket_selector</span></code> is
+set to &#8216;difference&#8217;, buckets are
+randomly selected with probability
+according the bucket score</li>
+<li><strong>bucket_selector</strong> (<em>string</em>) &#8211; Bucket selection strategy. &#8216;iter&#8217;,
+&#8216;maxscore&#8217;. &#8216;score&#8217;. See the
+class docstring for more info</li>
+<li><strong>bucket_score_strategy</strong> (<em>string</em>) &#8211; Determines the way the
+buckets are scored.
+&#8216;difference&#8217; between current
+best word score and best
+hypo in bucket, &#8216;absolute&#8217;
+hypo score, &#8216;heap&#8217; score of
+top scoring hypo in bucket ,
+&#8216;constant&#8217; score of 0.0.</li>
+<li><strong>collect_stats_strategy</strong> (<em>string</em>) &#8211; best, full, or all. Defines
+how unigram estimates are
+collected for heuristic</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.bucket.BucketDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/bucket.html#BucketDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.bucket.BucketDecoder.decode" title="Permalink to this definition">¶</a></dt>
@@ -405,6 +608,127 @@ the sum of the previous hypo scores and the current one, we
 apply combination_scheme in each time step. This makes it possible
 to use schemes like Bayesian combination on the word rather than
 the full sentence level.</p>
+<p>Creates a new beam decoder instance. In addition to the
+constructor of <cite>BeamDecoder</cite>, the following values are fetched
+from <cite>decoder_args</cite>:</p>
+<blockquote>
+<div>combination_scheme (string): breakdown2score strategy</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="module-cam.sgnmt.decoding.combination">
+<span id="cam-sgnmt-decoding-combination-module"></span><h2>cam.sgnmt.decoding.combination module<a class="headerlink" href="#module-cam.sgnmt.decoding.combination" title="Permalink to this headline">¶</a></h2>
+<p>This module contains strategies to convert a score breakdown to
+the total score. This is commonly specified via the
+&#8211;combination_scheme parameter.</p>
+<dl class="docutils">
+<dt>TODO: The breakdown2score interface is not very elegant, and has some</dt>
+<dd>overlap with the interpolation_strategy implementations.</dd>
+</dl>
+<dl class="function">
+<dt id="cam.sgnmt.decoding.combination.breakdown2score_bayesian">
+<code class="descclassname">cam.sgnmt.decoding.combination.</code><code class="descname">breakdown2score_bayesian</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combination.html#breakdown2score_bayesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combination.breakdown2score_bayesian" title="Permalink to this definition">¶</a></dt>
+<dd><p>This realizes score combination following the Bayesian LM
+interpolation scheme from (Allauzen and Riley, 2011)</p>
+<blockquote>
+<div>Bayesian Language Model Interpolation for Mobile Speech Input</div></blockquote>
+<p>By setting K=T we define the predictor weights according the score
+the predictors give to the current partial hypothesis. The initial
+predictor weights are used as priors.
+TODO could make more efficient use of <code class="docutils literal"><span class="pre">working_score</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>working_score</strong> (<em>float</em>) &#8211; Working combined score, which is the
+weighted sum of the scores in
+<code class="docutils literal"><span class="pre">score_breakdown</span></code>. Not used.</li>
+<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
+predictor scores</li>
+<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
+assume that this function has been called in the</p>
+<blockquote>
+<div>previous time step.</div></blockquote>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">float. Bayesian interpolated predictor scores</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decoding.combination.breakdown2score_bayesian_loglin">
+<code class="descclassname">cam.sgnmt.decoding.combination.</code><code class="descname">breakdown2score_bayesian_loglin</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combination.html#breakdown2score_bayesian_loglin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combination.breakdown2score_bayesian_loglin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like bayesian combination scheme, but uses loglinear model
+combination rather than linear interpolation weights</p>
+<p>TODO: Implement incremental version of it, write weights into breakdowns.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decoding.combination.breakdown2score_length_norm">
+<code class="descclassname">cam.sgnmt.decoding.combination.</code><code class="descname">breakdown2score_length_norm</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combination.html#breakdown2score_length_norm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combination.breakdown2score_length_norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements the combination scheme &#8216;length_norm&#8217; by normalizing
+the sum of the predictor scores by the length of the current
+sequence (i.e. the length of <code class="docutils literal"><span class="pre">score_breakdown</span></code>).
+TODO could make more efficient use of <code class="docutils literal"><span class="pre">working_score</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>working_score</strong> (<em>float</em>) &#8211; Working combined score, which is the
+weighted sum of the scores in
+<code class="docutils literal"><span class="pre">score_breakdown</span></code>. Not used.</li>
+<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
+predictor scores</li>
+<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
+assume that this function has been called in the</p>
+<blockquote>
+<div>previous time step (not used).</div></blockquote>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">float. Returns a length normalized <code class="docutils literal"><span class="pre">working_score</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decoding.combination.breakdown2score_sum">
+<code class="descclassname">cam.sgnmt.decoding.combination.</code><code class="descname">breakdown2score_sum</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combination.html#breakdown2score_sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combination.breakdown2score_sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements the combination scheme &#8216;sum&#8217; by always returning
+<code class="docutils literal"><span class="pre">working_score</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>working_score</strong> (<em>float</em>) &#8211; Working combined score, which is the
+weighted sum of the scores in
+<code class="docutils literal"><span class="pre">score_breakdown</span></code></li>
+<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
+predictor scores (not used).</li>
+<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
+assume that this function has been called in the</p>
+<blockquote>
+<div>previous time step (not used).</div></blockquote>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">float. Returns <code class="docutils literal"><span class="pre">working_score</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>
@@ -455,6 +779,32 @@ maintained by the <code class="docutils literal"><span class="pre">Decoder</span
 <p>Decoders are observable. They fire notifications after
 apply_predictors has been called. All heuristics
 are observing the decoder by default.</p>
+<p>Initializes the decoder instance with no predictors or
+heuristics.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>closed_vocabulary_normalization</strong> (<em>string</em>) &#8211; Defines the
+normalization behavior for closed
+vocabulary predictor scores. See
+the documentation to the
+<code class="docutils literal"><span class="pre">CLOSED_VOCAB_SCORE_NORM_*</span></code>
+variables for more information</li>
+<li><strong>max_len_factor</strong> (<em>int</em>) &#8211; Hypotheses are not longer than
+source sentence length times this.
+Needs to be supported by the search
+strategy implementation</li>
+<li><strong>lower_bounds_file</strong> (<em>string</em>) &#8211; Path to a file with lower
+bounds on hypothesis scores.
+If empty, all lower bounds are
+set to <code class="docutils literal"><span class="pre">NEG_INF</span></code>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.core.Decoder.add_full_hypo">
 <code class="descname">add_full_hypo</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.add_full_hypo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Decoder.add_full_hypo" title="Permalink to this definition">¶</a></dt>
@@ -504,6 +854,32 @@ predictor is going to be used to predict the next target word
 <li><strong>predictor</strong> (<a class="reference internal" href="cam.sgnmt.predictors.html#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Predictor instance</li>
 <li><strong>weight</strong> (<em>float</em>) &#8211; Predictor weight</li>
 </ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.decoding.core.Decoder.apply_interpolation_strategy">
+<code class="descname">apply_interpolation_strategy</code><span class="sig-paren">(</span><em>pred_weights</em>, <em>non_zero_words</em>, <em>posteriors</em>, <em>unk_probs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.apply_interpolation_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Decoder.apply_interpolation_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies the interpolation strategies to find the predictor
+weights for this apply_predictors() call.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pred_weights</strong> (<em>list</em>) &#8211; a prior predictor weights</li>
+<li><strong>non_zero_words</strong> (<em>set</em>) &#8211; All words with positive probability</li>
+<li><strong>posteriors</strong> &#8211; Predictor posterior distributions calculated
+with <code class="docutils literal"><span class="pre">predict_next()</span></code></li>
+<li><strong>unk_probs</strong> &#8211; UNK probabilities of the predictors, calculated
+with <code class="docutils literal"><span class="pre">get_unk_probability</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A list of predictor weights.</p>
 </td>
 </tr>
 </tbody>
@@ -814,6 +1190,7 @@ to <code class="docutils literal"><span class="pre">start_sen_id</span></code> a
 <p>A <code class="docutils literal"><span class="pre">Heuristic</span></code> instance can be used to estimate the future
 costs for a given word in a given state. See the <code class="docutils literal"><span class="pre">heuristics</span></code>
 module for implementations.</p>
+<p>Creates a heuristic without predictors.</p>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.core.Heuristic.estimate_future_cost">
 <code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Heuristic.estimate_future_cost"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Heuristic.estimate_future_cost" title="Permalink to this definition">¶</a></dt>
@@ -898,6 +1275,23 @@ tuples</td>
 <dd><p>Complete translation hypotheses are represented by an instance
 of this class. We store the produced sentence, the combined score,
 and a score breakdown to the separate predictor scores.</p>
+<p>Creates a new full hypothesis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>trgt_sentence</strong> (<em>list</em>) &#8211; List of target word ids without &lt;S&gt;
+or &lt;/S&gt; which make up the target
+sentence</li>
+<li><strong>total_score</strong> (<em>float</em>) &#8211; combined total score of this hypo</li>
+<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Predictor score breakdown for each
+target token in <code class="docutils literal"><span class="pre">trgt_sentence</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.core.Hypothesis.convert_to_char_level">
 <code class="descname">convert_to_char_level</code><span class="sig-paren">(</span><em>cmap</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Hypothesis.convert_to_char_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Hypothesis.convert_to_char_level" title="Permalink to this definition">¶</a></dt>
@@ -927,6 +1321,16 @@ tokenized on the character instead of the word level.</td>
 <dt id="cam.sgnmt.decoding.core.PartialHypothesis">
 <em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">PartialHypothesis</code><span class="sig-paren">(</span><em>initial_states=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.PartialHypothesis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents a partial hypothesis in various decoders.</p>
+<p>Creates a new partial hypothesis with zero score and empty
+translation prefix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>initial_states</strong> &#8211; Initial predictor states</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.core.PartialHypothesis.cheap_expand">
 <code class="descname">cheap_expand</code><span class="sig-paren">(</span><em>word</em>, <em>score</em>, <em>score_breakdown</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis.cheap_expand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.PartialHypothesis.cheap_expand" title="Permalink to this definition">¶</a></dt>
@@ -994,148 +1398,6 @@ the new word</li>
 
 </dd></dl>
 
-<dl class="function">
-<dt id="cam.sgnmt.decoding.core.breakdown2score_bayesian">
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_bayesian</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_bayesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.breakdown2score_bayesian" title="Permalink to this definition">¶</a></dt>
-<dd><p>This realizes score combination following the Bayesian LM
-interpolation scheme from (Allauzen and Riley, 2011)</p>
-<blockquote>
-<div>Bayesian Language Model Interpolation for Mobile Speech Input</div></blockquote>
-<p>By setting K=T we define the predictor weights according the score
-the predictors give to the current partial hypothesis. The initial
-predictor weights are used as priors. This function is designed to
-be assigned to the globals <code class="docutils literal"><span class="pre">breakdown2score_partial</span></code> or
-<code class="docutils literal"><span class="pre">breakdown2score_full</span></code>.
-TODO could make more efficient use of <code class="docutils literal"><span class="pre">working_score</span></code></p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>working_score</strong> (<em>float</em>) &#8211; Working combined score, which is the
-weighted sum of the scores in
-<code class="docutils literal"><span class="pre">score_breakdown</span></code>. Not used.</li>
-<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
-predictor scores</li>
-<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
-assume that this function has been called in the</p>
-<blockquote>
-<div>previous time step.</div></blockquote>
-</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">float. Bayesian interpolated predictor scores</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="cam.sgnmt.decoding.core.breakdown2score_bayesian_loglin">
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_bayesian_loglin</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_bayesian_loglin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.breakdown2score_bayesian_loglin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Like bayesian combination scheme, but uses loglinear model
-combination rather than linear interpolation weights</p>
-<p>TODO: Implement incremental version of it, write weights into breakdowns.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="cam.sgnmt.decoding.core.breakdown2score_full">
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_full</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="headerlink" href="#cam.sgnmt.decoding.core.breakdown2score_full" title="Permalink to this definition">¶</a></dt>
-<dd><p>Implements the combination scheme &#8216;sum&#8217; by always returning
-<code class="docutils literal"><span class="pre">working_score</span></code>. This function is designed to be assigned to
-the globals <code class="docutils literal"><span class="pre">breakdown2score_partial</span></code> or <code class="docutils literal"><span class="pre">breakdown2score_full</span></code></p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>working_score</strong> (<em>float</em>) &#8211; Working combined score, which is the
-weighted sum of the scores in
-<code class="docutils literal"><span class="pre">score_breakdown</span></code></li>
-<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
-predictor scores (not used).</li>
-<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
-assume that this function has been called in the</p>
-<blockquote>
-<div>previous time step (not used).</div></blockquote>
-</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">float. Returns <code class="docutils literal"><span class="pre">working_score</span></code></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="cam.sgnmt.decoding.core.breakdown2score_length_norm">
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_length_norm</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_length_norm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.breakdown2score_length_norm" title="Permalink to this definition">¶</a></dt>
-<dd><p>Implements the combination scheme &#8216;length_norm&#8217; by normalizing
-the sum of the predictor scores by the length of the current
-sequence (i.e. the length of <code class="docutils literal"><span class="pre">score_breakdown</span></code>. This function is
-designed to be assigned to the globals <code class="docutils literal"><span class="pre">breakdown2score_partial</span></code>
-or <code class="docutils literal"><span class="pre">breakdown2score_full</span></code>.
-TODO could make more efficient use of <code class="docutils literal"><span class="pre">working_score</span></code></p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>working_score</strong> (<em>float</em>) &#8211; Working combined score, which is the
-weighted sum of the scores in
-<code class="docutils literal"><span class="pre">score_breakdown</span></code>. Not used.</li>
-<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
-predictor scores</li>
-<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
-assume that this function has been called in the</p>
-<blockquote>
-<div>previous time step (not used).</div></blockquote>
-</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">float. Returns a length normalized <code class="docutils literal"><span class="pre">working_score</span></code></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="cam.sgnmt.decoding.core.breakdown2score_sum">
-<code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">breakdown2score_sum</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#breakdown2score_sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.breakdown2score_sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>Implements the combination scheme &#8216;sum&#8217; by always returning
-<code class="docutils literal"><span class="pre">working_score</span></code>. This function is designed to be assigned to
-the globals <code class="docutils literal"><span class="pre">breakdown2score_partial</span></code> or <code class="docutils literal"><span class="pre">breakdown2score_full</span></code></p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>working_score</strong> (<em>float</em>) &#8211; Working combined score, which is the
-weighted sum of the scores in
-<code class="docutils literal"><span class="pre">score_breakdown</span></code></li>
-<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
-predictor scores (not used).</li>
-<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
-assume that this function has been called in the</p>
-<blockquote>
-<div>previous time step (not used).</div></blockquote>
-</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">float. Returns <code class="docutils literal"><span class="pre">working_score</span></code></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 </div>
 <div class="section" id="module-cam.sgnmt.decoding.dfs">
 <span id="cam-sgnmt-decoding-dfs-module"></span><h2>cam.sgnmt.decoding.dfs module<a class="headerlink" href="#module-cam.sgnmt.decoding.dfs" title="Permalink to this headline">¶</a></h2>
@@ -1150,6 +1412,30 @@ complete enumeration of the search space as it minimizes the
 number of <code class="docutils literal"><span class="pre">get_state()</span></code> and <code class="docutils literal"><span class="pre">set_state()</span></code> calls. Note that
 this DFS implementation has no cycle detection, i.e. if the search
 space has cycles this decoder may run into an infinite loop.</p>
+<p>Creates new DFS decoder instance. The following values are
+fetched from <cite>decoder_args</cite>:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>decoder_args (object): Decoder configuration passed through</dt>
+<dd>from the configuration API.</dd>
+<dt>early_stopping (bool): Enable safe (admissible) branch</dt>
+<dd>pruning if the accumulated score
+is already worse than the currently
+best complete score. Do not use if
+scores can be positive</dd>
+<dt>max_expansions (int): Maximum number of node expansions for</dt>
+<dd>inadmissible pruning.</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.dfs.DFSDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/dfs.html#DFSDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.dfs.DFSDecoder.decode" title="Permalink to this definition">¶</a></dt>
@@ -1188,6 +1474,24 @@ holds the global best scoring hypothesis</td>
 <p>Helper class for <code class="docutils literal"><span class="pre">FlipDecoder</span></code>. Represents a full but yet
 unscored hypothesis which differs from an explored hypo by one
 flip or move operation.</p>
+<p>Creates a new candidate hypothesis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>trgt_sentence</strong> (<em>list</em>) &#8211; Full target sentence</li>
+<li><strong>scores</strong> (<em>list</em>) &#8211; Word level scores. Same length as
+<code class="docutils literal"><span class="pre">trgt_sentence</span></code></li>
+<li><strong>bigram_scores</strong> (<em>dict</em>) &#8211; Bigram scores collected along the
+parent hypothesis</li>
+<li><strong>max_score</strong> (<em>float</em>) &#8211; Maximum possible score this candidate
+can achieve</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="class">
@@ -1205,6 +1509,36 @@ parameter as it is designed for fixed length decoding problems.</p>
 Do not use the bow predictor in combination with this decoder as
 it will hide the EOS scores which are important to estimate bigram
 scores.</p>
+<p>Creates a new flip decoder. Do not use this decoder in
+combination with the bow predictor as it inherently already
+satisfies the bag-of-word constrains. The following values
+are fetched from <cite>decoder_args</cite>:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>trg_test(string): Path to a plain text file which</dt>
+<dd>defines the bag of words</dd>
+<dt>max_node_expansions (int): Maximum number of node expansions</dt>
+<dd>for inadmissible pruning.</dd>
+</dl>
+<p>early_stopping (boolean): Activates admissible pruning</p>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</li>
+<li><strong>always_greedy</strong> (<em>boolean</em>) &#8211; Per default, the flip decoder does
+forced decoding along the complete
+candidate sentence. Set to True to
+do greedy decoding from the
+backtraced node instead</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.flip.FlipDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/flip.html#FlipDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.flip.FlipDecoder.decode" title="Permalink to this definition">¶</a></dt>
@@ -1226,6 +1560,7 @@ not have to maintain predictor states. Therefore, this
 implementation is particularly simple and can be used as template
 for more complex decoders. The greedy decoder can be imitated with
 the <code class="docutils literal"><span class="pre">BeamDecoder</span></code> with beam size 1.</p>
+<p>Initialize the greedy decoder.</p>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.greedy.GreedyDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/greedy.html#GreedyDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.greedy.GreedyDecoder.decode" title="Permalink to this definition">¶</a></dt>
@@ -1261,6 +1596,25 @@ in the <code class="docutils literal"><span class="pre">core</span></code> modul
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.core.Heuristic" title="cam.sgnmt.decoding.core.Heuristic"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Heuristic</span></code></a></p>
 <p>This heuristic performs greedy decoding to get future cost
 estimates. This is expensive but can lead to very close estimates.</p>
+<p>Creates a new <code class="docutils literal"><span class="pre">GreedyHeuristic</span></code> instance. The greedy
+heuristic performs full greedy decoding from the current
+state to get accurate cost estimates. However, this can be very
+expensive.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</li>
+<li><strong>cache_estimates</strong> (<em>bool</em>) &#8211; Set to true to enable a cache for
+predictor states which have been
+visited during the greedy decoding.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.heuristics.GreedyHeuristic.estimate_future_cost">
 <code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#GreedyHeuristic.estimate_future_cost"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.heuristics.GreedyHeuristic.estimate_future_cost" title="Permalink to this definition">¶</a></dt>
@@ -1305,6 +1659,7 @@ with pure_heuristic_estimates leads to expanding the partial
 hypothesis with the end token with the best individual score. This
 can be useful in search spaces in which bad translation prefixes
 imply low individual scores later.</p>
+<p>Creates a heuristic without predictors.</p>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.heuristics.LastTokenHeuristic.estimate_future_cost">
 <code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#LastTokenHeuristic.estimate_future_cost"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.heuristics.LastTokenHeuristic.estimate_future_cost" title="Permalink to this definition">¶</a></dt>
@@ -1327,6 +1682,7 @@ imply low individual scores later.</p>
 <code class="docutils literal"><span class="pre">estimate_future_costs()</span></code> implementation of the predictors. Use
 this heuristic to access predictor specific future cost functions,
 e.g. shortest path for the fst predictor.</p>
+<p>Creates a heuristic without predictors.</p>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.heuristics.PredictorHeuristic.estimate_future_cost">
 <code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#PredictorHeuristic.estimate_future_cost"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.heuristics.PredictorHeuristic.estimate_future_cost" title="Permalink to this definition">¶</a></dt>
@@ -1358,6 +1714,7 @@ Therefore, it is not a heuristic like in the classical A* sense.
 Instead, using the A* decoder with this heuristic simulates beam
 search which always keeps the hypotheses with the best per word
 scores.</p>
+<p>Creates a heuristic without predictors.</p>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.heuristics.ScorePerWordHeuristic.estimate_future_cost">
 <code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#ScorePerWordHeuristic.estimate_future_cost"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.heuristics.ScorePerWordHeuristic.estimate_future_cost" title="Permalink to this definition">¶</a></dt>
@@ -1381,6 +1738,25 @@ as partial hypothesis score. Therefore, this method returns
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.core.Heuristic" title="cam.sgnmt.decoding.core.Heuristic"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Heuristic</span></code></a></p>
 <p>This heuristic is based on the sum of unigram costs of consumed
 words. Unigram statistics are collected via a <code class="docutils literal"><span class="pre">UnigramTable</span></code>.</p>
+<p>Creates a new <code class="docutils literal"><span class="pre">StatsHeuristic</span></code> instance. The constructor
+initializes the unigram table.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>heuristic_scores_file</strong> (<em>string</em>) &#8211; Path to the unigram scores
+which are used if this
+predictor estimates future
+costs</li>
+<li><strong>collect_stats_strategy</strong> (<em>string</em>) &#8211; best, full, or all. Defines
+how unigram estimates are
+collected for heuristic</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.heuristics.StatsHeuristic.estimate_future_cost">
 <code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/heuristics.html#StatsHeuristic.estimate_future_cost"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.heuristics.StatsHeuristic.estimate_future_cost" title="Permalink to this definition">¶</a></dt>
@@ -1415,6 +1791,137 @@ sentences</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-cam.sgnmt.decoding.interpolation">
+<span id="cam-sgnmt-decoding-interpolation-module"></span><h2>cam.sgnmt.decoding.interpolation module<a class="headerlink" href="#module-cam.sgnmt.decoding.interpolation" title="Permalink to this headline">¶</a></h2>
+<p>This module contains interpolation strategies. This is commonly
+specified via the &#8211;interpolation_strategy parameter.</p>
+<dl class="class">
+<dt id="cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.interpolation.</code><code class="descname">EntropyInterpolationStrategy</code><span class="sig-paren">(</span><em>vocab_size</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#EntropyInterpolationStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.interpolation.InterpolationStrategy" title="cam.sgnmt.decoding.interpolation.InterpolationStrategy"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.interpolation.InterpolationStrategy</span></code></a></p>
+<p>The entropy interpolation strategy assigns weights to predictors
+according the entropy of their posteriors to the other posteriors.
+We first build a n x n square matrix of (cross-)entropies between
+all predictors, and then weight according the row sums.</p>
+<p>We assume that predictor weights are log probabilities.</p>
+<dl class="method">
+<dt id="cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy.find_weights">
+<code class="descname">find_weights</code><span class="sig-paren">(</span><em>pred_weights</em>, <em>non_zero_words</em>, <em>posteriors</em>, <em>unk_probs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#EntropyInterpolationStrategy.find_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy.find_weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="cam.sgnmt.decoding.interpolation.FixedInterpolationStrategy">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.interpolation.</code><code class="descname">FixedInterpolationStrategy</code><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#FixedInterpolationStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.FixedInterpolationStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.interpolation.InterpolationStrategy" title="cam.sgnmt.decoding.interpolation.InterpolationStrategy"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.interpolation.InterpolationStrategy</span></code></a></p>
+<p>Null-object (GoF design pattern) implementation.</p>
+<dl class="method">
+<dt id="cam.sgnmt.decoding.interpolation.FixedInterpolationStrategy.find_weights">
+<code class="descname">find_weights</code><span class="sig-paren">(</span><em>pred_weights</em>, <em>non_zero_words</em>, <em>posteriors</em>, <em>unk_probs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#FixedInterpolationStrategy.find_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.FixedInterpolationStrategy.find_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">pred_weights</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="cam.sgnmt.decoding.interpolation.InterpolationStrategy">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.interpolation.</code><code class="descname">InterpolationStrategy</code><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#InterpolationStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.InterpolationStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Base class for interpolation strategies.</p>
+<dl class="method">
+<dt id="cam.sgnmt.decoding.interpolation.InterpolationStrategy.find_weights">
+<code class="descname">find_weights</code><span class="sig-paren">(</span><em>pred_weights</em>, <em>non_zero_words</em>, <em>posteriors</em>, <em>unk_probs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#InterpolationStrategy.find_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.InterpolationStrategy.find_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find interpolation weights for the current prediction.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pred_weights</strong> (<em>list</em>) &#8211; A prior predictor weights</li>
+<li><strong>non_zero_words</strong> (<em>set</em>) &#8211; All words with positive probability</li>
+<li><strong>posteriors</strong> &#8211; Predictor posterior distributions calculated
+with <code class="docutils literal"><span class="pre">predict_next()</span></code></li>
+<li><strong>unk_probs</strong> &#8211; UNK probabilities of the predictors, calculated
+with <code class="docutils literal"><span class="pre">get_unk_probability</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">list of floats. The predictor weights for this prediction.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="docutils literal"><span class="pre">NotImplementedError</span></code> &#8211; if the method is not implemented</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="cam.sgnmt.decoding.interpolation.MoEInterpolationStrategy">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.interpolation.</code><code class="descname">MoEInterpolationStrategy</code><span class="sig-paren">(</span><em>num_experts</em>, <em>args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#MoEInterpolationStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.MoEInterpolationStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.interpolation.InterpolationStrategy" title="cam.sgnmt.decoding.interpolation.InterpolationStrategy"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.interpolation.InterpolationStrategy</span></code></a></p>
+<p>This class implements a predictor-level Mixture of Experts (MoE)
+model. In this scenario, we have a neural model which predicts
+predictor weights from the predictor outputs. See the sgnmt_moe
+project on how to train this gating network with TensorFlow.</p>
+<p>Creates the computation graph of the MoE network and loads
+the checkpoint file. Following fields are fetched from <code class="docutils literal"><span class="pre">args</span></code></p>
+<blockquote>
+<div><dl class="docutils">
+<dt>moe_config: Comma-separated &lt;key&gt;=&lt;value&gt; pairs specifying</dt>
+<dd>the MoE network. See the command line arguments of
+sgnmt_moe for a full description. Available keys:
+vocab_size, embed_size, activation, hidden_layer_size,
+preprocessing.</dd>
+</dl>
+<p>moe_checkpoint_dir (string): Checkpoint directory</p>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>num_experts</strong> (<em>int</em>) &#8211; Number of predictors under the MoE model</li>
+<li><strong>args</strong> (<em>object</em>) &#8211; SGNMT configuration object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="cam.sgnmt.decoding.interpolation.MoEInterpolationStrategy.find_weights">
+<code class="descname">find_weights</code><span class="sig-paren">(</span><em>pred_weights</em>, <em>non_zero_words</em>, <em>posteriors</em>, <em>unk_probs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#MoEInterpolationStrategy.find_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.MoEInterpolationStrategy.find_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the MoE model to find interpolation weights.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pred_weights</strong> (<em>list</em>) &#8211; A prior predictor weights</li>
+<li><strong>non_zero_words</strong> (<em>set</em>) &#8211; All words with positive probability</li>
+<li><strong>posteriors</strong> &#8211; Predictor posterior distributions calculated
+with <code class="docutils literal"><span class="pre">predict_next()</span></code></li>
+<li><strong>unk_probs</strong> &#8211; UNK probabilities of the predictors, calculated
+with <code class="docutils literal"><span class="pre">get_unk_probability</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">list of floats. The predictor weights for this prediction.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="docutils literal"><span class="pre">NotImplementedError</span></code> &#8211; if the method is not implemented</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="module-cam.sgnmt.decoding.mbrbeam">
 <span id="cam-sgnmt-decoding-mbrbeam-module"></span><h2>cam.sgnmt.decoding.mbrbeam module<a class="headerlink" href="#module-cam.sgnmt.decoding.mbrbeam" title="Permalink to this headline">¶</a></h2>
 <p>This beam search uses an MBR-based criterion at each time step.</p>
@@ -1423,17 +1930,66 @@ sentences</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.mbrbeam.</code><code class="descname">MBRBeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/mbrbeam.html#MBRBeamDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.mbrbeam.MBRBeamDecoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.beam.BeamDecoder" title="cam.sgnmt.decoding.beam.BeamDecoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.beam.BeamDecoder</span></code></a></p>
 <p>The MBR-based beam decoder does not select the n most likely
-hypotheses in each timestep. Instead, it tries to find a subset
-with n elements which maximizes the expected maximum BLEU of one
-of the selected hypos. In other words, we optimize the oracle
-BLEU of the n-best list at each time step, where the n-best list
-consists of the active hypotheses in the beam.</p>
+hypotheses in each timestep. Instead, it tries to find the translation
+with the best expected BLEU. Two strategies control the behavior of
+mbrbeam: the <cite>evidence_strategy</cite> and the <cite>selection_strategy</cite>.
+Available evidence strategies:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>&#8216;renorm&#8217;: Only makes use of the n-best expansions of the hypos in the</dt>
+<dd>current beam. It renormalizes the scores, and count ngrams in
+the n^2 hypos.</dd>
+<dt>&#8216;maxent&#8217;: Applies the MaxEnt rule to the evidence space. It makes use of</dt>
+<dd>all partial hypos seen so far and updates its belief about the
+probability of an ngram based on that. Following MaxEnt we
+assume that translations outside the explored space are
+uniformly distributed.</dd>
+</dl>
+</div></blockquote>
+<dl class="docutils">
+<dt>Available selection strategies:</dt>
+<dd><p class="first">&#8216;bleu&#8217;: Select the n hypotheses with the best expected BLEU
+&#8216;oracle_bleu&#8217;: Select&#8217;a subset with n elements which maximizes the</p>
+<blockquote class="last">
+<div>expected maximum BLEU of one of the selected hypos. In
+other words, we optimize the oracle BLEU of the n-best
+list at each time step, where the n-best list consists
+of the active hypotheses in the beam.</div></blockquote>
+</dd>
+</dl>
+<p>Creates a new MBR beam decoder instance. We explicitly
+set early stopping to False since risk-free pruning is not
+supported by the MBR-based beam decoder. The MBR-based
+decoder fetches the following fields from <code class="docutils literal"><span class="pre">decoder_args</span></code>:</p>
+<blockquote>
+<div>min_ngram_order (int): Minimum n-gram order
+max_ngram_order (int): Maximum n-gram order
+mbrbeam_smooth_factor (float): Smoothing factor for evidence space
+mbrbeam_evidence_strategy (String): Evidence strategy
+mbrbeam_selection_strategy (String): Selection strategy</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.mbrbeam.MBRBeamDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/mbrbeam.html#MBRBeamDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.mbrbeam.MBRBeamDecoder.decode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Decodes a single source sentence using beam search.</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decoding.mbrbeam.is_sublist">
+<code class="descclassname">cam.sgnmt.decoding.mbrbeam.</code><code class="descname">is_sublist</code><span class="sig-paren">(</span><em>needle</em>, <em>haystack</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/mbrbeam.html#is_sublist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.mbrbeam.is_sublist" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if needle is a sublist of haystack, False otherwise.
+Could be more efficient with Boyer-Moore-Horspool but our needles
+are usually ngrams (ie. short), so this is a O(nm) implementation.</p>
 </dd></dl>
 
 </div>
@@ -1448,6 +2004,24 @@ tokenizations.</p>
 <p>A continuation is a partial hypothesis plus the next word. A
 continuation can be incomplete if predictors use finer grained
 tokenization and the score is not final yet.</p>
+<p>Create a new continuation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>parent_hypo</strong> (<a class="reference internal" href="#cam.sgnmt.decoding.core.PartialHypothesis" title="cam.sgnmt.decoding.core.PartialHypothesis"><em>PartialHypothesis</em></a>) &#8211; hypo object encoding the
+state at the last word
+boundary</li>
+<li><strong>pred_stubs</strong> (<em>list</em>) &#8211; List of <code class="docutils literal"><span class="pre">PredictorStub</span></code> objects, one
+for each predictor</li>
+<li><strong>key</strong> (<em>string</em>) &#8211; The lead key for this continuation. All stubs
+must be consistent with this key</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.multisegbeam.Continuation.calculate_score">
 <code class="descname">calculate_score</code><span class="sig-paren">(</span><em>pred_weights</em>, <em>defaults=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#Continuation.calculate_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.multisegbeam.Continuation.calculate_score" title="Permalink to this definition">¶</a></dt>
@@ -1531,6 +2105,16 @@ can be used for subword unit based tokenizers.</p>
 <p>This tokenizer reads in an FST which transduces a sequence
 of subword units to a sequence of characters which constitute
 the key. The characters must used the global target cmap.</p>
+<p>Loads subword-&gt;char FST, determinizes and minimizes it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>string</em>) &#8211; Path to an FST from subword unit to char
+sequence</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.decoding.multisegbeam.FSTTokenizer.EPS_ID">
 <code class="descname">EPS_ID</code><em class="property"> = 0</em><a class="headerlink" href="#cam.sgnmt.decoding.multisegbeam.FSTTokenizer.EPS_ID" title="Permalink to this definition">¶</a></dt>
@@ -1605,6 +2189,33 @@ can be combined with scores from other predictors. This decoder can
 produce words without entry in the word map. In this case, words
 are added to <code class="docutils literal"><span class="pre">utils.trg_wmap</span></code>. Consider using the <code class="docutils literal"><span class="pre">output_chars</span></code>
 option to avoid dealing with the updated word map in the output.</p>
+<p>Creates a new beam decoder instance for predictors with
+multiple tokenizations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</li>
+<li><strong>hypo_recombination</strong> (<em>bool</em>) &#8211; Activates hypo recombination</li>
+<li><strong>beam_size</strong> (<em>int</em>) &#8211; Absolute beam size. A beam of 12 means
+that we keep track of 12 active hypothesis</li>
+<li><strong>tokenizations</strong> (<em>string</em>) &#8211; Comma separated strings describing
+the predictor tokenizations</li>
+<li><strong>early_stopping</strong> (<em>bool</em>) &#8211; If true, we stop when the best
+scoring hypothesis ends with &lt;/S&gt;.
+If false, we stop when all hypotheses
+end with &lt;/S&gt;. Enable if you are
+only interested in the single best
+decoding result. If you want to
+create full 12-best lists, disable</li>
+<li><strong>max_word_len</strong> (<em>int</em>) &#8211; Maximum length of a single word</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.multisegbeam.MultisegBeamDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#MultisegBeamDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.multisegbeam.MultisegBeamDecoder.decode" title="Permalink to this definition">¶</a></dt>
@@ -1619,6 +2230,21 @@ option to avoid dealing with the updated word map in the output.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>A predictor stub models the state of a predictor given a
 continuation.</p>
+<p>Creates a new stub for a certain predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tokens</strong> (<em>list</em>) &#8211; List of token IDs which correspond to the
+key</li>
+<li><strong>pred_state</strong> (<em>object</em>) &#8211; Predictor state before consuming
+the last token in <code class="docutils literal"><span class="pre">tokens</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.multisegbeam.PredictorStub.expand">
 <code class="descname">expand</code><span class="sig-paren">(</span><em>token</em>, <em>token_score</em>, <em>pred_state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#PredictorStub.expand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.multisegbeam.PredictorStub.expand" title="Permalink to this definition">¶</a></dt>
@@ -1726,6 +2352,8 @@ the original word map. This mapper adds these words to</dd>
 <p><code class="docutils literal"><span class="pre">utils.trg_wmap</span></code>.</p>
 <blockquote>
 <div>This class uses the GoF design pattern singleton.</div></blockquote>
+<p>Creates a new mapper instance and synchronizes it with
+<code class="docutils literal"><span class="pre">utils.trg_wmap</span></code>.</p>
 <dl class="staticmethod">
 <dt id="cam.sgnmt.decoding.multisegbeam.WordMapper.get_singleton">
 <em class="property">static </em><code class="descname">get_singleton</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#WordMapper.get_singleton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.multisegbeam.WordMapper.get_singleton" title="Permalink to this definition">¶</a></dt>
@@ -1828,6 +2456,7 @@ word IDs.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Helper class for <code class="docutils literal"><span class="pre">RestartingDecoder`</span></code> representing a child
 object in the search tree.</p>
+<p>Creates a new child instance</p>
 </dd></dl>
 
 <dl class="class">
@@ -1849,6 +2478,35 @@ expensive, node expansion is even more expensive but for free from
 visited nodes, and there is no good admissible heuristic.</p>
 <p>Note2: Does not work properly if predictor scores can be positive
 because of admissible pruning</p>
+<p>Creates new Restarting decoder instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</li>
+<li><strong>hypo_recombination</strong> (<em>bool</em>) &#8211; Activates hypo recombination</li>
+<li><strong>max_expansions</strong> (<em>int</em>) &#8211; Maximum number of node expansions for
+inadmissible pruning.</li>
+<li><strong>low_memory_mode</strong> (<em>bool</em>) &#8211; Switch on low memory mode at cost
+of some computational overhead as
+the set of open nodes is reduced
+after each decoding pass</li>
+<li><strong>node_cost_strategy</strong> (<em>string</em>) &#8211; How to decide which node to
+restart from next</li>
+<li><strong>stochastic</strong> (<em>bool</em>) &#8211; If true, select the next node to restart
+from randomly. If false, take the one
+with the best node score</li>
+<li><strong>always_single_step</strong> (<em>bool</em>) &#8211; If false, do greedy decoding
+when restarting. If true, expand
+the hypothesis only by a single
+token</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.restarting.RestartingDecoder.create_initial_node">
 <code class="descname">create_initial_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/restarting.html#RestartingDecoder.create_initial_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.restarting.RestartingDecoder.create_initial_node" title="Permalink to this definition">¶</a></dt>
@@ -1876,6 +2534,7 @@ the search tree.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Helper class for <code class="docutils literal"><span class="pre">RestartingDecoder`</span></code> representing a node
 in the search tree.</p>
+<p>Creates a new node instance</p>
 </dd></dl>
 
 </div>
@@ -1899,6 +2558,10 @@ it reduces the runtime nearly to a single system run.</p>
 with <code class="docutils literal"><span class="pre">None</span></code> objects except for one position.</p>
 <p>Also note that predictor weights are ignored for this decoding
 strategy.</p>
+<p>Creates a new beam decoder instance for system level
+combination. See the docstring of the BeamDecoder constructor
+for a description of which arguments are fetched from
+<cite>decoder_args</cite>.</p>
 </dd></dl>
 
 </div>
@@ -1916,6 +2579,20 @@ when SGNMT runs on the character level, but it makes more sense
 to compare hypos with same lengths in terms of number of words
 and not characters. The end-of-word symbol &lt;/w&gt; can be used as
 synchronization symbol.</p>
+<p>Creates a new beam decoder instance with explicit
+synchronization symbol. In addition to the constructor of
+<cite>BeamDecoder</cite>, the following values are fetched from
+<cite>decoder_args</cite>:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>sync_symb (int): Synchronization symbol. If negative,</dt>
+<dd>consider a hypothesis as closed when it
+ends with a terminal symbol (see
+syntax_min_terminal_id and
+syntax_max_terminal_id)</dd>
+</dl>
+<p>max_word_len (int): Maximum length of a single word</p>
+</div></blockquote>
 </dd></dl>
 
 </div>
@@ -1934,6 +2611,13 @@ the number of clusters is topped by beam_size. This means that
 the effective beam size varies between beam_size and beam_size^2,
 and there are always beam_size different terminal histories in the
 active beam.</p>
+<p>Creates a new beam decoder instance for system level
+combination. In addition to the constructor of
+<cite>BeamDecoder</cite>, the following values are fetched from
+<cite>decoder_args</cite>:</p>
+<blockquote>
+<div>syntax_min_terminal_id (int): All IDs smaller than this are NTs
+syntax_max_terminal_id (int): All IDs larger than this are NTs</div></blockquote>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.syntaxbeam.SyntaxBeamDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/syntaxbeam.html#SyntaxBeamDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.syntaxbeam.SyntaxBeamDecoder.decode" title="Permalink to this definition">¶</a></dt>

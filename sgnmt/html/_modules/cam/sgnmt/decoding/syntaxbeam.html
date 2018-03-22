@@ -167,10 +167,11 @@
 <span class="sd">        `BeamDecoder`, the following values are fetched from </span>
 <span class="sd">        `decoder_args`:</span>
 <span class="sd">        </span>
-<span class="sd">            syntax_max_terminal_id (int): Synchronization symbol. If negative, fetch</span>
-<span class="sd">                             &#39;&lt;/w&gt;&#39; from ``utils.trg_cmap`` </span>
+<span class="sd">            syntax_min_terminal_id (int): All IDs smaller than this are NTs</span>
+<span class="sd">            syntax_max_terminal_id (int): All IDs larger than this are NTs</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">SyntaxBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_terminal_id</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">syntax_min_terminal_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span>
 
     <span class="k">def</span> <span class="nf">_get_next_hypos_diverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">,</span> <span class="n">scores</span><span class="p">):</span>
@@ -188,7 +189,8 @@
         <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">scores</span><span class="p">)):</span>
             <span class="n">candidate</span> <span class="o">=</span> <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
             <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span> 
-                                   <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">])</span>
+                                   <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span>
+                                      <span class="ow">and</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_terminal_id</span><span class="p">])</span>
             <span class="n">cnt</span> <span class="o">=</span> <span class="n">terminal_history_counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">cnt</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:</span>
                 <span class="k">continue</span>
@@ -228,6 +230,8 @@
             <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">next_scores</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Expand (it=</span><span class="si">%d</span><span class="s2"> score=</span><span class="si">%f</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span>
+                              <span class="o">%</span> <span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
                 <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
                     <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
                     <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">hypo</span><span class="p">))</span>

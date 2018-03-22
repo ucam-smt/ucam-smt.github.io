@@ -160,7 +160,7 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.nmt</span> <span class="kn">import</span> <span class="n">blocks_get_nmt_predictor</span><span class="p">,</span> \
                                  <span class="n">blocks_get_nmt_vanilla_decoder</span><span class="p">,</span> \
     <span class="n">blocks_get_default_nmt_config</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding</span> <span class="kn">import</span> <span class="n">core</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding</span> <span class="kn">import</span> <span class="n">combination</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.astar</span> <span class="kn">import</span> <span class="n">AstarDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.beam</span> <span class="kn">import</span> <span class="n">BeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.bigramgreedy</span> <span class="kn">import</span> <span class="n">BigramGreedyDecoder</span>
@@ -207,7 +207,7 @@
                                             <span class="n">UnkvocabPredictor</span><span class="p">,</span> \
                                             <span class="n">SkipvocabPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.ngram</span> <span class="kn">import</span> <span class="n">SRILMPredictor</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_t2t</span> <span class="kn">import</span> <span class="n">T2TPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_t2t</span> <span class="kn">import</span> <span class="n">T2TPredictor</span><span class="p">,</span> <span class="n">FertilityT2TPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_nizza</span> <span class="kn">import</span> <span class="n">NizzaPredictor</span><span class="p">,</span> <span class="n">LexNizzaPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tokenization</span> <span class="kn">import</span> <span class="n">Word2charPredictor</span><span class="p">,</span> <span class="n">FSTTokPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.tf.interface</span> <span class="kn">import</span> <span class="n">tf_get_nmt_predictor</span><span class="p">,</span> <span class="n">tf_get_nmt_vanilla_decoder</span><span class="p">,</span> \
@@ -261,13 +261,6 @@
     <span class="c1"># Log summation (how to compute log(exp(l1)+exp(l2)) for log values l1,l2)</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">log_sum</span> <span class="o">==</span> <span class="s1">&#39;tropical&#39;</span><span class="p">:</span>
         <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum_tropical_semiring</span>
-    <span class="c1"># Predictor combination schemes</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;length_norm&#39;</span><span class="p">:</span>
-        <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_full</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_length_norm</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;bayesian_loglin&#39;</span><span class="p">:</span>
-        <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_full</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_bayesian_loglin</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;bayesian&#39;</span><span class="p">:</span>
-        <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_full</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_bayesian</span>  
     <span class="n">ui</span><span class="o">.</span><span class="n">validate_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div>
 
 
@@ -408,6 +401,18 @@
                                  <span class="n">single_cpu_thread</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">single_cpu_thread</span><span class="p">,</span>
                                  <span class="n">max_terminal_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span><span class="p">,</span>
                                  <span class="n">pop_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;fertt2t&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">FertilityT2TPredictor</span><span class="p">(</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_src_vocab_size&quot;</span><span class="p">),</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">),</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_model&quot;</span><span class="p">),</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_problem&quot;</span><span class="p">),</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_hparams_set&quot;</span><span class="p">),</span>
+                                 <span class="n">args</span><span class="o">.</span><span class="n">t2t_usr_dir</span><span class="p">,</span>
+                                 <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;t2t_checkpoint_dir&quot;</span><span class="p">),</span>
+                                 <span class="n">single_cpu_thread</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">single_cpu_thread</span><span class="p">,</span>
+                                 <span class="n">max_terminal_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span><span class="p">,</span>
+                                 <span class="n">pop_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;bracket&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">BracketPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span><span class="p">,</span>
                                      <span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">,</span>
@@ -459,6 +464,7 @@
                 <span class="n">feat_name</span> <span class="o">=</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;forcedlst_sparse_feat&quot;</span><span class="p">)</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">ForcedLstPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">trg_test</span><span class="p">,</span>
                                        <span class="n">args</span><span class="o">.</span><span class="n">use_nbest_weights</span><span class="p">,</span>
+                                       <span class="n">args</span><span class="o">.</span><span class="n">forcedlst_match_unk</span><span class="p">,</span>
                                        <span class="n">feat_name</span> <span class="k">if</span> <span class="n">feat_name</span> <span class="k">else</span> <span class="bp">None</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;rtn&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">RtnPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">rtn_path</span><span class="p">,</span>
@@ -599,66 +605,74 @@
 <span class="sd">        Decoder. Instance of the search strategy</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Create decoder instance and add predictors</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;greedy&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">GreedyDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;beam&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">BeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;multisegbeam&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">MultisegBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
-                                      <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
-                                      <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
-                                      <span class="n">args</span><span class="o">.</span><span class="n">multiseg_tokenizations</span><span class="p">,</span>
-                                      <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
-                                      <span class="n">args</span><span class="o">.</span><span class="n">max_word_len</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;syncbeam&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">SyncBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;mbrbeam&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">MBRBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;sepbeam&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">SepBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;syntaxbeam&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">SyntaxBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;combibeam&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">CombiBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;dfs&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">DFSDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;restarting&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">RestartingDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+    <span class="n">decoder</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;greedy&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">GreedyDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;beam&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">BeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;multisegbeam&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">MultisegBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">multiseg_tokenizations</span><span class="p">,</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
+                                          <span class="n">args</span><span class="o">.</span><span class="n">max_word_len</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;syncbeam&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">SyncBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;mbrbeam&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">MBRBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;sepbeam&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">SepBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;syntaxbeam&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">SyntaxBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;combibeam&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">CombiBeamDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;dfs&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">DFSDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;restarting&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">RestartingDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
+                                        <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
+                                        <span class="n">args</span><span class="o">.</span><span class="n">max_node_expansions</span><span class="p">,</span>
+                                        <span class="n">args</span><span class="o">.</span><span class="n">low_decoder_memory</span><span class="p">,</span>
+                                        <span class="n">args</span><span class="o">.</span><span class="n">restarting_node_score</span><span class="p">,</span>
+                                        <span class="n">args</span><span class="o">.</span><span class="n">stochastic_decoder</span><span class="p">,</span>
+                                        <span class="n">args</span><span class="o">.</span><span class="n">decode_always_single_step</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bow&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">BOWDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;flip&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">FlipDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bigramgreedy&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">BigramGreedyDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bucket&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">BucketDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
                                     <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
                                     <span class="n">args</span><span class="o">.</span><span class="n">max_node_expansions</span><span class="p">,</span>
                                     <span class="n">args</span><span class="o">.</span><span class="n">low_decoder_memory</span><span class="p">,</span>
-                                    <span class="n">args</span><span class="o">.</span><span class="n">restarting_node_score</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">decoder_diversity_factor</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
                                     <span class="n">args</span><span class="o">.</span><span class="n">stochastic_decoder</span><span class="p">,</span>
-                                    <span class="n">args</span><span class="o">.</span><span class="n">decode_always_single_step</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bow&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">BOWDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;flip&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">FlipDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bigramgreedy&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">BigramGreedyDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bucket&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">BucketDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">max_node_expansions</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">low_decoder_memory</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">beam</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">decoder_diversity_factor</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">stochastic_decoder</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">bucket_selector</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">bucket_score_strategy</span><span class="p">,</span>
-                                <span class="n">args</span><span class="o">.</span><span class="n">collect_statistics</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;astar&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">AstarDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;vanilla&quot;</span><span class="p">:</span>
-        <span class="n">decoder</span> <span class="o">=</span> <span class="n">construct_nmt_vanilla_decoder</span><span class="p">()</span>
-        <span class="n">args</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="s2">&quot;vanilla&quot;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Decoder </span><span class="si">%s</span><span class="s2"> not available. Please double-check the &quot;</span>
-                      <span class="s2">&quot;--decoder parameter.&quot;</span> <span class="o">%</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span><span class="p">)</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">bucket_selector</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">bucket_score_strategy</span><span class="p">,</span>
+                                    <span class="n">args</span><span class="o">.</span><span class="n">collect_statistics</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;astar&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">AstarDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;vanilla&quot;</span><span class="p">:</span>
+            <span class="n">decoder</span> <span class="o">=</span> <span class="n">construct_nmt_vanilla_decoder</span><span class="p">()</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="s2">&quot;vanilla&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Decoder </span><span class="si">%s</span><span class="s2"> not available. Please double-check the &quot;</span>
+                          <span class="s2">&quot;--decoder parameter.&quot;</span> <span class="o">%</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;An </span><span class="si">%s</span><span class="s2"> has occurred while initializing the decoder: </span><span class="si">%s</span><span class="s2">&quot;</span>
+                      <span class="s2">&quot; Stack trace: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span>
+                                            <span class="n">e</span><span class="p">,</span>
+                                            <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+    <span class="k">if</span> <span class="n">decoder</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;Could not initialize decoder.&quot;</span><span class="p">)</span>
     <span class="n">add_predictors</span><span class="p">(</span><span class="n">decoder</span><span class="p">)</span>
-    
     <span class="c1"># Add heuristics for search strategies like A*</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">heuristics</span><span class="p">:</span>
         <span class="n">add_heuristics</span><span class="p">(</span><span class="n">decoder</span><span class="p">)</span>
@@ -814,10 +828,49 @@
 
 
 <span class="k">def</span> <span class="nf">_get_text_output_handler</span><span class="p">(</span><span class="n">output_handlers</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns the text output handler if in output_handlers, or None.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">output_handler</span> <span class="ow">in</span> <span class="n">output_handlers</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_handler</span><span class="p">,</span> <span class="n">TextOutputHandler</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">output_handler</span>
     <span class="k">return</span> <span class="bp">None</span>
+
+
+<span class="k">def</span> <span class="nf">_postprocess_complete_hypos</span><span class="p">(</span><span class="n">hypos</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function applies the following operations on the list of</span>
+<span class="sd">    complete hypotheses returned by the Decoder:</span>
+
+<span class="sd">      - &lt;/s&gt; removal</span>
+<span class="sd">      - Apply --nbest parameter if necessary</span>
+<span class="sd">      - Applies combination_scheme on full hypotheses, reorder list</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      hypos (list): List of complete hypotheses</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      list. Postprocessed hypotheses.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">remove_eos</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> 
+                    <span class="ow">and</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">):</span>
+                <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">nbest</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="n">hypos</span><span class="p">[:</span><span class="n">args</span><span class="o">.</span><span class="n">nbest</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">!=</span> <span class="s1">&#39;sum&#39;</span><span class="p">:</span> 
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;length_norm&#39;</span><span class="p">:</span>
+            <span class="n">breakdown_fn</span> <span class="o">=</span> <span class="n">combination</span><span class="o">.</span><span class="n">breakdown2score_length_norm</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;bayesian_loglin&#39;</span><span class="p">:</span>
+            <span class="n">breakdown_fn</span> <span class="o">=</span> <span class="n">combination</span><span class="o">.</span><span class="n">breakdown2score_bayesian_loglin</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">==</span> <span class="s1">&#39;bayesian&#39;</span><span class="p">:</span>
+            <span class="n">breakdown_fn</span> <span class="o">=</span> <span class="n">combination</span><span class="o">.</span><span class="n">breakdown2score_bayesian</span>  
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Unknown combination scheme &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> 
+                         <span class="o">%</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">=</span> <span class="n">breakdown_fn</span><span class="p">(</span>
+                    <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">hypo</span><span class="p">:</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">hypos</span>
 
 
 <div class="viewcode-block" id="do_decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.do_decode">[docs]</a><span class="k">def</span> <span class="nf">do_decode</span><span class="p">(</span><span class="n">decoder</span><span class="p">,</span> 
@@ -885,18 +938,7 @@
                 <span class="k">if</span> <span class="n">text_output_handler</span><span class="p">:</span>
                     <span class="n">text_output_handler</span><span class="o">.</span><span class="n">write_empty_line</span><span class="p">()</span>
                 <span class="k">continue</span>
-            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">remove_eos</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> 
-                            <span class="ow">and</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">):</span>
-                        <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">nbest</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">hypos</span> <span class="o">=</span> <span class="n">hypos</span><span class="p">[:</span><span class="n">args</span><span class="o">.</span><span class="n">nbest</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">!=</span> <span class="s1">&#39;sum&#39;</span><span class="p">:</span> 
-                <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
-                    <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">breakdown2score_full</span><span class="p">(</span>
-                            <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-                <span class="n">hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">hypo</span><span class="p">:</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="n">hypos</span> <span class="o">=</span> <span class="n">_postprocess_complete_hypos</span><span class="p">(</span><span class="n">hypos</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">:</span>
                 <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">convert_to_char_level</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">]</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Decoded (ID: </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>

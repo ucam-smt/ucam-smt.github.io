@@ -257,7 +257,11 @@
 <span class="sd">    cur_trgt_sentences instead of a flat list.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_test_file</span><span class="p">,</span> <span class="n">use_scores</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">feat_name</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">trg_test_file</span><span class="p">,</span> 
+                 <span class="n">use_scores</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> 
+                 <span class="n">match_unk</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> 
+                 <span class="n">feat_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new n-best rescoring predictor instance.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -265,6 +269,8 @@
 <span class="sd">            use_scores (bool): Whether to use the scores from the</span>
 <span class="sd">                               n-best list. If false, use uniform</span>
 <span class="sd">                               scores of 0 (=log 1).</span>
+<span class="sd">            match_unk (bool): If true, allow any word where the n-best</span>
+<span class="sd">                              list contains UNK.</span>
 <span class="sd">            feat_name (string): Instead of the combined score in the</span>
 <span class="sd">                                last column of the Moses n-best list,</span>
 <span class="sd">                                we can use one of the sparse features.</span>
@@ -274,6 +280,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ForcedLstPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">match_unk</span> <span class="o">=</span> <span class="n">match_unk</span>
         <span class="n">score</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">trg_test_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
@@ -318,7 +325,9 @@
         <span class="sd">&quot;&quot;&quot;Return negative infinity unconditionally - words outside the</span>
 <span class="sd">        n-best list are not possible according to this predictor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">match_unk</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">NEG_INF</span></div>
     
 <div class="viewcode-block" id="ForcedLstPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedLstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Outputs 0.0 (i.e. prob=1) for all words for which there is </span>
@@ -336,8 +345,12 @@
             <span class="n">sen_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trg_sentence</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">sen_len</span> <span class="o">&lt;</span> <span class="n">hist_len</span><span class="p">:</span>
                 <span class="k">continue</span>
-            <span class="n">hist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">trg_sentence</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span>
-                      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">hist_len</span><span class="p">)]</span> 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">match_unk</span><span class="p">:</span>
+                <span class="n">hist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> 
+                      <span class="k">if</span> <span class="n">trg_sentence</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span>
+                      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">hist_len</span><span class="p">)]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span> 
             <span class="k">if</span> <span class="n">trg_sentence</span><span class="p">[:</span><span class="n">hist_len</span><span class="p">]</span> <span class="o">==</span> <span class="n">hist</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">sen_len</span> <span class="o">==</span> <span class="n">hist_len</span><span class="p">:</span>
                     <span class="n">scores</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">sen_score</span>

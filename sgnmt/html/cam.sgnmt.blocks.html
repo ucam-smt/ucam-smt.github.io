@@ -222,6 +222,17 @@ will be a mixture of multiple alignments. Therefore, the alignment
 matrix parameter should be reset to the initial value after each
 optimization. In the neural alignment model, this is done by the
 <code class="docutils literal"><span class="pre">NextSentenceExtension</span></code> extension.</p>
+<p>Sole constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>seq_len</strong> &#8211; Maximum length of any source or target sentence.
+This defines the size of the default alignment
+matrix.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.attention.AlignmentAttention.get_dim">
 <code class="descname">get_dim</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/attention.html#AlignmentAttention.get_dim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.attention.AlignmentAttention.get_dim" title="Permalink to this definition">¶</a></dt>
@@ -286,6 +297,34 @@ to the match vector which eventually determines the attention
 weight.</p>
 <p>This code base of this implementation is close to
 <code class="docutils literal"><span class="pre">SequenceContentAttention</span></code>.</p>
+<p>Creates an attention brick with &#8216;linguistic&#8217; coverage.
+Compare with <code class="docutils literal"><span class="pre">SequenceContentAttention</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>match_dim</strong> (<em>int</em>) &#8211; Dimensionality of the match vector</li>
+<li><strong>max_fertility</strong> (<em>float</em>) &#8211; Maximum fertility of a source
+annotation (N in Tu et al.). If
+this is set to 0 or smaller, we fix
+fertilities to 1 and do not estimate
+them.</li>
+<li><strong>state_transformer</strong> (<em>Brick</em>) &#8211; Transformation for the decoder
+state</li>
+<li><strong>attended_transformer</strong> (<em>Brick</em>) &#8211; Transformation for the source
+annotations</li>
+<li><strong>fertility_transformer</strong> (<em>Brick</em>) &#8211; Transformation which
+calculates fertilities</li>
+<li><strong>att_record_transformer</strong> (<em>Brick</em>) &#8211; Transformation for the
+attentional records</li>
+<li><strong>energy_computer</strong> (<em>Brick</em>) &#8211; Sub network for calculating the
+energies from the match vector</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.attention.CoverageContentAttention.compute_energies">
 <code class="descname">compute_energies</code><a class="headerlink" href="#cam.sgnmt.blocks.attention.CoverageContentAttention.compute_energies" title="Permalink to this definition">¶</a></dt>
@@ -366,6 +405,15 @@ vector</li>
 because Blocks didn&#8217;t allow to have glimpses of varying size. In
 practice, however, we think that a limited size is appropriate for
 machine translation.</p>
+<p>Sole constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stack_dim</strong> (<em>int</em>) &#8211; Size of vectors on the stack.</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.attention.PushDownSequenceContentAttention.get_dim">
 <code class="descname">get_dim</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/attention.html#PushDownSequenceContentAttention.get_dim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.attention.PushDownSequenceContentAttention.get_dim" title="Permalink to this definition">¶</a></dt>
@@ -441,6 +489,22 @@ creating higher lever representations in the encoder network.</p>
 states to which we can attend to must be fixed. Therefore, the
 constructor expects to specify the number of recurrent
 steps.</p>
+<p>Constructor which delegates most of the work to
+<code class="docutils literal"><span class="pre">SequenceContentAttention.__init__</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>match_dim</strong> (<em>int</em>) &#8211; Dimension of the match vectors</li>
+<li><strong>num_steps</strong> (<em>int</em>) &#8211; Maximum number of steps. Used to allocate
+the Theano variable storing the previous
+preprocessed states</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.attention.SelfAttendableContentAttention.get_dim">
 <code class="descname">get_dim</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/attention.html#SelfAttendableContentAttention.get_dim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.attention.SelfAttendableContentAttention.get_dim" title="Permalink to this definition">¶</a></dt>
@@ -552,6 +616,16 @@ This results in a sharper focus and avoids blurry alignment weights
 on long sequences.</p>
 <p>Note that this attention can be used during decoding in place of
 the normal content-based attention without retraining.</p>
+<p>Sole constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nbest</strong> (<em>int</em>) &#8211; Number of energies to keep (all others are set
+to zero.</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.attention.ThresholdedSequenceContentAttention.compute_weights">
 <code class="descname">compute_weights</code><a class="headerlink" href="#cam.sgnmt.blocks.attention.ThresholdedSequenceContentAttention.compute_weights" title="Permalink to this definition">¶</a></dt>
@@ -744,6 +818,39 @@ combine the final encoder-decoder network.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">blocks.bricks.interfaces.Initializable</span></code></p>
 <p>Decoder of RNNsearch model which uses a full softmax output
 layer and embedding matrices for feedback.</p>
+<p>Creates a new decoder brick.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>vocab_size</strong> (<em>int</em>) &#8211; Target language vocabulary size</li>
+<li><strong>embedding_dim</strong> (<em>int</em>) &#8211; Size of feedback embedding layer</li>
+<li><strong>state_dim</strong> (<em>int</em>) &#8211; Number of hidden units</li>
+<li><strong>att_dim</strong> (<em>int</em>) &#8211; Size of attention match vector</li>
+<li><strong>maxout_dim</strong> (<em>int</em>) &#8211; Size of maxout layer</li>
+<li><strong>representation_dim</strong> (<em>int</em>) &#8211; Dimension of source annotations</li>
+<li><strong>attention_strategy</strong> (<em>string</em>) &#8211; Which attention should be used
+cf.  <code class="docutils literal"><span class="pre">_initialize_attention</span></code></li>
+<li><strong>attention_sources</strong> (<em>string</em>) &#8211; Defines the sources used by the
+attention model &#8216;s&#8217; for decoder
+states, &#8216;f&#8217; for feedback</li>
+<li><strong>readout_sources</strong> (<em>string</em>) &#8211; Defines the sources used in the
+readout network. &#8216;s&#8217; for decoder
+states, &#8216;f&#8217; for feedback, &#8216;a&#8217; for
+attention (context vector)</li>
+<li><strong>memory</strong> (<em>string</em>) &#8211; Which external memory should be used
+(cf.  <code class="docutils literal"><span class="pre">_initialize_attention</span></code>)</li>
+<li><strong>memory_size</strong> (<em>int</em>) &#8211; Size of the external memory structure</li>
+<li><strong>seq_len</strong> (<em>int</em>) &#8211; Maximum sentence length</li>
+<li><strong>init_strategy</strong> (<em>string</em>) &#8211; How to initialize the RNN state
+(cf.  <code class="docutils literal"><span class="pre">GRUInitialState</span></code>)</li>
+<li><strong>theano_seed</strong> &#8211; Random seed</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.decoder.Decoder.cost">
 <code class="descname">cost</code><a class="headerlink" href="#cam.sgnmt.blocks.decoder.Decoder.cost" title="Permalink to this definition">¶</a></dt>
@@ -761,6 +868,27 @@ layer and embedding matrices for feedback.</p>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.blocks.decoder.</code><code class="descname">GRUInitialState</code><span class="sig-paren">(</span><em>attended_dim</em>, <em>init_strategy='last'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/decoder.html#GRUInitialState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.decoder.GRUInitialState" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">blocks.bricks.recurrent.GatedRecurrent</span></code></p>
 <p>Gated Recurrent with special initial state.</p>
+<p>Creates a GRU cell with special custom initial state.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>attended_dim</strong> (<em>int</em>) &#8211; Dimension of the annotations</li>
+<li><strong>init_strategy</strong> (<em>string</em>) &#8211; This string defines how to set the
+initial hidden layer state. &#8220;last&#8221;
+uses an affine transform plus tanh
+conditioned on the last annotation.
+&#8220;average&#8221; is similar, but uses the
+average of annotations. &#8220;constant&#8221;
+is independent of the source
+annotations and always initializes
+the state with the same parameter</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.decoder.GRUInitialState.initial_states">
 <code class="descname">initial_states</code><a class="headerlink" href="#cam.sgnmt.blocks.decoder.GRUInitialState.initial_states" title="Permalink to this definition">¶</a></dt>
@@ -795,6 +923,39 @@ layer and embedding matrices for feedback.</p>
 <p>This is the decoder implementation without embedding layer or
 softmax. The target sentence is represented as a sequence of #
 vectors as defined by the sparse feature map.</p>
+<p>Creates a new decoder brick without embedding.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>vocab_size</strong> (<em>int</em>) &#8211; Target language vocabulary size</li>
+<li><strong>embedding_dim</strong> (<em>int</em>) &#8211; Size of feedback embedding layer</li>
+<li><strong>state_dim</strong> (<em>int</em>) &#8211; Number of hidden units</li>
+<li><strong>att_dim</strong> (<em>int</em>) &#8211; Size of attention match vector</li>
+<li><strong>maxout_dim</strong> (<em>int</em>) &#8211; Size of maxout layer</li>
+<li><strong>representation_dim</strong> (<em>int</em>) &#8211; Dimension of source annotations</li>
+<li><strong>attention_strategy</strong> (<em>string</em>) &#8211; Which attention should be used
+cf.  <code class="docutils literal"><span class="pre">_initialize_attention</span></code></li>
+<li><strong>attention_sources</strong> (<em>string</em>) &#8211; Defines the sources used by the
+attention model &#8216;s&#8217; for decoder
+states, &#8216;f&#8217; for feedback</li>
+<li><strong>readout_sources</strong> (<em>string</em>) &#8211; Defines the sources used in the
+readout network. &#8216;s&#8217; for decoder
+states, &#8216;f&#8217; for feedback, &#8216;a&#8217; for
+attention (context vector)</li>
+<li><strong>memory</strong> (<em>string</em>) &#8211; Which external memory should be used
+(cf.  <code class="docutils literal"><span class="pre">_initialize_attention</span></code>)</li>
+<li><strong>memory_size</strong> (<em>int</em>) &#8211; Size of the external memory structure</li>
+<li><strong>seq_len</strong> (<em>int</em>) &#8211; Maximum sentence length</li>
+<li><strong>init_strategy</strong> (<em>string</em>) &#8211; How to initialize the RNN state
+(cf.  <code class="docutils literal"><span class="pre">GRUInitialState</span></code>)</li>
+<li><strong>theano_seed</strong> &#8211; Random seed</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.decoder.NoLookupDecoder.cost">
 <code class="descname">cost</code><a class="headerlink" href="#cam.sgnmt.blocks.decoder.NoLookupDecoder.cost" title="Permalink to this definition">¶</a></dt>
@@ -853,6 +1014,27 @@ module and should not be used directly.</p>
 <p>A generalized version of the vanilla encoder of the RNNsearch
 model which supports different numbers of layers. Zero layers
 represent non-recurrent encoders.</p>
+<p>Sole constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>vocab_size</strong> (<em>int</em>) &#8211; Source vocabulary size</li>
+<li><strong>embedding_dim</strong> (<em>int</em>) &#8211; Dimension of the embedding layer</li>
+<li><strong>n_layers</strong> (<em>int</em>) &#8211; Number of layers. Layers share the same
+weight matrices.</li>
+<li><strong>skip_connections</strong> (<em>bool</em>) &#8211; Skip connections connect the
+source word embeddings directly
+with deeper layers to propagate
+the gradient more efficiently</li>
+<li><strong>state_dim</strong> (<em>int</em>) &#8211; Number of hidden units in the recurrent
+layers.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.encoder.BidirectionalEncoder.apply">
 <code class="descname">apply</code><a class="headerlink" href="#cam.sgnmt.blocks.encoder.BidirectionalEncoder.apply" title="Permalink to this definition">¶</a></dt>
@@ -883,6 +1065,27 @@ outputs.</p>
 <p>This encoder is a multi-layered version of
 <code class="docutils literal"><span class="pre">BidirectionalEncoder</span></code> where parameters between layers are not
 shared.</p>
+<p>Sole constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>vocab_size</strong> (<em>int</em>) &#8211; Source vocabulary size</li>
+<li><strong>embedding_dim</strong> (<em>int</em>) &#8211; Dimension of the embedding layer</li>
+<li><strong>n_layers</strong> (<em>int</em>) &#8211; Number of layers. Layers share the same
+weight matrices.</li>
+<li><strong>skip_connections</strong> (<em>bool</em>) &#8211; Skip connections connect the
+source word embeddings directly
+with deeper layers to propagate
+the gradient more efficiently</li>
+<li><strong>state_dim</strong> (<em>int</em>) &#8211; Number of hidden units in the recurrent
+layers.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.encoder.DeepBidirectionalEncoder.apply">
 <code class="descname">apply</code><a class="headerlink" href="#cam.sgnmt.blocks.encoder.DeepBidirectionalEncoder.apply" title="Permalink to this definition">¶</a></dt>
@@ -899,6 +1102,24 @@ a bidirectional RNN architecture.</p>
 <p>This encoder extends the annotations of the standard encoder by
 additional ones. These additional annotations are derived from the
 flat encoder annotations by <code class="docutils literal"><span class="pre">Annotator</span></code> instances.</p>
+<p>Constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>base_encoder</strong> (<em>Brick</em>) &#8211; The base encoder which produces the
+annotations used by the annotators</li>
+<li><strong>annotators</strong> (<em>list</em>) &#8211; List of annotators</li>
+<li><strong>add_direct</strong> (<em>bool</em>) &#8211; If false, only the annotations from
+the annotators are used. If true, the
+original annotations of the base encoder
+are also passed through</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.encoder.EncoderWithAnnotators.apply">
 <code class="descname">apply</code><a class="headerlink" href="#cam.sgnmt.blocks.encoder.EncoderWithAnnotators.apply" title="Permalink to this definition">¶</a></dt>
@@ -930,6 +1151,24 @@ vector representation.</li>
 <p>This annotator creates higher level annotations by using a
 network which is similar to the attentional decoder network to
 produce a sequence of new annotations.</p>
+<p>Constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>base_encoder</strong> (<em>Brick</em>) &#8211; Low level encoder network which
+produces annotations to attend to</li>
+<li><strong>state_dim</strong> (<em>int</em>) &#8211; Size of the recurrent layer.</li>
+<li><strong>self_attendable</strong> (<em>bool</em>) &#8211; If true, the annotator can attend
+to its own previous states. If
+false it can only attend to base
+annotations</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.encoder.HierarchicalAnnotator.apply">
 <code class="descname">apply</code><a class="headerlink" href="#cam.sgnmt.blocks.encoder.HierarchicalAnnotator.apply" title="Permalink to this definition">¶</a></dt>
@@ -945,6 +1184,21 @@ produce a sequence of new annotations.</p>
 sparse feature maps. It does not use a lookup table but directly
 feeds the predefined distributed representations into the encoder
 network.</p>
+<p>Constructor. Note that this implementation only supports
+single layer architectures.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>embedding_dim</strong> (<em>int</em>) &#8211; Dimensionality of the word vectors
+defined by the sparse feature map.</li>
+<li><strong>state_dim</strong> (<em>int</em>) &#8211; Size of the recurrent layer.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.encoder.NoLookupEncoder.apply">
 <code class="descname">apply</code><a class="headerlink" href="#cam.sgnmt.blocks.encoder.NoLookupEncoder.apply" title="Permalink to this definition">¶</a></dt>
@@ -988,6 +1242,21 @@ from the <code class="docutils literal"><span class="pre">LoadNMT</span></code> 
 some copied code. Note that we do not use BLOCKS_DELIMITER.
 Instead, we always use &#8216;-&#8216; to keep back compatibility with older
 models.</p>
+<p>Initializes the path to the training directory and the NMT
+model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nmt_model_path</strong> (<em>string</em>) &#8211; Path to the model npz file</li>
+<li><strong>saveto</strong> (<em>string</em>) &#8211; Path to the NMT training directory (see
+the saveto field in the NMT configuration</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.model.LoadNMTUtils.load_parameters">
 <code class="descname">load_parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/model.html#LoadNMTUtils.load_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.model.LoadNMTUtils.load_parameters" title="Permalink to this definition">¶</a></dt>
@@ -1058,6 +1327,16 @@ all the attributes.</p>
 by source sentence length</p>
 </dd></dl>
 
+<p>Stores the configuration but does not initialize the class
+attributes yet.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<em>dict</em>) &#8211; NMT configuration</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.model.NMTModel.set_up">
 <code class="descname">set_up</code><span class="sig-paren">(</span><em>config=None</em>, <em>make_prunable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/model.html#NMTModel.set_up"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.model.NMTModel.set_up" title="Permalink to this definition">¶</a></dt>
@@ -1286,6 +1565,24 @@ removed in a postprocessing step.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>A connection between layer which is represented by a weight
 matrix.</p>
+<p>Creates a new connection.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>direction</strong> (<em>string</em>) &#8211; &#8216;in&#8217; if incoming, &#8216;out&#8217; if outgoing</li>
+<li><strong>mat_name</strong> (<em>string</em>) &#8211; Name of the corresponding weight matrix</li>
+<li><strong>dim</strong> (<em>int</em>) &#8211; Dimension along which this layer is adjacent</li>
+<li><strong>start_idx</strong> (<em>float</em>) &#8211; Blocks uses single weight matrices for
+both forget and reset gates. Set this to
+0.5 if the layer is just connected to
+the lower half of the matrix.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="class">
@@ -1308,6 +1605,26 @@ keeping track of internal neuron activities.</p>
 <p>This class represents a layer definition loaded from the file
 system and keeps track of neurons which have been removed in the
 layer.</p>
+<p>Creates a new <code class="docutils literal"><span class="pre">PrunableLayer</span></code> instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>string</em>) &#8211; Name of the layer</li>
+<li><strong>theano_variable</strong> (<em>TheanoVariable</em>) &#8211; Variable in the
+computation graph which
+stores the neuron
+activities in the layer</li>
+<li><strong>trg_size</strong> (<em>int</em>) &#8211; Remove neurons in this layer until this
+layer size is reached</li>
+<li><strong>n_steps</strong> (<em>int</em>) &#8211; Number of pruning operations</li>
+<li><strong>maxout</strong> (<em>bool</em>) &#8211; Whether this layer is a maxout layer.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.pruning.PrunableLayer.count_unpruned_neurons">
 <code class="descname">count_unpruned_neurons</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/pruning.html#PrunableLayer.count_unpruned_neurons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.pruning.PrunableLayer.count_unpruned_neurons" title="Permalink to this definition">¶</a></dt>
@@ -1412,6 +1729,25 @@ variables s.t. they can be accessed later.</p>
 optimizer. We intersperse the normal SGD updates with pruning
 operations and record the neuron activities after each training
 batch.</p>
+<p>Constructor for the pruning SGD optimizer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>prune_layer_configs</strong> (<em>dict</em>) &#8211; Layer configurations.</li>
+<li><strong>prune_layout_path</strong> (<em>string</em>) &#8211; Path to the network layout
+file.</li>
+<li><strong>prune_every</strong> (<em>int</em>) &#8211; Prune every n training iterations</li>
+<li><strong>prune_reset_every</strong> (<em>int</em>) &#8211; Reset neuron activity records
+every n training iterations.</li>
+<li><strong>prune_n_steps</strong> (<em>int</em>) &#8211; Number of pruning operations</li>
+<li><strong>nmt_model</strong> (<a class="reference internal" href="#cam.sgnmt.blocks.model.NMTModel" title="cam.sgnmt.blocks.model.NMTModel"><em>NMTModel</em></a>) &#8211; The initialized NMT model.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.pruning.PruningGradientDescent.initialize">
 <code class="descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/pruning.html#PruningGradientDescent.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.pruning.PruningGradientDescent.initialize" title="Permalink to this definition">¶</a></dt>
@@ -1561,6 +1897,32 @@ still very similar to the <code class="docutils literal"><span class="pre">BleuV
 example.</p>
 <p>TODO: Refactor, make this more similar to the rest of SGNMT, use
 vanilla_decoder.py</p>
+<p>Creates a new extension which adds model selection based on
+the BLEU score to the training main loop.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>source_sentence</strong> (<em>Variable</em>) &#8211; Input variable to the sampling
+computation graph</li>
+<li><strong>samples</strong> (<em>Variable</em>) &#8211; Samples variable of the CG</li>
+<li><strong>model</strong> (<a class="reference internal" href="#cam.sgnmt.blocks.model.NMTModel" title="cam.sgnmt.blocks.model.NMTModel"><em>NMTModel</em></a>) &#8211; See the model module</li>
+<li><strong>data_stream</strong> (<em>DataStream</em>) &#8211; Data stream to the development
+set</li>
+<li><strong>config</strong> (<em>dict</em>) &#8211; NMT configuration</li>
+<li><strong>n_best</strong> (<em>int</em>) &#8211; beam size</li>
+<li><strong>track_n_models</strong> (<em>int</em>) &#8211; Number of n-best models for which to
+create checkpoints.</li>
+<li><strong>normalize</strong> (<em>boolean</em>) &#8211; Enables length normalization</li>
+<li><strong>store_full_main_loop</strong> (<em>boolean</em>) &#8211; Stores the iteration state
+in the old style of
+Blocks 0.1. Not recommended</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.sampling.BleuValidator.do">
 <code class="descname">do</code><span class="sig-paren">(</span><em>which_callback</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/sampling.html#BleuValidator.do"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.sampling.BleuValidator.do" title="Permalink to this definition">¶</a></dt>
@@ -1628,6 +1990,40 @@ learning methods into the training process.</p>
 <p>This data source is based on monolingual target data. The source
 sentences are translated from the target sentence like described by
 Senrich et al., 2015.</p>
+<p>Creates a new back translating data source.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>trg_sentences</strong> (<em>list</em>) &#8211; list of target language sentences</li>
+<li><strong>nmt_config</strong> (<em>dict</em>) &#8211; NMT configuration of the back-
+translating NMT system</li>
+<li><strong>store_trans</strong> (<em>string</em>) &#8211; Write the back-translated sentences
+to the file system (append to that
+file)</li>
+<li><strong>max_same_word</strong> (<em>float</em>) &#8211; Used for sanity check of the back
+translation. If the most frequent
+word in the backtranslated sentence
+has relative frequency higher than
+this, discard this sentence pair</li>
+<li><strong>reload_frequency</strong> (<em>int</em>) &#8211; The back-translating NMT model is
+reloaded every n updates. This is
+useful if the back-translating NMT
+system is currently trained by
+itself with the same policy. This
+enables us to train two NMT systems
+in opposite translation directions
+and benefit from gains in the other
+system immediately. Set to 0 to
+disable reloading</li>
+<li><strong>old_backtrans_src</strong> (<a class="reference internal" href="#cam.sgnmt.blocks.stream.OldBacktranslatedParallelSource" title="cam.sgnmt.blocks.stream.OldBacktranslatedParallelSource"><em>OldBacktranslatedParallelSource</em></a>) &#8211; Instance of <code class="docutils literal"><span class="pre">OldBacktranslatedParallelSource</span></code>
+to send the backtranslated sentences to</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.stream.BacktranslatedParallelSource.backtranslate">
 <code class="descname">backtranslate</code><span class="sig-paren">(</span><em>trg_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/stream.html#BacktranslatedParallelSource.backtranslate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.stream.BacktranslatedParallelSource.backtranslate" title="Permalink to this definition">¶</a></dt>
@@ -1668,6 +2064,16 @@ backtranslated source sentence.</p>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.blocks.stream.ParallelSource" title="cam.sgnmt.blocks.stream.ParallelSource"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.blocks.stream.ParallelSource</span></code></a></p>
 <p>Represents monolingual data and uses a dummy token on the
 source side to fill in the missing gap.</p>
+<p>Creates a new data source which is based on monolingual
+target data and uses a dummy token on the source side.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trg_sentences</strong> (<em>list</em>) &#8211; list of target language sentences</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.stream.DummyParallelSource.next">
 <code class="descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/stream.html#DummyParallelSource.next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.stream.DummyParallelSource.next" title="Permalink to this definition">¶</a></dt>
@@ -1692,6 +2098,21 @@ token plus &lt;/S&gt; on the source sentence</p>
 <p>Each time <code class="docutils literal"><span class="pre">next</span></code> is called, we randomly select one of two
 parallel sources and pass through the <code class="docutils literal"><span class="pre">next</span></code> request to the
 selected one.</p>
+<p>Creates a new data source which merges two other sources
+by randomly selecting one of them each time <code class="docutils literal"><span class="pre">next</span></code> is called.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src1</strong> (<a class="reference internal" href="#cam.sgnmt.blocks.stream.ParallelSource" title="cam.sgnmt.blocks.stream.ParallelSource"><em>ParallelSource</em></a>) &#8211; First parallel source</li>
+<li><strong>src2</strong> (<a class="reference internal" href="#cam.sgnmt.blocks.stream.ParallelSource" title="cam.sgnmt.blocks.stream.ParallelSource"><em>ParallelSource</em></a>) &#8211; Second parallel source</li>
+<li><strong>src1prob</strong> (<em>float</em>) &#8211; Probability of source 1</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.stream.MergedParallelSource.next">
 <code class="descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/stream.html#MergedParallelSource.next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.stream.MergedParallelSource.next" title="Permalink to this definition">¶</a></dt>
@@ -1718,6 +2139,16 @@ created by <code class="docutils literal"><span class="pre">BacktranslatedParall
 pairs from that file. The backtranslating parallel source can add
 new sentence pairs with <code class="docutils literal"><span class="pre">add</span></code> which have not been logged in the
 file yet.</p>
+<p>Creates a new data source which reads out sentence pairs
+from a backtranslation log file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>log_file</strong> (<em>string</em>) &#8211; Path to the log file</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.stream.OldBacktranslatedParallelSource.add">
 <code class="descname">add</code><span class="sig-paren">(</span><em>idx</em>, <em>src_sen</em>, <em>trg_sen</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/stream.html#OldBacktranslatedParallelSource.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.stream.OldBacktranslatedParallelSource.add" title="Permalink to this definition">¶</a></dt>
@@ -1810,6 +2241,31 @@ time. The active source can be changed with the
 <code class="docutils literal"><span class="pre">set_active_source</span></code> method. This is particular useful in
 combination with reinforcement learning policies where switching
 the source corresponds to the action the agent takes.</p>
+<p>Creates a new <code class="docutils literal"><span class="pre">Dataset</span></code> which allows switching between
+multiple parallel sources. The first source is activated per
+default</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>parallel_sources</strong> (<em>list</em>) &#8211; List of <code class="docutils literal"><span class="pre">ParallelSource</span></code> objects</li>
+<li><strong>src_vocab_size</strong> (<em>int</em>) &#8211; Size of source vocabulary</li>
+<li><strong>trg_vocab_size</strong> (<em>int</em>) &#8211; Size of target vocabulary</li>
+<li><strong>src_sparse_feat_map</strong> (<a class="reference internal" href="cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap" title="cam.sgnmt.misc.sparse.SparseFeatMap"><em>SparseFeatMap</em></a>) &#8211; Map between words and
+their features if you
+use sparse vectors.</li>
+<li><strong>trg_sparse_feat_map</strong> (<a class="reference internal" href="cam.sgnmt.misc.html#cam.sgnmt.misc.sparse.SparseFeatMap" title="cam.sgnmt.misc.sparse.SparseFeatMap"><em>SparseFeatMap</em></a>) &#8211; Map between words and
+their features if you
+use sparse vectors.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IndexError. If the list is empty</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.stream.ParallelSourceSwitchDataset.example_iteration_scheme">
 <code class="descname">example_iteration_scheme</code><em class="property"> = None</em><a class="headerlink" href="#cam.sgnmt.blocks.stream.ParallelSourceSwitchDataset.example_iteration_scheme" title="Permalink to this definition">¶</a></dt>
@@ -1860,6 +2316,7 @@ in combination with <code class="docutils literal"><span class="pre">ShuffledExa
 difference is that it directly represents a database of two
 text files, i.e. the resulting string does not need to be merged
 with another one.</p>
+<p>Constructor like for <code class="docutils literal"><span class="pre">TextFile</span></code></p>
 <dl class="attribute">
 <dt id="cam.sgnmt.blocks.stream.ParallelTextFile.example_iteration_scheme">
 <code class="descname">example_iteration_scheme</code><em class="property"> = None</em><a class="headerlink" href="#cam.sgnmt.blocks.stream.ParallelTextFile.example_iteration_scheme" title="Permalink to this definition">¶</a></dt>
@@ -1909,6 +2366,28 @@ lists of word ids.</p>
 integers, it shuffles them and yields the shuffled numbers one by
 one. After having shown all numbers once, shuffle again and iterate
 through the new list. This assures complete coverage of the data.</p>
+<p>Create a new instance. Range boundaries are similar to
+<code class="docutils literal"><span class="pre">xrange</span></code>. If the first and single argument is a list, it
+provides the allowed indices directly</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>from_idx</strong> (<em>int or list</em>) &#8211; Lower bound of integer range
+(inclusive). If this is a list
+and the second argument is not
+provided, this lists all allowed
+indices</li>
+<li><strong>to_idx</strong> (<em>int</em>) &#8211; Upper bound of integer rang (exclusive)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">ValueError. If <code class="docutils literal"><span class="pre">to_idx</span></code> is smaller or equal <code class="docutils literal"><span class="pre">from_idx</span></code>.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.stream.Reshuffler.next">
 <code class="descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/stream.html#Reshuffler.next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.stream.Reshuffler.next" title="Permalink to this definition">¶</a></dt>
@@ -1933,6 +2412,23 @@ guarantees that all numbers will be visited by this method.</p>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.blocks.stream.ParallelSource" title="cam.sgnmt.blocks.stream.ParallelSource"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.blocks.stream.ParallelSource</span></code></a></p>
 <p>Simplest <code class="docutils literal"><span class="pre">ParallelSource</span></code> implementation which allows access
 to parallel data in a random order.</p>
+<p>Creates a new data source which represents the parallel
+text <code class="docutils literal"><span class="pre">src_sentences</span></code> - <code class="docutils literal"><span class="pre">trg_sentences</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>src_sentences</strong> (<em>list</em>) &#8211; list of source language sentences</li>
+<li><strong>trg_sentences</strong> (<em>list</em>) &#8211; list of target language sentences</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">ValueError. If both arguments do not have the same length.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.stream.ShuffledParallelSource.next">
 <code class="descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/stream.html#ShuffledParallelSource.next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.stream.ShuffledParallelSource.next" title="Permalink to this definition">¶</a></dt>
@@ -1973,6 +2469,25 @@ computational graph</p>
 <dd><p><em>BeamSearch</em> &#8211; Blocks beam search instance</p>
 </dd></dl>
 
+<p>Connects a new instance with the switch dataset. Note that
+the attributes <code class="docutils literal"><span class="pre">src_sentence</span></code> and <code class="docutils literal"><span class="pre">beam_search</span></code> need to be
+set separately.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nmt_config</strong> (<em>dict</em>) &#8211; NMT configuration array</li>
+<li><strong>switch_dataset</strong> (<a class="reference internal" href="#cam.sgnmt.blocks.stream.ParallelSourceSwitchDataset" title="cam.sgnmt.blocks.stream.ParallelSourceSwitchDataset"><em>ParallelSourceSwitchDataset</em></a>) &#8211; The dataset
+to control</li>
+<li><strong>part_val_set_size</strong> (<em>int</em>) &#8211; Number of sentences to decode for
+reward calculation</li>
+<li><strong>every_n_batches</strong> (<em>int</em>) &#8211; Make a new decision every n batches</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.stream.SourceSwitchController.do">
 <code class="descname">do</code><span class="sig-paren">(</span><em>which_callback</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/stream.html#SourceSwitchController.do"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.stream.SourceSwitchController.do" title="Permalink to this definition">¶</a></dt>
@@ -2061,6 +2576,22 @@ this decoder refrains from the vocabulary matching mechanisms used
 in the predictor framework in favor of decoding speed. Therefore,
 this decoder should be used only with models of the same vocabulary
 size.</p>
+<p>Set up the NMT model used by the decoder.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nmt_specs</strong> (<em>list</em>) &#8211; List of tuples of which the first element
+is the path to the NMT model (.npz) file
+and the second is the NMT configuration</li>
+<li><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from configuration API.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.vanilla_decoder.BlocksNMTEnsembleVanillaDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/vanilla_decoder.html#BlocksNMTEnsembleVanillaDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.vanilla_decoder.BlocksNMTEnsembleVanillaDecoder.decode" title="Permalink to this definition">¶</a></dt>
@@ -2116,6 +2647,21 @@ blocks beam search module. This is fast, but breaks with the
 predictor framework. It can only be used for pure single system
 NMT decoding. Note that this decoder supports sparse feat maps
 on both source and target side.</p>
+<p>Set up the NMT model used by the decoder.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nmt_model_path</strong> (<em>string</em>) &#8211; Path to the NMT model file (.npz)</li>
+<li><strong>config</strong> (<em>dict</em>) &#8211; NMT configuration</li>
+<li><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from configuration API.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.blocks.vanilla_decoder.BlocksNMTVanillaDecoder.decode">
 <code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/vanilla_decoder.html#BlocksNMTVanillaDecoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.vanilla_decoder.BlocksNMTVanillaDecoder.decode" title="Permalink to this definition">¶</a></dt>
