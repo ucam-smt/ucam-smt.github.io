@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.ui &mdash; SGNMT 0.3.2 documentation</title>
+  <title>cam.sgnmt.ui &mdash; SGNMT 0.4 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.3.2 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 0.4 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.3.2
+                0.4
               </div>
             
           
@@ -241,7 +241,10 @@
                         <span class="s2">&quot;Syntax is equal to HiFSTs printstrings and lmerts &quot;</span>
                         <span class="s2">&quot;idxrange parameter: &lt;start-idx&gt;:&lt;end-idx&gt; (both &quot;</span>
                         <span class="s2">&quot;inclusive, start with 1). E.g. 2:5 means: skip the &quot;</span>
-                        <span class="s2">&quot;first sentence, process next 4 sentences&quot;</span><span class="p">)</span>
+                        <span class="s2">&quot;first sentence, process next 4 sentences. If this &quot;</span>
+                        <span class="s2">&quot;points to a file, we grap sentence IDs to translate &quot;</span>
+                        <span class="s2">&quot;from that file and delete the decoded IDs. This can &quot;</span>
+                        <span class="s2">&quot;be used for distributed decoding.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to source test set. This is expected to be &quot;</span>
                         <span class="s2">&quot;a plain text file with one source sentence in each &quot;</span>
@@ -1255,8 +1258,6 @@
                         <span class="s2">&quot;the ones in this parameter.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">w</span><span class="p">))</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_path</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --rnnlm_path for the </span><span class="si">%s</span><span class="s2"> nmt&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
-        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_test</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --src_test for the </span><span class="si">%s</span><span class="s2"> src&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>                        
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--altsrc_test</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --altsrc_test for the </span><span class="si">%s</span><span class="s2"> altsrc&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--word2char_map</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -1330,17 +1331,9 @@
             <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using deprecated argument </span><span class="si">%s</span><span class="s2">. Please check the &quot;</span>
                          <span class="s2">&quot;documentation for the replacement.&quot;</span> <span class="o">%</span> <span class="n">depr</span><span class="p">)</span>
     <span class="c1"># Validate --range</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">input_method</span> <span class="o">==</span> <span class="s1">&#39;shell&#39;</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The --range parameter can lead to unexpected &quot;</span>
-                         <span class="s2">&quot;behavior in the &#39;shell&#39; mode.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">f</span><span class="p">,</span><span class="n">t</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)]</span>
-                <span class="k">if</span> <span class="n">f</span> <span class="o">&gt;</span> <span class="n">t</span><span class="p">:</span>
-                    <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Start index in range greater than end index&quot;</span><span class="p">)</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="k">pass</span> <span class="c1"># Deal with it later</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">input_method</span> <span class="o">==</span> <span class="s1">&#39;shell&#39;</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The --range parameter can lead to unintuitive &quot;</span>
+                     <span class="s2">&quot;behavior in &#39;shell&#39; mode.&quot;</span><span class="p">)</span>
         
     <span class="c1"># Some common pitfalls</span>
     <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">False</span>
@@ -1399,7 +1392,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.3.2',
+            VERSION:'0.4',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

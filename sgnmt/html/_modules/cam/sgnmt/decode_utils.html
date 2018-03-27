@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decode_utils &mdash; SGNMT 0.3.2 documentation</title>
+  <title>cam.sgnmt.decode_utils &mdash; SGNMT 0.4 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.3.2 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 0.4 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.3.2
+                0.4
               </div>
             
           
@@ -154,6 +154,8 @@
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">ui</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
@@ -167,6 +169,7 @@
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.bow</span> <span class="kn">import</span> <span class="n">BOWDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.bucket</span> <span class="kn">import</span> <span class="n">BucketDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">UnboundedVocabularyPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Hypothesis</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.dfs</span> <span class="kn">import</span> <span class="n">DFSDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.flip</span> <span class="kn">import</span> <span class="n">FlipDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.greedy</span> <span class="kn">import</span> <span class="n">GreedyDecoder</span>
@@ -676,11 +679,6 @@
     <span class="c1"># Add heuristics for search strategies like A*</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">heuristics</span><span class="p">:</span>
         <span class="n">add_heuristics</span><span class="p">(</span><span class="n">decoder</span><span class="p">)</span>
-    
-    <span class="c1"># Update start sentence id if necessary</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
-        <span class="n">idx</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>  
-        <span class="n">decoder</span><span class="o">.</span><span class="n">set_start_sen_id</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># -1 because indices start with 1</span>
     <span class="k">return</span> <span class="n">decoder</span></div>
 
 
@@ -761,10 +759,6 @@
         <span class="k">return</span> <span class="p">[]</span>
     <span class="n">trg_map</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span>
     <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">start_sen_id</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
-        <span class="n">idx</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
-        <span class="n">start_sen_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span> <span class="c1"># -1 because --range indices start with 1</span>
     <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">split_comma</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">outputs</span><span class="p">):</span>
         <span class="k">if</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">output_path</span><span class="p">:</span>
             <span class="n">path</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">output_path</span> <span class="o">%</span> <span class="n">name</span>
@@ -775,24 +769,19 @@
         <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nbest&quot;</span><span class="p">:</span>
             <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NBestOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> 
                                               <span class="n">utils</span><span class="o">.</span><span class="n">split_comma</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="p">),</span>
-                                              <span class="n">start_sen_id</span><span class="p">,</span>
                                               <span class="n">trg_map</span><span class="p">))</span>
         <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;ngram&quot;</span><span class="p">:</span>
             <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NgramOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
                                               <span class="n">args</span><span class="o">.</span><span class="n">min_ngram_order</span><span class="p">,</span>
-                                              <span class="n">args</span><span class="o">.</span><span class="n">max_ngram_order</span><span class="p">,</span>
-                                              <span class="n">start_sen_id</span><span class="p">))</span>
+                                              <span class="n">args</span><span class="o">.</span><span class="n">max_ngram_order</span><span class="p">))</span>
         <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;timecsv&quot;</span><span class="p">:</span>
             <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TimeCSVOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> 
-                                                <span class="n">utils</span><span class="o">.</span><span class="n">split_comma</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="p">),</span>
-                                                <span class="n">start_sen_id</span><span class="p">))</span>
+                                                <span class="n">utils</span><span class="o">.</span><span class="n">split_comma</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="p">)))</span>
         <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;fst&quot;</span><span class="p">:</span>
             <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FSTOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
-                                            <span class="n">start_sen_id</span><span class="p">,</span>
                                             <span class="n">args</span><span class="o">.</span><span class="n">fst_unk_id</span><span class="p">))</span>
         <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;sfst&quot;</span><span class="p">:</span>
             <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">StandardFSTOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
-                                                    <span class="n">start_sen_id</span><span class="p">,</span>
                                                     <span class="n">args</span><span class="o">.</span><span class="n">fst_unk_id</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Output format </span><span class="si">%s</span><span class="s2"> not available. Please double-check&quot;</span>
@@ -810,6 +799,7 @@
 <span class="sd">                               source sentences with word indices to </span>
 <span class="sd">                               translate (e.g. &#39;1 123 432 2&#39;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
@@ -817,14 +807,42 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">from_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">)</span>
                 <span class="n">to_idx</span> <span class="o">=</span> <span class="n">from_idx</span>
-            <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">from_idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">to_idx</span><span class="p">))</span>
+            <span class="n">ids</span> <span class="o">=</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">from_idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">to_idx</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Invalid value for --range: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
-            <span class="k">return</span> <span class="p">[]</span>
-    <span class="k">if</span> <span class="n">src_sentences</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Input method dummy requires --range&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[]</span>
-    <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src_sentences</span><span class="p">))</span></div>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;The --range does not seem to specify a numerical &quot;</span>
+                         <span class="s2">&quot;range (</span><span class="si">%s</span><span class="s2">). Interpreting as file name..&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+            <span class="n">tmp_path</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/sgnmt-tmp.</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">),</span> 
+                                            <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Temporary range file: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">tmp_path</span><span class="p">)</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmp_f</span><span class="p">:</span>
+                        <span class="n">all_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">tmp_f</span><span class="p">]</span>
+                    <span class="n">next_id</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="k">if</span> <span class="n">all_ids</span><span class="p">:</span>
+                        <span class="n">next_id</span> <span class="o">=</span> <span class="n">all_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">all_ids</span> <span class="o">=</span> <span class="n">all_ids</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmp_f</span><span class="p">:</span>
+                        <span class="n">tmp_f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">all_ids</span><span class="p">))</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">next_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="k">return</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Fetched ID </span><span class="si">%s</span><span class="s2"> and updated </span><span class="si">%s</span><span class="s2">&quot;</span>
+                                  <span class="o">%</span> <span class="p">(</span><span class="n">next_id</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">))</span>
+                    <span class="k">yield</span> <span class="nb">int</span><span class="p">(</span><span class="n">next_id</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Could not fetch sentence ID from </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">). &quot;</span>
+                                  <span class="s2">&quot;Trying again in 2 seconds...&quot;</span> 
+                                  <span class="o">%</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">src_sentences</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+           <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Input method dummy requires --range&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ids</span> <span class="o">=</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src_sentences</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">i</span></div>
 
 
 <span class="k">def</span> <span class="nf">_get_text_output_handler</span><span class="p">(</span><span class="n">output_handlers</span><span class="p">):</span>
@@ -873,6 +891,10 @@
     <span class="k">return</span> <span class="n">hypos</span>
 
 
+<span class="k">def</span> <span class="nf">_generate_dummy_hypo</span><span class="p">(</span><span class="n">predictors</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">Hypothesis</span><span class="p">([</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="p">[[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">predictors</span><span class="p">]])</span> 
+
+
 <div class="viewcode-block" id="do_decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.do_decode">[docs]</a><span class="k">def</span> <span class="nf">do_decode</span><span class="p">(</span><span class="n">decoder</span><span class="p">,</span> 
               <span class="n">output_handlers</span><span class="p">,</span> 
               <span class="n">src_sentences</span><span class="p">):</span>
@@ -898,36 +920,23 @@
         <span class="n">text_output_handler</span><span class="o">.</span><span class="n">open_file</span><span class="p">()</span>
     <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Start time: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">start_time</span><span class="p">)</span>
+    <span class="n">sen_indices</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">sen_idx</span> <span class="ow">in</span> <span class="n">get_sentence_indices</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">,</span> <span class="n">src_sentences</span><span class="p">):</span>
+        <span class="n">decoder</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">sen_idx</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">src_sentences</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
                 <span class="n">src</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence (ID: </span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence (ID: </span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">src</span> <span class="o">=</span> <span class="n">src_sentences</span><span class="p">[</span><span class="n">sen_idx</span><span class="p">]</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">src</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
-                    <span class="n">src_lst</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src</span><span class="p">)):</span>
-                        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence, input </span><span class="si">%d</span><span class="s2"> (ID: </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
-                                                           <span class="n">idx</span><span class="p">,</span> 
-                                                           <span class="n">sen_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-                                                           <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">[</span><span class="n">idx</span><span class="p">])))</span>
-                        <span class="n">src_lst</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">src</span><span class="p">[</span><span class="n">idx</span><span class="p">]])</span>
-                    <span class="n">src</span> <span class="o">=</span> <span class="n">src_lst</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence (ID: </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> 
-                                                                 <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">)))</span>
-                    <span class="n">src</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">src</span><span class="p">]</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence (ID: </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> 
+                                                             <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">)))</span>
+            <span class="n">src</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">src</span><span class="p">]</span>
             <span class="n">start_hypo_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
             <span class="n">decoder</span><span class="o">.</span><span class="n">apply_predictors_count</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">src</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
-                <span class="c1"># Don&#39;t apply wordmap for multiple inputs</span>
-                <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypo</span> <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
-                            <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">&gt;</span> <span class="n">args</span><span class="o">.</span><span class="n">min_score</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypo</span> 
-                         <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">apply_src_wmap</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
-                            <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">&gt;</span> <span class="n">args</span><span class="o">.</span><span class="n">min_score</span><span class="p">]</span>
+            <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypo</span> 
+                     <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">apply_src_wmap</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
+                        <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">&gt;</span> <span class="n">args</span><span class="o">.</span><span class="n">min_score</span><span class="p">]</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">hypos</span><span class="p">:</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;No translation found for ID </span><span class="si">%d</span><span class="s2">!&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stats (ID: </span><span class="si">%d</span><span class="s2">): score=&lt;not-found&gt; &quot;</span>
@@ -935,9 +944,7 @@
                          <span class="s2">&quot;time=</span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
                                         <span class="n">decoder</span><span class="o">.</span><span class="n">apply_predictors_count</span><span class="p">,</span>
                                         <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_hypo_time</span><span class="p">))</span>
-                <span class="k">if</span> <span class="n">text_output_handler</span><span class="p">:</span>
-                    <span class="n">text_output_handler</span><span class="o">.</span><span class="n">write_empty_line</span><span class="p">()</span>
-                <span class="k">continue</span>
+                <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">_generate_dummy_hypo</span><span class="p">(</span><span class="n">decoder</span><span class="o">.</span><span class="n">predictors</span><span class="p">)]</span>
             <span class="n">hypos</span> <span class="o">=</span> <span class="n">_postprocess_complete_hypos</span><span class="p">(</span><span class="n">hypos</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">:</span>
                 <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">convert_to_char_level</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">]</span>
@@ -952,6 +959,7 @@
                                         <span class="n">decoder</span><span class="o">.</span><span class="n">apply_predictors_count</span><span class="p">,</span>
                                         <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_hypo_time</span><span class="p">))</span>
             <span class="n">all_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypos</span><span class="p">)</span>
+            <span class="n">sen_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sen_idx</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Write text output as we go</span>
                 <span class="k">if</span> <span class="n">text_output_handler</span><span class="p">:</span>
@@ -982,7 +990,7 @@
             <span class="k">if</span> <span class="n">output_handler</span> <span class="o">==</span> <span class="n">text_output_handler</span><span class="p">:</span>
                 <span class="n">output_handler</span><span class="o">.</span><span class="n">close_file</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">output_handler</span><span class="o">.</span><span class="n">write_hypos</span><span class="p">(</span><span class="n">all_hypos</span><span class="p">)</span>
+                <span class="n">output_handler</span><span class="o">.</span><span class="n">write_hypos</span><span class="p">(</span><span class="n">all_hypos</span><span class="p">,</span> <span class="n">sen_indices</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;I/O error </span><span class="si">%s</span><span class="s2"> occurred when creating output files: </span><span class="si">%s</span><span class="s2">&quot;</span>
                       <span class="o">%</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">e</span><span class="p">))</span></div>
@@ -1020,7 +1028,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.3.2',
+            VERSION:'0.4',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
