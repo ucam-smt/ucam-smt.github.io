@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.blocks.alignment package &mdash; SGNMT 0.4 documentation</title>
+  <title>cam.sgnmt.blocks.alignment package &mdash; SGNMT 0.4.1 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.4 documentation" href="index.html"/>
+    <link rel="top" title="SGNMT 0.4.1 documentation" href="index.html"/>
         <link rel="up" title="cam.sgnmt.blocks package" href="cam.sgnmt.blocks.html"/>
         <link rel="next" title="cam.sgnmt.decoding package" href="cam.sgnmt.decoding.html"/>
         <link rel="prev" title="cam.sgnmt.blocks package" href="cam.sgnmt.blocks.html"/> 
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.4
+                0.4.1
               </div>
             
           
@@ -111,9 +111,9 @@
 <li class="toctree-l4"><a class="reference internal" href="cam.sgnmt.blocks.html#module-cam.sgnmt.blocks.pruning">cam.sgnmt.blocks.pruning module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cam.sgnmt.blocks.html#module-cam.sgnmt.blocks.sampling">cam.sgnmt.blocks.sampling module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cam.sgnmt.blocks.html#module-cam.sgnmt.blocks.sparse_search">cam.sgnmt.blocks.sparse_search module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="cam.sgnmt.blocks.html#module-cam.sgnmt.blocks.stream">cam.sgnmt.blocks.stream module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cam.sgnmt.blocks.html#cam-sgnmt-blocks-stream-module">cam.sgnmt.blocks.stream module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cam.sgnmt.blocks.html#cam-sgnmt-blocks-train-module">cam.sgnmt.blocks.train module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="cam.sgnmt.blocks.html#module-cam.sgnmt.blocks.vanilla_decoder">cam.sgnmt.blocks.vanilla_decoder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cam.sgnmt.blocks.html#cam-sgnmt-blocks-vanilla-decoder-module">cam.sgnmt.blocks.vanilla_decoder module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cam.sgnmt.blocks.html#module-cam.sgnmt.blocks">Module contents</a></li>
 </ul>
 </li>
@@ -125,7 +125,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#cam-sgnmt-decode-module">cam.sgnmt.decode module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.decode_utils">cam.sgnmt.decode_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#cam-sgnmt-decode-utils-module">cam.sgnmt.decode_utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#cam-sgnmt-extract-scores-along-reference-module">cam.sgnmt.extract_scores_along_reference module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.output">cam.sgnmt.output module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.ui">cam.sgnmt.ui module</a></li>
@@ -186,120 +186,8 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-cam.sgnmt.blocks.alignment.nam">
-<span id="cam-sgnmt-blocks-alignment-nam-module"></span><h2>cam.sgnmt.blocks.alignment.nam module<a class="headerlink" href="#module-cam.sgnmt.blocks.alignment.nam" title="Permalink to this headline">¶</a></h2>
-<p>This module implements the Neural Alignment Model (NAM). The NAM
-uses the same architecture as normal NMT, but replaces the attention
-model with a trainable alignment matrix. The alignment model reloads
-NMT weight matrices trained with <code class="docutils literal"><span class="pre">nmt.train</span></code> except the ones in the
-attention sub-network. To align a sentence pair, we initialize the
-alignment matrix randomly, and run several iterations of SGD in which
-we fix all parameters (i.e. weight matrices loaded from the NMT model)
-except the newly added alignment matrix.</p>
-<p>We implemented this workflow using the MainLoop framework in blocks.
-The data stream emits the same sentence pair until it is explicitly
-requested by <code class="docutils literal"><span class="pre">NextSentenceExtension</span></code> to switch to the next pair.</p>
-<dl class="class">
-<dt id="cam.sgnmt.blocks.alignment.nam.ExplicitNext">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.blocks.alignment.nam.</code><code class="descname">ExplicitNext</code><span class="sig-paren">(</span><em>data_stream</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/alignment/nam.html#ExplicitNext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.alignment.nam.ExplicitNext" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">fuel.transformers.Transformer</span></code></p>
-<p>This data transformer outputs the same data until it is
-explicitly iterated by calling <code class="docutils literal"><span class="pre">switch_to_next_data()</span></code></p>
-<dl class="method">
-<dt id="cam.sgnmt.blocks.alignment.nam.ExplicitNext.get_data">
-<code class="descname">get_data</code><span class="sig-paren">(</span><em>request=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/alignment/nam.html#ExplicitNext.get_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.alignment.nam.ExplicitNext.get_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns <code class="docutils literal"><span class="pre">self.current_data</span></code>.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="cam.sgnmt.blocks.alignment.nam.ExplicitNext.switch_to_next_data">
-<code class="descname">switch_to_next_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/alignment/nam.html#ExplicitNext.switch_to_next_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.alignment.nam.ExplicitNext.switch_to_next_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Switch to the next data given by the child data stream</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="cam.sgnmt.blocks.alignment.nam.NextSentenceExtension">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.blocks.alignment.nam.</code><code class="descname">NextSentenceExtension</code><span class="sig-paren">(</span><em>align_stream</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/alignment/nam.html#NextSentenceExtension"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.alignment.nam.NextSentenceExtension" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">blocks.extensions.SimpleExtension</span></code></p>
-<p>This Blocks extension is invoked each <code class="docutils literal"><span class="pre">--iterations</span></code> batches.
-It saves the previous alignment matrix, resets the matrix in the
-computation graph, and iterates to the next sentence pair.</p>
-<p>Constructor of <code class="docutils literal"><span class="pre">NextSentenceExtension</span></code>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>align_stream</strong> (<a class="reference internal" href="#cam.sgnmt.blocks.alignment.nam.ExplicitNext" title="cam.sgnmt.blocks.alignment.nam.ExplicitNext"><em>ExplicitNext</em></a>) &#8211; DataStream which supports
-explicitly switching to the
-next sentence pair</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="cam.sgnmt.blocks.alignment.nam.NextSentenceExtension.do">
-<code class="descname">do</code><span class="sig-paren">(</span><em>which_callback</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/alignment/nam.html#NextSentenceExtension.do"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.alignment.nam.NextSentenceExtension.do" title="Permalink to this definition">¶</a></dt>
-<dd><p>This method is called from the MainLoop in blocks and
-handles all the work which has to be done after aligning a
-sentence pair. This involves:</p>
-<blockquote>
-<div><ul class="simple">
-<li>Fetching the alignment matrix from the computation graph
-and append it to the <code class="docutils literal"><span class="pre">alignments</span></code> global</li>
-<li>Call the data stream s.t. it iterates to the next sentence
-pair</li>
-<li>Override the current value of the alignment matrix variable
-with its initial value to get a fresh start for the next
-optimization</li>
-</ul>
-</div></blockquote>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="cam.sgnmt.blocks.alignment.nam.PrintCurrentLogRow">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.blocks.alignment.nam.</code><code class="descname">PrintCurrentLogRow</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/alignment/nam.html#PrintCurrentLogRow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.alignment.nam.PrintCurrentLogRow" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">blocks.extensions.SimpleExtension</span></code></p>
-<p>This extension prints the current log row to the screen.</p>
-<dl class="method">
-<dt id="cam.sgnmt.blocks.alignment.nam.PrintCurrentLogRow.do">
-<code class="descname">do</code><span class="sig-paren">(</span><em>which_callback</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/alignment/nam.html#PrintCurrentLogRow.do"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.alignment.nam.PrintCurrentLogRow.do" title="Permalink to this definition">¶</a></dt>
-<dd><p>Prints the current log status on the screen</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="function">
-<dt id="cam.sgnmt.blocks.alignment.nam.align_with_nam">
-<code class="descclassname">cam.sgnmt.blocks.alignment.nam.</code><code class="descname">align_with_nam</code><span class="sig-paren">(</span><em>config</em>, <em>args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/blocks/alignment/nam.html#align_with_nam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.blocks.alignment.nam.align_with_nam" title="Permalink to this definition">¶</a></dt>
-<dd><p>Main method for using the Neural Alignment Model.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>config</strong> (<em>dict</em>) &#8211; NMT configuration</li>
-<li><strong>args</strong> (<em>object</em>) &#8211; ArgumentParser object containing the command
-line arguments</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list. List of alignments, where alignments are represented as
-numpy matrices containing confidences between 0 and 1.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="data">
-<dt id="cam.sgnmt.blocks.alignment.nam.alignments">
-<code class="descclassname">cam.sgnmt.blocks.alignment.nam.</code><code class="descname">alignments</code><em class="property"> = []</em><a class="headerlink" href="#cam.sgnmt.blocks.alignment.nam.alignments" title="Permalink to this definition">¶</a></dt>
-<dd><p>Global variable for collecting the alignments.</p>
-</dd></dl>
-
+<div class="section" id="cam-sgnmt-blocks-alignment-nam-module">
+<h2>cam.sgnmt.blocks.alignment.nam module<a class="headerlink" href="#cam-sgnmt-blocks-alignment-nam-module" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-cam.sgnmt.blocks.alignment.nmt">
 <span id="cam-sgnmt-blocks-alignment-nmt-module"></span><h2>cam.sgnmt.blocks.alignment.nmt module<a class="headerlink" href="#module-cam.sgnmt.blocks.alignment.nmt" title="Permalink to this headline">¶</a></h2>
@@ -382,7 +270,7 @@ entry point to the module and can be called from <code class="docutils literal">
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.4',
+            VERSION:'0.4.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

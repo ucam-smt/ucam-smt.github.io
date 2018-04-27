@@ -1,0 +1,758 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.parse &mdash; SGNMT 0.4.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.4.1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.parse</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.parse</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">w2f</span>
+<span class="kn">import</span> <span class="nn">pywrapfst</span> <span class="kn">as</span> <span class="nn">fst</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+
+<span class="kn">import</span> <span class="nn">collections</span>
+
+<div class="viewcode-block" id="load_external_ids"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.load_external_ids">[docs]</a><span class="k">def</span> <span class="nf">load_external_ids</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    load file of ids to list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Loading ids from file {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="InternalHypo"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.InternalHypo">[docs]</a><span class="k">class</span> <span class="nc">InternalHypo</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper class for internal parse predictor beam search over nonterminals</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">token_score</span><span class="p">,</span> <span class="n">predictor_state</span><span class="p">,</span> <span class="n">word_to_consume</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor_state</span> <span class="o">=</span> <span class="n">predictor_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="n">word_to_consume</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm_score</span> <span class="o">=</span> <span class="n">score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_score</span> <span class="o">=</span> <span class="n">token_score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_len</span> <span class="o">=</span> <span class="mi">1</span>
+
+<div class="viewcode-block" id="InternalHypo.extend"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.InternalHypo.extend">[docs]</a>    <span class="k">def</span> <span class="nf">extend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">predictor_state</span><span class="p">,</span> <span class="n">word_to_consume</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">+=</span> <span class="n">score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor_state</span> <span class="o">=</span> <span class="n">predictor_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="n">word_to_consume</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_len</span> <span class="o">+=</span> <span class="mi">1</span></div></div>
+
+
+<div class="viewcode-block" id="ParsePredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor">[docs]</a><span class="k">class</span> <span class="nc">ParsePredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Predictor wrapper allowing internal beam search over a representation</span>
+<span class="sd">    which contains some pre-defined &#39;non-terminal&#39; ids, which should not appear </span>
+<span class="sd">    in the output.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">,</span> <span class="n">normalize_scores</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                 <span class="n">max_internal_len</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">nonterminal_ids</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a new parse wrapper for a predictor</span>
+<span class="sd">        Args:</span>
+<span class="sd">          slave_predictor: predictor to wrap with parse wrapper</span>
+<span class="sd">          normalize_scores (bool): whether to normalize posterior scores,</span>
+<span class="sd">                                   e.g. after some tokens have been removed</span>
+<span class="sd">          beam_size (int): beam size for internal beam search over non-terminals</span>
+<span class="sd">          max_internal_len (int): number of consecutive non-terminal tokens</span>
+<span class="sd">                            allowed in internal search before path is ignored</span>
+<span class="sd">          nonterminal_ids: file containing non-terminal ids, one per line</span>
+<span class="sd">          </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ParsePredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalize_scores</span> <span class="o">=</span> <span class="n">normalize_scores</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span> <span class="o">=</span> <span class="n">beam_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_internal_len</span> <span class="o">=</span> <span class="n">max_internal_len</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span> <span class="o">=</span> <span class="n">load_external_ids</span><span class="p">(</span><span class="n">nonterminal_ids</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="ParsePredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return unk probability as determined by slave predictor</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float, unk prob</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span></div>
+   
+
+<div class="viewcode-block" id="ParsePredictor.are_best_terminal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.are_best_terminal">[docs]</a>    <span class="k">def</span> <span class="nf">are_best_terminal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return true if most probable tokens in posterior are all terminals</span>
+<span class="sd">        (including EOS)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">best_rule_ids</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">best_rule_ids</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tok</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span></div>
+
+
+<div class="viewcode-block" id="ParsePredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicting_internally</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;predict next tokens.</span>
+<span class="sd">        Args: </span>
+<span class="sd">        predicting_internally: will be true if called from internal beam</span>
+<span class="sd">                               search, prevents infinite loop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">original_posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="n">all_keys</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">original_posterior</span><span class="p">)</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">rule_id</span><span class="p">:</span> <span class="n">original_posterior</span><span class="p">[</span><span class="n">rule_id</span><span class="p">]</span> <span class="k">for</span> <span class="n">rule_id</span> <span class="ow">in</span> <span class="n">all_keys</span><span class="p">}</span>
+
+        <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">finalize_posterior</span><span class="p">(</span>
+            <span class="n">scores</span><span class="p">,</span> 
+            <span class="n">use_weights</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">normalize_scores</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">normalize_scores</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">predicting_internally</span><span class="p">:</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_word_beam</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scores</span></div>
+    
+<div class="viewcode-block" id="ParsePredictor.maybe_add_new_top_tokens"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.maybe_add_new_top_tokens">[docs]</a>    <span class="k">def</span> <span class="nf">maybe_add_new_top_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">top_terminals</span><span class="p">,</span> <span class="n">hypo</span><span class="p">,</span> <span class="n">next_hypos</span><span class="p">):</span>
+        <span class="n">new_post</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_next</span><span class="p">(</span><span class="n">predicting_internally</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">top_tokens</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">new_post</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
+        <span class="n">next_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">top_tokens</span><span class="p">:</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">+</span> <span class="n">new_post</span><span class="p">[</span><span class="n">tok</span><span class="p">]</span>
+            <span class="n">new_hypo</span> <span class="o">=</span> <span class="n">InternalHypo</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">new_post</span><span class="p">[</span><span class="n">tok</span><span class="p">],</span> <span class="n">next_state</span><span class="p">,</span> <span class="n">tok</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tok</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="p">:</span>
+                <span class="n">add_hypo</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="n">found</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">top_terminals</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="n">tok</span><span class="p">:</span>
+                        <span class="n">found</span> <span class="o">=</span> <span class="bp">True</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span><span class="p">[</span><span class="n">tok</span><span class="p">]</span><span class="o">.</span><span class="n">score</span> <span class="o">&lt;</span> <span class="n">new_hypo</span><span class="o">.</span><span class="n">score</span><span class="p">:</span>
+                            <span class="n">add_hypo</span> <span class="o">=</span> <span class="bp">True</span>
+                            <span class="n">top_terminals</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+                        <span class="n">add_hypo</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="k">if</span> <span class="n">add_hypo</span><span class="p">:</span>
+                        <span class="n">top_terminals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span><span class="p">[</span><span class="n">tok</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_hypo</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_hypo</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ParsePredictor.initialize_internal_hypos"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.initialize_internal_hypos">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_internal_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="n">top_tokens</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">top_terminals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">top_tokens</span><span class="p">:</span>
+            <span class="n">new_hypo</span> <span class="o">=</span> <span class="n">InternalHypo</span><span class="p">(</span><span class="n">posterior</span><span class="p">[</span><span class="n">tok</span><span class="p">],</span>
+                                    <span class="n">posterior</span><span class="p">[</span><span class="n">tok</span><span class="p">],</span>
+                                    <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">()),</span>
+                                    <span class="n">tok</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tok</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span><span class="p">[</span><span class="n">tok</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_hypo</span>
+                <span class="n">top_terminals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span>
+            <span class="n">hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_hypo</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hypos</span><span class="p">,</span> <span class="n">top_terminals</span></div>
+
+<div class="viewcode-block" id="ParsePredictor.find_word_beam"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.find_word_beam">[docs]</a>    <span class="k">def</span> <span class="nf">find_word_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Internal beam search over posterior until a beam of terminals</span>
+<span class="sd">        is found</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hypos</span><span class="p">,</span> <span class="n">top_terminals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialize_internal_hypos</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+        <span class="n">min_score</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">if</span> <span class="n">top_terminals</span><span class="p">:</span>
+            <span class="n">top_terminals</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span><span class="p">[</span><span class="n">h</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+            <span class="n">min_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span><span class="p">[</span><span class="n">top_terminals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">score</span>
+        <span class="n">hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="o">-</span><span class="n">h</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+        <span class="c1"># search until we have n terminal hypos with path scores better</span>
+        <span class="c1"># than further internal search can give us</span>
+        <span class="k">while</span> <span class="n">hypos</span> <span class="ow">and</span> <span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="n">min_score</span><span class="p">:</span>
+            <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_state</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">,</span> <span class="n">internal</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">maybe_add_new_top_tokens</span><span class="p">(</span><span class="n">top_terminals</span><span class="p">,</span> <span class="n">hypo</span><span class="p">,</span> <span class="n">next_hypos</span><span class="p">)</span>
+            <span class="n">next_hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="o">-</span><span class="n">h</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+            <span class="n">hypos</span> <span class="o">=</span> <span class="n">next_hypos</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">]</span>
+            <span class="n">top_terminals</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+            <span class="n">top_terminals</span> <span class="o">=</span> <span class="n">top_terminals</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">top_terminals</span><span class="p">:</span>
+                <span class="n">min_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span><span class="p">[</span><span class="n">top_terminals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">score</span>
+        <span class="n">token_scores</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">score</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">top_terminals</span><span class="p">]</span>
+        <span class="n">return_post</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="p">:</span> <span class="n">s</span> <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">top_terminals</span><span class="p">,</span> <span class="n">token_scores</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">return_post</span></div>
+
+<div class="viewcode-block" id="ParsePredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes slave predictor with source sentence </span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="ParsePredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">,</span> <span class="n">internal</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">internal</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span>
+                    <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">.</span><span class="n">predictor_state</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Consuming {}, not in tok-to-hypo&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">word</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> </div>
+    
+<div class="viewcode-block" id="ParsePredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the current state. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span></div>
+    
+<div class="viewcode-block" id="ParsePredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets the current state. &quot;&quot;&quot;</span>
+        <span class="n">slave_state</span><span class="p">,</span> <span class="n">tok_to_hypo</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tok_to_hypo</span> <span class="o">=</span> <span class="n">tok_to_hypo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">slave_state</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="ParsePredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a matrix of shortest distances between nodes. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="ParsePredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the current node is the same &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+
+<div class="viewcode-block" id="TokParsePredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor">[docs]</a><span class="k">class</span> <span class="nc">TokParsePredictor</span><span class="p">(</span><span class="n">ParsePredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Unlike ParsePredictor, the grammar predicts tokens according to a grammar. </span>
+<span class="sd">    Use BPEParsePredictor if including rules to connect BPE units inside words.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grammar_path</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">,</span> <span class="n">word_out</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                 <span class="n">normalize_scores</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">norm_alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> 
+                 <span class="n">beam_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_internal_len</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">allow_early_eos</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">consume_out_of_class</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new parse predictor wrapper.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            grammar_path (string): Path to the grammar file</span>
+<span class="sd">            slave_predictor: predictor to wrap</span>
+<span class="sd">            word_out (bool): since this wrapper can be used for grammar</span>
+<span class="sd">                             constraint, this bool determines whether we</span>
+<span class="sd">                             also do internal beam search over non-terminals</span>
+<span class="sd">            normalize_scores (bool): true if normalizing scores, e.g. if some</span>
+<span class="sd">                                     are removed from the posterior</span>
+<span class="sd">            norm_alpha (float): may be used for path weight normalization</span>
+<span class="sd">            beam_size (int): beam size for internal beam search</span>
+<span class="sd">            max_internal_len (int): max number of consecutive nonterminals</span>
+<span class="sd">                                    before path is ignored by internal search</span>
+<span class="sd">            allow_early_eos (bool): true if permitting EOS consumed even if</span>
+<span class="sd">                                    it is not permitted by the grammar</span>
+<span class="sd">                                    at that point</span>
+<span class="sd">            consume_out_of_class (bool): true if permitting any tokens to be </span>
+<span class="sd">                                         consumed even if not allowed by the</span>
+<span class="sd">                                         grammar at that point</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TokParsePredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">slave_predictor</span><span class="p">,</span>
+            <span class="n">normalize_scores</span><span class="p">,</span> <span class="n">beam_size</span><span class="p">,</span> <span class="n">max_internal_len</span><span class="p">,</span> <span class="n">nonterminal_ids</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grammar_path</span> <span class="o">=</span> <span class="n">grammar_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_out</span> <span class="o">=</span> <span class="n">word_out</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm_alpha</span> <span class="o">=</span> <span class="n">norm_alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_n_best_terminal</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_rhs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allow_early_eos</span><span class="o">=</span><span class="n">allow_early_eos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consume_ooc</span> <span class="o">=</span> <span class="n">consume_out_of_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepare_grammar</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tok_to_internal_state</span> <span class="o">=</span> <span class="p">{}</span>
+        
+<div class="viewcode-block" id="TokParsePredictor.norm_hypo_score"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.norm_hypo_score">[docs]</a>    <span class="k">def</span> <span class="nf">norm_hypo_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">norm_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_score</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">beam_len</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="TokParsePredictor.norm_score"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.norm_score">[docs]</a>    <span class="k">def</span> <span class="nf">norm_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">beam_len</span><span class="p">):</span>
+        <span class="n">length_penalty</span> <span class="o">=</span> <span class="p">(</span><span class="mf">5.0</span> <span class="o">+</span> <span class="n">beam_len</span><span class="p">)</span> <span class="o">/</span> <span class="mi">6</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_alpha</span> <span class="o">!=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="n">length_penalty</span> <span class="o">=</span> <span class="nb">pow</span><span class="p">(</span><span class="n">length_penalty</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_alpha</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">score</span> <span class="o">/</span> <span class="n">length_penalty</span></div>
+
+<div class="viewcode-block" id="TokParsePredictor.prepare_grammar"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.prepare_grammar">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_grammar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grammar_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">nt</span><span class="p">,</span> <span class="n">rule</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+                <span class="n">nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">nt</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="p">[</span><span class="n">nt</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+                    <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rule</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_nt_in_rule</span> <span class="o">=</span> <span class="p">{</span><span class="n">nt</span><span class="p">:</span> <span class="bp">True</span> <span class="k">for</span> <span class="n">nt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">nt</span><span class="p">,</span> <span class="n">following</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="mi">0</span> <span class="ow">in</span> <span class="n">following</span><span class="p">:</span>
+                <span class="n">following</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">last_nt_in_rule</span><span class="p">[</span><span class="n">nt</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_early_eos</span> <span class="ow">and</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="ow">in</span> <span class="n">following</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="p">[</span><span class="n">nt</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span></div>
+                    
+
+<div class="viewcode-block" id="TokParsePredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_rhs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TokParsePredictor.replace_lhs"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.replace_lhs">[docs]</a>    <span class="k">def</span> <span class="nf">replace_lhs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_rhs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_rhs</span><span class="o">.</span><span class="n">pop</span><span class="p">())</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span></div>
+            
+<div class="viewcode-block" id="TokParsePredictor.get_current_allowed"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.get_current_allowed">[docs]</a>    <span class="k">def</span> <span class="nf">get_current_allowed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">([</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="TokParsePredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicting_next_word</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;predict next tokens as permitted by </span>
+<span class="sd">        the current stack and the grammar</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">original_posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="n">outgoing_rules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span><span class="p">]</span>       
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">rule_id</span><span class="p">:</span> <span class="n">original_posterior</span><span class="p">[</span><span class="n">rule_id</span><span class="p">]</span> 
+                  <span class="k">for</span> <span class="n">rule_id</span> <span class="ow">in</span> <span class="n">outgoing_rules</span><span class="p">}</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">finalize_posterior</span><span class="p">(</span>
+            <span class="n">scores</span><span class="p">,</span> 
+            <span class="n">use_weights</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">normalize_scores</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">normalize_scores</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_out</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">predicting_next_word</span><span class="p">:</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_word</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scores</span></div>
+    
+<div class="viewcode-block" id="TokParsePredictor.find_word_greedy"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.find_word_greedy">[docs]</a>    <span class="k">def</span> <span class="nf">find_word_greedy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">are_best_terminal</span><span class="p">(</span><span class="n">posterior</span><span class="p">):</span>
+            <span class="n">best_rule_id</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">best_rule_id</span><span class="p">)</span>
+            <span class="n">posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_next</span><span class="p">(</span><span class="n">predicting_next_word</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">posterior</span></div>
+
+<div class="viewcode-block" id="TokParsePredictor.find_word_beam"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.find_word_beam">[docs]</a>    <span class="k">def</span> <span class="nf">find_word_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Do an internal beam search over non-terminal functions to find </span>
+<span class="sd">        the next best n terminal tokens, as ranked by normalized path score</span>
+<span class="sd">        </span>
+<span class="sd">        Returns: posterior containing up to n terminal tokens </span>
+<span class="sd">                 and their normalized path score</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">top_tokens</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">InternalHypo</span><span class="p">(</span><span class="n">posterior</span><span class="p">[</span><span class="n">tok</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_state</span><span class="p">(),</span> <span class="n">tok</span><span class="p">)</span> 
+                 <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">top_tokens</span> <span class="k">if</span> <span class="n">tok</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="p">]</span>
+        <span class="n">best_hypo</span> <span class="o">=</span> <span class="n">InternalHypo</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="n">best_posterior</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">while</span> <span class="n">hypos</span> <span class="ow">and</span> <span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">norm_score</span> <span class="o">&gt;</span> <span class="n">best_hypo</span><span class="o">.</span><span class="n">norm_score</span><span class="p">:</span>
+            <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_state</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
+                <span class="n">new_post</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_next</span><span class="p">(</span><span class="n">predicting_next_word</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">top_tokens</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">new_post</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
+                <span class="n">next_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span>
+                <span class="n">new_norm_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_score</span><span class="p">(</span>
+                    <span class="n">new_post</span><span class="p">[</span><span class="n">top_tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">+</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">beam_len</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">are_best_terminal</span><span class="p">(</span><span class="n">new_post</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="n">new_norm_score</span> <span class="o">&gt;</span> <span class="n">best_hypo</span><span class="o">.</span><span class="n">norm_score</span><span class="p">):</span>
+                    <span class="n">best_hypo</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+                    <span class="n">best_hypo</span><span class="o">.</span><span class="n">predictor_state</span> <span class="o">=</span> <span class="n">next_state</span>
+                    <span class="n">best_hypo</span><span class="o">.</span><span class="n">norm_score</span> <span class="o">=</span> <span class="n">new_norm_score</span>
+                    <span class="n">best_posterior</span> <span class="o">=</span> <span class="n">new_post</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">norm_score</span><span class="p">(</span><span class="n">best_hypo</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">beam_len</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_internal_len</span><span class="p">:</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;cutting off internal hypo - too long&#39;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">top_tokens</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">tok</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="p">:</span>
+                            <span class="n">new_hypo</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+                            <span class="n">new_hypo</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">new_post</span><span class="p">[</span><span class="n">tok</span><span class="p">],</span> <span class="n">next_state</span><span class="p">,</span> <span class="n">tok</span><span class="p">)</span>
+                            <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_hypo</span><span class="p">)</span>
+
+            <span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_hypo_score</span><span class="p">,</span> <span class="n">next_hypos</span><span class="p">)</span>
+            <span class="n">next_hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="o">-</span><span class="n">h</span><span class="o">.</span><span class="n">norm_score</span><span class="p">)</span>
+            <span class="n">hypos</span> <span class="o">=</span> <span class="n">next_hypos</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">best_hypo</span><span class="o">.</span><span class="n">predictor_state</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">best_posterior</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">best_posterior</span><span class="p">[</span><span class="n">tok</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_score</span><span class="p">(</span>
+                <span class="n">best_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">+</span> <span class="n">best_posterior</span><span class="p">[</span><span class="n">tok</span><span class="p">],</span> <span class="n">best_hypo</span><span class="o">.</span><span class="n">beam_len</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tok</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">best_posterior</span><span class="p">[</span><span class="n">tok</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">best_posterior</span></div>
+
+
+<div class="viewcode-block" id="TokParsePredictor.find_word"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.find_word">[docs]</a>    <span class="k">def</span> <span class="nf">find_word</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check whether rhs of best option in posterior is a terminal</span>
+<span class="sd">        if it is, return the posterior for decoding</span>
+<span class="sd">        if not, take the best result and follow that path until a word is found</span>
+<span class="sd">        this follows a greedy 1best or a beam path through non-terminals</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_word_greedy</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">are_best_terminal</span><span class="p">(</span><span class="n">posterior</span><span class="p">):</span>
+              <span class="k">return</span> <span class="n">posterior</span>
+          <span class="k">else</span><span class="p">:</span>
+              <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_word_beam</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TokParsePredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): word token being consumed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">change_to_unk</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">word</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span> <span class="ow">or</span>
+            <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">consume_ooc</span> <span class="ow">and</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_current_allowed</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="n">change_to_unk</span><span class="p">:</span>
+            <span class="n">word</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_stacks</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> </div>
+        
+    
+<div class="viewcode-block" id="TokParsePredictor.update_stacks"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.update_stacks">[docs]</a>    <span class="k">def</span> <span class="nf">update_stacks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_rhs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_nt_in_rule</span><span class="p">[</span><span class="n">word</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">replace_lhs</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replace_lhs</span><span class="p">()</span>  </div>
+
+<div class="viewcode-block" id="TokParsePredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the current state, including slave predictor state &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_rhs</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span></div>
+    
+<div class="viewcode-block" id="TokParsePredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets the current state &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_rhs</span><span class="p">,</span> <span class="n">slave_state</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">slave_state</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="BpeParsePredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.BpeParsePredictor">[docs]</a><span class="k">class</span> <span class="nc">BpeParsePredictor</span><span class="p">(</span><span class="n">TokParsePredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;                                                                         </span>
+<span class="sd">    Predict over a BPE-based grammar with two possible grammar constraints:</span>
+<span class="sd">    one between non-terminals and bpe start-of-word tokens, one over</span>
+<span class="sd">    bpe tokens in a word</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grammar_path</span><span class="p">,</span> <span class="n">bpe_rule_path</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">,</span>
+                 <span class="n">word_out</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">normalize_scores</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                 <span class="n">norm_alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_internal_len</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span>
+                 <span class="n">allow_early_eos</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">consume_out_of_class</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> 
+                 <span class="n">eow_ids</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">terminal_restrict</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">terminal_ids</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">internal_only_restrict</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new parse predictor wrapper which can be constrained to 2</span>
+<span class="sd">           grammars: one over non-terminals / terminals, one internally to</span>
+<span class="sd">           constrain BPE units within a single word</span>
+<span class="sd">        Args: </span>
+<span class="sd">            grammar_path (string): Path to the grammar file</span>
+<span class="sd">            bpe_rule_path (string): Path to file defining rules between BPEs</span>
+<span class="sd">            slave_predictor: predictor to wrap</span>
+<span class="sd">            word_out (bool): since this wrapper can be used for grammar</span>
+<span class="sd">                             constraint, this bool determines whether we</span>
+<span class="sd">                             also do internal beam search over non-terminals</span>
+<span class="sd">            normalize_scores (bool): true if normalizing scores, e.g. if some</span>
+<span class="sd">                                     are removed from the posterior</span>
+<span class="sd">            norm_alpha (float): may be used for path weight normalization</span>
+<span class="sd">            beam_size (int): beam size for internal beam search</span>
+<span class="sd">            max_internal_len (int): max number of consecutive nonterminals</span>
+<span class="sd">                                    before path is ignored by internal search</span>
+<span class="sd">            allow_early_eos (bool): true if permitting EOS consumed even if</span>
+<span class="sd">                                    it is not permitted by the grammar</span>
+<span class="sd">                                    at that point</span>
+<span class="sd">            consume_out_of_class (bool): true if permitting any tokens to be</span>
+<span class="sd">                                         consumed even if not allowed by the</span>
+<span class="sd">                                         grammar at that point</span>
+<span class="sd">            eow_ids (string): path to file containing ids of BPEs that mark</span>
+<span class="sd">                              the end of a word</span>
+<span class="sd">            terminal_restrict (bool): true if applying grammar constraint over </span>
+<span class="sd">                                      nonterminals and terminals</span>
+<span class="sd">            terminal_ids (string): path to file containing all terminal ids</span>
+<span class="sd">            internal_only_restrict (bool): true if applying grammar constraint</span>
+<span class="sd">                                           over BPE units inside words</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BpeParsePredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">grammar_path</span><span class="p">,</span>
+                                                <span class="n">slave_predictor</span><span class="p">,</span>
+                                                <span class="n">word_out</span><span class="p">,</span>
+                                                <span class="n">normalize_scores</span><span class="p">,</span>
+                                                <span class="n">norm_alpha</span><span class="p">,</span>
+                                                <span class="n">beam_size</span><span class="p">,</span>
+                                                <span class="n">max_internal_len</span><span class="p">,</span>
+                                                <span class="n">allow_early_eos</span><span class="p">,</span>
+                                                <span class="n">consume_out_of_class</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">internal_only_restrict</span> <span class="o">=</span> <span class="n">internal_only_restrict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">terminal_restrict</span> <span class="o">=</span> <span class="n">terminal_restrict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eow_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_eow_ids</span><span class="p">(</span><span class="n">eow_ids</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_terminals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_terminals</span><span class="p">(</span><span class="n">terminal_ids</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_bpe_can_follow</span><span class="p">(</span><span class="n">bpe_rule_path</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="BpeParsePredictor.get_eow_ids"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.BpeParsePredictor.get_eow_ids">[docs]</a>    <span class="k">def</span> <span class="nf">get_eow_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eow_ids</span><span class="p">):</span>
+        <span class="n">eows</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">eow_ids</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">eow_ids</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">eows</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">eows</span></div>
+        
+<div class="viewcode-block" id="BpeParsePredictor.get_all_terminals"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.BpeParsePredictor.get_all_terminals">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_terminals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">terminal_ids</span><span class="p">):</span>
+        <span class="n">all_terminals</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">terminal_ids</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">terminal_ids</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">all_terminals</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminal_restrict</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">terminal</span> <span class="ow">in</span> <span class="n">all_terminals</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="p">[</span><span class="n">terminal</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_terminals</span>
+        <span class="k">return</span> <span class="n">all_terminals</span></div>
+
+<div class="viewcode-block" id="BpeParsePredictor.get_bpe_can_follow"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.BpeParsePredictor.get_bpe_can_follow">[docs]</a>    <span class="k">def</span> <span class="nf">get_bpe_can_follow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rule_path</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">rule_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">nt</span><span class="p">,</span> <span class="n">following</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; : &#39;</span><span class="p">)</span>
+                <span class="n">nt_tuple</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">nt</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)))</span>
+                <span class="n">following</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">following</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="p">[</span><span class="n">nt_tuple</span><span class="p">]</span> <span class="o">=</span> <span class="n">following</span></div>
+                
+<div class="viewcode-block" id="BpeParsePredictor.update_stacks"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.BpeParsePredictor.update_stacks">[docs]</a>    <span class="k">def</span> <span class="nf">update_stacks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_rhs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_nt_in_rule</span><span class="p">[</span><span class="n">word</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">replace_lhs</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminal_restrict</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">internal_lhs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span> <span class="o">+</span> <span class="p">(</span><span class="n">word</span><span class="p">,)</span>
+                <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                    <span class="n">internal_lhs</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span><span class="p">,</span> <span class="n">word</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">internal_lhs</span> <span class="o">=</span> <span class="n">word</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminal_restrict</span> <span class="ow">and</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">eow_ids</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">replace_lhs</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminal_restrict</span> <span class="ow">or</span> 
+                  <span class="n">internal_lhs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span> <span class="o">=</span> <span class="n">internal_lhs</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">replace_lhs</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BpeParsePredictor.is_nt"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.BpeParsePredictor.is_nt">[docs]</a>    <span class="k">def</span> <span class="nf">is_nt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_terminals</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span></div>
+
+<div class="viewcode-block" id="BpeParsePredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.BpeParsePredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicting_next_word</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;predict next tokens as permitted by </span>
+<span class="sd">        the current stack and the BPE grammar</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">original_posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="n">outgoing_rules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lhs_to_can_follow</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_lhs</span><span class="p">]</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">rule_id</span><span class="p">:</span> <span class="n">original_posterior</span><span class="p">[</span><span class="n">rule_id</span><span class="p">]</span> 
+                  <span class="k">for</span> <span class="n">rule_id</span> <span class="ow">in</span> <span class="n">outgoing_rules</span><span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">internal_only_restrict</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">are_best_terminal</span><span class="p">(</span><span class="n">scores</span><span class="p">):</span>
+            <span class="n">outgoing_rules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_terminals</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">rule_id</span><span class="p">:</span> <span class="n">original_posterior</span><span class="p">[</span><span class="n">rule_id</span><span class="p">]</span>
+                      <span class="k">for</span> <span class="n">rule_id</span> <span class="ow">in</span> <span class="n">outgoing_rules</span><span class="p">}</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">finalize_posterior</span><span class="p">(</span>
+            <span class="n">scores</span><span class="p">,</span> 
+            <span class="n">use_weights</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">normalize_scores</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">normalize_scores</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_out</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">predicting_next_word</span><span class="p">:</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_word</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scores</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.4.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
