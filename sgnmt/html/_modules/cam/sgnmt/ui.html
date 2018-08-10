@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.ui &mdash; SGNMT 0.4.1 documentation</title>
+  <title>cam.sgnmt.ui &mdash; SGNMT 0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.4.1 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 0.5 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.4.1
+                0.5
               </div>
             
           
@@ -680,8 +680,10 @@
                         <span class="s2">&quot;* &#39;forcedosm&#39;: Forced decoding under OSM. Use in &quot;</span>
                         <span class="s2">&quot;combination with osm predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;         Options: trg_test</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;srilm&#39;: n-gram language model.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;          Options: srilm_path, srilm_order</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;kenlm&#39;: n-gram language model (KenLM).</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;          Options: lm_pathr</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;srilm&#39;: n-gram language model (SRILM).</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;          Options: lm_path, ngramc_order</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;nplm&#39;: neural n-gram language model (NPLM).</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: nplm_path, normalize_nplm_probs</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;rnnlm&#39;: RNN language model based on TensorFlow.</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -897,6 +899,11 @@
                        <span class="s2">&quot;penalization term following Google&#39;s NMT (Wu et al., &quot;</span>
                        <span class="s2">&quot;2016) to the NMT score. Only works for the Blocks &quot;</span>
                        <span class="s2">&quot;NMT predictor.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--gnmt_alpha&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is greater than zero and the combination &quot;</span>
+                       <span class="s2">&quot;scheme is set to length_norm, use Google-style length &quot;</span>
+                       <span class="s2">&quot; normalization (Wu et al., 2016) rather than simply &quot;</span>
+                       <span class="s2">&quot;dividing by translation length.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_max_depth&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum depth of generated trees. After this &quot;</span>
                        <span class="s2">&quot;depth is reached, only terminals and POP are allowed &quot;</span>
@@ -1168,8 +1175,8 @@
     
     <span class="c1"># (NP)LM predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;(Neural) LM predictor options&#39;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--srilm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;lm/ngram.lm.gz&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the ngram LM file in SRILM format&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;lm/ngram.lm.gz&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the ngram LM file in ARPA format&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--srilm_convert_to_ln&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to convert srilm scores from log to ln.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nplm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;nplm/nplm.gz&quot;</span><span class="p">,</span>
@@ -1184,8 +1191,6 @@
                         <span class="s2">&quot;the parameter string to use configuration files &quot;</span>
                         <span class="s2">&quot;with the second method. Use &#39;model_name=X&#39; in the &quot;</span>
                         <span class="s2">&quot;parameter string to use one of the predefined models.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--srilm_order&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Order of ngram for srilm predictor&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--normalize_nplm_probs&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to normalize nplm probabilities over &quot;</span>
                         <span class="s2">&quot;the current unbounded predictor vocabulary.&quot;</span><span class="p">)</span>
@@ -1403,6 +1408,10 @@
                      <span class="s2">&quot;search with early stopping have the same length. You &quot;</span>
                      <span class="s2">&quot;might want to disable early stopping.&quot;</span><span class="p">)</span>
         <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">!=</span> <span class="s2">&quot;length_norm&quot;</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">gnmt_alpha</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Setting gnmt_alpha has no effect without using the &quot;</span>
+                     <span class="s2">&quot;combination scheme length_norm.&quot;</span><span class="p">)</span>
+        <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">True</span>
     <span class="k">if</span> <span class="s2">&quot;t2t&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">predictors</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">!=</span> <span class="s2">&quot;t2t&quot;</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;You are using the t2t predictor, but indexing_scheme &quot;</span>
                      <span class="s2">&quot;is not set to t2t.&quot;</span><span class="p">)</span>
@@ -1444,7 +1453,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.4.1',
+            VERSION:'0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

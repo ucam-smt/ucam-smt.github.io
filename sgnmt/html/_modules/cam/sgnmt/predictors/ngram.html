@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.ngram &mdash; SGNMT 0.4.1 documentation</title>
+  <title>cam.sgnmt.predictors.ngram &mdash; SGNMT 0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.4.1 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.4.1
+                0.5
               </div>
             
           
@@ -144,9 +144,8 @@
 <span class="sd">size ngram models normally do not permit complete enumeration of the</span>
 <span class="sd">posterior.</span>
 
-<span class="sd">This module is based on the swig-srilm package.</span>
-
-<span class="sd">https://github.com/desilinguist/swig-srilm</span>
+<span class="sd">This module contains two predictors, one for a SRILM backend and one</span>
+<span class="sd">for a KenLM backend.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">UnboundedVocabularyPredictor</span>
@@ -156,6 +155,12 @@
 <span class="k">try</span><span class="p">:</span>
     <span class="c1"># Requires swig-srilm</span>
     <span class="kn">from</span> <span class="nn">srilm</span> <span class="kn">import</span> <span class="n">readLM</span><span class="p">,</span> <span class="n">initLM</span><span class="p">,</span> <span class="n">getNgramProb</span><span class="p">,</span> <span class="n">getIndexForWord</span><span class="p">,</span> <span class="n">howManyNgrams</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span> <span class="c1"># Deal with it in decode.py</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Requires kenlm</span>
+    <span class="kn">import</span> <span class="nn">kenlm</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="k">pass</span> <span class="c1"># Deal with it in decode.py</span>
 
@@ -175,6 +180,7 @@
 <span class="sd">        Args:</span>
 <span class="sd">            path (string): Path to the ARPA language model file</span>
 <span class="sd">            ngram_order (int): Order of the language model</span>
+<span class="sd">            convert_to_ln (bool): Whether to convert ld scores to ln.</span>
 <span class="sd">            </span>
 <span class="sd">        Raises:</span>
 <span class="sd">            NameError. If srilm-swig is not installed</span>
@@ -244,6 +250,60 @@
         <span class="sd">&quot;&quot;&quot;Returns true if the ngram history is the same&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace_unks</span><span class="p">(</span><span class="n">state1</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replace_unks</span><span class="p">(</span><span class="n">state2</span><span class="p">)</span></div></div>
     
+
+<div class="viewcode-block" id="KenLMPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor">[docs]</a><span class="k">class</span> <span class="nc">KenLMPredictor</span><span class="p">(</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;KenLM predictor based on</span>
+<span class="sd">    https://github.com/kpu/kenlm </span>
+<span class="sd">    </span>
+<span class="sd">    The predictor state is described by the n-gram history.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new n-gram language model predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            path (string): Path to the ARPA language model file</span>
+<span class="sd">            </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            NameError. If KenLM is not installed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">KenLMPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span> <span class="o">=</span> <span class="n">kenlm</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span> <span class="o">=</span> <span class="n">kenlm</span><span class="o">.</span><span class="n">State</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="KenLMPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes the KenLM state.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span> <span class="o">=</span> <span class="n">kenlm</span><span class="o">.</span><span class="n">State</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="o">.</span><span class="n">BeginSentenceWrite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="KenLMPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">w</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="o">.</span><span class="n">BaseScore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">,</span> 
+                                     <span class="s2">&quot;&lt;/s&gt;&quot;</span> <span class="k">if</span> <span class="n">w</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">),</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">}</span></div>
+    
+        
+<div class="viewcode-block" id="KenLMPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use the probability for &#39;&lt;unk&gt;&#39; in the language model &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="o">.</span><span class="n">BaseScore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">,</span> <span class="s2">&quot;&lt;unk&gt;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="KenLMPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="o">.</span><span class="n">BaseScore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">word</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span></div>
+    
+<div class="viewcode-block" id="KenLMPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span></div>
+    
+<div class="viewcode-block" id="KenLMPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="KenLMPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">state</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+
 </pre></div>
 
            </div>
@@ -277,7 +337,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.4.1',
+            VERSION:'0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

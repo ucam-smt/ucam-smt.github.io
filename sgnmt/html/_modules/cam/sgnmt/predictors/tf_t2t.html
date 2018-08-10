@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.tf_t2t &mdash; SGNMT 0.4.1 documentation</title>
+  <title>cam.sgnmt.predictors.tf_t2t &mdash; SGNMT 0.5 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.4.1 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.4.1
+                0.5
               </div>
             
           
@@ -164,11 +164,14 @@
 
 <span class="k">try</span><span class="p">:</span>
     <span class="c1"># Requires tensor2tensor</span>
-    <span class="kn">from</span> <span class="nn">tensor2tensor.utils</span> <span class="kn">import</span> <span class="n">trainer_utils</span>
+    <span class="kn">from</span> <span class="nn">tensor2tensor</span> <span class="kn">import</span> <span class="n">models</span>  <span class="c1"># pylint: disable=unused-import</span>
+    <span class="kn">from</span> <span class="nn">tensor2tensor</span> <span class="kn">import</span> <span class="n">problems</span> <span class="k">as</span> <span class="n">problems_lib</span>  <span class="c1"># pylint: disable=unused-import</span>
     <span class="kn">from</span> <span class="nn">tensor2tensor.utils</span> <span class="kn">import</span> <span class="n">usr_dir</span>
     <span class="kn">from</span> <span class="nn">tensor2tensor.utils</span> <span class="kn">import</span> <span class="n">registry</span>
     <span class="kn">from</span> <span class="nn">tensor2tensor.utils</span> <span class="kn">import</span> <span class="n">devices</span>
+    <span class="kn">from</span> <span class="nn">tensor2tensor.utils</span> <span class="kn">import</span> <span class="n">trainer_lib</span>
     <span class="kn">from</span> <span class="nn">tensor2tensor.data_generators.text_encoder</span> <span class="kn">import</span> <span class="n">TextEncoder</span>
+    <span class="kn">from</span> <span class="nn">tensor2tensor.data_generators</span> <span class="kn">import</span> <span class="n">problem</span>  <span class="c1"># pylint: disable=unused-import</span>
     <span class="kn">from</span> <span class="nn">tensor2tensor.data_generators</span> <span class="kn">import</span> <span class="n">text_encoder</span>
     <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
     <span class="kn">from</span> <span class="nn">tensorflow.python.training</span> <span class="kn">import</span> <span class="n">saver</span>
@@ -217,13 +220,12 @@
         <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Setting up tensor2tensor library...&quot;</span><span class="p">)</span>
         <span class="n">tf</span><span class="o">.</span><span class="n">logging</span><span class="o">.</span><span class="n">set_verbosity</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
         <span class="n">usr_dir</span><span class="o">.</span><span class="n">import_usr_dir</span><span class="p">(</span><span class="n">t2t_usr_dir</span><span class="p">)</span>
-        <span class="n">trainer_utils</span><span class="o">.</span><span class="n">log_registry</span><span class="p">()</span>
         <span class="n">T2T_INITIALIZED</span> <span class="o">=</span> <span class="bp">True</span>
 
 
 <div class="viewcode-block" id="log_prob_from_logits"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.log_prob_from_logits">[docs]</a><span class="k">def</span> <span class="nf">log_prob_from_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Softmax function.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">logits</span> <span class="o">-</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_logsumexp</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">keep_dims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">logits</span> <span class="o">-</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_logsumexp</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
 
 
 <span class="k">class</span> <span class="nc">_BaseTensor2TensorPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
@@ -295,7 +297,7 @@
 
     <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fetch posterior[t2t_unk_id]&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
         <span class="k">return</span> <span class="n">posterior</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span><span class="p">]</span>
 
@@ -386,7 +388,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span> <span class="o">=</span> <span class="n">trg_vocab_size</span>
         <span class="n">predictor_graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
         <span class="k">with</span> <span class="n">predictor_graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">()</span> <span class="k">as</span> <span class="n">g</span><span class="p">:</span>
-            <span class="n">hparams</span> <span class="o">=</span> <span class="n">trainer_utils</span><span class="o">.</span><span class="n">create_hparams</span><span class="p">(</span><span class="n">hparams_set_name</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="n">hparams</span> <span class="o">=</span> <span class="n">trainer_lib</span><span class="o">.</span><span class="n">create_hparams</span><span class="p">(</span><span class="n">hparams_set_name</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
               <span class="k">try</span><span class="p">:</span>
                 <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;pop_id&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">)</span>
@@ -404,12 +406,11 @@
                                                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_targets&quot;</span><span class="p">)</span>
             <span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">expand_input_dims_for_t2t</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">),</span> 
                         <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="n">expand_input_dims_for_t2t</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">)}</span>
-            <span class="k">with</span> <span class="n">translate_model</span><span class="o">.</span><span class="n">_var_store</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
-                <span class="n">translate_model</span><span class="o">.</span><span class="n">prepare_features_for_infer</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
-                <span class="n">translate_model</span><span class="o">.</span><span class="n">_fill_problem_hparams_features</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
-                <span class="n">logits</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">translate_model</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
-                <span class="n">logits</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_log_probs</span> <span class="o">=</span> <span class="n">log_prob_from_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+            <span class="n">translate_model</span><span class="o">.</span><span class="n">prepare_features_for_infer</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+            <span class="n">translate_model</span><span class="o">.</span><span class="n">_fill_problem_hparams_features</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+            <span class="n">logits</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">translate_model</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+            <span class="n">logits</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log_probs</span> <span class="o">=</span> <span class="n">log_prob_from_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_session</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_add_problem_hparams</span><span class="p">(</span>
@@ -417,7 +418,7 @@
         <span class="sd">&quot;&quot;&quot;Add problem hparams for the problems. </span>
 
 <span class="sd">        This method corresponds to create_hparams() in tensor2tensor&#39;s</span>
-<span class="sd">        trainer_utils module, but replaces the feature encoders with</span>
+<span class="sd">        trainer_lib module, but replaces the feature encoders with</span>
 <span class="sd">        DummyFeatureEncoder&#39;s.</span>
 
 <span class="sd">        Args:</span>
@@ -451,8 +452,8 @@
             <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="n">DummyTextEncoder</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="n">trg_vocab_size</span><span class="p">)</span>
         <span class="p">}</span>
         <span class="n">p_hparams</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">get_hparams</span><span class="p">(</span><span class="n">hparams</span><span class="p">)</span>
-        <span class="n">hparams</span><span class="o">.</span><span class="n">problem_instances</span> <span class="o">=</span> <span class="p">[</span><span class="n">problem</span><span class="p">]</span>
-        <span class="n">hparams</span><span class="o">.</span><span class="n">problems</span> <span class="o">=</span> <span class="p">[</span><span class="n">p_hparams</span><span class="p">]</span>
+        <span class="n">hparams</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>
+        <span class="n">hparams</span><span class="o">.</span><span class="n">problem_hparams</span> <span class="o">=</span> <span class="n">p_hparams</span>
         <span class="k">return</span> <span class="n">hparams</span>
                 
 <div class="viewcode-block" id="T2TPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.T2TPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -600,7 +601,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.4.1',
+            VERSION:'0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
