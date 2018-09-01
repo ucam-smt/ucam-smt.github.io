@@ -1,0 +1,548 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.decoding.flip &mdash; SGNMT 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.decoding.flip</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.decoding.flip</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Implementation of the flip search strategy &quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">heapq</span> <span class="kn">import</span> <span class="n">heappush</span><span class="p">,</span> <span class="n">heappop</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Decoder</span><span class="p">,</span> <span class="n">PartialHypothesis</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.trie</span> <span class="kn">import</span> <span class="n">SimpleTrie</span>
+
+
+<div class="viewcode-block" id="FlipCandidate"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.flip.FlipCandidate">[docs]</a><span class="k">class</span> <span class="nc">FlipCandidate</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper class for ``FlipDecoder``. Represents a full but yet </span>
+<span class="sd">    unscored hypothesis which differs from an explored hypo by one</span>
+<span class="sd">    flip or move operation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trgt_sentence</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">bigram_scores</span><span class="p">,</span> <span class="n">max_score</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new candidate hypothesis.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trgt_sentence (list): Full target sentence</span>
+<span class="sd">            scores (list): Word level scores. Same length as</span>
+<span class="sd">                           ``trgt_sentence``</span>
+<span class="sd">            bigram_scores (dict): Bigram scores collected along the</span>
+<span class="sd">                                  parent hypothesis</span>
+<span class="sd">            max_score (float): Maximum possible score this candidate</span>
+<span class="sd">                               can achieve</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="n">trgt_sentence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scores</span> <span class="o">=</span> <span class="n">scores</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bigram_scores</span> <span class="o">=</span> <span class="n">bigram_scores</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_score</span> <span class="o">=</span> <span class="n">max_score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expected_score</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FlipDecoder"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.flip.FlipDecoder">[docs]</a><span class="k">class</span> <span class="nc">FlipDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The flip decoder explores the search space by permutating</span>
+<span class="sd">    already explored hypotheses with a single permutation operation. We</span>
+<span class="sd">    support two operations: &#39;flip&#39; flips the position of two target </span>
+<span class="sd">    tokens. &#39;move&#39; moves one target token to another location in the</span>
+<span class="sd">    sentence.</span>
+<span class="sd">    </span>
+<span class="sd">    Note that this decoder does not support the ``max_length`` </span>
+<span class="sd">    parameter as it is designed for fixed length decoding problems.</span>
+<span class="sd">    </span>
+<span class="sd">    Also note that this decoder works only for bag-of-words problems.</span>
+<span class="sd">    Do not use the bow predictor in combination with this decoder as</span>
+<span class="sd">    it will hide the EOS scores which are important to estimate bigram</span>
+<span class="sd">    scores.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">,</span> <span class="n">always_greedy</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new flip decoder. Do not use this decoder in </span>
+<span class="sd">        combination with the bow predictor as it inherently already</span>
+<span class="sd">        satisfies the bag-of-word constrains. The following values</span>
+<span class="sd">        are fetched from `decoder_args`:</span>
+<span class="sd">        </span>
+<span class="sd">            trg_test(string): Path to a plain text file which </span>
+<span class="sd">                              defines the bag of words</span>
+<span class="sd">            max_node_expansions (int): Maximum number of node expansions </span>
+<span class="sd">                                       for inadmissible pruning.</span>
+<span class="sd">            early_stopping (boolean): Activates admissible pruning</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from the configuration API.</span>
+<span class="sd">            always_greedy (boolean): Per default, the flip decoder does</span>
+<span class="sd">                                     forced decoding along the complete</span>
+<span class="sd">                                     candidate sentence. Set to True to</span>
+<span class="sd">                                     do greedy decoding from the</span>
+<span class="sd">                                     backtraced node instead</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FlipDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions_param</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">max_node_expansions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">early_stopping</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">always_greedy</span> <span class="o">=</span> <span class="n">always_greedy</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">decoder_args</span><span class="o">.</span><span class="n">trg_test</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">flip_strategy</span> <span class="o">==</span> <span class="s1">&#39;flip&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_extract_candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_candidates_flip</span>
+        <span class="k">elif</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">flip_strategy</span> <span class="o">==</span> <span class="s1">&#39;move&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_extract_candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_candidates_move</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Unknown flip strategy!&quot;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_greedy_decode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Performs greedy decoding from the start node. Used to obtain</span>
+<span class="sd">        the initial hypothesis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hypo</span> <span class="o">=</span> <span class="n">PartialHypothesis</span><span class="p">()</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">posteriors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">score_breakdowns</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">bag</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_bag</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">bag</span><span class="p">:</span>
+            <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+            <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())</span>
+            <span class="n">hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+            <span class="n">posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+            <span class="n">score_breakdowns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">)</span>
+            <span class="n">best_word</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax</span><span class="p">({</span><span class="n">w</span><span class="p">:</span> <span class="n">posterior</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">bag</span><span class="p">})</span>
+            <span class="n">bag</span><span class="p">[</span><span class="n">best_word</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">bag</span><span class="p">[</span><span class="n">best_word</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">bag</span><span class="p">[</span><span class="n">best_word</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">best_word</span><span class="p">)</span>
+            <span class="n">hypo</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">best_word</span><span class="p">,</span>
+                               <span class="bp">None</span><span class="p">,</span>
+                               <span class="n">posterior</span><span class="p">[</span><span class="n">best_word</span><span class="p">],</span>
+                               <span class="n">score_breakdown</span><span class="p">[</span><span class="n">best_word</span><span class="p">])</span>
+            <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">[</span><span class="n">best_word</span><span class="p">])</span>
+        <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
+        <span class="n">hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+        <span class="n">posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+        <span class="n">score_breakdowns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">)</span>
+        <span class="n">hypo</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">,</span>
+                           <span class="bp">None</span><span class="p">,</span>
+                           <span class="n">posterior</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">],</span>
+                           <span class="n">score_breakdown</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Greedy hypo (</span><span class="si">%f</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                          <span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                          <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">])))</span>
+        <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_new_hypos</span><span class="p">(</span><span class="n">FlipCandidate</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span>
+                                               <span class="n">scores</span><span class="p">,</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">_create_dummy_bigrams</span><span class="p">(),</span>
+                                               <span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+                                 <span class="nb">len</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">),</span>
+                                 <span class="n">hypos</span><span class="p">,</span>
+                                 <span class="n">posteriors</span><span class="p">,</span>
+                                 <span class="n">score_breakdowns</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_create_dummy_bigrams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a dictionary of optimistic bigram scores which is to</span>
+<span class="sd">        be updated as the decoder steps through the target sentence</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="n">bigram_scores</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_bag</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+            <span class="n">bigram_scores</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">w2</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">w2</span> <span class="ow">in</span> <span class="n">words</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">bigram_scores</span>
+
+    <span class="k">def</span> <span class="nf">_is_explored</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trgt_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if this target sentence has been explored</span>
+<span class="sd">        already</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explored</span><span class="o">.</span><span class="n">get_prefix</span><span class="p">(</span><span class="n">trgt_sentence</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">explored</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_process_new_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                           <span class="n">candidate</span><span class="p">,</span> 
+                           <span class="n">max_pos</span><span class="p">,</span> 
+                           <span class="n">explored_hypos</span><span class="p">,</span> 
+                           <span class="n">explored_posteriors</span><span class="p">,</span> 
+                           <span class="n">explored_score_breakdowns</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method is called after a new candidate has been </span>
+<span class="sd">        explored. It derives new candidates by updating the bigram</span>
+<span class="sd">        scores and delegating to ``_extract_candidates`` for permutating</span>
+<span class="sd">        the parent target sentence.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">full_hypo_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span>
+        <span class="n">max_pos</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">full_hypo_len</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="c1"># -1 because we don&#39;t permit moving EOS</span>
+                      <span class="n">max_pos</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">explored</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">max_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">explored_hypos</span> 
+                <span class="ow">and</span> <span class="n">explored_hypos</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">):</span>
+            <span class="n">full_hypo</span> <span class="o">=</span> <span class="n">explored_hypos</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">,</span> <span class="n">full_hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">full_hypo</span><span class="p">)</span>
+        <span class="c1"># Update data structures</span>
+        <span class="n">bigram_scores</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">bigram_scores</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">hypo</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">explored_hypos</span><span class="p">):</span>
+            <span class="n">prev_word</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> \
+                                               <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="n">candidate</span><span class="o">.</span><span class="n">scores</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_bag</span><span class="p">:</span>
+                <span class="n">score</span> <span class="o">=</span> <span class="n">explored_posteriors</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">w</span><span class="p">]</span>
+                <span class="c1"># Update bigram scores</span>
+                <span class="c1"># not quite correct if we have two occurrences of the same word</span>
+                <span class="n">bigram_scores</span><span class="p">[</span><span class="n">prev_word</span><span class="p">][</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span> 
+                <span class="c1"># Update tries</span>
+                <span class="n">exp_hypo</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">cheap_expand</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> 
+                                             <span class="n">score</span><span class="p">,</span> 
+                                             <span class="n">explored_score_breakdowns</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">w</span><span class="p">])</span>
+                <span class="n">exp_hypo</span><span class="o">.</span><span class="n">scores</span> <span class="o">=</span> <span class="n">scores</span> <span class="o">+</span> <span class="p">[</span><span class="n">score</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">exp_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span> <span class="n">exp_hypo</span><span class="p">)</span>
+        <span class="c1"># Extract candidates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_extract_candidates</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">max_pos</span><span class="p">,</span> <span class="n">bigram_scores</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_extract_candidates_move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">candidate</span><span class="p">,</span> <span class="n">max_pos</span><span class="p">,</span> <span class="n">bigram_scores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implements the traversal strategy &#39;move&#39; &quot;&quot;&quot;</span>
+        <span class="n">full_hypo_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">from_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">full_hypo_len</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">from_word</span> <span class="o">=</span> <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="n">from_pos</span><span class="p">]</span>
+            <span class="n">stub</span> <span class="o">=</span> <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">from_pos</span><span class="p">]</span> \
+                        <span class="o">+</span> <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="n">from_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">for</span> <span class="n">to_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">full_hypo_len</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">change_pos</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">from_pos</span><span class="p">,</span> <span class="n">to_pos</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">change_pos</span> <span class="o">&gt;=</span> <span class="n">max_pos</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">trgt_sentence</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">stub</span><span class="p">)</span>
+                <span class="n">trgt_sentence</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">to_pos</span><span class="p">,</span> <span class="n">from_word</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_explored</span><span class="p">(</span><span class="n">trgt_sentence</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="n">scores</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">scores</span><span class="p">)</span>
+                <span class="n">prev_word</span> <span class="o">=</span> <span class="n">trgt_sentence</span><span class="p">[</span><span class="n">change_pos</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">change_pos</span> <span class="o">&gt;</span> <span class="mi">0</span> \
+                                                        <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span>
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">change_pos</span><span class="p">,</span> <span class="n">full_hypo_len</span><span class="p">):</span>
+                    <span class="n">word</span> <span class="o">=</span> <span class="n">trgt_sentence</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                    <span class="n">scores</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">bigram_scores</span><span class="p">[</span><span class="n">prev_word</span><span class="p">][</span><span class="n">word</span><span class="p">]</span>
+                    <span class="n">prev_word</span> <span class="o">=</span> <span class="n">word</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_candidate</span><span class="p">(</span><span class="n">FlipCandidate</span><span class="p">(</span><span class="n">trgt_sentence</span><span class="p">,</span> 
+                                                  <span class="n">scores</span><span class="p">,</span> 
+                                                  <span class="n">bigram_scores</span><span class="p">,</span> 
+                                                  <span class="nb">sum</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">change_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">])))</span>
+
+    <span class="k">def</span> <span class="nf">_extract_candidates_flip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">candidate</span><span class="p">,</span> <span class="n">max_pos</span><span class="p">,</span> <span class="n">bigram_scores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implements the traversal strategy &#39;flip&#39; &quot;&quot;&quot;</span>
+        <span class="n">full_hypo_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">from_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">max_pos</span><span class="p">):</span>
+            <span class="n">max_score</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">scores</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">from_pos</span><span class="p">])</span>
+            <span class="n">from_word</span> <span class="o">=</span> <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="n">from_pos</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">to_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">from_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">full_hypo_len</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">trgt_sentence</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span>
+                <span class="n">trgt_sentence</span><span class="p">[</span><span class="n">from_pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">trgt_sentence</span><span class="p">[</span><span class="n">to_pos</span><span class="p">]</span>
+                <span class="n">trgt_sentence</span><span class="p">[</span><span class="n">to_pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">from_word</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_explored</span><span class="p">(</span><span class="n">trgt_sentence</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="n">scores</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">scores</span><span class="p">)</span>
+                <span class="n">prev_word</span> <span class="o">=</span> <span class="n">trgt_sentence</span><span class="p">[</span><span class="n">from_pos</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">from_pos</span> <span class="o">&gt;</span> <span class="mi">0</span> \
+                                                      <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span>
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">from_pos</span><span class="p">,</span> <span class="n">full_hypo_len</span><span class="p">):</span>
+                    <span class="n">word</span> <span class="o">=</span> <span class="n">trgt_sentence</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                    <span class="n">scores</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">bigram_scores</span><span class="p">[</span><span class="n">prev_word</span><span class="p">][</span><span class="n">word</span><span class="p">]</span>
+                    <span class="n">prev_word</span> <span class="o">=</span> <span class="n">word</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_candidate</span><span class="p">(</span><span class="n">FlipCandidate</span><span class="p">(</span><span class="n">trgt_sentence</span><span class="p">,</span> 
+                                                  <span class="n">scores</span><span class="p">,</span> 
+                                                  <span class="n">bigram_scores</span><span class="p">,</span> 
+                                                  <span class="n">max_score</span><span class="o">+</span><span class="n">scores</span><span class="p">[</span><span class="n">from_pos</span><span class="p">]))</span>
+        
+    <span class="k">def</span> <span class="nf">_add_candidate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a candidate to the heap &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">candidate</span><span class="o">.</span><span class="n">max_score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span>
+            <span class="n">heappush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_candidates</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="n">candidate</span><span class="o">.</span><span class="n">expected_score</span><span class="p">,</span> 
+                                            <span class="n">candidate</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">_explore_candidate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Explores a candidate, adds it to the list of full hypotheses</span>
+<span class="sd">        (if not pruned by early stopping) and calls  </span>
+<span class="sd">        ``_process_new_hypos`` to derive new candidates. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="o">.</span><span class="n">get_prefix</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span>
+        <span class="n">hypo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">pos</span><span class="p">,</span><span class="n">score</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">scores</span><span class="p">):</span> <span class="c1"># Update candidate scores</span>
+            <span class="n">candidate</span><span class="o">.</span><span class="n">scores</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span> 
+        <span class="n">hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">posteriors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">score_breakdowns</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping</span> <span class="ow">and</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span>
+                <span class="k">break</span> <span class="c1"># admissible pruning</span>
+            <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+            <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())</span>
+            <span class="n">hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+            <span class="n">posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+            <span class="n">score_breakdowns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Explored: </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                          <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">]),</span>
+                          <span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="p">))</span>
+            <span class="n">word</span> <span class="o">=</span> <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">posterior</span><span class="p">[</span><span class="n">word</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">always_greedy</span><span class="p">:</span> <span class="c1"># change sentence st best word is at this pos</span>
+                <span class="n">best_pos</span> <span class="o">=</span> <span class="n">pos</span>
+                <span class="n">stub</span> <span class="o">=</span> <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">pos</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">posterior</span><span class="p">[</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="n">p</span><span class="p">]]</span> <span class="o">&gt;</span> <span class="n">score</span>
+                           <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_explored</span><span class="p">(</span>
+                                        <span class="n">stub</span> <span class="o">+</span> <span class="p">[</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="n">p</span><span class="p">]])):</span>
+                        <span class="n">best_pos</span> <span class="o">=</span> <span class="n">p</span>
+                        <span class="n">word</span> <span class="o">=</span> <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
+                        <span class="n">score</span> <span class="o">=</span> <span class="n">posterior</span><span class="p">[</span><span class="n">word</span><span class="p">]</span>  
+                <span class="k">if</span> <span class="n">best_pos</span> <span class="o">!=</span> <span class="n">pos</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="n">best_pos</span><span class="p">]</span>
+                    <span class="k">del</span> <span class="n">candidate</span><span class="o">.</span><span class="n">scores</span><span class="p">[</span><span class="n">best_pos</span><span class="p">]</span>
+                    <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">word</span><span class="p">)</span>
+                    <span class="n">candidate</span><span class="o">.</span><span class="n">scores</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">score</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+            <span class="n">hypo</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">word</span><span class="p">,</span>
+                               <span class="bp">None</span><span class="p">,</span>
+                               <span class="n">score</span><span class="p">,</span>
+                               <span class="n">score_breakdown</span><span class="p">[</span><span class="n">word</span><span class="p">])</span>
+            <span class="n">candidate</span><span class="o">.</span><span class="n">scores</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">posterior</span><span class="p">[</span><span class="n">word</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">max_pos</span><span class="p">,</span><span class="n">score</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">scores</span><span class="p">):</span>
+            <span class="n">acc</span> <span class="o">+=</span> <span class="n">score</span>
+            <span class="k">if</span> <span class="n">acc</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_new_hypos</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span>
+                                 <span class="n">max_pos</span><span class="p">,</span>
+                                 <span class="n">hypos</span><span class="p">,</span>
+                                 <span class="n">posteriors</span><span class="p">,</span>
+                                 <span class="n">score_breakdowns</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_load_bag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load the current bag of words &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_bag</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">():</span> 
+            <span class="n">int_w</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">full_bag</span><span class="p">[</span><span class="n">int_w</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_bag</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">int_w</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+<div class="viewcode-block" id="FlipDecoder.decode"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.flip.FlipDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes a single source sentence with the flip decoder &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_max_expansions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_expansions_param</span><span class="p">,</span>
+                                                      <span class="n">src_sentence</span><span class="p">)</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_bag</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypos</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">explored</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">open_candidates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_lower_score_bound</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_greedy_decode</span><span class="p">()</span>
+        <span class="k">while</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_candidates</span> 
+                        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span><span class="p">):</span>
+            <span class="n">_</span><span class="p">,</span><span class="n">candidate</span> <span class="o">=</span> <span class="n">heappop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_candidates</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">candidate</span><span class="o">.</span><span class="n">max_score</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_explored</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">):</span> <span class="c1"># Already explored</span>
+                <span class="k">continue</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">&quot;Best: </span><span class="si">%f</span><span class="s2"> Expected: </span><span class="si">%f</span><span class="s2"> Expansions: </span><span class="si">%d</span><span class="s2"> Open: </span><span class="si">%d</span><span class="s2"> Explore </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">,</span>
+                          <span class="n">candidate</span><span class="o">.</span><span class="n">expected_score</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span><span class="p">,</span>
+                          <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_candidates</span><span class="p">),</span>
+                          <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">])))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_explore_candidate</span><span class="p">(</span><span class="n">candidate</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_hypos_sorted</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

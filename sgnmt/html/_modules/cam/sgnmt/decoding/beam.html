@@ -1,0 +1,405 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.decoding.beam &mdash; SGNMT 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.decoding.beam</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.decoding.beam</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Implementation of the beam search strategy &quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Decoder</span><span class="p">,</span> <span class="n">PartialHypothesis</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="BeamDecoder"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.beam.BeamDecoder">[docs]</a><span class="k">class</span> <span class="nc">BeamDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This decoder implements standard beam search and several</span>
+<span class="sd">    variants of it such as diversity promoting beam search and beam</span>
+<span class="sd">    search with heuristic future cost estimates. This implementation</span>
+<span class="sd">    supports risk-free pruning and hypotheses recombination.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new beam decoder instance. The following values</span>
+<span class="sd">        are fetched from `decoder_args`:</span>
+<span class="sd">        </span>
+<span class="sd">            hypo_recombination (bool): Activates hypo recombination </span>
+<span class="sd">            beam (int): Absolute beam size. A beam of 12 means</span>
+<span class="sd">                        that we keep track of 12 active hypotheses</span>
+<span class="sd">            sub_beam (int): Number of children per hypothesis. Set to</span>
+<span class="sd">                            beam size if zero.</span>
+<span class="sd">            pure_heuristic_scores (bool): Hypotheses to keep in the beam</span>
+<span class="sd">                                          are normally selected </span>
+<span class="sd">                                          according the sum of partial</span>
+<span class="sd">                                          hypo score and future cost</span>
+<span class="sd">                                          estimates. If set to true, </span>
+<span class="sd">                                          partial hypo scores are </span>
+<span class="sd">                                          ignored.</span>
+<span class="sd">            diversity_factor (float): If this is set to a positive </span>
+<span class="sd">                                      value we add diversity promoting</span>
+<span class="sd">                                      penalization terms to the partial</span>
+<span class="sd">                                      hypothesis scores following Li</span>
+<span class="sd">                                      and Jurafsky, 2016</span>
+<span class="sd">            early_stopping (bool): If true, we stop when the best</span>
+<span class="sd">                                   scoring hypothesis ends with &lt;/S&gt;.</span>
+<span class="sd">                                   If false, we stop when all hypotheses</span>
+<span class="sd">                                   end with &lt;/S&gt;. Enable if you are</span>
+<span class="sd">                                   only interested in the single best</span>
+<span class="sd">                                   decoding result. If you want to </span>
+<span class="sd">                                   create full 12-best lists, disable</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from the configuration API.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diversity_factor</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">decoder_diversity_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diverse_decoding</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diversity_factor</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diversity_factor</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Diversity promoting beam search is not implemented &quot;</span>
+                          <span class="s2">&quot;yet&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">beam</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sub_beam_size</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">sub_beam</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_beam_size</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sub_beam_size</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">beam</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">hypo_recombination</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_best_eos</span> 
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Risk-free beam-search pruning enabled&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_eos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pure_heuristic_scores</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">pure_heuristic_scores</span>
+    
+    <span class="k">def</span> <span class="nf">_get_combined_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combines hypo score with future cost estimates.&quot;&quot;&quot;</span>
+        <span class="n">est_score</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pure_heuristic_scores</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">est_score</span> <span class="o">+</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span>
+        <span class="k">return</span> <span class="n">est_score</span>
+
+    <span class="k">def</span> <span class="nf">_best_eos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the best hypothesis ends with &lt;/S&gt;&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span>
+
+    <span class="k">def</span> <span class="nf">_all_eos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the all hypotheses end with &lt;/S&gt;&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    
+    <span class="k">def</span> <span class="nf">_expand_hypo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the best beam size expansions of ``hypo``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypo (PartialHypothesis): Hypothesis to expand</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. List of child hypotheses</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># Consume if cheap expand</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
+            <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">posterior</span><span class="p">,</span> <span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_beam_size</span><span class="p">)</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">hypo</span><span class="o">.</span><span class="n">cheap_expand</span><span class="p">(</span>
+                        <span class="n">trgt_word</span><span class="p">,</span>
+                        <span class="n">posterior</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">],</span>
+                        <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">])</span> <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">_filter_equal_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">,</span> <span class="n">scores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Apply hypo recombination to the hypotheses in ``hypos``.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypos (list): List of hypotheses</span>
+<span class="sd">            scores (list): hypo scores with heuristic estimates</span>
+<span class="sd">        </span>
+<span class="sd">        Return:</span>
+<span class="sd">            list. List with hypotheses in ``hypos`` after applying</span>
+<span class="sd">            hypotheses recombination.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">scores</span><span class="p">)):</span>
+            <span class="n">candidate</span> <span class="o">=</span> <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">candidate</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">word_to_consume</span><span class="p">)</span>
+                <span class="n">candidate</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="n">candidate</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">new_hypos</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">are_equal_predictor_states</span><span class="p">(</span>
+                                                <span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">,</span>
+                                                <span class="n">candidate</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">):</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Hypo recombination: </span><span class="si">%s</span><span class="s2"> &gt; </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                                                 <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span>
+                                                 <span class="n">candidate</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+                    <span class="n">valid</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="n">valid</span><span class="p">:</span>
+                <span class="n">new_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">candidate</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_hypos</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:</span>
+                    <span class="k">break</span>
+        <span class="k">return</span> <span class="n">new_hypos</span>
+
+    <span class="k">def</span> <span class="nf">_get_next_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">all_hypos</span><span class="p">,</span> <span class="n">all_scores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get hypos for the next iteration. &quot;&quot;&quot;</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">all_scores</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:]]</span>
+        <span class="n">hypos</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">hypos</span>
+    
+    <span class="k">def</span> <span class="nf">_register_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates best_scores and min_score. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> 
+    
+    <span class="k">def</span> <span class="nf">_get_initial_hypos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the list of initial ``PartialHypothesis``. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">PartialHypothesis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())]</span>
+    
+<div class="viewcode-block" id="BeamDecoder.decode"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.beam.BeamDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes a single source sentence using beam search. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_initial_hypos</span><span class="p">()</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span><span class="p">(</span><span class="n">hypos</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">it</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span> <span class="c1"># prevent infinite loops</span>
+                <span class="k">break</span>
+            <span class="n">it</span> <span class="o">=</span> <span class="n">it</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">next_scores</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_scores</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                    <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+                    <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">hypo</span><span class="p">))</span>
+                    <span class="k">continue</span> 
+                <span class="k">for</span> <span class="n">next_hypo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="p">):</span>
+                    <span class="n">next_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">next_score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span><span class="p">:</span>
+                        <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+                        <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_score</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_register_score</span><span class="p">(</span><span class="n">next_score</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">:</span>
+                <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_equal_hypos</span><span class="p">(</span><span class="n">next_hypos</span><span class="p">,</span> <span class="n">next_scores</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_hypos</span><span class="p">(</span><span class="n">next_hypos</span><span class="p">,</span> <span class="n">next_scores</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span> 
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_hypos</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No complete hypotheses found for </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">src_sentence</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_hypos_sorted</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,450 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.decoding.mbrbeam &mdash; SGNMT 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.decoding.mbrbeam</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.decoding.mbrbeam</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This beam search uses an MBR-based criterion at each time step.&quot;&quot;&quot;</span>
+
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.beam</span> <span class="kn">import</span> <span class="n">BeamDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.trie</span> <span class="kn">import</span> <span class="n">SimpleTrie</span>
+
+
+<div class="viewcode-block" id="is_sublist"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.mbrbeam.is_sublist">[docs]</a><span class="k">def</span> <span class="nf">is_sublist</span><span class="p">(</span><span class="n">needle</span><span class="p">,</span> <span class="n">haystack</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;True if needle is a sublist of haystack, False otherwise.</span>
+<span class="sd">    Could be more efficient with Boyer-Moore-Horspool but our needles</span>
+<span class="sd">    are usually ngrams (ie. short), so this is a O(nm) implementation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ln</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">needle</span><span class="p">)</span>
+    <span class="n">lh</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">haystack</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">lh</span> <span class="o">-</span> <span class="n">ln</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">needle</span> <span class="o">==</span> <span class="n">haystack</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="n">ln</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="bp">False</span></div>
+
+
+<div class="viewcode-block" id="MBRBeamDecoder"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.mbrbeam.MBRBeamDecoder">[docs]</a><span class="k">class</span> <span class="nc">MBRBeamDecoder</span><span class="p">(</span><span class="n">BeamDecoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The MBR-based beam decoder does not select the n most likely</span>
+<span class="sd">    hypotheses in each timestep. Instead, it tries to find the translation</span>
+<span class="sd">    with the best expected BLEU. Two strategies control the behavior of </span>
+<span class="sd">    mbrbeam: the `evidence_strategy` and the `selection_strategy`.</span>
+<span class="sd">    Available evidence strategies:</span>
+<span class="sd">      &#39;renorm&#39;: Only makes use of the n-best expansions of the hypos in the</span>
+<span class="sd">                current beam. It renormalizes the scores, and count ngrams in</span>
+<span class="sd">                the n^2 hypos.</span>
+<span class="sd">      &#39;maxent&#39;: Applies the MaxEnt rule to the evidence space. It makes use of</span>
+<span class="sd">                all partial hypos seen so far and updates its belief about the</span>
+<span class="sd">                probability of an ngram based on that. Following MaxEnt we </span>
+<span class="sd">                assume that translations outside the explored space are </span>
+<span class="sd">                uniformly distributed.</span>
+<span class="sd">    Available selection strategies:</span>
+<span class="sd">      &#39;bleu&#39;: Select the n hypotheses with the best expected BLEU</span>
+<span class="sd">      &#39;oracle_bleu&#39;: Select&#39;a subset with n elements which maximizes the </span>
+<span class="sd">                     expected maximum BLEU of one of the selected hypos. In </span>
+<span class="sd">                     other words, we optimize the oracle BLEU of the n-best </span>
+<span class="sd">                     list at each time step, where the n-best list consists </span>
+<span class="sd">                     of the active hypotheses in the beam.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new MBR beam decoder instance. We explicitly</span>
+<span class="sd">        set early stopping to False since risk-free pruning is not </span>
+<span class="sd">        supported by the MBR-based beam decoder. The MBR-based</span>
+<span class="sd">        decoder fetches the following fields from ``decoder_args``:</span>
+
+<span class="sd">          min_ngram_order (int): Minimum n-gram order</span>
+<span class="sd">          max_ngram_order (int): Maximum n-gram order</span>
+<span class="sd">          mbrbeam_smooth_factor (float): Smoothing factor for evidence space</span>
+<span class="sd">          mbrbeam_evidence_strategy (String): Evidence strategy</span>
+<span class="sd">          mbrbeam_selection_strategy (String): Selection strategy</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from the configuration API.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_order</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">min_ngram_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_order</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">max_ngram_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smooth_factor</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">mbrbeam_smooth_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection_strategy</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">mbrbeam_selection_strategy</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_strategy</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bleu&#39;</span><span class="p">,</span> <span class="s1">&#39;oracle_bleu&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Unknown selection strategy &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span>
+                                 <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_strategy</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">mbrbeam_evidence_strategy</span> <span class="o">==</span> <span class="s1">&#39;renorm&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_hypos_mbr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_hypos_renorm</span>
+        <span class="k">elif</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">mbrbeam_evidence_strategy</span> <span class="o">==</span> <span class="s1">&#39;maxent&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_hypos_mbr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_hypos_maxent</span>
+            <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">sub_beam</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sub_beam_size</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># We need all expansions</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Unknown evidence strategy &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span>
+                                 <span class="o">%</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">mbrbeam_evidence_strategy</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MBRBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span> <span class="o">=</span> <span class="bp">False</span> <span class="c1"># Does not work with MBR</span>
+
+    <span class="k">def</span> <span class="nf">_compute_bleu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hyp_ngrams</span><span class="p">,</span> <span class="n">ref_ngrams</span><span class="p">,</span> <span class="n">hyp_length</span><span class="p">,</span> <span class="n">ref_length</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Not the exact BLEU score, we do filter out multiple matches for</span>
+<span class="sd">        the same ngram.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">precisions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">hyp_ngrams_order</span><span class="p">,</span> <span class="n">ref_ngrams_order</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">hyp_ngrams</span><span class="p">,</span> <span class="n">ref_ngrams</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">hyp_ngrams_order</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">hyp_ngram</span> <span class="ow">in</span> <span class="n">hyp_ngrams_order</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">hyp_ngram</span> <span class="ow">in</span> <span class="n">ref_ngrams_order</span><span class="p">:</span>
+                    <span class="n">cnt</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">precisions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">cnt</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hyp_ngrams_order</span><span class="p">)))</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">precisions</span><span class="p">))</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">for</span> <span class="n">precision</span> <span class="ow">in</span> <span class="n">precisions</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">*=</span> <span class="n">precision</span> <span class="o">**</span> <span class="n">weight</span>
+        <span class="n">bp</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">if</span> <span class="n">hyp_length</span> <span class="o">&lt;</span> <span class="n">ref_length</span><span class="p">:</span>
+            <span class="n">bp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="n">ref_length</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">hyp_length</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">bp</span> <span class="o">*</span> <span class="n">p</span>
+
+    <span class="k">def</span> <span class="nf">_get_next_hypos_maxent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">,</span> <span class="n">scores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get hypotheses of the next time step.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypos (list): List of hypotheses</span>
+<span class="sd">            scores (list): hypo scores with heuristic estimates</span>
+<span class="sd">        </span>
+<span class="sd">        Return:</span>
+<span class="sd">            list. List with hypotheses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Update self.maxent_ngram_mass</span>
+        <span class="k">for</span> <span class="n">hypo_score</span><span class="p">,</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">hypos</span><span class="p">):</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">s</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">l</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxent_processed_length</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="c1"># TODO: Could be more efficient by checking is_sublist for</span>
+            <span class="c1"># all orders in one pass</span>
+            <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_order</span><span class="p">),</span> 
+                                <span class="bp">self</span><span class="o">.</span><span class="n">min_order</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                                <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">ngram</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="n">order</span><span class="p">:]</span>
+                <span class="c1"># Do not use this ngram if it occurs before</span>
+                <span class="k">if</span> <span class="n">is_sublist</span><span class="p">(</span><span class="n">ngram</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+                    <span class="k">break</span> <span class="c1"># All lower order ngrams are too</span>
+                <span class="n">prev_mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxent_ngram_mass</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ngram</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">prev_mass</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">updated_mass</span> <span class="o">=</span> <span class="n">hypo_score</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">updated_mass</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">prev_mass</span><span class="p">,</span> <span class="n">hypo_score</span><span class="p">,</span> 
+                            <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">prev_mass</span><span class="p">)</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">hypo_score</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">maxent_ngram_mass</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ngram</span><span class="p">,</span> <span class="n">updated_mass</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxent_processed_length</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">exp_counts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="n">cnt</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_order</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">l</span><span class="o">-</span><span class="n">order</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="n">logprob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxent_ngram_mass</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span><span class="o">+</span><span class="n">order</span><span class="p">])</span>
+                    <span class="c1"># MaxEnt means that we estimate the probability of the </span>
+                    <span class="c1"># ngram as p + (1-p) * 0.5 ie.</span>
+                    <span class="k">if</span> <span class="n">logprob</span><span class="p">:</span>
+                        <span class="n">cnt</span> <span class="o">+=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logprob</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">cnt</span> <span class="o">+=</span> <span class="mf">1.0</span>
+            <span class="n">exp_counts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cnt</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">exp_counts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">):</span>
+            <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">bleu</span> <span class="o">=</span> <span class="n">exp_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Selected (score=</span><span class="si">%f</span><span class="s2"> expected_counts=</span><span class="si">%f</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">bleu</span><span class="p">,</span> <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">next_hypos</span>
+
+    <span class="k">def</span> <span class="nf">_get_next_hypos_renorm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypos</span><span class="p">,</span> <span class="n">scores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get hypotheses of the next time step.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypos (list): List of hypotheses</span>
+<span class="sd">            scores (list): hypo scores with heuristic estimates</span>
+<span class="sd">        </span>
+<span class="sd">        Return:</span>
+<span class="sd">            list. List with hypotheses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">smooth_factor</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+            <span class="n">scores</span> <span class="o">-</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">scores</span><span class="p">))</span> \
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">smooth_factor</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">))</span>
+        <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span> <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">]</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> candidates min_length=</span><span class="si">%d</span><span class="s2"> max_length=</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> 
+            <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lengths</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">lengths</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">lengths</span><span class="p">)))</span>
+        <span class="n">ngrams</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="n">ngram_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_order</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">ngram_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span>
+                    <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span><span class="o">+</span><span class="n">order</span><span class="p">]))</span>
+                    <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))]))</span>
+            <span class="n">ngrams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ngram_list</span><span class="p">)</span>
+        <span class="n">exp_bleus</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">hyp_ngrams</span><span class="p">,</span> <span class="n">hyp_length</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ngrams</span><span class="p">,</span> <span class="n">lengths</span><span class="p">):</span>
+            <span class="n">precisions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_compute_bleu</span><span class="p">(</span>
+                    <span class="n">hyp_ngrams</span><span class="p">,</span> <span class="n">ref_ngrams</span><span class="p">,</span> <span class="n">hyp_length</span><span class="p">,</span> <span class="n">ref_length</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">ref_ngrams</span><span class="p">,</span> <span class="n">ref_length</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ngrams</span><span class="p">,</span> <span class="n">lengths</span><span class="p">)])</span>
+            <span class="n">exp_bleus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">precisions</span> <span class="o">*</span> <span class="n">probs</span><span class="p">)</span>
+        <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_strategy</span> <span class="o">==</span> <span class="s1">&#39;oracle_bleu&#39;</span><span class="p">:</span> 
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">hypos</span><span class="p">))):</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">exp_bleus</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+                <span class="n">bleu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">exp_bleus</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Selected (score=</span><span class="si">%f</span><span class="s2"> expected_bleu=</span><span class="si">%f</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span>
+                        <span class="o">%</span> <span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">bleu</span><span class="p">,</span> <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+                <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">bleu</span> <span class="o">=</span> <span class="o">-</span><span class="n">bleu</span>
+                <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                <span class="n">gained_bleus</span> <span class="o">=</span> <span class="n">exp_bleus</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">update_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">exp_bleus</span><span class="p">)):</span>
+                    <span class="n">exp_bleus</span><span class="p">[</span><span class="n">update_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">exp_bleus</span><span class="p">[</span><span class="n">update_idx</span><span class="p">],</span> 
+                                                       <span class="n">gained_bleus</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># selection strategy &#39;bleu&#39;</span>
+            <span class="n">total_exp_bleus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">exp_bleus</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">total_exp_bleus</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">):</span>
+                <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">bleu</span> <span class="o">=</span> <span class="n">total_exp_bleus</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Selected (score=</span><span class="si">%f</span><span class="s2"> expected_bleu=</span><span class="si">%f</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span>
+                    <span class="o">%</span> <span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">bleu</span><span class="p">,</span> <span class="n">hypos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">next_hypos</span>
+    
+<div class="viewcode-block" id="MBRBeamDecoder.decode"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.mbrbeam.MBRBeamDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes a single source sentence using beam search. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_initial_hypos</span><span class="p">()</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxent_ngram_mass</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxent_processed_length</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_criterion</span><span class="p">(</span><span class="n">hypos</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">it</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span> <span class="c1"># prevent infinite loops</span>
+                <span class="k">break</span>
+            <span class="n">it</span> <span class="o">=</span> <span class="n">it</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">next_scores</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                    <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+                    <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">hypo</span><span class="p">))</span>
+                    <span class="k">continue</span> 
+                <span class="k">for</span> <span class="n">next_hypo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="p">):</span>
+                    <span class="n">next_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">next_score</span> <span class="o">&gt;</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">:</span>
+                        <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+                        <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_score</span><span class="p">)</span>
+            <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_hypos_mbr</span><span class="p">(</span><span class="n">next_hypos</span><span class="p">,</span> <span class="n">next_scores</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">bleu</span>
+            <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span> 
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_hypos</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No complete hypotheses found for </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">src_sentence</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_hypos_sorted</span><span class="p">()</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,1211 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.decoding.core &mdash; SGNMT 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.decoding.core</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.decoding.core</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Contains all the basic interfaces and abstract classes for decoders.</span>
+<span class="sd">The ``Decoder`` class provides common functionality for all decoders.</span>
+<span class="sd">The ``Hypothesis`` class represents complete hypotheses, which are </span>
+<span class="sd">returned by decoders. ``PartialHypothesis`` is a helper class which can</span>
+<span class="sd">be used by predictors to represent translation prefixes.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">UnboundedVocabularyPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.interpolation</span> <span class="kn">import</span> <span class="n">FixedInterpolationStrategy</span><span class="p">,</span> \
+                                             <span class="n">EntropyInterpolationStrategy</span><span class="p">,</span> \
+                                             <span class="n">MoEInterpolationStrategy</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">Observable</span><span class="p">,</span> <span class="n">Observer</span><span class="p">,</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">,</span> \
+    <span class="n">MESSAGE_TYPE_POSTERIOR</span><span class="p">,</span> <span class="n">MESSAGE_TYPE_FULL_HYPO</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">,</span> <span class="n">EPS_P</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">mul</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+
+<div class="viewcode-block" id="Hypothesis"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Hypothesis">[docs]</a><span class="k">class</span> <span class="nc">Hypothesis</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Complete translation hypotheses are represented by an instance</span>
+<span class="sd">    of this class. We store the produced sentence, the combined score,</span>
+<span class="sd">    and a score breakdown to the separate predictor scores.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trgt_sentence</span><span class="p">,</span> <span class="n">total_score</span><span class="p">,</span> <span class="n">score_breakdown</span> <span class="o">=</span> <span class="p">[]):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new full hypothesis.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trgt_sentence (list): List of target word ids without &lt;S&gt; </span>
+<span class="sd">                                  or &lt;/S&gt; which make up the target </span>
+<span class="sd">                                  sentence</span>
+<span class="sd">            total_score (float): combined total score of this hypo</span>
+<span class="sd">            score_breakdown (list): Predictor score breakdown for each</span>
+<span class="sd">                                    target token in ``trgt_sentence``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="n">trgt_sentence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span> <span class="o">=</span> <span class="n">total_score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="n">score_breakdown</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a string representation of this hypothesis.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> (</span><span class="si">%f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">),</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Hypothesis.convert_to_char_level"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Hypothesis.convert_to_char_level">[docs]</a>    <span class="k">def</span> <span class="nf">convert_to_char_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmap</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new hypothesis on the character level from a </span>
+<span class="sd">        hypothesis on the word level. Both objects will have the same </span>
+<span class="sd">        total score, but the word tokens in trgt_sentence are replaced</span>
+<span class="sd">        by characters and score_breakdown adds word scores on the first</span>
+<span class="sd">        character of the word. The mapping from word ID to character ID</span>
+<span class="sd">        sequence is realized by using ``utils.trg_wmap`` and the char-</span>
+<span class="sd">        to-id map ``cmap``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            cmap (dict): Mapping from character to character ID</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Hypothesis. New hypo which corresponds to this hypo but is</span>
+<span class="sd">            tokenized on the character instead of the word level.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="n">eow</span> <span class="o">=</span> <span class="n">cmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;&lt;/w&gt;&quot;</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span>
+        <span class="n">dummy_breakdown</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">ctokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cscore_breakdown</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">w</span> <span class="ow">in</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]:</span>
+                <span class="n">chars</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">:</span>
+                <span class="n">chars</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">[</span><span class="n">w</span><span class="p">]]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chars</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span>
+            <span class="n">chars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eow</span><span class="p">)</span>
+            <span class="n">ctokens</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span>
+            <span class="n">cscore_breakdown</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="o">+</span>
+                                    <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">[</span><span class="n">dummy_breakdown</span><span class="p">])</span>
+        <span class="c1"># Remove last eow</span>
+        <span class="n">ctokens</span> <span class="o">=</span> <span class="n">ctokens</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">cscore_breakdown</span> <span class="o">=</span> <span class="n">cscore_breakdown</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">):</span>
+            <span class="n">cscore_breakdown</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">chypo</span> <span class="o">=</span> <span class="n">Hypothesis</span><span class="p">(</span><span class="n">ctokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">cscore_breakdown</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">chypo</span></div></div>
+
+
+<div class="viewcode-block" id="PartialHypothesis"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.PartialHypothesis">[docs]</a><span class="k">class</span> <span class="nc">PartialHypothesis</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Represents a partial hypothesis in various decoders. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_states</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new partial hypothesis with zero score and empty</span>
+<span class="sd">        translation prefix.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            initial_states: Initial predictor states</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="n">initial_states</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="bp">None</span>
+    
+<div class="viewcode-block" id="PartialHypothesis.get_last_word"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.PartialHypothesis.get_last_word">[docs]</a>    <span class="k">def</span> <span class="nf">get_last_word</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the last word in the translation prefix. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="PartialHypothesis.generate_full_hypothesis"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.PartialHypothesis.generate_full_hypothesis">[docs]</a>    <span class="k">def</span> <span class="nf">generate_full_hypothesis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a ``Hypothesis`` instance from this hypothesis. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Hypothesis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="PartialHypothesis.expand"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.PartialHypothesis.expand">[docs]</a>    <span class="k">def</span> <span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">,</span> <span class="n">new_states</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new partial hypothesis adding a new word to the</span>
+<span class="sd">        translation prefix with given probability and updates the</span>
+<span class="sd">        stored predictor states.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): New word to add to the translation prefix</span>
+<span class="sd">            new_states (object): Predictor states after consuming</span>
+<span class="sd">                                 ``word``</span>
+<span class="sd">            score (float): Word log probability which is to be added</span>
+<span class="sd">                           to the total hypothesis score</span>
+<span class="sd">            score_breakdown (list): Predictor score breakdown for</span>
+<span class="sd">                                    the new word</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hypo</span> <span class="o">=</span> <span class="n">PartialHypothesis</span><span class="p">(</span><span class="n">new_states</span><span class="p">)</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">+</span> <span class="n">score</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">+</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hypo</span></div>
+    
+<div class="viewcode-block" id="PartialHypothesis.cheap_expand"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.PartialHypothesis.cheap_expand">[docs]</a>    <span class="k">def</span> <span class="nf">cheap_expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new partial hypothesis adding a new word to the</span>
+<span class="sd">        translation prefix with given probability. Does NOT update the</span>
+<span class="sd">        predictor states but adds a flag which signals that the last </span>
+<span class="sd">        word in this hypothesis has not been consumed yet by the </span>
+<span class="sd">        predictors. This can save memory because we can reuse the </span>
+<span class="sd">        current state for many hypothesis. It also saves computation</span>
+<span class="sd">        as we do not consume words which are then discarded anyway by</span>
+<span class="sd">        the search procedure.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): New word to add to the translation prefix</span>
+<span class="sd">            score (float): Word log probability which is to be added</span>
+<span class="sd">                           to the total hypothesis score</span>
+<span class="sd">            score_breakdown (list): Predictor score breakdown for</span>
+<span class="sd">                                    the new word</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hypo</span> <span class="o">=</span> <span class="n">PartialHypothesis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">)</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">+</span> <span class="n">score</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span> <span class="o">+</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">word_to_consume</span> <span class="o">=</span> <span class="n">word</span>
+        <span class="n">hypo</span><span class="o">.</span><span class="n">score_breakdown</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hypo</span></div></div>
+
+
+<span class="sd">&quot;&quot;&quot;The ``CLOSED_VOCAB_SCORE_NORM_*`` constants define the normalization</span>
+<span class="sd">behavior for closed vocabulary predictor scores. Closed vocabulary </span>
+<span class="sd">predictors (e.g. NMT) have a predefined (and normally very limited) </span>
+<span class="sd">vocabulary. In contrast, open vocabulary predictors (see </span>
+<span class="sd">``UnboundedPredictor``) are defined over a much larger vocabulary </span>
+<span class="sd">(e.g. FST) s.t. it is easier to consider them as having an open </span>
+<span class="sd">vocabulary. When combining open and closed vocabulary predictors, we use</span>
+<span class="sd">the UNK probability of closed vocabulary predictors for words outside </span>
+<span class="sd">their vocabulary. The following flags decide (as argument to </span>
+<span class="sd">``Decoder``) what to do with the closed vocabulary predictor scores</span>
+<span class="sd">when combining them with open vocabulary predictors in that way. This</span>
+<span class="sd">can be changed with the --closed_vocab_norm argument &quot;&quot;&quot;</span>
+
+
+<span class="n">CLOSED_VOCAB_SCORE_NORM_NONE</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="sd">&quot;&quot;&quot;None: Do not apply any normalization. &quot;&quot;&quot;</span>
+
+
+<span class="n">CLOSED_VOCAB_SCORE_NORM_EXACT</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="sd">&quot;&quot;&quot;Exact: Normalize by 1 plus the number of words outside the </span>
+<span class="sd">vocabulary to make it a valid distribution again&quot;&quot;&quot;</span>
+
+
+<span class="n">CLOSED_VOCAB_SCORE_NORM_REDUCED</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="sd">&quot;&quot;&quot;Reduced: Always normalize the closed vocabulary scores to the </span>
+<span class="sd">vocabulary which is defined by the open vocabulary predictors at each</span>
+<span class="sd">time step. &quot;&quot;&quot;</span>
+
+<span class="n">CLOSED_VOCAB_SCORE_NORM_RESCALE_UNK</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="sd">&quot;&quot;&quot;Rescale UNK: Divide the UNK scores by the number of words outside the </span>
+<span class="sd">vocabulary. Results in a valid distribution if predictor scores are</span>
+<span class="sd">stochastic. &quot;&quot;&quot;</span>
+
+<span class="n">CLOSED_VOCAB_SCORE_NORM_NON_ZERO</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="sd">&quot;&quot;&quot;Apply no normalization, but ensure posterior contains only tokens with scores</span>
+<span class="sd">strictly &lt; 0.0. &quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="Heuristic"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Heuristic">[docs]</a><span class="k">class</span> <span class="nc">Heuristic</span><span class="p">(</span><span class="n">Observer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A ``Heuristic`` instance can be used to estimate the future </span>
+<span class="sd">    costs for a given word in a given state. See the ``heuristics``</span>
+<span class="sd">    module for implementations.&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a heuristic without predictors. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Heuristic</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Heuristic.set_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Heuristic.set_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">set_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictors</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the predictors used by this heuristic. </span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            predictors (list):  Predictors and their weights to be</span>
+<span class="sd">                                used with this heuristic. Should be in</span>
+<span class="sd">                                the same form as ``Decoder.predictors``,</span>
+<span class="sd">                                i.e. a list of (predictor, weight)</span>
+<span class="sd">                                tuples</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="n">predictors</span></div>
+    
+<div class="viewcode-block" id="Heuristic.initialize"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Heuristic.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the heuristic with the given source sentence.</span>
+<span class="sd">        This is not passed through to the heuristic predictors</span>
+<span class="sd">        automatically but handles initialization outside the</span>
+<span class="sd">        predictors.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): List of source word ids without &lt;S&gt; or</span>
+<span class="sd">                                 &lt;/S&gt; which make up the source sentence</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="Heuristic.estimate_future_cost"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Heuristic.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Estimate the future cost (i.e. negative score) given the </span>
+<span class="sd">        states of the predictors set by ``set_predictors`` for a</span>
+<span class="sd">        partial hypothesis ``hypo``. Note that this function is not </span>
+<span class="sd">        supposed to change predictor states. If (e.g. for the greedy </span>
+<span class="sd">        heuristic) this is not possible, the predictor states must be</span>
+<span class="sd">        changed back after execution by the implementing method.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypo (PartialHypo): Hypothesis for which to estimate the</span>
+<span class="sd">                                future cost</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float. The future cost estimate for this heuristic</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    
+<div class="viewcode-block" id="Heuristic.notify"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Heuristic.notify">[docs]</a>    <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is the notification method from the ``Observer``</span>
+<span class="sd">        super class. We implement it with an empty method here, but</span>
+<span class="sd">        implementing sub classes can override this method to get</span>
+<span class="sd">        notifications from the decoder instance about generated</span>
+<span class="sd">        posterior distributions.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            message (object): The posterior sent by the decoder</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+    
+<div class="viewcode-block" id="Decoder"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder">[docs]</a><span class="k">class</span> <span class="nc">Decoder</span><span class="p">(</span><span class="n">Observable</span><span class="p">):</span>    
+    <span class="sd">&quot;&quot;&quot;A ``Decoder`` instance represents a particular search strategy</span>
+<span class="sd">    such as A*, beam search, greedy search etc. Decisions are made </span>
+<span class="sd">    based on the outputs of one or many predictors, which are </span>
+<span class="sd">    maintained by the ``Decoder`` instance.</span>
+<span class="sd">    </span>
+<span class="sd">    Decoders are observable. They fire notifications after </span>
+<span class="sd">    apply_predictors has been called. All heuristics</span>
+<span class="sd">    are observing the decoder by default.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes the decoder instance with no predictors or </span>
+<span class="sd">        heuristics.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            closed_vocabulary_normalization (string): Defines the </span>
+<span class="sd">                                    normalization behavior for closed </span>
+<span class="sd">                                    vocabulary predictor scores. See </span>
+<span class="sd">                                    the documentation to the </span>
+<span class="sd">                                    ``CLOSED_VOCAB_SCORE_NORM_*``</span>
+<span class="sd">                                    variables for more information</span>
+<span class="sd">            max_len_factor (int): Hypotheses are not longer than</span>
+<span class="sd">                                  source sentence length times this.</span>
+<span class="sd">                                  Needs to be supported by the search</span>
+<span class="sd">                                  strategy implementation</span>
+<span class="sd">            lower_bounds_file (string): Path to a file with lower </span>
+<span class="sd">                                        bounds on hypothesis scores.</span>
+<span class="sd">                                        If empty, all lower bounds are</span>
+<span class="sd">                                        set to ``NEG_INF``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Decoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">max_len_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># Tuples (predictor, weight)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heuristics</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_predictors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allow_unk_in_output</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">allow_unk_in_output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nbest</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># length of n-best list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combi_predictor_method</span> <span class="o">=</span> <span class="n">Decoder</span><span class="o">.</span><span class="n">combi_arithmetic_unnormalized</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_none</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed_vocab_norm</span> <span class="o">=</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_NONE</span>
+
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">closed_vocabulary_normalization</span> <span class="o">==</span> <span class="s1">&#39;exact&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closed_vocab_norm</span> <span class="o">=</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_EXACT</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_exact</span>
+        <span class="k">elif</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">closed_vocabulary_normalization</span> <span class="o">==</span> <span class="s1">&#39;reduced&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closed_vocab_norm</span> <span class="o">=</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_REDUCED</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_reduced</span>
+        <span class="k">elif</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">closed_vocabulary_normalization</span> <span class="o">==</span> <span class="s1">&#39;rescale_unk&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closed_vocab_norm</span> <span class="o">=</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_RESCALE_UNK</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_rescale_unk</span>
+        <span class="k">elif</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">closed_vocabulary_normalization</span> <span class="o">==</span> <span class="s1">&#39;non_zero&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closed_vocab_norm</span> <span class="o">=</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_NON_ZERO</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_non_zero</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lower_bounds</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">score_lower_bounds_file</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">decoder_args</span><span class="o">.</span><span class="n">score_lower_bounds_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lower_bounds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_strategies</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">interpolation_strategy</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_mean</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">interpolation_weights_mean</span>
+            <span class="n">pred_strat_names</span> <span class="o">=</span> <span class="n">decoder_args</span><span class="o">.</span><span class="n">interpolation_strategy</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+            <span class="n">all_strat_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">pred_strat_names</span><span class="p">:</span>
+                <span class="n">all_strat_names</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_strat_names</span><span class="p">):</span>
+                <span class="n">pred_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">strat</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pred_strat_names</span><span class="p">)</span>
+                                    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">strat</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;fixed&#39;</span><span class="p">:</span>
+                    <span class="n">strat</span> <span class="o">=</span> <span class="n">FixedInterpolationStrategy</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;entropy&#39;</span><span class="p">:</span>
+                    <span class="n">strat</span> <span class="o">=</span> <span class="n">EntropyInterpolationStrategy</span><span class="p">(</span>
+                             <span class="n">decoder_args</span><span class="o">.</span><span class="n">pred_trg_vocab_size</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;moe&#39;</span><span class="p">:</span>
+                    <span class="n">strat</span> <span class="o">=</span> <span class="n">MoEInterpolationStrategy</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pred_indices</span><span class="p">),</span> 
+                                                     <span class="n">decoder_args</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unknown interpolation strategy &#39;</span><span class="si">%s</span><span class="s2">&#39;. &quot;</span>
+                                  <span class="s2">&quot;Ignoring...&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_strategies</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">strat</span><span class="p">,</span> <span class="n">pred_indices</span><span class="p">))</span>
+    
+<div class="viewcode-block" id="Decoder.add_predictor"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.add_predictor">[docs]</a>    <span class="k">def</span> <span class="nf">add_predictor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a predictor to the decoder. This means that this </span>
+<span class="sd">        predictor is going to be used to predict the next target word</span>
+<span class="sd">        (see ``predict_next``)</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            name (string): Predictor name like &#39;nmt&#39; or &#39;fst&#39;</span>
+<span class="sd">            predictor (Predictor): Predictor instance</span>
+<span class="sd">            weight (float): Predictor weight</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">predictor</span><span class="p">,</span> <span class="n">weight</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Decoder.remove_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.remove_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">remove_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Removes all predictors of this decoder. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor_names</span> <span class="o">=</span> <span class="p">[]</span></div>
+    
+<div class="viewcode-block" id="Decoder.set_heuristic_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.set_heuristic_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">set_heuristic_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heuristic_predictors</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Define the list of predictors used by heuristics. This needs</span>
+<span class="sd">        to be called before adding heuristics with ``add_heuristic()``</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            heuristic_predictors (list):  Predictors and their weights </span>
+<span class="sd">                                          to be used with heuristics. </span>
+<span class="sd">                                          Should be in the same form </span>
+<span class="sd">                                          as ``Decoder.predictors``,</span>
+<span class="sd">                                          i.e. a list of </span>
+<span class="sd">                                          (predictor, weight) tuples</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_predictors</span> <span class="o">=</span> <span class="n">heuristic_predictors</span></div>
+    
+<div class="viewcode-block" id="Decoder.add_heuristic"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.add_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">add_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heuristic</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a heuristic to the decoder. For future cost estimates,</span>
+<span class="sd">        the sum of the estimates from all heuristics added so far will</span>
+<span class="sd">        be used. The predictors used in this heuristic have to be set</span>
+<span class="sd">        before via ``set_heuristic_predictors()``</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            heuristic (Heuristic): A heuristic to use for future cost</span>
+<span class="sd">                                   estimates</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">heuristic</span><span class="o">.</span><span class="n">set_predictors</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">heuristic_predictors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_observer</span><span class="p">(</span><span class="n">heuristic</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heuristics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">heuristic</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Decoder.estimate_future_cost"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Uses all heuristics which have been added with </span>
+<span class="sd">        ``add_heuristic`` to estimate the future cost for a given</span>
+<span class="sd">        partial hypothesis. The estimates are used in heuristic based</span>
+<span class="sd">        searches like A*. This function returns the future log *cost* </span>
+<span class="sd">        (i.e. the lower the better), assuming that the last word in the</span>
+<span class="sd">        partial hypothesis ``hypo`` is consumed next.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypo (PartialHypothesis): Hypothesis for which to estimate</span>
+<span class="sd">                                      the future cost given the current</span>
+<span class="sd">                                      predictor state</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">            float. Future cost</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">h</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span>  <span class="bp">self</span><span class="o">.</span><span class="n">heuristics</span><span class="p">])</span></div>
+    
+<div class="viewcode-block" id="Decoder.has_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.has_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">has_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if predictors have been added to the decoder. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span></div>
+    
+<div class="viewcode-block" id="Decoder.consume"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calls ``consume()`` on all predictors. &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="c1"># May change predictor state</span></div>
+    
+    <span class="k">def</span> <span class="nf">_get_non_zero_words</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bounded_predictors</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the set of words from the predictor posteriors which </span>
+<span class="sd">        have non-zero probability. This set of words is then passed</span>
+<span class="sd">        through to the open vocabulary predictors.</span>
+
+<span class="sd">        This method assumes that both arguments are not empty.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bounded_predictors (list): Tuples of (Predictor, weight)</span>
+<span class="sd">            bounded_posteriors (list): Corresponding posteriors.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Iterable with all words with non-zero probability.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">restricted</span><span class="p">,</span> <span class="n">unrestricted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_restricted_posteriors</span><span class="p">(</span>
+            <span class="n">bounded_predictors</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">restricted</span><span class="p">:</span> <span class="c1"># No restrictions: use union of keys</span>
+            <span class="n">key_sets</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">max_arr_length</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="n">unrestricted</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">key_sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="o">.</span><span class="n">viewkeys</span><span class="p">())</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">max_arr_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">max_arr_length</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="n">el</span> <span class="o">&lt;</span> <span class="n">max_arr_length</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">key_sets</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">)</span>
+                <span class="n">key_sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">key_sets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">key_sets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="n">key_sets</span><span class="p">)</span>
+        <span class="c1"># Calculate the common subset of restricting posteriors</span>
+        <span class="n">arr_lengths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">dict_words</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">for</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="n">restricted</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">posterior_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_words</span><span class="p">:</span>
+                    <span class="n">dict_words</span> <span class="o">=</span> <span class="n">posterior_words</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dict_words</span> <span class="o">=</span> <span class="n">dict_words</span> <span class="o">&amp;</span> <span class="n">posterior_words</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_words</span><span class="p">:</span> 
+                    <span class="k">return</span> <span class="bp">None</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># We record min and max lengths for array posteriors.</span>
+                <span class="n">arr_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">dict_words</span><span class="p">:</span> <span class="c1"># Dictionary restrictions</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">arr_lengths</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">dict_words</span>
+            <span class="n">min_arr_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">arr_lengths</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">dict_words</span> <span class="k">if</span> <span class="n">w</span> <span class="o">&lt;</span> <span class="n">min_arr_length</span><span class="p">]</span>
+        <span class="c1"># Array restrictions</span>
+        <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">arr_lengths</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_split_restricted_posteriors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictors</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper method for _get_non_zero_words(). Splits the</span>
+<span class="sd">        given list of posteriors into unrestricting and restricting</span>
+<span class="sd">        ones. Restricting posteriors have UNK scores of -inf.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">restricted</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">unrestricted</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">posteriors</span><span class="p">):</span>
+            <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="n">predictors</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> <span class="o">==</span> <span class="n">NEG_INF</span><span class="p">:</span>
+                <span class="n">restricted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unrestricted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">restricted</span><span class="p">,</span> <span class="n">unrestricted</span>
+
+<div class="viewcode-block" id="Decoder.apply_interpolation_strategy"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.apply_interpolation_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">apply_interpolation_strategy</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">pred_weights</span><span class="p">,</span> <span class="n">non_zero_words</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Applies the interpolation strategies to find the predictor </span>
+<span class="sd">        weights for this apply_predictors() call.</span>
+<span class="sd">    </span>
+<span class="sd">        Args:</span>
+<span class="sd">            pred_weights (list): a prior predictor weights</span>
+<span class="sd">            non_zero_words (set): All words with positive probability</span>
+<span class="sd">            posteriors: Predictor posterior distributions calculated</span>
+<span class="sd">                        with ``predict_next()``</span>
+<span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
+<span class="sd">                       with ``get_unk_probability``</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">          A list of predictor weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_strategies</span><span class="p">:</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">pred_weights</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">strat</span><span class="p">,</span> <span class="n">pred_indices</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_strategies</span><span class="p">:</span>
+                <span class="n">new_pred_weights</span> <span class="o">=</span> <span class="n">strat</span><span class="o">.</span><span class="n">find_weights</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">pred_weights</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">pred_indices</span><span class="p">],</span>
+                        <span class="n">non_zero_words</span><span class="p">,</span>
+                        <span class="p">[</span><span class="n">posteriors</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">pred_indices</span><span class="p">],</span>
+                        <span class="p">[</span><span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">pred_indices</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pred_indices</span><span class="p">,</span> <span class="n">new_pred_weights</span><span class="p">):</span>
+                    <span class="n">predictions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">preds</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">predictions</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">preds</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_mean</span> <span class="o">==</span> <span class="s1">&#39;arith&#39;</span><span class="p">:</span>
+                        <span class="n">pred_weights</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">preds</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">pred_weights</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="n">mul</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_mean</span> <span class="o">==</span> <span class="s1">&#39;geo&#39;</span><span class="p">:</span>
+                        <span class="n">pred_weights</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">pred_weights</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">**</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">preds</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolation_mean</span> <span class="o">==</span> <span class="s1">&#39;prob&#39;</span><span class="p">:</span>
+                <span class="n">partition</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">)):</span>
+                    <span class="n">pred_weights</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">/=</span> <span class="n">partition</span>
+        <span class="k">return</span> <span class="n">pred_weights</span></div>
+    
+<div class="viewcode-block" id="Decoder.apply_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.apply_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">apply_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the distribution over the next word by combining the</span>
+<span class="sd">        predictor scores.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            top_n (int): If positive, return only the best n words.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            combined,score_breakdown: Two dicts. ``combined`` maps </span>
+<span class="sd">            target word ids to the combined score, ``score_breakdown``</span>
+<span class="sd">            contains the scores for each predictor separately </span>
+<span class="sd">            represented as tuples (unweighted_score, predictor_weight)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">bounded_predictors</span> <span class="o">=</span> <span class="p">[</span><span class="n">el</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span> 
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">el</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">)]</span>
+        <span class="c1"># Get bounded posteriors</span>
+        <span class="n">bounded_posteriors</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span> <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">bounded_predictors</span><span class="p">]</span>
+        <span class="n">non_zero_words</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_non_zero_words</span><span class="p">(</span><span class="n">bounded_predictors</span><span class="p">,</span>
+                                                  <span class="n">bounded_posteriors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">non_zero_words</span><span class="p">:</span> <span class="c1"># Special case: no word is possible</span>
+            <span class="n">non_zero_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
+        <span class="c1"># Add unbounded predictors and unk probabilities</span>
+        <span class="n">posteriors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">unk_probs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pred_weights</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">bounded_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+                <span class="n">posterior</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">predict_next</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># Take it from the bounded_* variables</span>
+                <span class="n">posterior</span> <span class="o">=</span> <span class="n">bounded_posteriors</span><span class="p">[</span><span class="n">bounded_idx</span><span class="p">]</span>
+                <span class="n">bounded_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+            <span class="n">unk_probs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+            <span class="n">pred_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+        <span class="n">pred_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_interpolation_strategy</span><span class="p">(</span>
+                <span class="n">pred_weights</span><span class="p">,</span> <span class="n">non_zero_words</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combine_posteriors</span><span class="p">(</span>
+            <span class="n">non_zero_words</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">,</span> <span class="n">pred_weights</span><span class="p">,</span> <span class="n">top_n</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_unk_in_output</span> <span class="ow">and</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">del</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">ret</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">top_n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">top_n</span><span class="p">:</span>
+            <span class="n">top</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">top_n</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">({</span><span class="n">w</span><span class="p">:</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">w</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">top</span><span class="p">},</span>
+                   <span class="p">{</span><span class="n">w</span><span class="p">:</span> <span class="n">ret</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">w</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">top</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">notify_observers</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_POSTERIOR</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+    
+    <span class="k">def</span> <span class="nf">_combine_posteriors_norm_none</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                      <span class="n">non_zero_words</span><span class="p">,</span>
+                                      <span class="n">posteriors</span><span class="p">,</span>
+                                      <span class="n">unk_probs</span><span class="p">,</span>
+                                      <span class="n">pred_weights</span><span class="p">,</span>
+                                      <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine predictor posteriors according the normalization</span>
+<span class="sd">        scheme ``CLOSED_VOCAB_SCORE_NORM_NONE``. For more information</span>
+<span class="sd">        on closed vocabulary predictor score normalization see the </span>
+<span class="sd">        documentation on the ``CLOSED_VOCAB_SCORE_NORM_*`` vars.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            non_zero_words (set): All words with positive probability</span>
+<span class="sd">            posteriors: Predictor posterior distributions calculated</span>
+<span class="sd">                        with ``predict_next()``</span>
+<span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
+<span class="sd">                       with ``get_unk_probability``</span>
+<span class="sd">            pred_weights (list): Predictor weights</span>
+<span class="sd">            top_n (int): If positive, return only top n words</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">,</span> <span class="nb">xrange</span><span class="p">)</span> <span class="ow">and</span> <span class="n">top_n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+          <span class="n">non_zero_words</span> <span class="o">=</span> <span class="n">Decoder</span><span class="o">.</span><span class="n">_scale_combine_non_zero_scores</span><span class="p">(</span>
+              <span class="nb">len</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">),</span>
+              <span class="n">posteriors</span><span class="p">,</span>
+              <span class="n">unk_probs</span><span class="p">,</span>
+              <span class="n">pred_weights</span><span class="p">,</span>
+              <span class="n">top_n</span><span class="o">=</span><span class="n">top_n</span><span class="p">)</span>
+        <span class="n">combined</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">score_breakdown</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">non_zero_words</span><span class="p">:</span>
+            <span class="n">preds</span> <span class="o">=</span> <span class="p">[(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="n">posteriors</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                                       <span class="n">trgt_word</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">w</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">)]</span>
+            <span class="n">combined</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combi_predictor_method</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span> 
+            <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="n">preds</span>
+        <span class="k">return</span> <span class="n">combined</span><span class="p">,</span> <span class="n">score_breakdown</span>
+
+
+    <span class="k">def</span> <span class="nf">_combine_posteriors_norm_rescale_unk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                             <span class="n">non_zero_words</span><span class="p">,</span>
+                                             <span class="n">posteriors</span><span class="p">,</span>
+                                             <span class="n">unk_probs</span><span class="p">,</span>
+                                             <span class="n">pred_weights</span><span class="p">,</span>
+                                             <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine predictor posteriors according the normalization</span>
+<span class="sd">        scheme ``CLOSED_VOCAB_SCORE_NORM_RESCALE_UNK``. For more </span>
+<span class="sd">        information on closed vocabulary predictor score normalization </span>
+<span class="sd">        see the documentation on the ``CLOSED_VOCAB_SCORE_NORM_*`` vars.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            non_zero_words (set): All words with positive probability</span>
+<span class="sd">            posteriors: Predictor posterior distributions calculated</span>
+<span class="sd">                        with ``predict_next()``</span>
+<span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
+<span class="sd">                       with ``get_unk_probability``</span>
+<span class="sd">            pred_weights (list): Predictor weights</span>
+<span class="sd">            top_n (int): If positive, return only top n words</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_predictors</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)</span>
+        <span class="n">unk_counts</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_predictors</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">EPS_P</span> <span class="ow">or</span> <span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">==</span> <span class="n">NEG_INF</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">non_zero_words</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_contains</span><span class="p">(</span><span class="n">posteriors</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">trgt_word</span><span class="p">):</span>
+                    <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">1.0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_norm_none</span><span class="p">(</span>
+                          <span class="n">non_zero_words</span><span class="p">,</span>
+                          <span class="n">posteriors</span><span class="p">,</span>
+                          <span class="p">[</span><span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
+                               <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">)],</span>
+                          <span class="n">top_n</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_combine_posteriors_norm_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                       <span class="n">non_zero_words</span><span class="p">,</span>
+                                       <span class="n">posteriors</span><span class="p">,</span>
+                                       <span class="n">unk_probs</span><span class="p">,</span>
+                                       <span class="n">pred_weights</span><span class="p">,</span>
+                                       <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine predictor posteriors according the normalization</span>
+<span class="sd">        scheme ``CLOSED_VOCAB_SCORE_NORM_EXACT``. For more information</span>
+<span class="sd">        on closed vocabulary predictor score normalization see the </span>
+<span class="sd">        documentation on the ``CLOSED_VOCAB_SCORE_NORM_*`` vars.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            non_zero_words (set): All words with positive probability</span>
+<span class="sd">            posteriors: Predictor posterior distributions calculated</span>
+<span class="sd">                        with ``predict_next()``</span>
+<span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
+<span class="sd">                       with ``get_unk_probability``</span>
+<span class="sd">            pred_weights (list): Predictor weights</span>
+<span class="sd">            top_n (int): Not implemented!</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_predictors</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)</span>
+        <span class="n">score_breakdown_raw</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">unk_counts</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_predictors</span>
+        <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">non_zero_words</span><span class="p">:</span>
+            <span class="n">preds</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_contains</span><span class="p">(</span><span class="n">posteriors</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">trgt_word</span><span class="p">):</span>
+                    <span class="n">preds</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">posteriors</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">trgt_word</span><span class="p">],</span> <span class="n">w</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">preds</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">w</span><span class="p">))</span>
+                    <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">score_breakdown_raw</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="n">preds</span>
+        <span class="n">renorm_factors</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_predictors</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">renorm_factors</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                            <span class="mf">1.0</span> 
+                            <span class="o">+</span> <span class="p">(</span><span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>  
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_with_renorm</span><span class="p">(</span><span class="n">score_breakdown_raw</span><span class="p">,</span>
+                                                    <span class="n">renorm_factors</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_combine_posteriors_norm_reduced</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                         <span class="n">non_zero_words</span><span class="p">,</span>
+                                         <span class="n">posteriors</span><span class="p">,</span>
+                                         <span class="n">unk_probs</span><span class="p">,</span>
+                                         <span class="n">pred_weights</span><span class="p">,</span>
+                                         <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine predictor posteriors according the normalization</span>
+<span class="sd">        scheme ``CLOSED_VOCAB_SCORE_NORM_REDUCED``. For more information</span>
+<span class="sd">        on closed vocabulary predictor score normalization see the </span>
+<span class="sd">        documentation on the ``CLOSED_VOCAB_SCORE_NORM_*`` vars.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            non_zero_words (set): All words with positive probability</span>
+<span class="sd">            posteriors: Predictor posterior distributions calculated</span>
+<span class="sd">                        with ``predict_next()``</span>
+<span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
+<span class="sd">                       with ``get_unk_probability``</span>
+<span class="sd">            pred_weights (list): Predictor weights</span>
+<span class="sd">            top_n (int): Not implemented!</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_predictors</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)</span>
+        <span class="n">score_breakdown_raw</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">non_zero_words</span><span class="p">:</span> 
+            <span class="n">score_breakdown_raw</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="p">[(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span>
+                                                <span class="n">posteriors</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                                                <span class="n">trgt_word</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">w</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">)]</span>
+        <span class="n">sums</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">):</span>
+            <span class="n">sums</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">([</span><span class="n">preds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> 
+                            <span class="k">for</span> <span class="n">preds</span> <span class="ow">in</span> <span class="n">score_breakdown_raw</span><span class="o">.</span><span class="n">itervalues</span><span class="p">()]))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_with_renorm</span><span class="p">(</span><span class="n">score_breakdown_raw</span><span class="p">,</span> <span class="n">sums</span><span class="p">)</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_scale_combine_non_zero_scores</span><span class="p">(</span><span class="n">non_zero_word_count</span><span class="p">,</span>
+                                       <span class="n">posteriors</span><span class="p">,</span>
+                                       <span class="n">unk_probs</span><span class="p">,</span>
+                                       <span class="n">pred_weights</span><span class="p">,</span>
+                                       <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+      <span class="n">scaled_posteriors</span> <span class="o">=</span> <span class="p">[]</span>
+      <span class="k">for</span> <span class="n">posterior</span><span class="p">,</span> <span class="n">unk_prob</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+              <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">,</span> <span class="n">pred_weights</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+          <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">non_zero_word_count</span><span class="p">,</span> <span class="n">unk_prob</span><span class="p">)</span>
+          <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">posterior</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">arr</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+          <span class="n">scaled_posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arr</span> <span class="o">*</span> <span class="n">weight</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="n">n_unks</span> <span class="o">=</span> <span class="n">non_zero_word_count</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+          <span class="k">if</span> <span class="n">n_unks</span><span class="p">:</span>
+            <span class="n">posterior</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span>
+                <span class="n">posterior</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_unks</span><span class="p">,</span> <span class="n">unk_prob</span><span class="p">)))</span>
+          <span class="n">scaled_posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span> <span class="o">*</span> <span class="n">weight</span><span class="p">)</span>
+      <span class="n">combined_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">scaled_posteriors</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax_n</span><span class="p">(</span><span class="n">combined_scores</span><span class="p">,</span> <span class="n">top_n</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_combine_posteriors_norm_non_zero</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                          <span class="n">non_zero_words</span><span class="p">,</span>
+                                          <span class="n">posteriors</span><span class="p">,</span>
+                                          <span class="n">unk_probs</span><span class="p">,</span>
+                                          <span class="n">pred_weights</span><span class="p">,</span>
+                                          <span class="n">top_n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine predictor posteriors according the normalization</span>
+<span class="sd">        scheme ``CLOSED_VOCAB_SCORE_NORM_NON_ZERO``. For more information</span>
+<span class="sd">        on closed vocabulary predictor score normalization see the </span>
+<span class="sd">        documentation on the ``CLOSED_VOCAB_SCORE_NORM_*`` vars.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            non_zero_words (set): All words with positive probability</span>
+<span class="sd">            posteriors: Predictor posterior distributions calculated</span>
+<span class="sd">                        with ``predict_next()``</span>
+<span class="sd">            unk_probs: UNK probabilities of the predictors, calculated</span>
+<span class="sd">                       with ``get_unk_probability``</span>
+<span class="sd">            pred_weights (list): Predictor weights</span>
+<span class="sd">            top_n (int): If positive, return only top n words</span>
+
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">,</span> <span class="nb">xrange</span><span class="p">)</span> <span class="ow">and</span> <span class="n">top_n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+          <span class="n">non_zero_words</span> <span class="o">=</span> <span class="n">Decoder</span><span class="o">.</span><span class="n">_scale_combine_non_zero_scores</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">),</span> 
+                                                                  <span class="n">posteriors</span><span class="p">,</span>
+                                                                  <span class="n">unk_probs</span><span class="p">,</span>
+                                                                  <span class="n">pred_weights</span><span class="p">,</span>
+                                                                  <span class="n">top_n</span><span class="p">)</span>
+        <span class="n">combined</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">score_breakdown</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">trgt_word</span> <span class="ow">in</span> <span class="n">non_zero_words</span><span class="p">:</span>
+            <span class="n">preds</span> <span class="o">=</span> <span class="p">[(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="n">posteriors</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                                       <span class="n">trgt_word</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">w</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">)]</span>
+            <span class="n">combi_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combi_predictor_method</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">combi_score</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">EPS_P</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">combined</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="n">combi_score</span>  
+            <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="n">preds</span>
+        <span class="k">return</span> <span class="n">combined</span><span class="p">,</span> <span class="n">score_breakdown</span>
+
+    <span class="k">def</span> <span class="nf">_combine_posteriors_with_renorm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                        <span class="n">score_breakdown_raw</span><span class="p">,</span>
+                                        <span class="n">renorm_factors</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper function for ``_combine_posteriors_norm_*`` functions</span>
+<span class="sd">        to renormalize score breakdowns by predictor specific factors.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_predictors</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)</span>
+        <span class="n">combined</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">score_breakdown</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">trgt_word</span><span class="p">,</span><span class="n">preds_raw</span> <span class="ow">in</span> <span class="n">score_breakdown_raw</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">preds</span> <span class="o">=</span> <span class="p">[(</span><span class="n">preds_raw</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">renorm_factors</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                      <span class="n">preds_raw</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">)]</span>
+            <span class="n">combined</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combi_predictor_method</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span> 
+            <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="n">preds</span>
+        <span class="k">return</span> <span class="n">combined</span><span class="p">,</span> <span class="n">score_breakdown</span>
+    
+<div class="viewcode-block" id="Decoder.set_current_sen_id"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sen_id</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">=</span> <span class="n">sen_id</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># -1 because incremented in init()</span></div>
+            
+<div class="viewcode-block" id="Decoder.initialize_predictors"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.initialize_predictors">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_predictors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;First, increases the sentence id counter and calls</span>
+<span class="sd">        ``initialize()`` on all predictors. Then, ``initialize()`` is</span>
+<span class="sd">        called for all heuristics.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): List of source word ids without &lt;S&gt; or</span>
+<span class="sd">                                 &lt;/S&gt; which make up the source sentence</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_hypos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">):</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">heuristics</span><span class="p">:</span>
+            <span class="n">h</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Decoder.add_full_hypo"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.add_full_hypo">[docs]</a>    <span class="k">def</span> <span class="nf">add_full_hypo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a new full hypothesis to ``full_hypos``. This can be</span>
+<span class="sd">        used by implementing subclasses to add a new hypothesis to the</span>
+<span class="sd">        result set. This method also notifies observers.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            hypo (Hypothesis): New complete hypothesis</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">notify_observers</span><span class="p">(</span><span class="n">hypo</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_FULL_HYPO</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Decoder.get_full_hypos_sorted"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.get_full_hypos_sorted">[docs]</a>    <span class="k">def</span> <span class="nf">get_full_hypos_sorted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns ``full_hypos`` sorted by the total score. Can be </span>
+<span class="sd">        used by implementing subclasses as return value of</span>
+<span class="sd">        ``decode``</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. ``full_hypos`` sorted by ``total_score``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_hypos</span><span class="p">,</span>
+                      <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">hypo</span><span class="p">:</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span>
+                      <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Decoder.get_lower_score_bound"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.get_lower_score_bound">[docs]</a>    <span class="k">def</span> <span class="nf">get_lower_score_bound</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Intended to be called by implementing subclasses. Returns a</span>
+<span class="sd">        lower bound on the best score of the current sentence. This is</span>
+<span class="sd">        either read from the lower bounds file (if provided) or set to</span>
+<span class="sd">        negative infinity.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float. Lower bound on the best score for current sentence</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lower_bounds</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lower_bounds</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span> <span class="o">-</span> <span class="n">EPS_P</span>
+        <span class="k">return</span> <span class="n">NEG_INF</span>    </div>
+    
+<div class="viewcode-block" id="Decoder.get_max_expansions"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.get_max_expansions">[docs]</a>    <span class="k">def</span> <span class="nf">get_max_expansions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_expansions_param</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is a helper for decoders which support the </span>
+<span class="sd">        ``max_node_expansions`` parameter. It returns the maximum</span>
+<span class="sd">        number of node expansions for the given sentence.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            max_expansions_param (int): max_node_expansions parameter</span>
+<span class="sd">                                        passed through from the config</span>
+<span class="sd">            src_sentence (list): Current source sentence</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            int. Maximum number of node expansions for this decoding</span>
+<span class="sd">            task.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">max_expansions_param</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">max_expansions_param</span>
+        <span class="k">if</span> <span class="n">max_expansions_param</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span> <span class="o">*</span> <span class="n">max_expansions_param</span>
+        <span class="k">return</span> <span class="mi">100000000</span>  </div>
+    
+<div class="viewcode-block" id="Decoder.set_predictor_states"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.set_predictor_states">[docs]</a>    <span class="k">def</span> <span class="nf">set_predictor_states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">states</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calls ``set_state()`` on all predictors. &quot;&quot;&quot;</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">states</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span></div>
+    
+<div class="viewcode-block" id="Decoder.get_predictor_states"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.get_predictor_states">[docs]</a>    <span class="k">def</span> <span class="nf">get_predictor_states</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calls ``get_state()`` on all predictors. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span> <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="Decoder.set_predictor_combi_method"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.set_predictor_combi_method">[docs]</a>    <span class="k">def</span> <span class="nf">set_predictor_combi_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Defines how to accumulate scores over the sequence. Should</span>
+<span class="sd">        be one of the ``combi_`` methods defined below</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            method (function):  A function which accepts a list of</span>
+<span class="sd">                                tuples [(out1, weight1), ...] and</span>
+<span class="sd">                                calculates a combined score, e.g.</span>
+<span class="sd">                                one of the ``combi_*`` methods</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predictor_combi_method</span> <span class="o">=</span> <span class="n">method</span></div>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Decoder.combi_arithmetic_unnormalized"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.combi_arithmetic_unnormalized">[docs]</a>    <span class="k">def</span> <span class="nf">combi_arithmetic_unnormalized</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculates the weighted sum (or geometric mean of log </span>
+<span class="sd">        values). Do not use with empty lists.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            x (list): List of tuples [(out1, weight1), ...]</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float. Weighted sum out1*weight1+out2*weight2...</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#return sum(f*w for f, w in x)</span>
+        <span class="p">(</span><span class="n">fAcc</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="p">(</span><span class="n">f1</span><span class="p">,</span><span class="n">w1</span><span class="p">),</span> <span class="p">(</span><span class="n">f2</span><span class="p">,</span><span class="n">w2</span><span class="p">):(</span><span class="n">f1</span><span class="o">*</span><span class="n">w1</span> <span class="o">+</span> <span class="n">f2</span><span class="o">*</span><span class="n">w2</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+                           <span class="n">x</span><span class="p">,</span>
+                           <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">fAcc</span></div>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Decoder.combi_geometric_unnormalized"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.combi_geometric_unnormalized">[docs]</a>    <span class="k">def</span> <span class="nf">combi_geometric_unnormalized</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculates the weighted geometric mean. Do not use empty </span>
+<span class="sd">        lists.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            x (list): List of tuples [(out1, weight1), ...]</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float. Weighted geo. mean: out1^weight1*out2^weight2...</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="p">(</span><span class="n">fAcc</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="p">(</span><span class="n">f1</span><span class="p">,</span> <span class="n">w1</span><span class="p">),</span> <span class="p">(</span><span class="n">f2</span><span class="p">,</span> <span class="n">w2</span><span class="p">):</span> <span class="p">(</span><span class="nb">pow</span><span class="p">(</span><span class="n">f1</span><span class="p">,</span><span class="n">w1</span><span class="p">)</span> <span class="o">*</span> <span class="nb">pow</span><span class="p">(</span><span class="n">f2</span><span class="o">*</span><span class="n">w2</span><span class="p">),</span>
+                                                       <span class="mf">1.0</span><span class="p">),</span>
+                           <span class="n">x</span><span class="p">,</span>
+                           <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">fAcc</span></div>
+
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="Decoder.decode"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes a single source sentence. This method has to be </span>
+<span class="sd">        implemented by subclasses. It contains the core of the </span>
+<span class="sd">        implemented search strategy ``src_sentence`` is a list of</span>
+<span class="sd">        source word ids representing the source sentence without</span>
+<span class="sd">        &lt;S&gt; or &lt;/S&gt; symbols. This method returns a list of hypotheses,</span>
+<span class="sd">        order descending by score such that the first entry is the best</span>
+<span class="sd">        decoding result. Implementations should delegate the scoring of</span>
+<span class="sd">        hypotheses to the predictors via ``apply_predictors()``, and</span>
+<span class="sd">        organize predictor states with the methods ``consume()``,</span>
+<span class="sd">        ``get_predictor_states()`` and ``set_predictor_states()``. In</span>
+<span class="sd">        this way, the decoder is decoupled from the scoring modules.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): List of source word ids without &lt;S&gt; or</span>
+<span class="sd">                                 &lt;/S&gt; which make up the source sentence</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. A list of ``Hypothesis`` instances ordered by their</span>
+<span class="sd">            score.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ``NotImplementedError``: if the method is not implemented</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="Decoder.are_equal_predictor_states"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Decoder.are_equal_predictor_states">[docs]</a>    <span class="k">def</span> <span class="nf">are_equal_predictor_states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">states1</span><span class="p">,</span> <span class="n">states2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method applies ``is_equal`` on all predictors. It </span>
+<span class="sd">        returns true if all predictor states are equal.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            states1 (list): First predictor states as returned by</span>
+<span class="sd">                            ``get_predictor_states``</span>
+<span class="sd">            states2 (list): Second predictor states as returned by</span>
+<span class="sd">                            ``get_predictor_states``</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            boolean. True if all predictor states are equal, False</span>
+<span class="sd">            otherwise </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">states1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">states2</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">True</span></div></div>
+    
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,622 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.bow &mdash; SGNMT 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.bow</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.bow</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains predictors for bag of words experiments. This</span>
+<span class="sd">is the standard bow predictor and the bowsearch predictor which first</span>
+<span class="sd">does an unrestricted search to construct a skeleton and then restricts</span>
+<span class="sd">the order of words by that skeleton (in addition to the bag </span>
+<span class="sd">restriction).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.beam</span> <span class="kn">import</span> <span class="n">BeamDecoder</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">CLOSED_VOCAB_SCORE_NORM_NONE</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.trie</span> <span class="kn">import</span> <span class="n">SimpleTrie</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.unigram</span> <span class="kn">import</span> <span class="n">FileUnigramTable</span><span class="p">,</span> \
+    <span class="n">BestStatsUnigramTable</span><span class="p">,</span> <span class="n">FullStatsUnigramTable</span><span class="p">,</span> <span class="n">AllStatsUnigramTable</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">INF</span><span class="p">,</span> <span class="n">NEG_INF</span><span class="p">,</span> <span class="n">MESSAGE_TYPE_FULL_HYPO</span><span class="p">,</span> \
+    <span class="n">MESSAGE_TYPE_DEFAULT</span>
+
+
+<div class="viewcode-block" id="BagOfWordsPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor">[docs]</a><span class="k">class</span> <span class="nc">BagOfWordsPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor is similar to the forced predictor, but it does</span>
+<span class="sd">    not enforce the word order in the reference. Therefore, it assigns</span>
+<span class="sd">    1 to all hypotheses which have the words in the reference in any </span>
+<span class="sd">    order, and -inf to all other hypos.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">trg_test_file</span><span class="p">,</span> 
+                 <span class="n">accept_subsets</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">accept_duplicates</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">heuristic_scores_file</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                 <span class="n">collect_stats_strategy</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">,</span>
+                 <span class="n">heuristic_add_consumed</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> 
+                 <span class="n">heuristic_add_remaining</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+                 <span class="n">diversity_heuristic_factor</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
+                 <span class="n">equivalence_vocab</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new bag-of-words predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            trg_test_file (string): Path to the plain text file with </span>
+<span class="sd">                                    the target sentences. Must have the</span>
+<span class="sd">                                    same number of lines as the number</span>
+<span class="sd">                                    of source sentences to decode. The </span>
+<span class="sd">                                    word order in the target sentences</span>
+<span class="sd">                                    is not relevant for this predictor.</span>
+<span class="sd">            accept_subsets (bool): If true, this predictor permits</span>
+<span class="sd">                                       EOS even if the bag is not fully</span>
+<span class="sd">                                       consumed yet</span>
+<span class="sd">            accept_duplicates (bool): If true, counts are not updated</span>
+<span class="sd">                                      when a word is consumed. This</span>
+<span class="sd">                                      means that we allow a word in a</span>
+<span class="sd">                                      bag to appear multiple times</span>
+<span class="sd">            heuristic_scores_file (string): Path to the unigram scores </span>
+<span class="sd">                                            which are used if this </span>
+<span class="sd">                                            predictor estimates future</span>
+<span class="sd">                                            costs</span>
+<span class="sd">            collect_stats_strategy (string): best, full, or all. Defines </span>
+<span class="sd">                                             how unigram estimates are </span>
+<span class="sd">                                             collected for heuristic </span>
+<span class="sd">            heuristic_add_consumed (bool): Set to true to add the </span>
+<span class="sd">                                           difference between actual</span>
+<span class="sd">                                           partial score and unigram</span>
+<span class="sd">                                           estimates of consumed words</span>
+<span class="sd">                                           to the predictor heuristic</span>
+<span class="sd">            heuristic_add_remaining (bool): Set to true to add the sum</span>
+<span class="sd">                                            of unigram scores of words</span>
+<span class="sd">                                            remaining in the bag to the</span>
+<span class="sd">                                            predictor heuristic</span>
+<span class="sd">            diversity_heuristic_factor (float): Factor for diversity</span>
+<span class="sd">                                                heuristic which </span>
+<span class="sd">                                                penalizes hypotheses</span>
+<span class="sd">                                                with the same bag as</span>
+<span class="sd">                                                full hypos</span>
+<span class="sd">            equivalence_vocab (int): If positive, predictor states are</span>
+<span class="sd">                                     considered equal if the the </span>
+<span class="sd">                                     remaining words within that vocab</span>
+<span class="sd">                                     and OOVs regarding this vocab are</span>
+<span class="sd">                                     the same. Only relevant when using</span>
+<span class="sd">                                     hypothesis recombination</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">trg_test_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">heuristic_scores_file</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span> <span class="o">=</span> <span class="n">FileUnigramTable</span><span class="p">(</span><span class="n">heuristic_scores_file</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">collect_stats_strategy</span> <span class="o">==</span> <span class="s1">&#39;best&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span> <span class="o">=</span> <span class="n">BestStatsUnigramTable</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">collect_stats_strategy</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span> <span class="o">=</span> <span class="n">FullStatsUnigramTable</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">collect_stats_strategy</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span> <span class="o">=</span> <span class="n">AllStatsUnigramTable</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unknown statistics collection strategy&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accept_subsets</span> <span class="o">=</span> <span class="n">accept_subsets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accept_duplicates</span> <span class="o">=</span> <span class="n">accept_duplicates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_add_consumed</span> <span class="o">=</span> <span class="n">heuristic_add_consumed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_add_remaining</span> <span class="o">=</span> <span class="n">heuristic_add_remaining</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">equivalence_vocab</span> <span class="o">=</span> <span class="n">equivalence_vocab</span>
+        <span class="k">if</span> <span class="n">accept_duplicates</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">accept_subsets</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;You enabled bow_accept_duplicates but not bow_&quot;</span>
+                          <span class="s2">&quot;accept_subsets. Therefore, the bow predictor will &quot;</span>
+                          <span class="s2">&quot;never accept end-of-sentence and could cause &quot;</span>
+                          <span class="s2">&quot;an infinite loop in the search strategy.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diversity_heuristic_factor</span> <span class="o">=</span> <span class="n">diversity_heuristic_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diverse_heuristic</span> <span class="o">=</span> <span class="p">(</span><span class="n">diversity_heuristic_factor</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
+          
+<div class="viewcode-block" id="BagOfWordsPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns negative infinity unconditionally: Words which are</span>
+<span class="sd">        not in the target sentence have assigned probability 0 by</span>
+<span class="sd">        this predictor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">NEG_INF</span></div>
+    
+<div class="viewcode-block" id="BagOfWordsPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If the bag is empty, the only allowed symbol is EOS. </span>
+<span class="sd">        Otherwise, return the list of keys in the bag.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="p">:</span> <span class="c1"># Empty bag</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="n">w</span> <span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">()}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">accept_subsets</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+    
+<div class="viewcode-block" id="BagOfWordsPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new bag for the current target sentence..</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list):  Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_hypo_score</span> <span class="o">=</span> <span class="n">NEG_INF</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bag</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">():</span> 
+            <span class="n">int_w</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="p">[</span><span class="n">int_w</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">int_w</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_bag</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="BagOfWordsPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates the bag by deleting the consumed word.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): Next word to consume</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bag</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Consuming word which is not in bag-of-words!&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cnt</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">accept_duplicates</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="n">cnt</span> <span class="o">-</span> <span class="mi">1</span></div>
+    
+<div class="viewcode-block" id="BagOfWordsPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;State of this predictor is the current bag &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bag</span></div>
+    
+<div class="viewcode-block" id="BagOfWordsPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;State of this predictor is the current bag &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bag</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="BagOfWordsPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calls ``reset`` of the used unigram table with estimates</span>
+<span class="sd">        ``self.estimates`` to clear all statistics from the previous</span>
+<span class="sd">        sentence</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): Not used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diverse_heuristic</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">explored_bags</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="BagOfWordsPredictor.notify"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor.notify">[docs]</a>    <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">message_type</span> <span class="o">=</span> <span class="n">MESSAGE_TYPE_DEFAULT</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This gets called if this predictor observes the decoder. It</span>
+<span class="sd">        updates unigram heuristic estimates via passing through this</span>
+<span class="sd">        message to the unigram table ``self.estimates``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">estimates</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">message_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diverse_heuristic</span> <span class="ow">and</span> <span class="n">message_type</span> <span class="o">==</span> <span class="n">MESSAGE_TYPE_FULL_HYPO</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_explored_bags</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+    
+    <span class="k">def</span> <span class="nf">_update_explored_bags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is called if diversity heuristic is enabled. It updates</span>
+<span class="sd">        ``self.explored_bags``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sen</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sen</span><span class="p">)):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">sen</span><span class="p">[:</span><span class="n">l</span><span class="p">]</span>
+            <span class="n">key</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+            <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explored_bags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">cnt</span><span class="p">:</span>
+                <span class="n">cnt</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">explored_bags</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">cnt</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span>
+                    
+<div class="viewcode-block" id="BagOfWordsPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The bow predictor comes with its own heuristic function. We</span>
+<span class="sd">        use the sum of scores of the remaining words as future cost </span>
+<span class="sd">        estimator. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_add_remaining</span><span class="p">:</span>
+            <span class="n">remaining</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_bag</span><span class="p">)</span>
+            <span class="n">remaining</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">:</span>
+                <span class="n">remaining</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="n">acc</span> <span class="o">-=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">cnt</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">estimates</span><span class="o">.</span><span class="n">estimate</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> 
+                            <span class="k">for</span> <span class="n">w</span><span class="p">,</span><span class="n">cnt</span> <span class="ow">in</span> <span class="n">remaining</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diverse_heuristic</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span>
+            <span class="n">key</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+            <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explored_bags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cnt</span><span class="p">:</span>
+                <span class="n">acc</span> <span class="o">+=</span> <span class="n">cnt</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">diversity_heuristic_factor</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">heuristic_add_consumed</span><span class="p">:</span>
+            <span class="n">acc</span> <span class="o">-=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">estimates</span><span class="o">.</span><span class="n">estimate</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="o">-</span><span class="mf">1000.0</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">acc</span></div>
+    
+    <span class="k">def</span> <span class="nf">_get_unk_bag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">org_bag</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">equivalence_vocab</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">org_bag</span>
+        <span class="n">unk_bag</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">word</span><span class="p">,</span><span class="n">cnt</span> <span class="ow">in</span> <span class="n">org_bag</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">word</span> <span class="k">if</span> <span class="n">word</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">equivalence_vocab</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span>
+            <span class="n">unk_bag</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">unk_bag</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">cnt</span>
+        <span class="k">return</span> <span class="n">unk_bag</span>
+    
+<div class="viewcode-block" id="BagOfWordsPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the bag is the same &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_unk_bag</span><span class="p">(</span><span class="n">state1</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_unk_bag</span><span class="p">(</span><span class="n">state2</span><span class="p">)</span> </div></div>
+
+
+<div class="viewcode-block" id="BagOfWordsSearchPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor">[docs]</a><span class="k">class</span> <span class="nc">BagOfWordsSearchPredictor</span><span class="p">(</span><span class="n">BagOfWordsPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Combines the bag-of-words predictor with a proxy decoding pass</span>
+<span class="sd">    which creates a skeleton translation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">main_decoder</span><span class="p">,</span>
+                 <span class="n">hypo_recombination</span><span class="p">,</span>
+                 <span class="n">trg_test_file</span><span class="p">,</span> 
+                 <span class="n">accept_subsets</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">accept_duplicates</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">heuristic_scores_file</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                 <span class="n">collect_stats_strategy</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">,</span>
+                 <span class="n">heuristic_add_consumed</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> 
+                 <span class="n">heuristic_add_remaining</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+                 <span class="n">diversity_heuristic_factor</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
+                 <span class="n">equivalence_vocab</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new bag-of-words predictor with pre search</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            main_decoder (Decoder): Reference to the main decoder</span>
+<span class="sd">                                    instance, used to fetch the predictors</span>
+<span class="sd">            hypo_recombination (bool): Activates hypo recombination for the</span>
+<span class="sd">                                       pre decoder </span>
+<span class="sd">            trg_test_file (string): Path to the plain text file with </span>
+<span class="sd">                                    the target sentences. Must have the</span>
+<span class="sd">                                    same number of lines as the number</span>
+<span class="sd">                                    of source sentences to decode. The </span>
+<span class="sd">                                    word order in the target sentences</span>
+<span class="sd">                                    is not relevant for this predictor.</span>
+<span class="sd">            accept_subsets (bool): If true, this predictor permits</span>
+<span class="sd">                                       EOS even if the bag is not fully</span>
+<span class="sd">                                       consumed yet</span>
+<span class="sd">            accept_duplicates (bool): If true, counts are not updated</span>
+<span class="sd">                                      when a word is consumed. This</span>
+<span class="sd">                                      means that we allow a word in a</span>
+<span class="sd">                                      bag to appear multiple times</span>
+<span class="sd">            heuristic_scores_file (string): Path to the unigram scores </span>
+<span class="sd">                                            which are used if this </span>
+<span class="sd">                                            predictor estimates future</span>
+<span class="sd">                                            costs</span>
+<span class="sd">            collect_stats_strategy (string): best, full, or all. Defines </span>
+<span class="sd">                                             how unigram estimates are </span>
+<span class="sd">                                             collected for heuristic </span>
+<span class="sd">            heuristic_add_consumed (bool): Set to true to add the </span>
+<span class="sd">                                           difference between actual</span>
+<span class="sd">                                           partial score and unigram</span>
+<span class="sd">                                           estimates of consumed words</span>
+<span class="sd">                                           to the predictor heuristic</span>
+<span class="sd">            heuristic_add_remaining (bool): Set to true to add the sum</span>
+<span class="sd">                                            of unigram scores of words</span>
+<span class="sd">                                            remaining in the bag to the</span>
+<span class="sd">                                            predictor heuristic</span>
+<span class="sd">            equivalence_vocab (int): If positive, predictor states are</span>
+<span class="sd">                                     considered equal if the the </span>
+<span class="sd">                                     remaining words within that vocab</span>
+<span class="sd">                                     and OOVs regarding this vocab are</span>
+<span class="sd">                                     the same. Only relevant when using</span>
+<span class="sd">                                     hypothesis recombination</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_decoder</span> <span class="o">=</span> <span class="n">main_decoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_decoder</span> <span class="o">=</span> <span class="n">BeamDecoder</span><span class="p">(</span><span class="n">CLOSED_VOCAB_SCORE_NORM_NONE</span><span class="p">,</span>
+                                       <span class="n">main_decoder</span><span class="o">.</span><span class="n">max_len_factor</span><span class="p">,</span>
+                                       <span class="n">hypo_recombination</span><span class="p">,</span>
+                                       <span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_decoder</span><span class="o">.</span><span class="n">combine_posteriors</span> <span class="o">=</span> <span class="n">main_decoder</span><span class="o">.</span><span class="n">combine_posteriors</span> 
+        <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">trg_test_file</span><span class="p">,</span> 
+                                                        <span class="n">accept_subsets</span><span class="p">,</span>
+                                                        <span class="n">accept_duplicates</span><span class="p">,</span>
+                                                        <span class="n">heuristic_scores_file</span><span class="p">,</span>
+                                                        <span class="n">collect_stats_strategy</span><span class="p">,</span>
+                                                        <span class="n">heuristic_add_consumed</span><span class="p">,</span> 
+                                                        <span class="n">heuristic_add_remaining</span><span class="p">,</span>
+                                                        <span class="n">diversity_heuristic_factor</span><span class="p">,</span>
+                                                        <span class="n">equivalence_vocab</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span> <span class="o">=</span> <span class="bp">False</span>
+    
+<div class="viewcode-block" id="BagOfWordsSearchPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If in ``pre_mode``, pass through to super class. Otherwise,</span>
+<span class="sd">        scan skeleton </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="p">:</span> <span class="c1"># Empty bag</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="n">w</span> <span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">()}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">accept_subsets</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton_pos</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="p">):</span>
+            <span class="n">ret</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton_pos</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+    
+<div class="viewcode-block" id="BagOfWordsSearchPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If in ``pre_mode``, pass through to super class. Otherwise,</span>
+<span class="sd">        initialize skeleton. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">old_accept_subsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">accept_subsets</span>
+        <span class="n">old_accept_duplicates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">accept_duplicates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accept_subsets</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accept_duplicates</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_decoder</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_decoder</span><span class="o">.</span><span class="n">predictors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_decoder</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_decoder</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">INF</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hypos</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No hypothesis found by the pre decoder. Effectively &quot;</span>
+                         <span class="s2">&quot;reducing bowsearch predictor to bow predictor.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span> <span class="o">=</span> <span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">total_score</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">--</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># Remove EOS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">skeleton_pos</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accept_subsets</span> <span class="o">=</span> <span class="n">old_accept_subsets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accept_duplicates</span> <span class="o">=</span> <span class="n">old_accept_duplicates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_up_full_mode</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;BOW Skeleton (score=</span><span class="si">%f</span><span class="s2"> missing=</span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                                          <span class="n">score</span><span class="p">,</span>
+                                          <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_decoder</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_decoder</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span> <span class="o">=</span> <span class="bp">False</span></div>
+    
+    <span class="k">def</span> <span class="nf">_set_up_full_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method initializes ``missing`` by using</span>
+<span class="sd">        ``self.skeleton`` and ``self.full_bag`` and removes</span>
+<span class="sd">        duplicates from ``self.skeleton``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bag</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_bag</span><span class="p">)</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_bag</span><span class="p">)</span>
+        <span class="n">skeleton_no_duplicates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">missing</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">missing</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="n">skeleton_no_duplicates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span> <span class="o">=</span> <span class="n">skeleton_no_duplicates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">missing</span> <span class="o">=</span> <span class="p">{</span><span class="n">w</span><span class="p">:</span> <span class="n">cnt</span> <span class="k">for</span> <span class="n">w</span><span class="p">,</span> <span class="n">cnt</span> <span class="ow">in</span> <span class="n">missing</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="n">cnt</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">}</span>
+        
+<div class="viewcode-block" id="BagOfWordsSearchPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calls super class ``consume``. If not in ``pre_mode``,</span>
+<span class="sd">        update skeleton info. </span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            word (int): Next word to consume</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton_pos</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="p">)</span> 
+                 <span class="ow">and</span> <span class="n">word</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton_pos</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">skeleton_pos</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">[</span><span class="n">word</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="BagOfWordsSearchPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If in pre_mode, state of this predictor is the current bag</span>
+<span class="sd">        Otherwise, its the bag plus skeleton state</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span></div>
+    
+<div class="viewcode-block" id="BagOfWordsSearchPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If in pre_mode, state of this predictor is the current bag</span>
+<span class="sd">        Otherwise, its the bag plus skeleton state</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bag</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span> <span class="o">=</span> <span class="n">state</span></div>
+    
+<div class="viewcode-block" id="BagOfWordsSearchPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.bow.BagOfWordsSearchPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the bag and the skeleton states are the same</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_mode</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">state1</span><span class="p">,</span> 
+                                                                   <span class="n">state2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BagOfWordsSearchPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">state1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> 
+                                                               <span class="n">state2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div></div>
+        
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

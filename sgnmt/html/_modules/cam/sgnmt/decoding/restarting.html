@@ -1,0 +1,468 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.decoding.restarting &mdash; SGNMT 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.decoding.restarting</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.decoding.restarting</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Implementation of the restarting search strategy &quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">heapq</span> <span class="kn">import</span> <span class="n">heappop</span><span class="p">,</span> <span class="n">heappush</span><span class="p">,</span> <span class="n">heapify</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Decoder</span><span class="p">,</span> <span class="n">PartialHypothesis</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">INF</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="RestartingChild"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.restarting.RestartingChild">[docs]</a><span class="k">class</span> <span class="nc">RestartingChild</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper class for ``RestartingDecoder``` representing a child</span>
+<span class="sd">    object in the search tree. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new child instance &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word</span> <span class="o">=</span> <span class="n">word</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="n">score_breakdown</span></div>
+
+
+<div class="viewcode-block" id="RestartingNode"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.restarting.RestartingNode">[docs]</a><span class="k">class</span> <span class="nc">RestartingNode</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper class for ``RestartingDecoder``` representing a node</span>
+<span class="sd">    in the search tree. &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">,</span> <span class="n">children</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new node instance &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypo</span> <span class="o">=</span> <span class="n">hypo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="n">children</span></div>
+    
+    
+<div class="viewcode-block" id="RestartingDecoder"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.restarting.RestartingDecoder">[docs]</a><span class="k">class</span> <span class="nc">RestartingDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This decoder first creates a path to the final node greedily.</span>
+<span class="sd">    Then, it looks for the node on this path with the smallest </span>
+<span class="sd">    difference between best and second best child, and restarts greedy </span>
+<span class="sd">    decoding from this point. In order to do so, it maintains a </span>
+<span class="sd">    priority queue of all visited nodes, which is ordered by the </span>
+<span class="sd">    difference between the worst expanded child and the best unexpanded</span>
+<span class="sd">    one. If this queue is empty, we have visited the best path. This </span>
+<span class="sd">    algorithm is similar to DFS but does not backtrace to the last call</span>
+<span class="sd">    of the recursive function but to the one which is most promising.</span>
+<span class="sd">    </span>
+<span class="sd">    Note that this algorithm is exact. It tries to exploit the problem</span>
+<span class="sd">    characteristics of NMT search: Reloading predictor states can be</span>
+<span class="sd">    expensive, node expansion is even more expensive but for free from</span>
+<span class="sd">    visited nodes, and there is no good admissible heuristic.</span>
+<span class="sd">    </span>
+<span class="sd">    Note2: Does not work properly if predictor scores can be positive </span>
+<span class="sd">    because of admissible pruning</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">decoder_args</span><span class="p">,</span>
+                 <span class="n">hypo_recombination</span><span class="p">,</span>
+                 <span class="n">max_expansions</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">low_memory_mode</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
+                 <span class="n">node_cost_strategy</span><span class="o">=</span><span class="s1">&#39;difference&#39;</span><span class="p">,</span>
+                 <span class="n">stochastic</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">always_single_step</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates new Restarting decoder instance.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from the configuration API.</span>
+<span class="sd">            hypo_recombination (bool): Activates hypo recombination </span>
+<span class="sd">            max_expansions (int): Maximum number of node expansions for</span>
+<span class="sd">                                  inadmissible pruning.</span>
+<span class="sd">            low_memory_mode (bool): Switch on low memory mode at cost </span>
+<span class="sd">                                    of some computational overhead as</span>
+<span class="sd">                                    the set of open nodes is reduced</span>
+<span class="sd">                                    after each decoding pass</span>
+<span class="sd">            node_cost_strategy (string): How to decide which node to </span>
+<span class="sd">                                          restart from next</span>
+<span class="sd">            stochastic (bool): If true, select the next node to restart</span>
+<span class="sd">                               from randomly. If false, take the one</span>
+<span class="sd">                               with the best node score</span>
+<span class="sd">            always_single_step (bool): If false, do greedy decoding </span>
+<span class="sd">                                       when restarting. If true, expand</span>
+<span class="sd">                                       the hypothesis only by a single</span>
+<span class="sd">                                       token</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RestartingDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions_param</span> <span class="o">=</span> <span class="n">max_expansions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">always_single_step</span> <span class="o">=</span> <span class="n">always_single_step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">low_memory_mode</span> <span class="o">=</span> <span class="n">low_memory_mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span> <span class="o">=</span> <span class="n">hypo_recombination</span>
+        <span class="k">if</span> <span class="n">node_cost_strategy</span> <span class="o">==</span> <span class="s1">&#39;difference&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_node_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_cost_difference</span>
+        <span class="k">elif</span> <span class="n">node_cost_strategy</span> <span class="o">==</span> <span class="s1">&#39;absolute&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_node_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_cost_absolute</span>
+        <span class="k">elif</span> <span class="n">node_cost_strategy</span> <span class="o">==</span> <span class="s1">&#39;constant&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_node_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_cost_constant</span>
+        <span class="k">elif</span> <span class="n">node_cost_strategy</span> <span class="o">==</span> <span class="s1">&#39;expansions&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_node_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_cost_expansions</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;restarting node score strategy unknown!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stochastic</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">select_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select_node_stochastic</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">select_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select_node_max</span>
+    
+    <span class="k">def</span> <span class="nf">_select_node_stochastic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implements stochastic node selection. &quot;&quot;&quot;</span>
+        <span class="n">exps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">([</span><span class="o">-</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">])</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">exps</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">exps</span><span class="p">)),</span>
+                               <span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="n">e</span><span class="o">/</span><span class="n">total</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">exps</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_select_node_max</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implements deterministic node selection. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">heappop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_get_node_cost_difference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                   <span class="n">prev_node_cost</span><span class="p">,</span>
+                                   <span class="n">first_word_score</span><span class="p">,</span> 
+                                   <span class="n">sec_word_score</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implements the node scoring function difference. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">first_word_score</span> <span class="o">-</span> <span class="n">sec_word_score</span>
+    
+    <span class="k">def</span> <span class="nf">_get_node_cost_absolute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                   <span class="n">prev_node_cost</span><span class="p">,</span>
+                                   <span class="n">first_word_score</span><span class="p">,</span> 
+                                   <span class="n">sec_word_score</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implements the node scoring function absolute. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">sec_word_score</span>
+    
+    <span class="k">def</span> <span class="nf">_get_node_cost_constant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                   <span class="n">prev_node_cost</span><span class="p">,</span>
+                                   <span class="n">first_word_score</span><span class="p">,</span> 
+                                   <span class="n">sec_word_score</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implements the node scoring function constant. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">0.0</span>
+    
+    <span class="k">def</span> <span class="nf">_get_node_cost_expansions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                   <span class="n">prev_node_cost</span><span class="p">,</span>
+                                   <span class="n">first_word_score</span><span class="p">,</span> 
+                                   <span class="n">sec_word_score</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implements the node scoring function constant. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">prev_node_cost</span> <span class="o">+</span> <span class="mf">1.0</span>
+    
+<div class="viewcode-block" id="RestartingDecoder.greedy_decode"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.restarting.RestartingDecoder.greedy_decode">[docs]</a>    <span class="k">def</span> <span class="nf">greedy_decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper function for greedy decoding from a certain point in</span>
+<span class="sd">        the search tree.&quot;&quot;&quot;</span>
+        <span class="n">best_word</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">prev_hypo</span> <span class="o">=</span> <span class="n">hypo</span>
+        <span class="n">remaining_exps</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_expansions</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span><span class="p">,</span>
+                             <span class="mi">1</span><span class="p">)</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">best_word</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> 
+               <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">prev_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">best_word</span><span class="p">)</span>
+            <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">best_word</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span>
+            <span class="n">best_word_score</span> <span class="o">=</span> <span class="n">posterior</span><span class="p">[</span><span class="n">best_word</span><span class="p">]</span>
+            <span class="n">new_hypo</span> <span class="o">=</span> <span class="n">prev_hypo</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">best_word</span><span class="p">,</span>
+                                        <span class="bp">None</span><span class="p">,</span>
+                                        <span class="n">best_word_score</span><span class="p">,</span>
+                                        <span class="n">score_breakdown</span><span class="p">[</span><span class="n">best_word</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">new_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span> <span class="c1"># Admissible pruning</span>
+                <span class="k">return</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Expanded hypo: score=</span><span class="si">%f</span><span class="s2"> prefix= </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                            <span class="n">new_hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                            <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">new_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">])))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">always_single_step</span><span class="p">:</span>
+                    <span class="n">posterior</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">best_word</span><span class="p">)</span>
+                <span class="n">children</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">RestartingChild</span><span class="p">(</span><span class="n">w</span><span class="p">,</span>
+                                                   <span class="n">posterior</span><span class="p">[</span><span class="n">w</span><span class="p">],</span>
+                                                   <span class="n">score_breakdown</span><span class="p">[</span><span class="n">w</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">children</span> <span class="o">=</span> <span class="n">children</span><span class="p">[:</span><span class="n">remaining_exps</span><span class="p">]</span>
+                <span class="n">node_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node_cost</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> 
+                                               <span class="n">best_word_score</span><span class="p">,</span> 
+                                               <span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">node_cost</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_heap_node_cost</span><span class="p">:</span>
+                    <span class="n">prev_hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())</span>
+                    <span class="n">heappush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">,</span> <span class="p">(</span><span class="n">node_cost</span><span class="p">,</span>
+                                               <span class="n">RestartingNode</span><span class="p">(</span><span class="n">prev_hypo</span><span class="p">,</span>
+                                                              <span class="n">children</span><span class="p">)))</span>
+            <span class="n">prev_hypo</span> <span class="o">=</span> <span class="n">new_hypo</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">always_single_step</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">best_word</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">prev_hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">prev_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span> 
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;New_best (ID: </span><span class="si">%d</span><span class="s2">): score=</span><span class="si">%f</span><span class="s2"> exp=</span><span class="si">%d</span><span class="s2"> hypo=</span><span class="si">%s</span><span class="s2">&quot;</span> 
+                    <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                       <span class="n">prev_hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> 
+                       <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span><span class="p">,</span>
+                       <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">prev_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">])))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="n">prev_hypo</span><span class="o">.</span><span class="n">score</span></div>
+    
+<div class="viewcode-block" id="RestartingDecoder.create_initial_node"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.restarting.RestartingDecoder.create_initial_node">[docs]</a>    <span class="k">def</span> <span class="nf">create_initial_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create the root node for the search tree. &quot;&quot;&quot;</span>
+        <span class="n">init_hypo</span> <span class="o">=</span> <span class="n">PartialHypothesis</span><span class="p">()</span>
+        <span class="n">posterior</span><span class="p">,</span><span class="n">score_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors</span><span class="p">()</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">RestartingChild</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">posterior</span><span class="p">[</span><span class="n">w</span><span class="p">],</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="n">w</span><span class="p">])</span>
+                            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">],</span>
+                          <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">init_hypo</span><span class="o">.</span><span class="n">predictor_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
+        <span class="n">heappush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">RestartingNode</span><span class="p">(</span><span class="n">init_hypo</span><span class="p">,</span> <span class="n">children</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="RestartingDecoder.decode"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.restarting.RestartingDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes a single source sentence using Restarting search. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_max_expansions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_expansions_param</span><span class="p">,</span>
+                                                      <span class="n">src_sentence</span><span class="p">)</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_lower_score_bound</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_heap_node_cost</span> <span class="o">=</span> <span class="n">INF</span>
+        <span class="c1"># First, create a RestartingNode object for the initial state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_initial_node</span><span class="p">()</span>
+        <span class="c1"># Then, restart from open nodes until the heap is empty</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">:</span>
+            <span class="n">prev_node_score</span><span class="p">,</span><span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_node</span><span class="p">()</span>
+            <span class="n">best_child</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">new_hypo</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">hypo</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">best_child</span><span class="o">.</span><span class="n">word</span><span class="p">,</span>
+                                        <span class="bp">None</span><span class="p">,</span>
+                                        <span class="n">best_child</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                                        <span class="n">best_child</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">new_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span> <span class="c1"># Admissible pruning</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Restart from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                            <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">new_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">])))</span>
+                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span> <span class="c1"># Still has children -&gt; back to heap</span>
+                    <span class="n">node_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node_cost</span><span class="p">(</span><span class="n">prev_node_score</span><span class="p">,</span> 
+                                                   <span class="n">best_child</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> 
+                                                   <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+                    <span class="n">heappush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">,</span> <span class="p">(</span><span class="n">node_cost</span><span class="p">,</span> <span class="n">node</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span>
+                                                <span class="n">node</span><span class="o">.</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span> <span class="c1"># No need to copy, don&#39;t put back to heap</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">greedy_decode</span><span class="p">(</span><span class="n">new_hypo</span><span class="p">)</span>
+            <span class="c1"># Reduce heap size (we don&#39;t need more nodes than remaining exps</span>
+            <span class="n">rest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span>
+            <span class="k">if</span> <span class="n">rest</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypo_recombination</span><span class="p">:</span>
+                <span class="n">new_open</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_open</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">rest</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">:</span>
+                    <span class="n">c_cost</span><span class="p">,</span><span class="n">candidate</span> <span class="o">=</span> <span class="n">heappop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">)</span>
+                    <span class="n">valid</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="k">for</span> <span class="n">_</span><span class="p">,</span><span class="n">node</span> <span class="ow">in</span> <span class="n">new_open</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">are_equal_predictor_states</span><span class="p">(</span>
+                                                <span class="n">candidate</span><span class="o">.</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">,</span>
+                                                <span class="n">node</span><span class="o">.</span><span class="n">hypo</span><span class="o">.</span><span class="n">predictor_states</span><span class="p">):</span>
+                            <span class="n">valid</span> <span class="o">=</span> <span class="bp">False</span>
+                            <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">valid</span><span class="p">:</span>
+                        <span class="n">new_open</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">c_cost</span><span class="p">,</span> <span class="n">candidate</span><span class="p">))</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_open</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">rest</span><span class="p">:</span>
+                            <span class="k">break</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span> <span class="o">=</span> <span class="n">new_open</span>
+                <span class="n">heapify</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">)</span> 
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">low_memory_mode</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">rest</span><span class="p">:</span>
+                <span class="n">new_open</span> <span class="o">=</span> <span class="p">[</span><span class="n">heappop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">rest</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">max_heap_node_cost</span> <span class="o">=</span> <span class="n">new_open</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span> <span class="o">=</span> <span class="n">new_open</span>
+                <span class="n">heapify</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_nodes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_hypos_sorted</span><span class="p">()</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
