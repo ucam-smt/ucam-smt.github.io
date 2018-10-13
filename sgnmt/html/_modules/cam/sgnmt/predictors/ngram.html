@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.ngram &mdash; SGNMT 0.5 documentation</title>
+  <title>cam.sgnmt.predictors.ngram &mdash; SGNMT 0.5.1 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.5.1 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.5
+                0.5.1
               </div>
             
           
@@ -277,8 +277,16 @@
 <span class="sd">        Args:</span>
 <span class="sd">            src_sentence (list): Not used</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_lm_state</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_update_lm_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span> <span class="o">=</span> <span class="n">kenlm</span><span class="o">.</span><span class="n">State</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="o">.</span><span class="n">BeginSentenceWrite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">)</span></div>
+        <span class="n">tmp_state</span> <span class="o">=</span> <span class="n">kenlm</span><span class="o">.</span><span class="n">State</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="o">.</span><span class="n">BeginSentenceWrite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">:]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="o">.</span><span class="n">BaseScore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">tmp_state</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">,</span> <span class="n">tmp_state</span> <span class="o">=</span> <span class="n">tmp_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span>
     
 <div class="viewcode-block" id="KenLMPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">w</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="o">.</span><span class="n">BaseScore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">,</span> 
@@ -293,16 +301,23 @@
     
 <div class="viewcode-block" id="KenLMPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="o">.</span><span class="n">BaseScore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">word</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">word</span><span class="p">))</span></div>
+    
+    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
     
 <div class="viewcode-block" id="KenLMPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span></div>
+        <span class="sd">&quot;&quot;&quot;Returns the current n-gram history &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span></div>
     
 <div class="viewcode-block" id="KenLMPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lm_state</span> <span class="o">=</span> <span class="n">state</span></div>
+        <span class="sd">&quot;&quot;&quot;Sets the current n-gram history and LM state &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_lm_state</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="KenLMPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.ngram.KenLMPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">state</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
 
 </pre></div>
 
@@ -337,7 +352,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.5',
+            VERSION:'0.5.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

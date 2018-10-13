@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.structure &mdash; SGNMT 0.5 documentation</title>
+  <title>cam.sgnmt.predictors.structure &mdash; SGNMT 0.5.1 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.5.1 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.5
+                0.5.1
               </div>
             
           
@@ -152,6 +152,7 @@
 <span class="n">OSM_GAP_ID</span> <span class="o">=</span> <span class="mi">5</span>
 <span class="n">OSM_JUMP_FWD_ID</span> <span class="o">=</span> <span class="mi">6</span>
 <span class="n">OSM_JUMP_BWD_ID</span> <span class="o">=</span> <span class="mi">7</span>
+<span class="n">OSM_EOP2_ID</span> <span class="o">=</span> <span class="mi">8</span>
 
 
 <div class="viewcode-block" id="load_external_lengths"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.load_external_lengths">[docs]</a><span class="k">def</span> <span class="nf">load_external_lengths</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
@@ -188,9 +189,14 @@
 <span class="sd">        bounds.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">osm_type</span><span class="o">=</span><span class="s2">&quot;osm&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new osm predictor.&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">OSMPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">OSM_EOP_ID</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">osm_type</span> <span class="o">==</span> <span class="s2">&quot;pbosm&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">OSM_EOP2_ID</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">osm_type</span> <span class="o">!=</span> <span class="s2">&quot;osm&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Unknown osm_type &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">osm_type</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">illegal_sequences</span> <span class="o">=</span> <span class="p">[</span>
             <span class="c1">#[OSM_JUMP_FWD_ID, OSM_JUMP_BWD_ID],</span>
             <span class="c1">#[OSM_JUMP_BWD_ID, OSM_JUMP_FWD_ID],</span>
@@ -222,10 +228,8 @@
         <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_len</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span> <span class="c1"># Force EOS</span>
-            <span class="c1">#ret[OSM_EOP_ID] = utils.NEG_INF</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
-            <span class="c1">#ret[utils.EOS_ID] = 0.0</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">ret</span><span class="p">[</span><span class="n">OSM_JUMP_BWD_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span><span class="p">:</span>
@@ -237,16 +241,15 @@
         <span class="k">return</span> <span class="n">ret</span></div>
         
 <div class="viewcode-block" id="OSMPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Always returns 0.0&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_len</span><span class="p">:</span> <span class="c1"># Force EOS</span>
             <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
         <span class="k">return</span> <span class="mf">0.0</span></div>
     
 <div class="viewcode-block" id="OSMPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Updates the number of holes, EOPs, and the head position.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="o">!=</span> <span class="n">OSM_EOP_ID</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_EOP_ID</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">elif</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_GAP_ID</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -402,8 +405,6 @@
                             <span class="k">break</span>
                         <span class="n">cur_idx</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="n">possible_words</span>
-                
-        
 
 <div class="viewcode-block" id="ForcedOSMPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.ForcedOSMPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Apply word reference constraints.</span>
@@ -610,7 +611,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.5',
+            VERSION:'0.5.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

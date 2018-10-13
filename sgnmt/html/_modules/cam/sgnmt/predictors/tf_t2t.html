@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.tf_t2t &mdash; SGNMT 0.5 documentation</title>
+  <title>cam.sgnmt.predictors.tf_t2t &mdash; SGNMT 0.5.1 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.5.1 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.5
+                0.5.1
               </div>
             
           
@@ -244,15 +244,8 @@
 <span class="sd">                              None, UNK is always scored with -inf.</span>
 <span class="sd">            single_cpu_thread (bool): If true, prevent tensorflow from</span>
 <span class="sd">                                      doing multithreading.</span>
-
-<span class="sd">        Raises:</span>
-<span class="sd">            IOError if checkpoint file not found.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">_BaseTensor2TensorPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/checkpoint&quot;</span> <span class="o">%</span> <span class="n">checkpoint_dir</span><span class="p">):</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;T2T checkpoint file </span><span class="si">%s</span><span class="s2">/checkpoint not found!&quot;</span> 
-                          <span class="o">%</span> <span class="n">checkpoint_dir</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">IOError</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_single_cpu_thread</span> <span class="o">=</span> <span class="n">single_cpu_thread</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="k">if</span> <span class="n">t2t_unk_id</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">t2t_unk_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
@@ -282,7 +275,12 @@
     <span class="k">def</span> <span class="nf">create_session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a MonitoredSession for this predictor.&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">saver</span><span class="o">.</span><span class="n">latest_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span><span class="p">):</span>
+                <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">saver</span><span class="o">.</span><span class="n">latest_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> is not a directory. Interpreting as direct &quot;</span>
+                             <span class="s2">&quot;path to checkpoint...&quot;</span> <span class="o">%</span> <span class="n">checkpoint_path</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">training</span><span class="o">.</span><span class="n">MonitoredSession</span><span class="p">(</span>
                 <span class="n">session_creator</span><span class="o">=</span><span class="n">training</span><span class="o">.</span><span class="n">ChiefSessionCreator</span><span class="p">(</span>
                     <span class="n">checkpoint_filename_with_path</span><span class="o">=</span><span class="n">checkpoint_path</span><span class="p">,</span>
@@ -601,7 +599,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.5',
+            VERSION:'0.5.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
