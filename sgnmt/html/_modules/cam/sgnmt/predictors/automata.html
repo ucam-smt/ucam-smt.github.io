@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.automata &mdash; SGNMT 0.5.1 documentation</title>
+  <title>cam.sgnmt.predictors.automata &mdash; SGNMT 0.6 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5.1 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.5.1
+                0.6
               </div>
             
           
@@ -214,14 +214,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
         
 <div class="viewcode-block" id="FstPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Always returns negative infinity: Words outside the </span>
-<span class="sd">        translation lattice are not possible according to this</span>
-<span class="sd">        predictor.</span>
+        <span class="sd">&quot;&quot;&quot;Returns negative infinity if UNK is not in the lattice.</span>
+<span class="sd">        Otherwise, return UNK score.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">            float. Negative infinity</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span> </div>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="FstPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Uses the outgoing arcs from the current node to build up the</span>
@@ -257,7 +256,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The lattice for sentence </span><span class="si">%d</span><span class="s2"> does not contain any &quot;</span>
                          <span class="s2">&quot;valid path. Please double-check that the lattice &quot;</span>
-                         <span class="s2">&quot;is not empty and that paths the begin-of-&quot;</span>
+                         <span class="s2">&quot;is not empty and that paths contain the begin-of-&quot;</span>
                          <span class="s2">&quot;sentence symbol </span><span class="si">%d</span><span class="s2">. If you are using a different &quot;</span>
                          <span class="s2">&quot;begin-of-sentence symbol, double-check --indexing_&quot;</span>
                          <span class="s2">&quot;scheme.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">))</span></div>
@@ -279,10 +278,15 @@
             <span class="k">return</span>
         <span class="n">from_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">unk_arc</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="n">from_state</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">word</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span></div>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_factor</span><span class="o">*</span><span class="n">w2f</span><span class="p">(</span><span class="n">arc</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">arc</span><span class="o">.</span><span class="n">olabel</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">:</span>
+                <span class="n">unk_arc</span> <span class="o">=</span> <span class="n">arc</span>
+        <span class="k">if</span> <span class="n">unk_arc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_node</span> <span class="o">=</span> <span class="n">unk_arc</span><span class="o">.</span><span class="n">nextstate</span></div>
     
 <div class="viewcode-block" id="FstPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.automata.FstPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the current node. &quot;&quot;&quot;</span>
@@ -747,7 +751,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, University of Cambridge.
+        &copy; Copyright 2019, University of Cambridge.
 
     </p>
   </div>
@@ -769,7 +773,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.5.1',
+            VERSION:'0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

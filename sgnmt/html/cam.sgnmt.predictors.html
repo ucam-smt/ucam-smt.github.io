@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors package &mdash; SGNMT 0.5.1 documentation</title>
+  <title>cam.sgnmt.predictors package &mdash; SGNMT 0.6 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5.1 documentation" href="index.html"/>
+    <link rel="top" title="SGNMT 0.6 documentation" href="index.html"/>
         <link rel="up" title="cam.sgnmt package" href="cam.sgnmt.html"/>
         <link rel="next" title="cam.sgnmt.tf package" href="cam.sgnmt.tf.html"/>
         <link rel="prev" title="cam.sgnmt.misc package" href="cam.sgnmt.misc.html"/> 
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.5.1
+                0.6
               </div>
             
           
@@ -131,6 +131,7 @@
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.decode_utils">cam.sgnmt.decode_utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#cam-sgnmt-extract-scores-along-reference-module">cam.sgnmt.extract_scores_along_reference module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.output">cam.sgnmt.output module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.tf_utils">cam.sgnmt.tf_utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.ui">cam.sgnmt.ui module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.utils">cam.sgnmt.utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt">Module contents</a></li>
@@ -277,9 +278,8 @@ use the shortest path in the fst as future cost estimator.</p>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.automata.FstPredictor.get_unk_probability">
 <code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/automata.html#FstPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.automata.FstPredictor.get_unk_probability" title="Permalink to this definition">¶</a></dt>
-<dd><p>Always returns negative infinity: Words outside the
-translation lattice are not possible according to this
-predictor.</p>
+<dd><p>Returns negative infinity if UNK is not in the lattice.
+Otherwise, return UNK score.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -2709,7 +2709,7 @@ the min/max terminal range) by a factor.</p>
 
 <dl class="class">
 <dt id="cam.sgnmt.predictors.length.WordCountPredictor">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.length.</code><code class="descname">WordCountPredictor</code><span class="sig-paren">(</span><em>word=-1</em>, <em>nonterminal_penalty=False</em>, <em>nonterminal_ids=None</em>, <em>min_terminal_id=0</em>, <em>max_terminal_id=30003</em>, <em>vocab_size=30003</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/length.html#WordCountPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.length.WordCountPredictor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.length.</code><code class="descname">WordCountPredictor</code><span class="sig-paren">(</span><em>word=-1</em>, <em>nonterminal_penalty=False</em>, <em>nonterminal_ids=None</em>, <em>min_terminal_id=0</em>, <em>max_terminal_id=30003</em>, <em>negative_wc=True</em>, <em>vocab_size=30003</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/length.html#WordCountPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.length.WordCountPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This predictor adds the (negative) number of words as feature.
 This means that this predictor encourages shorter hypotheses when
@@ -2723,13 +2723,16 @@ used with a positive weight.</p>
 <li><strong>word</strong> (<em>int</em>) &#8211; If this is non-negative we count only the
 number of the specified word. If its
 negative, count all words</li>
-<li><strong>nonterminal_penalty</strong> (<em>bool</em>) &#8211; If true, apply penalty only to tokens in a range
-(the range <em>outside</em> min/max terminal id)</li>
+<li><strong>nonterminal_penalty</strong> (<em>bool</em>) &#8211; If true, apply penalty only to
+tokens in a range  (the range <em>outside</em>
+min/max terminal id)</li>
 <li><strong>nonterminal_ids</strong> &#8211; file containing ids of nonterminal tokens</li>
 <li><strong>min_terminal_id</strong> &#8211; lower bound of tokens <em>not</em> to penalize,
 if nonterminal_penalty selected</li>
 <li><strong>max_terminal_id</strong> &#8211; upper bound of tokens <em>not</em> to penalize,
 if nonterminal_penalty selected</li>
+<li><strong>negative_wc</strong> &#8211; If true, the score of this predictor is the
+negative word count.</li>
 <li><strong>vocab_size</strong> &#8211; upper bound of tokens, used to find nonterminal range</li>
 </ul>
 </td>
@@ -2768,8 +2771,7 @@ if nonterminal_penalty selected</li>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.length.WordCountPredictor.predict_next">
 <code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/length.html#WordCountPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.length.WordCountPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set score for EOS to the number of consumed words</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="method">
 <dt id="cam.sgnmt.predictors.length.WordCountPredictor.set_state">
@@ -2900,6 +2902,196 @@ sentence_id to the slave predictor</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.misc.</code><code class="descname">GluePredictor</code><span class="sig-paren">(</span><em>max_len_factor</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
+<p>This wrapper masks sentence-level predictors when SGNMT runs on
+the document level. The SGNMT hypotheses consist of multiple
+sentences, glued together with &lt;s&gt;, but the wrapped predictor is
+trained on the sentence level. This predictor splits input
+sequences at &lt;s&gt; and feed them to the predictor one by one. The
+wrapped predictor is initialized with a new source sentence when
+the sentence boundary symbol &lt;s&gt; is emitted. Note that using the
+predictor heuristic of the wrapped predictor estimates the future
+cost for the current sentence, not for the entire document.</p>
+<p>Creates a new glue wrapper predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max_len_factor</strong> (<em>int</em>) &#8211; Target sentences cannot be longer
+than this times source sentence length</li>
+<li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Instance of the sentence-level
+predictor.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.consume">
+<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.consume" title="Permalink to this definition">¶</a></dt>
+<dd><p>If <code class="docutils literal"><span class="pre">word</span></code> is &lt;s&gt;, initialize the slave predictor with the
+next source sentence. Otherwise, pass through <code class="docutils literal"><span class="pre">word</span></code> to the
+<code class="docutils literal"><span class="pre">consume()</span></code> method of the slave.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.estimate_future_cost">
+<code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.estimate_future_cost"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.estimate_future_cost" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.get_state">
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.get_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>State is the slave state plus the source sentence index.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.get_unk_probability">
+<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.get_unk_probability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Splits <code class="docutils literal"><span class="pre">src_sentence</span></code> at <code class="docutils literal"><span class="pre">utils.GO_ID</span></code>, stores all
+segments for later use, and calls <code class="docutils literal"><span class="pre">initialize()</span></code> of the
+slave predictor with the first segment.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.initialize_heuristic">
+<code class="descname">initialize_heuristic</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.initialize_heuristic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.initialize_heuristic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.is_equal">
+<code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.is_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.is_equal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.is_last_sentence">
+<code class="descname">is_last_sentence</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.is_last_sentence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.is_last_sentence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the current sentence is the last sentence
+in this document - i.e. we have already consumed n-1 &lt;s&gt;
+symbols since the last call of <code class="docutils literal"><span class="pre">initialize()</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls predict_next() of the wrapped predictor. Replaces BOS
+scores with EOS score if we still have source sentences left.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.set_current_sen_id">
+<code class="descname">set_current_sen_id</code><span class="sig-paren">(</span><em>cur_sen_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.set_current_sen_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.set_current_sen_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>We need to override this method to propagate current_
+sentence_id to the slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.GluePredictor.set_state">
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#GluePredictor.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.GluePredictor.set_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>State is the slave state plus the source sentence index.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.misc.</code><code class="descname">RankPredictor</code><span class="sig-paren">(</span><em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
+<p>This wrapper converts predictor scores to (negative) ranks, i.e.
+the best word gets a score of -1, the second best of -2 and so on.</p>
+<p>Note: Using this predictor with UNK matching or predictor heuristics
+is not recommended.</p>
+<p>Creates a new rank wrapper predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Use score of this predictor to
+compute ranks.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.consume">
+<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.consume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.estimate_future_cost">
+<code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.estimate_future_cost"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.estimate_future_cost" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.get_state">
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.get_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.get_unk_probability">
+<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.get_unk_probability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.initialize_heuristic">
+<code class="descname">initialize_heuristic</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.initialize_heuristic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.initialize_heuristic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.is_equal">
+<code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.is_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.is_equal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.score2rank">
+<code class="descname">score2rank</code><span class="sig-paren">(</span><em>scores</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.score2rank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.score2rank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.set_current_sen_id">
+<code class="descname">set_current_sen_id</code><span class="sig-paren">(</span><em>cur_sen_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.set_current_sen_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.set_current_sen_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>We need to override this method to propagate current_
+sentence_id to the slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.RankPredictor.set_state">
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#RankPredictor.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.RankPredictor.set_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="cam.sgnmt.predictors.misc.UnboundedAltsrcPredictor">
 <em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.misc.</code><code class="descname">UnboundedAltsrcPredictor</code><span class="sig-paren">(</span><em>src_test</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#UnboundedAltsrcPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.UnboundedAltsrcPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.misc.AltsrcPredictor" title="cam.sgnmt.predictors.misc.AltsrcPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.misc.AltsrcPredictor</span></code></a>, <a class="reference internal" href="#cam.sgnmt.predictors.core.UnboundedVocabularyPredictor" title="cam.sgnmt.predictors.core.UnboundedVocabularyPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.UnboundedVocabularyPredictor</span></code></a></p>
@@ -2911,6 +3103,60 @@ method to pass through the set of target words to score correctly.</p>
 <dt id="cam.sgnmt.predictors.misc.UnboundedAltsrcPredictor.predict_next">
 <code class="descname">predict_next</code><span class="sig-paren">(</span><em>trgt_words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#UnboundedAltsrcPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.UnboundedAltsrcPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="cam.sgnmt.predictors.misc.UnboundedGluePredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.misc.</code><code class="descname">UnboundedGluePredictor</code><span class="sig-paren">(</span><em>max_len_factor</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#UnboundedGluePredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.UnboundedGluePredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.misc.GluePredictor" title="cam.sgnmt.predictors.misc.GluePredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.misc.GluePredictor</span></code></a>, <a class="reference internal" href="#cam.sgnmt.predictors.core.UnboundedVocabularyPredictor" title="cam.sgnmt.predictors.core.UnboundedVocabularyPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.UnboundedVocabularyPredictor</span></code></a></p>
+<p>This class is a version of <code class="docutils literal"><span class="pre">GluePredictor</span></code> for unbounded
+vocabulary predictors.</p>
+<p>Creates a new glue wrapper predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>max_len_factor</strong> (<em>int</em>) &#8211; Target sentences cannot be longer
+than this times source sentence length</li>
+<li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Instance of the sentence-level
+predictor.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.UnboundedGluePredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><em>trgt_words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#UnboundedGluePredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.UnboundedGluePredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="cam.sgnmt.predictors.misc.UnboundedRankPredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.misc.</code><code class="descname">UnboundedRankPredictor</code><span class="sig-paren">(</span><em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#UnboundedRankPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.UnboundedRankPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.misc.RankPredictor" title="cam.sgnmt.predictors.misc.RankPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.misc.RankPredictor</span></code></a>, <a class="reference internal" href="#cam.sgnmt.predictors.core.UnboundedVocabularyPredictor" title="cam.sgnmt.predictors.core.UnboundedVocabularyPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.UnboundedVocabularyPredictor</span></code></a></p>
+<p>This class is a version of <code class="docutils literal"><span class="pre">RankPredictor</span></code> for unbounded
+vocabulary predictors. This needs an adjusted <code class="docutils literal"><span class="pre">predict_next</span></code>
+method to pass through the set of target words to score correctly.</p>
+<p>Creates a new rank wrapper predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Use score of this predictor to
+compute ranks.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.misc.UnboundedRankPredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><em>trgt_words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/misc.html#UnboundedRankPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.misc.UnboundedRankPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return ranks instead of slave scores</p>
 </dd></dl>
 
 </dd></dl>
@@ -3933,8 +4179,119 @@ combination with SGNMT:</p>
 includes the transformer model, convolutional models, and RNN-based
 sequence models.</p>
 <dl class="class">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">EditT2TPredictor</code><span class="sig-paren">(</span><em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>problem_name</em>, <em>hparams_set_name</em>, <em>trg_test_file</em>, <em>beam_size</em>, <em>t2t_usr_dir</em>, <em>checkpoint_dir</em>, <em>t2t_unk_id=None</em>, <em>n_cpu_threads=-1</em>, <em>max_terminal_id=-1</em>, <em>pop_id=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#EditT2TPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.tf_t2t._BaseTensor2TensorPredictor</span></code></p>
+<p>This predictor can be used for T2T models conditioning on the
+full target sentence. The predictor state is a full target sentence.
+The state can be changed by insertions, substitutions, and deletions
+of single tokens, whereas each operation is encoded as SGNMT token
+in the following way:</p>
+<blockquote>
+<div>1xxxyyyyy: Insert the token yyyyy at position xxx.
+2xxxyyyyy: Replace the xxx-th word with the token yyyyy.
+3xxx00000: Delete the xxx-th token.</div></blockquote>
+<p>Creates a new edit T2T predictor. This constructor is
+similar to the constructor of T2TPredictor but creates a
+different computation graph which retrieves scores at each
+target position, not only the last one.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src_vocab_size</strong> (<em>int</em>) &#8211; Source vocabulary size.</li>
+<li><strong>trg_vocab_size</strong> (<em>int</em>) &#8211; Target vocabulary size.</li>
+<li><strong>model_name</strong> (<em>string</em>) &#8211; T2T model name.</li>
+<li><strong>problem_name</strong> (<em>string</em>) &#8211; T2T problem name.</li>
+<li><strong>hparams_set_name</strong> (<em>string</em>) &#8211; T2T hparams set name.</li>
+<li><strong>trg_test_file</strong> (<em>string</em>) &#8211; Path to a plain text file with
+initial target sentences. Can be empty.</li>
+<li><strong>beam_size</strong> (<em>int</em>) &#8211; Determines how many substitutions and
+insertions are considered at each position.</li>
+<li><strong>t2t_usr_dir</strong> (<em>string</em>) &#8211; See &#8211;t2t_usr_dir in tensor2tensor.</li>
+<li><strong>checkpoint_dir</strong> (<em>string</em>) &#8211; Path to the T2T checkpoint
+directory. The predictor will load
+the top most checkpoint in the
+<cite>checkpoints</cite> file.</li>
+<li><strong>t2t_unk_id</strong> (<em>int</em>) &#8211; If set, use this ID to get UNK scores. If
+None, UNK is always scored with -inf.</li>
+<li><strong>n_cpu_threads</strong> (<em>int</em>) &#8211; Number of TensorFlow CPU threads.</li>
+<li><strong>max_terminal_id</strong> (<em>int</em>) &#8211; If positive, maximum terminal ID. Needs to
+be set for syntax-based T2T models.</li>
+<li><strong>pop_id</strong> (<em>int</em>) &#8211; If positive, ID of the POP or closing bracket symbol.
+Needs to be set for syntax-based T2T models.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.DEL_OFFSET">
+<code class="descname">DEL_OFFSET</code><em class="property"> = 300000000</em><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.DEL_OFFSET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.INS_OFFSET">
+<code class="descname">INS_OFFSET</code><em class="property"> = 100000000</em><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.INS_OFFSET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.MAX_SEQ_LEN">
+<code class="descname">MAX_SEQ_LEN</code><em class="property"> = 999</em><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.MAX_SEQ_LEN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.POS_FACTOR">
+<code class="descname">POS_FACTOR</code><em class="property"> = 100000</em><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.POS_FACTOR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.SUB_OFFSET">
+<code class="descname">SUB_OFFSET</code><em class="property"> = 200000000</em><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.SUB_OFFSET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.consume">
+<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#EditT2TPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.consume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append <code class="docutils literal"><span class="pre">word</span></code> to the current history.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.get_state">
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#EditT2TPredictor.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.get_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>The predictor state is the complete target sentence.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#EditT2TPredictor.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set src_sentence, reset consumed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.is_equal">
+<code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#EditT2TPredictor.is_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.is_equal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if the target sentence is the same</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#EditT2TPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call the T2T model in self.mon_sess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.set_state">
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#EditT2TPredictor.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.set_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>The predictor state is the complete target sentence.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">FertilityT2TPredictor</code><span class="sig-paren">(</span><em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>problem_name</em>, <em>hparams_set_name</em>, <em>t2t_usr_dir</em>, <em>checkpoint_dir</em>, <em>t2t_unk_id=None</em>, <em>single_cpu_thread=False</em>, <em>max_terminal_id=-1</em>, <em>pop_id=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">FertilityT2TPredictor</code><span class="sig-paren">(</span><em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>problem_name</em>, <em>hparams_set_name</em>, <em>t2t_usr_dir</em>, <em>checkpoint_dir</em>, <em>t2t_unk_id=None</em>, <em>n_cpu_threads=-1</em>, <em>max_terminal_id=-1</em>, <em>pop_id=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#FertilityT2TPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.tf_t2t.T2TPredictor" title="cam.sgnmt.predictors.tf_t2t.T2TPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.tf_t2t.T2TPredictor</span></code></a></p>
 <p>Use this predictor to integrate fertility models trained with
 T2T. Fertility models output the fertility for each source word
@@ -3968,8 +4325,7 @@ the top most checkpoint in the
 <cite>checkpoints</cite> file.</li>
 <li><strong>t2t_unk_id</strong> (<em>int</em>) &#8211; If set, use this ID to get UNK scores. If
 None, UNK is always scored with -inf.</li>
-<li><strong>single_cpu_thread</strong> (<em>bool</em>) &#8211; If true, prevent tensorflow from
-doing multithreading.</li>
+<li><strong>n_cpu_threads</strong> (<em>int</em>) &#8211; Number of TensorFlow CPU threads.</li>
 <li><strong>max_terminal_id</strong> (<em>int</em>) &#8211; If positive, maximum terminal ID. Needs to
 be set for syntax-based T2T models.</li>
 <li><strong>pop_id</strong> (<em>int</em>) &#8211; If positive, ID of the POP or closing bracket symbol.
@@ -4027,8 +4383,88 @@ Needs to be set for syntax-based T2T models.</li>
 </dd></dl>
 
 <dl class="class">
+<dt id="cam.sgnmt.predictors.tf_t2t.SegT2TPredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">SegT2TPredictor</code><span class="sig-paren">(</span><em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>problem_name</em>, <em>hparams_set_name</em>, <em>t2t_usr_dir</em>, <em>checkpoint_dir</em>, <em>t2t_unk_id=None</em>, <em>n_cpu_threads=-1</em>, <em>max_terminal_id=-1</em>, <em>pop_id=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#SegT2TPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.tf_t2t._BaseTensor2TensorPredictor</span></code></p>
+<p>This predictor is designed for document-level T2T models. It
+differs from the normal t2t predictor in the following ways:</p>
+<ul class="simple">
+<li>In addition to <cite>input</cite> and <cite>targets</cite>, it generates the features
+<cite>inputs_seg</cite>. <cite>targets_seg</cite>, <cite>inputs_pos</cite>, <cite>targets_pos</cite> which
+are used in glue models and the contextual Transformer.</li>
+<li>The history is pruned when it exceeds a maximum number of &lt;s&gt;
+symbols. This can be used to reduce complexity for document-level
+models on very long documents. When the maximum number is reached,
+we start removing sentences from <code class="docutils literal"><span class="pre">self.consumed</span></code>, starting with
+the sentence which is <cite>begin_margin</cite> away from the document start
+and <cite>end_margin</cite> sentences away from the current sentence.</li>
+</ul>
+<p>Creates a new document-level T2T predictor. See
+T2TPredictor.__init__().</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src_vocab_size</strong> (<em>int</em>) &#8211; Source vocabulary size.</li>
+<li><strong>trg_vocab_size</strong> (<em>int</em>) &#8211; Target vocabulary size.</li>
+<li><strong>model_name</strong> (<em>string</em>) &#8211; T2T model name.</li>
+<li><strong>problem_name</strong> (<em>string</em>) &#8211; T2T problem name.</li>
+<li><strong>hparams_set_name</strong> (<em>string</em>) &#8211; T2T hparams set name.</li>
+<li><strong>t2t_usr_dir</strong> (<em>string</em>) &#8211; See &#8211;t2t_usr_dir in tensor2tensor.</li>
+<li><strong>checkpoint_dir</strong> (<em>string</em>) &#8211; Path to the T2T checkpoint
+directory. The predictor will load
+the top most checkpoint in the
+<cite>checkpoints</cite> file.</li>
+<li><strong>t2t_unk_id</strong> (<em>int</em>) &#8211; If set, use this ID to get UNK scores. If
+None, UNK is always scored with -inf.</li>
+<li><strong>n_cpu_threads</strong> (<em>int</em>) &#8211; Number of TensorFlow CPU threads.</li>
+<li><strong>max_terminal_id</strong> (<em>int</em>) &#8211; If positive, maximum terminal ID. Needs to
+be set for syntax-based T2T models.</li>
+<li><strong>pop_id</strong> (<em>int</em>) &#8211; If positive, ID of the POP or closing bracket symbol.
+Needs to be set for syntax-based T2T models.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.consume">
+<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#SegT2TPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.consume" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.get_state">
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#SegT2TPredictor.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.get_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#SegT2TPredictor.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.initialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.is_equal">
+<code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#SegT2TPredictor.is_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.is_equal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if the (pruned) history is the same</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#SegT2TPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call the T2T model in self.mon_sess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.set_state">
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#SegT2TPredictor.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.set_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="cam.sgnmt.predictors.tf_t2t.T2TPredictor">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">T2TPredictor</code><span class="sig-paren">(</span><em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>problem_name</em>, <em>hparams_set_name</em>, <em>t2t_usr_dir</em>, <em>checkpoint_dir</em>, <em>t2t_unk_id=None</em>, <em>single_cpu_thread=False</em>, <em>max_terminal_id=-1</em>, <em>pop_id=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.T2TPredictor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">T2TPredictor</code><span class="sig-paren">(</span><em>src_vocab_size</em>, <em>trg_vocab_size</em>, <em>model_name</em>, <em>problem_name</em>, <em>hparams_set_name</em>, <em>t2t_usr_dir</em>, <em>checkpoint_dir</em>, <em>t2t_unk_id=None</em>, <em>n_cpu_threads=-1</em>, <em>max_terminal_id=-1</em>, <em>pop_id=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#T2TPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.T2TPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.tf_t2t._BaseTensor2TensorPredictor</span></code></p>
 <p>This predictor implements scoring with Tensor2Tensor models. We
 follow the decoder implementation in T2T and do not reuse network
@@ -4061,8 +4497,7 @@ the top most checkpoint in the
 <cite>checkpoints</cite> file.</li>
 <li><strong>t2t_unk_id</strong> (<em>int</em>) &#8211; If set, use this ID to get UNK scores. If
 None, UNK is always scored with -inf.</li>
-<li><strong>single_cpu_thread</strong> (<em>bool</em>) &#8211; If true, prevent tensorflow from
-doing multithreading.</li>
+<li><strong>n_cpu_threads</strong> (<em>int</em>) &#8211; Number of TensorFlow CPU threads.</li>
 <li><strong>max_terminal_id</strong> (<em>int</em>) &#8211; If positive, maximum terminal ID. Needs to
 be set for syntax-based T2T models.</li>
 <li><strong>pop_id</strong> (<em>int</em>) &#8211; If positive, ID of the POP or closing bracket symbol.
@@ -4118,16 +4553,53 @@ Needs to be set for syntax-based T2T models.</li>
 
 <dl class="function">
 <dt id="cam.sgnmt.predictors.tf_t2t.expand_input_dims_for_t2t">
-<code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">expand_input_dims_for_t2t</code><span class="sig-paren">(</span><em>t</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#expand_input_dims_for_t2t"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.expand_input_dims_for_t2t" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">expand_input_dims_for_t2t</code><span class="sig-paren">(</span><em>t</em>, <em>batched=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#expand_input_dims_for_t2t"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.expand_input_dims_for_t2t" title="Permalink to this definition">¶</a></dt>
 <dd><p>Expands a plain input tensor for using it in a T2T graph.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>t</strong> &#8211; Tensor</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>t</strong> &#8211; Tensor</li>
+<li><strong>batched</strong> &#8211; Whether to expand on the left side</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Tensor <cite>t</cite> expanded by 1 dimension on the left and two dimensions
-on the right.</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Tensor <cite>t</cite> expanded by 1 dimension on the left and two dimensions
+on the right.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.predictors.tf_t2t.gather_2d">
+<code class="descclassname">cam.sgnmt.predictors.tf_t2t.</code><code class="descname">gather_2d</code><span class="sig-paren">(</span><em>params</em>, <em>indices</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/tf_t2t.html#gather_2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.tf_t2t.gather_2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a batched version of tf.gather(), ie. it applies tf.gather() to
+each batch separately.</p>
+<p class="rubric">Example</p>
+<dl class="docutils">
+<dt>params = [[10, 11, 12, 13, 14],</dt>
+<dd>[20, 21, 22, 23, 24]]</dd>
+<dt>indices = [[0, 0, 1, 1, 1, 2],</dt>
+<dd>[1, 3, 0, 0, 2, 2]]</dd>
+<dt>result = [[10, 10, 11, 11, 11, 12],</dt>
+<dd>[21, 23, 20, 20, 22, 22]]</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>params</strong> &#8211; A [batch_size, n, ...] tensor with data</li>
+<li><strong>indices</strong> &#8211; A [batch_size, num_indices] int32 tensor with indices into params.
+Entries must be smaller than n</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The result of tf.gather() on each entry of the batch.</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -4517,16 +4989,21 @@ refrain from a complete conversion and pass through
 
 <dl class="method">
 <dt id="cam.sgnmt.predictors.vocabulary.IdxmapPredictor.load_map">
-<code class="descname">load_map</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#IdxmapPredictor.load_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.load_map" title="Permalink to this definition">¶</a></dt>
+<code class="descname">load_map</code><span class="sig-paren">(</span><em>path</em>, <em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#IdxmapPredictor.load_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.load_map" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load a index map file. Mappings should be bijections, but
 there is no sanity check in place to verify this.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>string</em>) &#8211; Path to the mapping file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>string</em>) &#8211; Path to the mapping file</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; &#8216;source&#8217; or &#8216;target&#8217; for error messages</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">dict. Mapping from SGNMT index to slave predictor index</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">dict. Mapping from SGNMT index to slave predictor index</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -4548,6 +5025,93 @@ sentence_id to the slave predictor</p>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.vocabulary.IdxmapPredictor.set_state">
 <code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#IdxmapPredictor.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.IdxmapPredictor.set_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.vocabulary.</code><code class="descname">MaskvocabPredictor</code><span class="sig-paren">(</span><em>words</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
+<p>This wrapper predictor hides certain words in the SGNMT
+vocabulary from the predictor. Those words are scored by the
+masked predictor with zero. The wrapper passes through consume()
+only for other words.</p>
+<p>Creates a new idxmap wrapper predictor. The index maps have
+to be plain text files, each line containing the mapping from
+a SGNMT word index to the slave predictor word index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>words</strong> (<em>set</em>) &#8211; List of masked words</li>
+<li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Instance of the predictor with
+a different wmap than SGNMT</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.consume">
+<code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.consume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.estimate_future_cost">
+<code class="descname">estimate_future_cost</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor.estimate_future_cost"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.estimate_future_cost" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.get_state">
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.get_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.get_unk_probability">
+<code class="descname">get_unk_probability</code><span class="sig-paren">(</span><em>posterior</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor.get_unk_probability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.get_unk_probability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.initialize_heuristic">
+<code class="descname">initialize_heuristic</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor.initialize_heuristic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.initialize_heuristic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.is_equal">
+<code class="descname">is_equal</code><span class="sig-paren">(</span><em>state1</em>, <em>state2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor.is_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.is_equal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor, set masked to 0.0</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.set_current_sen_id">
+<code class="descname">set_current_sen_id</code><span class="sig-paren">(</span><em>cur_sen_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor.set_current_sen_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.set_current_sen_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>We need to override this method to propagate current_
+sentence_id to the slave predictor</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.set_state">
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.set_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pass through to slave predictor</p>
 </dd></dl>
 
@@ -4670,6 +5234,37 @@ method to pass through the set of target words to score correctly.</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="cam.sgnmt.predictors.vocabulary.UnboundedMaskvocabPredictor">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.vocabulary.</code><code class="descname">UnboundedMaskvocabPredictor</code><span class="sig-paren">(</span><em>words</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#UnboundedMaskvocabPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.UnboundedMaskvocabPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor" title="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.vocabulary.MaskvocabPredictor</span></code></a>, <a class="reference internal" href="#cam.sgnmt.predictors.core.UnboundedVocabularyPredictor" title="cam.sgnmt.predictors.core.UnboundedVocabularyPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.UnboundedVocabularyPredictor</span></code></a></p>
+<p>This class is a version of <code class="docutils literal"><span class="pre">MaskvocabPredictor</span></code> for unbounded
+vocabulary predictors. This needs an adjusted <code class="docutils literal"><span class="pre">predict_next</span></code>
+method to pass through the set of target words to score correctly.</p>
+<p>Creates a new idxmap wrapper predictor. The index maps have
+to be plain text files, each line containing the mapping from
+a SGNMT word index to the slave predictor word index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>words</strong> (<em>set</em>) &#8211; List of masked words</li>
+<li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Instance of the predictor with
+a different wmap than SGNMT</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.UnboundedMaskvocabPredictor.predict_next">
+<code class="descname">predict_next</code><span class="sig-paren">(</span><em>trgt_words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#UnboundedMaskvocabPredictor.predict_next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.UnboundedMaskvocabPredictor.predict_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass through to slave predictor, set masked to 0.0</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="cam.sgnmt.predictors.vocabulary.UnkvocabPredictor">
 <em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.vocabulary.</code><code class="descname">UnkvocabPredictor</code><span class="sig-paren">(</span><em>trg_vocab_size</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#UnkvocabPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.UnkvocabPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
@@ -4783,7 +5378,7 @@ added to <code class="docutils literal"><span class="pre">blocks.ui</span></code
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, University of Cambridge.
+        &copy; Copyright 2019, University of Cambridge.
 
     </p>
   </div>
@@ -4805,7 +5400,7 @@ added to <code class="docutils literal"><span class="pre">blocks.ui</span></code
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.5.1',
+            VERSION:'0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -1,0 +1,290 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.tf_utils &mdash; SGNMT 0.6 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 0.6 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.6
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.tf_utils</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.tf_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This file contains utility functions for TensorFlow such as</span>
+<span class="sd">session handling and checkpoint loading.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># This is the TF backend needed for MoE interpolation</span>
+    <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.python.training</span> <span class="kn">import</span> <span class="n">saver</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.python.training</span> <span class="kn">import</span> <span class="n">training</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span> <span class="c1"># Deal with it in decode.py</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+
+<div class="viewcode-block" id="session_config"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.tf_utils.session_config">[docs]</a><span class="k">def</span> <span class="nf">session_config</span><span class="p">(</span><span class="n">n_cpu_threads</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates the session config with default parameters.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      n_cpu_threads (int): Number of CPU threads. If negative, we</span>
+<span class="sd">                           assume either GPU decoding or that all</span>
+<span class="sd">                           CPU cores can be used.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      A TF session config object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">graph_options</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">GraphOptions</span><span class="p">(</span><span class="n">optimizer_options</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">OptimizerOptions</span><span class="p">(</span>
+        <span class="n">opt_level</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">OptimizerOptions</span><span class="o">.</span><span class="n">L1</span><span class="p">,</span> <span class="n">do_function_inlining</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">n_cpu_threads</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">gpu_options</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">GPUOptions</span><span class="p">(</span>
+            <span class="n">per_process_gpu_memory_fraction</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span>
+            <span class="n">allow_soft_placement</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">graph_options</span><span class="o">=</span><span class="n">graph_options</span><span class="p">,</span>
+            <span class="n">gpu_options</span><span class="o">=</span><span class="n">gpu_options</span><span class="p">,</span>
+            <span class="n">log_device_placement</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1">#device_count={&#39;CPU&#39;: n_cpu_threads},</span>
+        <span class="k">if</span> <span class="n">n_cpu_threads</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="c1"># This adjustment is an estimate of the effective load which</span>
+            <span class="c1"># accounts for the sequential parts in SGNMT.</span>
+            <span class="k">if</span> <span class="n">n_cpu_threads</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="n">n_cpu_threads</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">n_cpu_threads</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n_cpu_threads</span><span class="o">*</span><span class="mi">5</span><span class="o">/</span><span class="mf">1.5</span> <span class="o">-</span> <span class="mi">10</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Setting TF inter and intra op parallelism &quot;</span>
+                          <span class="s2">&quot;to </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n_cpu_threads</span><span class="p">)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span>
+            <span class="n">intra_op_parallelism_threads</span><span class="o">=</span><span class="n">n_cpu_threads</span><span class="p">,</span>
+            <span class="n">inter_op_parallelism_threads</span><span class="o">=</span><span class="n">n_cpu_threads</span><span class="p">,</span>
+            <span class="n">allow_soft_placement</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">graph_options</span><span class="o">=</span><span class="n">graph_options</span><span class="p">,</span>
+            <span class="n">log_device_placement</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">config</span></div>
+
+
+<div class="viewcode-block" id="create_session"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.tf_utils.create_session">[docs]</a><span class="k">def</span> <span class="nf">create_session</span><span class="p">(</span><span class="n">checkpoint_path</span><span class="p">,</span> <span class="n">n_cpu_threads</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates a MonitoredSession.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">      checkpoint_path (string): Path either to checkpoint directory or</span>
+<span class="sd">                                directly to a checkpoint file.</span>
+<span class="sd">      n_cpu_threads (int): Number of CPU threads. If negative, we</span>
+<span class="sd">                           assume either GPU decoding or that all</span>
+<span class="sd">                           CPU cores can be used.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">      A TensorFlow MonitoredSession.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">checkpoint_path</span><span class="p">):</span>
+            <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">saver</span><span class="o">.</span><span class="n">latest_checkpoint</span><span class="p">(</span><span class="n">checkpoint_path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> is not a directory. Interpreting as direct &quot;</span>
+                         <span class="s2">&quot;path to checkpoint...&quot;</span> <span class="o">%</span> <span class="n">checkpoint_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">training</span><span class="o">.</span><span class="n">MonitoredSession</span><span class="p">(</span>
+            <span class="n">session_creator</span><span class="o">=</span><span class="n">training</span><span class="o">.</span><span class="n">ChiefSessionCreator</span><span class="p">(</span>
+                <span class="n">checkpoint_filename_with_path</span><span class="o">=</span><span class="n">checkpoint_path</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">=</span><span class="n">session_config</span><span class="p">(</span><span class="n">n_cpu_threads</span><span class="p">)))</span>
+    <span class="k">except</span> <span class="n">tf</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">NotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find all variables of the computation &quot;</span>
+            <span class="s2">&quot;graph in the T2T checkpoint file. This means that the &quot;</span>
+            <span class="s2">&quot;checkpoint does not correspond to the model specified in &quot;</span>
+            <span class="s2">&quot;SGNMT. Please double-check pred_src_vocab_size, &quot;</span>
+            <span class="s2">&quot;pred_trg_vocab_size, and all the t2t_* parameters. &quot;</span>
+            <span class="s2">&quot;Also make sure that the checkpoint exists and is readable&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Could not initialize TF session.&quot;</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.6',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

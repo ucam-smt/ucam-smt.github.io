@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.tf_t2t &mdash; SGNMT 0.5.1 documentation</title>
+  <title>cam.sgnmt.predictors.tf_t2t &mdash; SGNMT 0.6 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5.1 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.5.1
+                0.6
               </div>
             
           
@@ -156,8 +156,9 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">os</span>
 
-<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span><span class="p">,</span> <span class="n">tf_utils</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.misc.trie</span> <span class="kn">import</span> <span class="n">SimpleTrie</span>
 
 <span class="n">POP</span> <span class="o">=</span> <span class="s2">&quot;##POP##&quot;</span>
 <span class="sd">&quot;&quot;&quot;Textual representation of the POP symbol.&quot;&quot;&quot;</span>
@@ -174,8 +175,7 @@
     <span class="kn">from</span> <span class="nn">tensor2tensor.data_generators</span> <span class="kn">import</span> <span class="n">problem</span>  <span class="c1"># pylint: disable=unused-import</span>
     <span class="kn">from</span> <span class="nn">tensor2tensor.data_generators</span> <span class="kn">import</span> <span class="n">text_encoder</span>
     <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
-    <span class="kn">from</span> <span class="nn">tensorflow.python.training</span> <span class="kn">import</span> <span class="n">saver</span>
-    <span class="kn">from</span> <span class="nn">tensorflow.python.training</span> <span class="kn">import</span> <span class="n">training</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
     <span class="k">class</span> <span class="nc">DummyTextEncoder</span><span class="p">(</span><span class="n">TextEncoder</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Dummy TextEncoder implementation. The TextEncoder </span>
@@ -225,13 +225,69 @@
 
 <div class="viewcode-block" id="log_prob_from_logits"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.log_prob_from_logits">[docs]</a><span class="k">def</span> <span class="nf">log_prob_from_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Softmax function.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">logits</span> <span class="o">-</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_logsumexp</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">logits</span> <span class="o">-</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_logsumexp</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="expand_input_dims_for_t2t"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.expand_input_dims_for_t2t">[docs]</a><span class="k">def</span> <span class="nf">expand_input_dims_for_t2t</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Expands a plain input tensor for using it in a T2T graph.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        t: Tensor</span>
+<span class="sd">        batched: Whether to expand on the left side</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      Tensor `t` expanded by 1 dimension on the left and two dimensions</span>
+<span class="sd">      on the right.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">batched</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># Because of batch_size</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># Because of modality</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># Because of random reason X</span>
+    <span class="k">return</span> <span class="n">t</span></div>
+
+
+<div class="viewcode-block" id="gather_2d"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.gather_2d">[docs]</a><span class="k">def</span> <span class="nf">gather_2d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;This is a batched version of tf.gather(), ie. it applies tf.gather() to</span>
+<span class="sd">  each batch separately.</span>
+
+<span class="sd">  Example:</span>
+<span class="sd">    params = [[10, 11, 12, 13, 14],</span>
+<span class="sd">              [20, 21, 22, 23, 24]]</span>
+<span class="sd">    indices = [[0, 0, 1, 1, 1, 2],</span>
+<span class="sd">               [1, 3, 0, 0, 2, 2]]</span>
+<span class="sd">    result = [[10, 10, 11, 11, 11, 12],</span>
+<span class="sd">              [21, 23, 20, 20, 22, 22]]</span>
+
+<span class="sd">  Args:</span>
+<span class="sd">    params: A [batch_size, n, ...] tensor with data</span>
+<span class="sd">    indices: A [batch_size, num_indices] int32 tensor with indices into params.</span>
+<span class="sd">             Entries must be smaller than n</span>
+
+<span class="sd">  Returns:</span>
+<span class="sd">    The result of tf.gather() on each entry of the batch.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1"># TODO(fstahlberg): Curse TF for making this so awkward.</span>
+  <span class="n">batch_size</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">params</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+  <span class="n">num_indices</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">indices</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+  <span class="n">batch_indices</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span>
+                          <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_indices</span><span class="p">])</span>
+  <span class="c1"># batch_indices is [[0,0,0,0,...],[1,1,1,1,...],...]</span>
+  <span class="n">gather_nd_indices</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">batch_indices</span><span class="p">,</span> <span class="n">indices</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">gather_nd</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">gather_nd_indices</span><span class="p">)</span></div>
 
 
 <span class="k">class</span> <span class="nc">_BaseTensor2TensorPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Base class for tensor2tensor based predictors.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t2t_usr_dir</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="p">,</span> <span class="n">t2t_unk_id</span><span class="p">,</span> <span class="n">single_cpu_thread</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">t2t_usr_dir</span><span class="p">,</span>
+                 <span class="n">checkpoint_dir</span><span class="p">,</span>
+                 <span class="n">src_vocab_size</span><span class="p">,</span>
+                 <span class="n">trg_vocab_size</span><span class="p">,</span>
+                 <span class="n">t2t_unk_id</span><span class="p">,</span>
+                 <span class="n">n_cpu_threads</span><span class="p">,</span>
+                 <span class="n">max_terminal_id</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">pop_id</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Common initialization for tensor2tensor predictors.</span>
 
 <span class="sd">        Args:</span>
@@ -240,80 +296,85 @@
 <span class="sd">                                     directory. The predictor will load</span>
 <span class="sd">                                     the top most checkpoint in the </span>
 <span class="sd">                                     `checkpoints` file.</span>
+<span class="sd">            src_vocab_size (int): Source vocabulary size.</span>
+<span class="sd">            trg_vocab_size (int): Target vocabulary size.</span>
 <span class="sd">            t2t_unk_id (int): If set, use this ID to get UNK scores. If</span>
 <span class="sd">                              None, UNK is always scored with -inf.</span>
-<span class="sd">            single_cpu_thread (bool): If true, prevent tensorflow from</span>
-<span class="sd">                                      doing multithreading.</span>
+<span class="sd">            n_cpu_threads (int): Number of TensorFlow CPU threads.</span>
+<span class="sd">            max_terminal_id (int): If positive, maximum terminal ID. Needs to</span>
+<span class="sd">                be set for syntax-based T2T models.</span>
+<span class="sd">            pop_id (int): If positive, ID of the POP or closing bracket symbol.</span>
+<span class="sd">                Needs to be set for syntax-based T2T models.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">_BaseTensor2TensorPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_single_cpu_thread</span> <span class="o">=</span> <span class="n">single_cpu_thread</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_cpu_threads</span> <span class="o">=</span> <span class="n">n_cpu_threads</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="k">if</span> <span class="n">t2t_unk_id</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">t2t_unk_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pop_id</span><span class="p">)</span> 
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;t2t predictor only supports single POP IDs. &quot;</span>
+                         <span class="s2">&quot;Reset to -1&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> <span class="o">=</span> <span class="n">max_terminal_id</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span> <span class="o">=</span> <span class="n">src_vocab_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span> <span class="o">=</span> <span class="n">trg_vocab_size</span>
         <span class="n">_initialize_t2t</span><span class="p">(</span><span class="n">t2t_usr_dir</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_session_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Creates the session config with t2t default parameters.&quot;&quot;&quot;</span>
-        <span class="n">graph_options</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">GraphOptions</span><span class="p">(</span><span class="n">optimizer_options</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">OptimizerOptions</span><span class="p">(</span>
-            <span class="n">opt_level</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">OptimizerOptions</span><span class="o">.</span><span class="n">L1</span><span class="p">,</span> <span class="n">do_function_inlining</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_cpu_thread</span><span class="p">:</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span>
-                <span class="n">intra_op_parallelism_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                <span class="n">inter_op_parallelism_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                <span class="n">allow_soft_placement</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                <span class="n">graph_options</span><span class="o">=</span><span class="n">graph_options</span><span class="p">,</span>
-                <span class="n">log_device_placement</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">gpu_options</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">GPUOptions</span><span class="p">(</span>
-                <span class="n">per_process_gpu_memory_fraction</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">ConfigProto</span><span class="p">(</span>
-                <span class="n">allow_soft_placement</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                <span class="n">graph_options</span><span class="o">=</span><span class="n">graph_options</span><span class="p">,</span>
-                <span class="n">gpu_options</span><span class="o">=</span><span class="n">gpu_options</span><span class="p">,</span>
-                <span class="n">log_device_placement</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">config</span>
+    <span class="k">def</span> <span class="nf">_add_problem_hparams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hparams</span><span class="p">,</span> <span class="n">problem_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add problem hparams for the problems. </span>
+
+<span class="sd">        This method corresponds to create_hparams() in tensor2tensor&#39;s</span>
+<span class="sd">        trainer_lib module, but replaces the feature encoders with</span>
+<span class="sd">        DummyFeatureEncoder&#39;s.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            hparams (Hparams): Model hyper parameters.</span>
+<span class="sd">            problem_name (string): T2T problem name.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            hparams object.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            LookupError if the problem name is not in the registry or</span>
+<span class="sd">            uses the old style problem_hparams.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;pop_id&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">hparams</span><span class="o">.</span><span class="n">pop_id</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;T2T pop_id does not match (</span><span class="si">%d</span><span class="s2">!=</span><span class="si">%d</span><span class="s2">)&quot;</span>
+                                 <span class="o">%</span> <span class="p">(</span><span class="n">hparams</span><span class="o">.</span><span class="n">pop_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;max_terminal_id&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hparams</span><span class="o">.</span><span class="n">max_terminal_id</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;T2T max_terminal_id does not match (</span><span class="si">%d</span><span class="s2">!=</span><span class="si">%d</span><span class="s2">)&quot;</span>
+                             <span class="o">%</span> <span class="p">(</span><span class="n">hparams</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;closing_bracket_id&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hparams</span><span class="o">.</span><span class="n">closing_bracket_id</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;T2T closing_bracket_id does not match (</span><span class="si">%d</span><span class="s2">!=</span><span class="si">%d</span><span class="s2">)&quot;</span>
+                             <span class="o">%</span> <span class="p">(</span><span class="n">hparams</span><span class="o">.</span><span class="n">closing_bracket_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">))</span>
+        <span class="n">problem</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">problem</span><span class="p">(</span><span class="n">problem_name</span><span class="p">)</span>
+        <span class="n">problem</span><span class="o">.</span><span class="n">_encoders</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">DummyTextEncoder</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span><span class="p">),</span>
+            <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="n">DummyTextEncoder</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">p_hparams</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">get_hparams</span><span class="p">(</span><span class="n">hparams</span><span class="p">)</span>
+        <span class="n">hparams</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>
+        <span class="n">hparams</span><span class="o">.</span><span class="n">problem_hparams</span> <span class="o">=</span> <span class="n">p_hparams</span>
+        <span class="k">return</span> <span class="n">hparams</span>
 
     <span class="k">def</span> <span class="nf">create_session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Creates a MonitoredSession for this predictor.&quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span><span class="p">):</span>
-                <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">saver</span><span class="o">.</span><span class="n">latest_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> is not a directory. Interpreting as direct &quot;</span>
-                             <span class="s2">&quot;path to checkpoint...&quot;</span> <span class="o">%</span> <span class="n">checkpoint_path</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">training</span><span class="o">.</span><span class="n">MonitoredSession</span><span class="p">(</span>
-                <span class="n">session_creator</span><span class="o">=</span><span class="n">training</span><span class="o">.</span><span class="n">ChiefSessionCreator</span><span class="p">(</span>
-                    <span class="n">checkpoint_filename_with_path</span><span class="o">=</span><span class="n">checkpoint_path</span><span class="p">,</span>
-                    <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_session_config</span><span class="p">()))</span>
-        <span class="k">except</span> <span class="n">tf</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">NotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Could not find all variables of the computation &quot;</span>
-                <span class="s2">&quot;graph in the T2T checkpoint file. This means that the &quot;</span>
-                <span class="s2">&quot;checkpoint does not correspond to the model specified in &quot;</span>
-                <span class="s2">&quot;SGNMT. Please double-check pred_src_vocab_size, &quot;</span>
-                <span class="s2">&quot;pred_trg_vocab_size, and all the t2t_* parameters.&quot;</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Could not initialize TF session.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tf_utils</span><span class="o">.</span><span class="n">create_session</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkpoint_dir</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">_n_cpu_threads</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fetch posterior[t2t_unk_id]&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">posterior</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
-        <span class="k">return</span> <span class="n">posterior</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span><span class="p">]</span>
-
-
-<div class="viewcode-block" id="expand_input_dims_for_t2t"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.expand_input_dims_for_t2t">[docs]</a><span class="k">def</span> <span class="nf">expand_input_dims_for_t2t</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Expands a plain input tensor for using it in a T2T graph.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        t: Tensor</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">      Tensor `t` expanded by 1 dimension on the left and two dimensions</span>
-<span class="sd">      on the right.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># Because of batch_size</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># Because of modality</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># Because of random reason X</span>
-    <span class="k">return</span> <span class="n">t</span></div>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="T2TPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.T2TPredictor">[docs]</a><span class="k">class</span> <span class="nc">T2TPredictor</span><span class="p">(</span><span class="n">_BaseTensor2TensorPredictor</span><span class="p">):</span>
@@ -333,7 +394,7 @@
                  <span class="n">t2t_usr_dir</span><span class="p">,</span>
                  <span class="n">checkpoint_dir</span><span class="p">,</span>
                  <span class="n">t2t_unk_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                 <span class="n">single_cpu_thread</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">n_cpu_threads</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
                  <span class="n">max_terminal_id</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
                  <span class="n">pop_id</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new T2T predictor. The constructor prepares the</span>
@@ -358,8 +419,7 @@
 <span class="sd">                                     `checkpoints` file.</span>
 <span class="sd">            t2t_unk_id (int): If set, use this ID to get UNK scores. If</span>
 <span class="sd">                              None, UNK is always scored with -inf.</span>
-<span class="sd">            single_cpu_thread (bool): If true, prevent tensorflow from</span>
-<span class="sd">                                      doing multithreading.</span>
+<span class="sd">            n_cpu_threads (int): Number of TensorFlow CPU threads.</span>
 <span class="sd">            max_terminal_id (int): If positive, maximum terminal ID. Needs to</span>
 <span class="sd">                be set for syntax-based T2T models.</span>
 <span class="sd">            pop_id (int): If positive, ID of the POP or closing bracket symbol.</span>
@@ -367,35 +427,22 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">T2TPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">t2t_usr_dir</span><span class="p">,</span> 
                                            <span class="n">checkpoint_dir</span><span class="p">,</span> 
+                                           <span class="n">src_vocab_size</span><span class="p">,</span>
+                                           <span class="n">trg_vocab_size</span><span class="p">,</span>
                                            <span class="n">t2t_unk_id</span><span class="p">,</span> 
-                                           <span class="n">single_cpu_thread</span><span class="p">)</span>
+                                           <span class="n">n_cpu_threads</span><span class="p">,</span>
+                                           <span class="n">max_terminal_id</span><span class="p">,</span>
+                                           <span class="n">pop_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">model_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">problem_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">hparams_set_name</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span>
                 <span class="s2">&quot;Please specify t2t_model, t2t_problem, and t2t_hparams_set!&quot;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">AttributeError</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pop_id</span><span class="p">)</span> 
-        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;t2t predictor only supports single POP IDs. &quot;</span>
-                         <span class="s2">&quot;Reset to -1&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> <span class="o">=</span> <span class="n">max_terminal_id</span> 
-        <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span> <span class="o">=</span> <span class="n">src_vocab_size</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span> <span class="o">=</span> <span class="n">trg_vocab_size</span>
         <span class="n">predictor_graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
         <span class="k">with</span> <span class="n">predictor_graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">()</span> <span class="k">as</span> <span class="n">g</span><span class="p">:</span>
             <span class="n">hparams</span> <span class="o">=</span> <span class="n">trainer_lib</span><span class="o">.</span><span class="n">create_hparams</span><span class="p">(</span><span class="n">hparams_set_name</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-              <span class="k">try</span><span class="p">:</span>
-                <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;pop_id&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">)</span>
-              <span class="k">except</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">hparams</span><span class="o">.</span><span class="n">pop_id</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">:</span>
-                  <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;T2T pop_id does not match (</span><span class="si">%d</span><span class="s2">!=</span><span class="si">%d</span><span class="s2">)&quot;</span>
-                    <span class="o">%</span> <span class="p">(</span><span class="n">hparams</span><span class="o">.</span><span class="n">pop_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_add_problem_hparams</span><span class="p">(</span>
-                <span class="n">hparams</span><span class="p">,</span> <span class="n">src_vocab_size</span><span class="p">,</span> <span class="n">trg_vocab_size</span><span class="p">,</span> <span class="n">problem_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_problem_hparams</span><span class="p">(</span><span class="n">hparams</span><span class="p">,</span> <span class="n">problem_name</span><span class="p">)</span>
             <span class="n">translate_model</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">model_name</span><span class="p">)(</span>
                 <span class="n">hparams</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">estimator</span><span class="o">.</span><span class="n">ModeKeys</span><span class="o">.</span><span class="n">PREDICT</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span>
@@ -411,48 +458,6 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_log_probs</span> <span class="o">=</span> <span class="n">log_prob_from_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_session</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_add_problem_hparams</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">hparams</span><span class="p">,</span> <span class="n">src_vocab_size</span><span class="p">,</span> <span class="n">trg_vocab_size</span><span class="p">,</span> <span class="n">problem_name</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add problem hparams for the problems. </span>
-
-<span class="sd">        This method corresponds to create_hparams() in tensor2tensor&#39;s</span>
-<span class="sd">        trainer_lib module, but replaces the feature encoders with</span>
-<span class="sd">        DummyFeatureEncoder&#39;s.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            hparams (Hparams): Model hyper parameters.</span>
-<span class="sd">            src_vocab_size (int): Source vocabulary size.</span>
-<span class="sd">            trg_vocab_size (int): Target vocabulary size.</span>
-<span class="sd">            problem_name (string): T2T problem name.</span>
-<span class="sd">        </span>
-<span class="sd">        Returns:</span>
-<span class="sd">            hparams object.</span>
-
-<span class="sd">        Raises:</span>
-<span class="sd">            LookupError if the problem name is not in the registry or</span>
-<span class="sd">            uses the old style problem_hparams.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;max_terminal_id&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">hparams</span><span class="o">.</span><span class="n">max_terminal_id</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;T2T max_terminal_id does not match (</span><span class="si">%d</span><span class="s2">!=</span><span class="si">%d</span><span class="s2">)&quot;</span>
-                             <span class="o">%</span> <span class="p">(</span><span class="n">hparams</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span><span class="p">))</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">hparams</span><span class="o">.</span><span class="n">add_hparam</span><span class="p">(</span><span class="s2">&quot;closing_bracket_id&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">hparams</span><span class="o">.</span><span class="n">closing_bracket_id</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;T2T closing_bracket_id does not match (</span><span class="si">%d</span><span class="s2">!=</span><span class="si">%d</span><span class="s2">)&quot;</span>
-                             <span class="o">%</span> <span class="p">(</span><span class="n">hparams</span><span class="o">.</span><span class="n">closing_bracket_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_id</span><span class="p">))</span>
-        <span class="n">problem</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">problem</span><span class="p">(</span><span class="n">problem_name</span><span class="p">)</span>
-        <span class="n">problem</span><span class="o">.</span><span class="n">_encoders</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">DummyTextEncoder</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="n">src_vocab_size</span><span class="p">),</span>
-            <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="n">DummyTextEncoder</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="n">trg_vocab_size</span><span class="p">)</span>
-        <span class="p">}</span>
-        <span class="n">p_hparams</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">get_hparams</span><span class="p">(</span><span class="n">hparams</span><span class="p">)</span>
-        <span class="n">hparams</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>
-        <span class="n">hparams</span><span class="o">.</span><span class="n">problem_hparams</span> <span class="o">=</span> <span class="n">p_hparams</span>
-        <span class="k">return</span> <span class="n">hparams</span>
                 
 <div class="viewcode-block" id="T2TPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.T2TPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Call the T2T model in self.mon_sess.&quot;&quot;&quot;</span>
@@ -487,6 +492,288 @@
 <div class="viewcode-block" id="T2TPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.T2TPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns true if the history is the same &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+
+
+<div class="viewcode-block" id="EditT2TPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor">[docs]</a><span class="k">class</span> <span class="nc">EditT2TPredictor</span><span class="p">(</span><span class="n">_BaseTensor2TensorPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor can be used for T2T models conditioning on the</span>
+<span class="sd">    full target sentence. The predictor state is a full target sentence.</span>
+<span class="sd">    The state can be changed by insertions, substitutions, and deletions</span>
+<span class="sd">    of single tokens, whereas each operation is encoded as SGNMT token</span>
+<span class="sd">    in the following way:</span>
+
+<span class="sd">      1xxxyyyyy: Insert the token yyyyy at position xxx.</span>
+<span class="sd">      2xxxyyyyy: Replace the xxx-th word with the token yyyyy.</span>
+<span class="sd">      3xxx00000: Delete the xxx-th token.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">INS_OFFSET</span> <span class="o">=</span> <span class="mi">100000000</span>
+    <span class="n">SUB_OFFSET</span> <span class="o">=</span> <span class="mi">200000000</span>
+    <span class="n">DEL_OFFSET</span> <span class="o">=</span> <span class="mi">300000000</span>
+
+    <span class="n">POS_FACTOR</span> <span class="o">=</span> <span class="mi">100000</span>
+    <span class="n">MAX_SEQ_LEN</span> <span class="o">=</span> <span class="mi">999</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">src_vocab_size</span><span class="p">,</span>
+                 <span class="n">trg_vocab_size</span><span class="p">,</span>
+                 <span class="n">model_name</span><span class="p">,</span>
+                 <span class="n">problem_name</span><span class="p">,</span>
+                 <span class="n">hparams_set_name</span><span class="p">,</span>
+                 <span class="n">trg_test_file</span><span class="p">,</span>
+                 <span class="n">beam_size</span><span class="p">,</span>
+                 <span class="n">t2t_usr_dir</span><span class="p">,</span>
+                 <span class="n">checkpoint_dir</span><span class="p">,</span>
+                 <span class="n">t2t_unk_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">n_cpu_threads</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">max_terminal_id</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">pop_id</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new edit T2T predictor. This constructor is</span>
+<span class="sd">        similar to the constructor of T2TPredictor but creates a</span>
+<span class="sd">        different computation graph which retrieves scores at each</span>
+<span class="sd">        target position, not only the last one.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_vocab_size (int): Source vocabulary size.</span>
+<span class="sd">            trg_vocab_size (int): Target vocabulary size.</span>
+<span class="sd">            model_name (string): T2T model name.</span>
+<span class="sd">            problem_name (string): T2T problem name.</span>
+<span class="sd">            hparams_set_name (string): T2T hparams set name.</span>
+<span class="sd">            trg_test_file (string): Path to a plain text file with</span>
+<span class="sd">                initial target sentences. Can be empty.</span>
+<span class="sd">            beam_size (int): Determines how many substitutions and</span>
+<span class="sd">                insertions are considered at each position.</span>
+<span class="sd">            t2t_usr_dir (string): See --t2t_usr_dir in tensor2tensor.</span>
+<span class="sd">            checkpoint_dir (string): Path to the T2T checkpoint </span>
+<span class="sd">                                     directory. The predictor will load</span>
+<span class="sd">                                     the top most checkpoint in the </span>
+<span class="sd">                                     `checkpoints` file.</span>
+<span class="sd">            t2t_unk_id (int): If set, use this ID to get UNK scores. If</span>
+<span class="sd">                              None, UNK is always scored with -inf.</span>
+<span class="sd">            n_cpu_threads (int): Number of TensorFlow CPU threads.</span>
+<span class="sd">            max_terminal_id (int): If positive, maximum terminal ID. Needs to</span>
+<span class="sd">                be set for syntax-based T2T models.</span>
+<span class="sd">            pop_id (int): If positive, ID of the POP or closing bracket symbol.</span>
+<span class="sd">                Needs to be set for syntax-based T2T models.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">EditT2TPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">t2t_usr_dir</span><span class="p">,</span> 
+                                               <span class="n">checkpoint_dir</span><span class="p">,</span> 
+                                               <span class="n">src_vocab_size</span><span class="p">,</span>
+                                               <span class="n">trg_vocab_size</span><span class="p">,</span>
+                                               <span class="n">t2t_unk_id</span><span class="p">,</span> 
+                                               <span class="n">n_cpu_threads</span><span class="p">,</span>
+                                               <span class="n">max_terminal_id</span><span class="p">,</span>
+                                               <span class="n">pop_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">model_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">problem_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">hparams_set_name</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span>
+                <span class="s2">&quot;Please specify t2t_model, t2t_problem, and t2t_hparams_set!&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span>
+        <span class="k">if</span> <span class="n">trg_vocab_size</span> <span class="o">&gt;=</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">POS_FACTOR</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Target vocabulary size (</span><span class="si">%d</span><span class="s2">) must be less than </span><span class="si">%d</span><span class="s2">!&quot;</span>
+                          <span class="o">%</span> <span class="p">(</span><span class="n">trg_vocab_size</span><span class="p">,</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">POS_FACTOR</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">beam_size</span> <span class="o">//</span> <span class="mi">10</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="mi">2048</span> <span class="c1"># TODO(fstahlberg): Move to config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_trg_sentences</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">trg_test_file</span><span class="p">:</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_trg_sentences</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">trg_test_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">initial_trg_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">oov_to_unk</span><span class="p">(</span>
+                       <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">],</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span><span class="p">))</span>
+        <span class="n">predictor_graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">predictor_graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">()</span> <span class="k">as</span> <span class="n">g</span><span class="p">:</span>
+            <span class="n">hparams</span> <span class="o">=</span> <span class="n">trainer_lib</span><span class="o">.</span><span class="n">create_hparams</span><span class="p">(</span><span class="n">hparams_set_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_problem_hparams</span><span class="p">(</span><span class="n">hparams</span><span class="p">,</span> <span class="n">problem_name</span><span class="p">)</span>
+            <span class="n">translate_model</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">model_name</span><span class="p">)(</span>
+                <span class="n">hparams</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">estimator</span><span class="o">.</span><span class="n">ModeKeys</span><span class="o">.</span><span class="n">EVAL</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span>
+                                              <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_inputs&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">],</span> 
+                                               <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_targets&quot;</span><span class="p">)</span>
+            <span class="n">shp</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">)</span>
+            <span class="n">bsz</span> <span class="o">=</span> <span class="n">shp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">inputs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">[</span><span class="n">bsz</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">expand_input_dims_for_t2t</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span>
+                                                            <span class="n">batched</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span> 
+                        <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="n">expand_input_dims_for_t2t</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">,</span>
+                                                             <span class="n">batched</span><span class="o">=</span><span class="bp">True</span><span class="p">)}</span>
+            <span class="n">translate_model</span><span class="o">.</span><span class="n">prepare_features_for_infer</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+            <span class="n">translate_model</span><span class="o">.</span><span class="n">_fill_problem_hparams_features</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+            <span class="n">logits</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">translate_model</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+            <span class="n">logits</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log_probs</span> <span class="o">=</span> <span class="n">log_prob_from_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+            <span class="n">diag_logits</span> <span class="o">=</span> <span class="n">gather_2d</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="n">bsz</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_diag_log_probs</span> <span class="o">=</span> <span class="n">log_prob_from_logits</span><span class="p">(</span><span class="n">diag_logits</span><span class="p">)</span>
+            <span class="n">no_pad</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">not_equal</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">,</span> <span class="n">text_encoder</span><span class="o">.</span><span class="n">PAD_ID</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+            <span class="n">flat_bsz</span> <span class="o">=</span> <span class="n">shp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">shp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">word_scores</span> <span class="o">=</span> <span class="n">gather_2d</span><span class="p">(</span>
+                <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_probs</span><span class="p">,</span> <span class="p">[</span><span class="n">flat_bsz</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+                <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">,</span> <span class="p">[</span><span class="n">flat_bsz</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+            <span class="n">word_scores</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">word_scores</span><span class="p">,</span> <span class="p">(</span><span class="n">shp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">shp</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="o">*</span> <span class="n">no_pad</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sentence_scores</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">word_scores</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_session</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_ins_op</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a copy of trg sentence after an insertion.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">[:</span><span class="n">pos</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">[</span><span class="n">pos</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">_sub_op</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a copy of trg sentence after a substitution.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">)</span>
+        <span class="n">ret</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">token</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
+    <span class="k">def</span> <span class="nf">_del_op</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a copy of trg sentence after a deletion.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">[:</span><span class="n">pos</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">[</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">_top_n</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sorted indices of beam_size best entries along axis 1&quot;&quot;&quot;</span>
+        <span class="n">costs</span> <span class="o">=</span> <span class="o">-</span><span class="n">scores</span>
+        <span class="n">costs</span><span class="p">[:,</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">INF</span>
+        <span class="n">top_n_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argpartition</span><span class="p">(</span>
+            <span class="n">costs</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span> 
+            <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sort</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">top_n_indices</span>
+        <span class="n">b_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">top_n_indices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">costs</span><span class="p">[</span><span class="n">b_indices</span><span class="p">,</span> <span class="n">top_n_indices</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">top_n_indices</span><span class="p">[</span><span class="n">b_indices</span><span class="p">,</span> <span class="n">sorted_indices</span><span class="p">]</span>
+
+<div class="viewcode-block" id="EditT2TPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Call the T2T model in self.mon_sess.&quot;&quot;&quot;</span>
+        <span class="n">next_sentences</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;EditT2T: Exploring score=</span><span class="si">%f</span><span class="s2"> sentence=</span><span class="si">%s</span><span class="s2">&quot;</span> 
+                      <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_score</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">))))</span>
+        <span class="n">n_trg_words</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n_trg_words</span> <span class="o">&gt;</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">MAX_SEQ_LEN</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;EditT2T: Target sentence exceeds maximum length (</span><span class="si">%d</span><span class="s2">)&quot;</span>
+                         <span class="o">%</span> <span class="n">EDITT2TPredictor</span><span class="o">.</span><span class="n">MAX_SEQ_LEN</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+        <span class="c1"># Substitutions</span>
+        <span class="n">log_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_probs</span><span class="p">,</span>
+            <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">]})</span>
+        <span class="n">top_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top_n</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">log_probs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">cur_token</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">SUB_OFFSET</span> 
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">POS_FACTOR</span> <span class="o">*</span> <span class="n">pos</span>
+            <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">top_n</span><span class="p">[</span><span class="n">pos</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">token</span> <span class="o">!=</span> <span class="n">cur_token</span><span class="p">:</span>
+                    <span class="n">next_sentences</span><span class="p">[</span><span class="n">offset</span> <span class="o">+</span> <span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sub_op</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+
+        <span class="c1"># Insertions</span>
+        <span class="k">if</span> <span class="n">n_trg_words</span> <span class="o">&lt;</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">MAX_SEQ_LEN</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ins_trg_sentences</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_trg_words</span><span class="p">,</span> <span class="n">n_trg_words</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="mi">999</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_trg_words</span><span class="p">):</span>
+                <span class="n">ins_trg_sentences</span><span class="p">[</span><span class="n">pos</span><span class="p">,</span> <span class="p">:</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">[:</span><span class="n">pos</span><span class="p">]</span>
+                <span class="n">ins_trg_sentences</span><span class="p">[</span><span class="n">pos</span><span class="p">,</span> <span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">[</span><span class="n">pos</span><span class="p">:]</span>
+            <span class="n">diag_log_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_diag_log_probs</span><span class="p">,</span>
+                <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span><span class="p">,</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">:</span> <span class="n">ins_trg_sentences</span><span class="p">})</span>
+            <span class="n">top_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top_n</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">diag_log_probs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_trg_words</span><span class="p">):</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">INS_OFFSET</span> 
+                <span class="n">offset</span> <span class="o">+=</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">POS_FACTOR</span> <span class="o">*</span> <span class="n">pos</span>
+                <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">top_n</span><span class="p">[</span><span class="n">pos</span><span class="p">]:</span>
+                    <span class="n">next_sentences</span><span class="p">[</span><span class="n">offset</span> <span class="o">+</span> <span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ins_op</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+        <span class="c1"># Deletions</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">DEL_OFFSET</span>
+        <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_trg_words</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span> <span class="c1"># -1: Do not delete EOS</span>
+            <span class="n">next_sentences</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_del_op</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">POS_FACTOR</span>
+        <span class="n">abs_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_score</span><span class="p">(</span><span class="n">next_sentences</span><span class="p">,</span> <span class="n">n_trg_words</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">rel_scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">s</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_score</span> 
+                      <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">abs_scores</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()}</span>
+        <span class="n">rel_scores</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">rel_scores</span></div>
+
+    <span class="k">def</span> <span class="nf">_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sentences</span><span class="p">,</span> <span class="n">n_trg_words</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">max_n_sens</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">//</span> <span class="n">n_trg_words</span><span class="p">)</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">batch_ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">batch_sens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">trg_sentence</span> <span class="ow">in</span> <span class="n">sentences</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">trg_sentence</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">score</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">batch_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+                <span class="n">np_sen</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_trg_words</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+                <span class="n">np_sen</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">trg_sentence</span><span class="p">)]</span> <span class="o">=</span> <span class="n">trg_sentence</span>
+                <span class="n">batch_sens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np_sen</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_ids</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">max_n_sens</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_score_single_batch</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">batch_ids</span><span class="p">,</span> <span class="n">batch_sens</span><span class="p">)</span>
+                    <span class="n">batch_ids</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">batch_sens</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">scores</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_score_single_batch</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">batch_ids</span><span class="p">,</span> <span class="n">batch_sens</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scores</span> 
+
+    <span class="k">def</span> <span class="nf">_score_single_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">trg_sentences</span><span class="p">):</span>
+        <span class="s2">&quot;Score sentences and add them to scores and the cache.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ids</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">batch_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sentence_scores</span><span class="p">,</span>
+            <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">trg_sentences</span><span class="p">)})</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">sen</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">trg_sentences</span><span class="p">,</span> <span class="n">batch_scores</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sen</span><span class="p">,</span> <span class="n">score</span><span class="p">)</span>
+            <span class="n">scores</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+
+    <span class="k">def</span> <span class="nf">_update_cur_score</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_score</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_score</span><span class="p">({</span><span class="mi">1</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">},</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_score</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_score</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="EditT2TPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set src_sentence, reset consumed.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_trg_sentences</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span> <span class="o">=</span> <span class="p">[</span><span class="n">text_encoder</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_trg_sentences</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sen_id</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">oov_to_unk</span><span class="p">(</span>
+            <span class="n">src_sentence</span> <span class="o">+</span> <span class="p">[</span><span class="n">text_encoder</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">],</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">SimpleTrie</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_cur_score</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Initial score: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_score</span><span class="p">)</span></div>
+   
+<div class="viewcode-block" id="EditT2TPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Append ``word`` to the current history.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">word</span> <span class="o">//</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">POS_FACTOR</span><span class="p">)</span> \
+              <span class="o">%</span> <span class="p">(</span><span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">MAX_SEQ_LEN</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">word</span> <span class="o">%</span> <span class="n">EditT2TPredictor</span><span class="o">.</span><span class="n">POS_FACTOR</span>
+        <span class="c1"># TODO(fstahlberg): Do not hard code the following section</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="n">word</span> <span class="o">//</span> <span class="mi">100000000</span>  
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># Insertion</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ins_op</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># Substitution</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sub_op</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>  <span class="c1"># Deletion</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_del_op</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Invalid edit descriptor </span><span class="si">%d</span><span class="s2">. Ignoring...&quot;</span> <span class="o">%</span> <span class="n">word</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_cur_score</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="EditT2TPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The predictor state is the complete target sentence.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_score</span></div>
+    
+<div class="viewcode-block" id="EditT2TPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The predictor state is the complete target sentence.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_score</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="EditT2TPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.EditT2TPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the target sentence is the same &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">state2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div></div>
 
 
 <div class="viewcode-block" id="FertilityT2TPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor">[docs]</a><span class="k">class</span> <span class="nc">FertilityT2TPredictor</span><span class="p">(</span><span class="n">T2TPredictor</span><span class="p">):</span>
@@ -566,6 +853,167 @@
 <div class="viewcode-block" id="FertilityT2TPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.FertilityT2TPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns self.other_scores[n_aligned_words].&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">other_scores</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_aligned_words</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SegT2TPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor">[docs]</a><span class="k">class</span> <span class="nc">SegT2TPredictor</span><span class="p">(</span><span class="n">_BaseTensor2TensorPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This predictor is designed for document-level T2T models. It </span>
+<span class="sd">    differs from the normal t2t predictor in the following ways:</span>
+
+<span class="sd">    - In addition to `input` and `targets`, it generates the features</span>
+<span class="sd">      `inputs_seg`. `targets_seg`, `inputs_pos`, `targets_pos` which</span>
+<span class="sd">      are used in glue models and the contextual Transformer.</span>
+<span class="sd">    - The history is pruned when it exceeds a maximum number of &lt;s&gt; </span>
+<span class="sd">      symbols. This can be used to reduce complexity for document-level</span>
+<span class="sd">      models on very long documents. When the maximum number is reached,</span>
+<span class="sd">      we start removing sentences from ``self.consumed``, starting with</span>
+<span class="sd">      the sentence which is `begin_margin` away from the document start</span>
+<span class="sd">      and `end_margin` sentences away from the current sentence.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">src_vocab_size</span><span class="p">,</span>
+                 <span class="n">trg_vocab_size</span><span class="p">,</span>
+                 <span class="n">model_name</span><span class="p">,</span>
+                 <span class="n">problem_name</span><span class="p">,</span>
+                 <span class="n">hparams_set_name</span><span class="p">,</span>
+                 <span class="n">t2t_usr_dir</span><span class="p">,</span>
+                 <span class="n">checkpoint_dir</span><span class="p">,</span>
+                 <span class="n">t2t_unk_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">n_cpu_threads</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">max_terminal_id</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">pop_id</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new document-level T2T predictor. See</span>
+<span class="sd">        T2TPredictor.__init__().</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_vocab_size (int): Source vocabulary size.</span>
+<span class="sd">            trg_vocab_size (int): Target vocabulary size.</span>
+<span class="sd">            model_name (string): T2T model name.</span>
+<span class="sd">            problem_name (string): T2T problem name.</span>
+<span class="sd">            hparams_set_name (string): T2T hparams set name.</span>
+<span class="sd">            t2t_usr_dir (string): See --t2t_usr_dir in tensor2tensor.</span>
+<span class="sd">            checkpoint_dir (string): Path to the T2T checkpoint </span>
+<span class="sd">                                     directory. The predictor will load</span>
+<span class="sd">                                     the top most checkpoint in the </span>
+<span class="sd">                                     `checkpoints` file.</span>
+<span class="sd">            t2t_unk_id (int): If set, use this ID to get UNK scores. If</span>
+<span class="sd">                              None, UNK is always scored with -inf.</span>
+<span class="sd">            n_cpu_threads (int): Number of TensorFlow CPU threads.</span>
+<span class="sd">            max_terminal_id (int): If positive, maximum terminal ID. Needs to</span>
+<span class="sd">                be set for syntax-based T2T models.</span>
+<span class="sd">            pop_id (int): If positive, ID of the POP or closing bracket symbol.</span>
+<span class="sd">                Needs to be set for syntax-based T2T models.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SegT2TPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">t2t_usr_dir</span><span class="p">,</span> 
+                                             <span class="n">checkpoint_dir</span><span class="p">,</span> 
+                                             <span class="n">src_vocab_size</span><span class="p">,</span>
+                                             <span class="n">trg_vocab_size</span><span class="p">,</span>
+                                             <span class="n">t2t_unk_id</span><span class="p">,</span> 
+                                             <span class="n">n_cpu_threads</span><span class="p">,</span>
+                                             <span class="n">max_terminal_id</span><span class="p">,</span>
+                                             <span class="n">pop_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">model_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">problem_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">hparams_set_name</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span>
+                <span class="s2">&quot;Please specify t2t_model, t2t_problem, and t2t_hparams_set!&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">begin_margin</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_margin</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_sentences</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">begin_margin</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_margin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_sentences</span> <span class="o">=</span> <span class="mi">10000</span>
+        <span class="n">predictor_graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">predictor_graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">()</span> <span class="k">as</span> <span class="n">g</span><span class="p">:</span>
+            <span class="n">hparams</span> <span class="o">=</span> <span class="n">trainer_lib</span><span class="o">.</span><span class="n">create_hparams</span><span class="p">(</span><span class="n">hparams_set_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_problem_hparams</span><span class="p">(</span><span class="n">hparams</span><span class="p">,</span> <span class="n">problem_name</span><span class="p">)</span>
+            <span class="n">translate_model</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">model_name</span><span class="p">)(</span>
+                <span class="n">hparams</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">estimator</span><span class="o">.</span><span class="n">ModeKeys</span><span class="o">.</span><span class="n">PREDICT</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span>
+                                              <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_inputs&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span> 
+                                               <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_targets&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inputs_seg_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span>
+                                                  <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_inputs_seg&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_targets_seg_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span> 
+                                                   <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_targets_seg&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inputs_pos_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span>
+                                                  <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_inputs_pos&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_targets_pos_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">],</span>
+                                                   <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sgnmt_targets_pos&quot;</span><span class="p">)</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">expand_input_dims_for_t2t</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">),</span> 
+                <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="n">expand_input_dims_for_t2t</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">),</span>
+                <span class="s2">&quot;inputs_seg&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_seg_var</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="s2">&quot;targets_seg&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targets_seg_var</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="s2">&quot;inputs_pos&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_pos_var</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> 
+                <span class="s2">&quot;targets_pos&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targets_pos_var</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">translate_model</span><span class="o">.</span><span class="n">prepare_features_for_infer</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+            <span class="n">translate_model</span><span class="o">.</span><span class="n">_fill_problem_hparams_features</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+            <span class="n">logits</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">translate_model</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+            <span class="n">logits</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log_probs</span> <span class="o">=</span> <span class="n">log_prob_from_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_session</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SegT2TPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">oov_to_unk</span><span class="p">(</span>
+            <span class="n">src_sentence</span> <span class="o">+</span> <span class="p">[</span><span class="n">text_encoder</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">],</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_seg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gen_seg_and_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span> <span class="o">=</span> <span class="p">[[]]</span></div>
+
+    <span class="k">def</span> <span class="nf">_gen_seg_and_pos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">glued</span><span class="p">,</span> <span class="n">trg</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">seg</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cur_seg</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">cur_pos</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">glued</span><span class="p">:</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cur_seg</span><span class="p">)</span>
+            <span class="n">pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cur_pos</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">w</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">:</span>
+                <span class="n">cur_seg</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">cur_pos</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cur_pos</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">trg</span><span class="p">:</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cur_seg</span><span class="p">)</span>
+            <span class="n">pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cur_pos</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">seg</span><span class="p">,</span> <span class="n">pos</span>
+   
+<div class="viewcode-block" id="SegT2TPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">word</span> <span class="k">if</span> <span class="n">word</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_sentences</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Pruning document level history...&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">begin_margin</span><span class="p">]</span> 
+                    <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">end_margin</span><span class="p">:])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span></div>
+    
+<div class="viewcode-block" id="SegT2TPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span></div>
+    
+<div class="viewcode-block" id="SegT2TPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span> <span class="o">=</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="SegT2TPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Call the T2T model in self.mon_sess.&quot;&quot;&quot;</span>
+        <span class="n">consumed</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">s</span><span class="p">]</span>
+        <span class="n">trg_seg</span><span class="p">,</span> <span class="n">trg_pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gen_seg_and_pos</span><span class="p">(</span><span class="n">consumed</span><span class="p">,</span> <span class="n">trg</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">log_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_probs</span><span class="p">,</span>
+            <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_sentence</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_inputs_seg_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_seg</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_inputs_pos_var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_pos</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_targets_var</span><span class="p">:</span> <span class="n">consumed</span> <span class="o">+</span> <span class="p">[</span><span class="n">text_encoder</span><span class="o">.</span><span class="n">PAD_ID</span><span class="p">],</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_targets_seg_var</span><span class="p">:</span> <span class="n">trg_seg</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_targets_pos_var</span><span class="p">:</span> <span class="n">trg_pos</span><span class="p">})</span>
+        <span class="n">log_probs</span><span class="p">[</span><span class="n">text_encoder</span><span class="o">.</span><span class="n">PAD_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">return</span> <span class="n">log_probs</span></div>
+    
+<div class="viewcode-block" id="SegT2TPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the (pruned) history is the same &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+
 </pre></div>
 
            </div>
@@ -577,7 +1025,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, University of Cambridge.
+        &copy; Copyright 2019, University of Cambridge.
 
     </p>
   </div>
@@ -599,7 +1047,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.5.1',
+            VERSION:'0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.ui &mdash; SGNMT 0.5.1 documentation</title>
+  <title>cam.sgnmt.ui &mdash; SGNMT 0.6 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5.1 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 0.6 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.5.1
+                0.6
               </div>
             
           
@@ -233,7 +233,7 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--verbosity&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span> <span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="s1">&#39;warn&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Log level: debug,info,warn,error&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--min_score&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mf">1000000.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--min_score&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">),</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Delete all complete hypotheses with total scores&quot;</span>
                         <span class="s2">&quot; smaller than this value&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--range&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -285,10 +285,12 @@
                         <span class="s2">&quot;log values l1,l2.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;tropical&#39;: approximate with max(l1,l2)</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;log&#39;: Use logsumexp in scipy&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--single_cpu_thread&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If true, try to prevent libraries like Theano &quot;</span>
-                        <span class="s2">&quot;or TensorFlow from doing internal multithreading. &quot;</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--n_cpu_threads&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Set the number of CPU threads for libraries like&quot;</span>
+                        <span class="s2">&quot; Theano or TensorFlow for internal multithreading. &quot;</span>
                         <span class="s2">&quot;Also, see the OMP_NUM_THREADS environment variable.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--single_cpu_thread&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Synonym for --n_cpu_threads=1&quot;</span><span class="p">)</span>
     
     <span class="c1">## Decoding options</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Decoding options&#39;</span><span class="p">)</span>
@@ -651,6 +653,10 @@
                         <span class="s2">&quot;         Options: t2t_usr_dir, t2t_model, &quot;</span>
                         <span class="s2">&quot;t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, &quot;</span>
                         <span class="s2">&quot;pred_src_vocab_size, pred_trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;segt2t&#39;: Segmentation-based T2T predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: t2t_usr_dir, t2t_model, &quot;</span>
+                        <span class="s2">&quot;t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, &quot;</span>
+                        <span class="s2">&quot;pred_src_vocab_size, pred_trg_vocab_size</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;fertt2t&#39;: T2T predictor for fertility models.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;       Options: syntax_pop_id, t2t_usr_dir, t2t_model,&quot;</span>
                         <span class="s2">&quot; t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, &quot;</span>
@@ -717,7 +723,7 @@
                         <span class="s2">&quot;             Options: rules_path, &quot;</span>
                         <span class="s2">&quot;grammar_feature_weights, use_grammar_weights</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;wc&#39;: Number of words feature.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;        Options: wc_word.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;        Options: wc_word, negative_wc.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;unkc&#39;: Poisson model for number of UNKs.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: unk_count_lambdas, &quot;</span>
                         <span class="s2">&quot;pred_src_vocab_size.</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -735,6 +741,13 @@
                         <span class="s2">&quot;* &#39;idxmap&#39;: Add this wrapper to predictors which use &quot;</span>
                         <span class="s2">&quot;an alternative word map.&quot;</span>
                         <span class="s2">&quot;            Options: src_idxmap, trg_idxmap</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;maskvocab&#39;: Hides certain words in the SGNMT vocab&quot;</span>
+                        <span class="s2">&quot;ulary from the masked predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;            Options: maskvocab_words</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;rank&#39;: Uses the rank of a word in the score list &quot;</span>
+                        <span class="s2">&quot;of the wrapped predictor, not the score itself.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;glue&#39;: Masks a sentence-level predictor when SGNMT&quot;</span>
+                        <span class="s2">&quot;is running on the document-level.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;altsrc&#39;: This wrapper loads source sentences from &quot;</span>
                         <span class="s2">&quot;an alternative source.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;            Options: altsrc_test</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -774,12 +787,28 @@
                         <span class="s2">&quot;assigned the weight 1. You may specify a single &quot;</span>
                         <span class="s2">&quot;weight for wrapped predictors (e.g. 0.3,0.6) if the &quot;</span>
                         <span class="s2">&quot;wrapper is unweighted.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--per_sentence_predictor_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                       <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span> 
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Assign predictor weights for each sentence. &quot;</span>
+                       <span class="s2">&quot;Must be set consistent with --predictors as for &quot;</span>
+                       <span class="s2">&quot;--predictor_weights. Per-sentence weights are set &quot;</span>
+                       <span class="s2">&quot;by appending a comma-separated string of weights &quot;</span>
+                       <span class="s2">&quot;to the end of source sentences. e.g. &#39;X1 X2 X3&#39; &quot;</span>
+                       <span class="s2">&quot;with two predictors might become &quot;</span>
+                       <span class="s2">&quot;&#39;X1 X2 X3 pred1_w,pred2_w&#39; &quot;</span>
+                       <span class="s2">&quot;a sentence with no weight str means each predictor is &quot;</span>
+                       <span class="s2">&quot;assigned the weights set in --predictor_weights &quot;</span>
+                       <span class="s2">&quot; or 1 if --predictor_weights is not set &quot;</span><span class="p">)</span>
+
+
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--interpolation_strategy&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter specifies how the predictor &quot;</span>
                         <span class="s2">&quot;weights are used.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;&#39;fixed&#39;: Predictor weights do not change.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;&#39;entropy&#39;: Set predictor weight according the (cross-&quot;</span>
-                        <span class="s2">&quot;) entropy of its posterior to all other predictors.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;&#39;crossentropy&#39;: Set predictor weight according the cro&quot;</span>
+                        <span class="s2">&quot;ssentropy of its posterior to all other predictors.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;&#39;entropy&#39;: Predictors with low entropy distributions &quot;</span>
+                        <span class="s2">&quot;get large weights.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;&#39;moe&#39;: Use a Mixture of Experts gating network &quot;</span>
                         <span class="s2">&quot;to decide predictor weights at each time step. See &quot;</span>
                         <span class="s2">&quot;the sgnmt_moe project on how to train it.</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -795,6 +824,9 @@
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Used when --interpolation_strategy contains |. &quot;</span>
                         <span class="s2">&quot;Specifies the way interpolation weights are combined.&quot;</span>
                         <span class="s2">&quot;&#39;arith&#39;metirc, &#39;geo&#39;metric, &#39;prob&#39;abilistic.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--interpolation_smoothing&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;When using interpolation strategies, smooth &quot;</span>
+                       <span class="s2">&quot;them with weights*(1-alpha)+alpha*uniformweights.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--moe_config&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only for MoE interpolation strategy: Semicolon-&quot;</span>
                         <span class="s2">&quot;separated key=value pairs specifying the MoE network&quot;</span><span class="p">)</span>
@@ -823,7 +855,7 @@
                        <span class="s2">&quot;after combination.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--combination_scheme&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;sum&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="s1">&#39;length_norm&#39;</span><span class="p">,</span> <span class="s1">&#39;bayesian&#39;</span><span class="p">,</span> 
-                          <span class="s1">&#39;bayesian_loglin&#39;</span><span class="p">],</span>
+                                 <span class="s1">&#39;bayesian_loglin&#39;</span><span class="p">,</span> <span class="s1">&#39;bayesian_state_dependent&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter controls how the combined &quot;</span>
                         <span class="s2">&quot;hypothesis score is calculated from the predictor &quot;</span>
                         <span class="s2">&quot;scores and weights.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
@@ -834,8 +866,17 @@
                         <span class="s2">&quot;* &#39;bayesian&#39;: Apply the Bayesian LM interpolation &quot;</span>
                         <span class="s2">&quot;scheme from Allauzen and Riley to interpolate the &quot;</span>
                         <span class="s2">&quot;predictor scores</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bayesian_state_dependent&#39;: Like Bayesian &quot;</span>
+                        <span class="s2">&quot;but with model-task weights defined by &quot;</span>
+                        <span class="s2">&quot;&#39;bayesian_domain_task_weights&#39; parameter&quot;</span>
                         <span class="s2">&quot;* &#39;bayesian_loglin&#39;: Like bayesian, but retain &quot;</span>
                         <span class="s2">&quot;loglinear framework.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bayesian_domain_task_weights&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> 
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;comma-separated string of num_predictors^2 &quot;</span>
+                       <span class="s2">&quot;weights where rows are domains and &quot;</span>
+                       <span class="s2">&quot;tasks are columns, e.g. w[k, t] gives weight on domain k &quot;</span>
+                       <span class="s2">&quot;for task t. will be reshaped into &quot;</span>
+                       <span class="s2">&quot;a num_predictors x num_predictors matrix&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_unk_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;unk id for t2t. Used by the t2t predictor&quot;</span><span class="p">)</span>
 
@@ -936,6 +977,7 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--osm_type&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;osm&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Set of operations used for OSM predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
                        <span class="s2">&quot;- &#39;osm&#39;: Original OSNMT of Stahlberg et al. (2018)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                       <span class="s2">&quot;- &#39;srcosm&#39;: Original OSNMT where IDs&gt;7 are POP</span><span class="se">\n</span><span class="s2">&quot;</span>
                        <span class="s2">&quot;- &#39;pbosm&#39;: Phrase-based OSNMT&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_usr_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the t2t predictor. See the &quot;</span>
@@ -1040,6 +1082,11 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--wc_word&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If negative, the wc predictor counts all &quot;</span>
                        <span class="s2">&quot;words. Otherwise, count only the specific word&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--negative_wc&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If true, wc is the negative word count and thus &quot;</span>
+                       <span class="s2">&quot;makes translations shorter. Otherwise, it makes &quot;</span>
+                       <span class="s2">&quot;translations longer. Set early_stopping to False if &quot;</span>
+                       <span class="s2">&quot;negative_wc=False and wc has a positive weight&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--wc_nonterminal_penalty&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> 
                        <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;if true, &quot;</span>
                        <span class="s2">&quot;use syntax_[max|min]_terminal_id to apply penalty to &quot;</span>
@@ -1123,16 +1170,20 @@
     
     <span class="c1"># Wrappers</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Wrapper predictor options&#39;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_idxmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;idxmap.en&quot;</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_idxmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for idxmap wrapper predictor. Path&quot;</span>
                         <span class="s2">&quot; to the source side mapping file. The format is &quot;</span>
                         <span class="s2">&quot;&#39;&lt;index&gt; &lt;alternative_index&gt;&#39;. The mapping must be &quot;</span>
                         <span class="s2">&quot;complete and should be a bijection.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_idxmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;idxmap.fr&quot;</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_idxmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for idxmap wrapper predictor. Path&quot;</span>
                         <span class="s2">&quot; to the target side mapping file. The format is &quot;</span>
                         <span class="s2">&quot;&#39;&lt;index&gt; &lt;alternative_index&gt;&#39;. The mapping must be &quot;</span>
                         <span class="s2">&quot;complete and should be a bijection.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--maskvocab_words&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for maskvocab wrapper predictor. &quot;</span>
+                        <span class="s2">&quot;Comma-separated list of token IDs which are masked &quot;</span>
+                        <span class="s2">&quot;out.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--altsrc_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;test_en.alt&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for altsrc wrapper predictor. Path&quot;</span>
                         <span class="s2">&quot; to the alternative source sentences.&quot;</span><span class="p">)</span>
@@ -1357,6 +1408,8 @@
         <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">=</span> <span class="s2">&quot;length_norm&quot;</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">output_fst_unk_id</span><span class="p">:</span>
         <span class="n">args</span><span class="o">.</span><span class="n">fst_unk_id</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">output_fst_unk_id</span> 
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">single_cpu_thread</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">n_cpu_threads</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="n">args</span></div>
 
 
@@ -1418,7 +1471,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, University of Cambridge.
+        &copy; Copyright 2019, University of Cambridge.
 
     </p>
   </div>
@@ -1440,7 +1493,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.1',
+            VERSION:'0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

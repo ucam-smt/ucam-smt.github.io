@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.length &mdash; SGNMT 0.5.1 documentation</title>
+  <title>cam.sgnmt.predictors.length &mdash; SGNMT 0.6 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5.1 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.5.1
+                0.6
               </div>
             
           
@@ -386,6 +386,7 @@
                  <span class="n">nonterminal_ids</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">min_terminal_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                  <span class="n">max_terminal_id</span><span class="o">=</span><span class="mi">30003</span><span class="p">,</span>
+                 <span class="n">negative_wc</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
                  <span class="n">vocab_size</span><span class="o">=</span><span class="mi">30003</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new word count predictor instance.</span>
 <span class="sd">        </span>
@@ -393,17 +394,23 @@
 <span class="sd">            word (int): If this is non-negative we count only the</span>
 <span class="sd">                        number of the specified word. If its</span>
 <span class="sd">                        negative, count all words</span>
-<span class="sd">            nonterminal_penalty (bool): If true, apply penalty only to tokens in a range </span>
-<span class="sd">                                        (the range *outside* min/max terminal id)</span>
+<span class="sd">            nonterminal_penalty (bool): If true, apply penalty only to </span>
+<span class="sd">                        tokens in a range  (the range *outside* </span>
+<span class="sd">                        min/max terminal id)</span>
 <span class="sd">            nonterminal_ids: file containing ids of nonterminal tokens</span>
 <span class="sd">            min_terminal_id: lower bound of tokens *not* to penalize,</span>
 <span class="sd">                              if nonterminal_penalty selected</span>
 <span class="sd">            max_terminal_id: upper bound of tokens *not* to penalize,</span>
 <span class="sd">                             if nonterminal_penalty selected</span>
+<span class="sd">            negative_wc: If true, the score of this predictor is the </span>
+<span class="sd">                         negative word count.</span>
 <span class="sd">            vocab_size: upper bound of tokens, used to find nonterminal range</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">WordCountPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">if</span> <span class="n">negative_wc</span><span class="p">:</span>
+          <span class="n">val</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
         <span class="k">if</span> <span class="n">nonterminal_penalty</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">nonterminal_ids</span><span class="p">:</span>
                 <span class="n">nts</span> <span class="o">=</span> <span class="n">load_external_ids</span><span class="p">(</span><span class="n">nonterminal_ids</span><span class="p">)</span>
@@ -411,32 +418,29 @@
                 <span class="n">min_nt_range</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">min_terminal_id</span><span class="p">)</span>
                 <span class="n">max_nt_range</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_terminal_id</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">)</span>
                 <span class="n">nts</span> <span class="o">=</span> <span class="n">min_nt_range</span> <span class="o">+</span> <span class="n">max_nt_range</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">{</span><span class="n">nt</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.0</span> <span class="k">for</span> <span class="n">nt</span> <span class="ow">in</span> <span class="n">nts</span><span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">{</span><span class="n">nt</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">nt</span> <span class="ow">in</span> <span class="n">nts</span><span class="p">}</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="k">elif</span> <span class="n">word</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="n">val</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span> <span class="p">:</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span> <span class="p">:</span> <span class="n">val</span><span class="p">}</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span> <span class="o">=</span> <span class="mf">0.0</span> 
         
 <div class="viewcode-block" id="WordCountPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">unk_prob</span></div>
     
 <div class="viewcode-block" id="WordCountPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Set score for EOS to the number of consumed words &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior</span></div>
     
 <div class="viewcode-block" id="WordCountPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Empty</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Empty&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
     
 <div class="viewcode-block" id="WordCountPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Empty</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Empty&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
     
 <div class="viewcode-block" id="WordCountPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -444,7 +448,7 @@
         <span class="k">return</span> <span class="bp">True</span></div>
     
 <div class="viewcode-block" id="WordCountPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Empty &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Empty&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="WordCountPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.length.WordCountPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
@@ -951,7 +955,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, University of Cambridge.
+        &copy; Copyright 2019, University of Cambridge.
 
     </p>
   </div>
@@ -973,7 +977,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.5.1',
+            VERSION:'0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

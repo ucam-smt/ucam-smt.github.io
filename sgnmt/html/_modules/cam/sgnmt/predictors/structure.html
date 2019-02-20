@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.structure &mdash; SGNMT 0.5.1 documentation</title>
+  <title>cam.sgnmt.predictors.structure &mdash; SGNMT 0.6 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5.1 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.5.1
+                0.6
               </div>
             
           
@@ -192,10 +192,13 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">osm_type</span><span class="o">=</span><span class="s2">&quot;osm&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new osm predictor.&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">OSMPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">OSM_EOP_ID</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">osm_type</span> <span class="o">==</span> <span class="s2">&quot;pbosm&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">OSM_EOP2_ID</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">osm_type</span> <span class="o">!=</span> <span class="s2">&quot;osm&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">osm_type</span> <span class="o">==</span> <span class="s2">&quot;osm&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">OSM_EOP_ID</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">osm_type</span> <span class="o">==</span> <span class="s2">&quot;pbosm&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">OSM_EOP_ID</span><span class="p">,</span> <span class="n">OSM_EOP2_ID</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">osm_type</span> <span class="o">==</span> <span class="s2">&quot;srcosm&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Unknown osm_type &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">osm_type</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">illegal_sequences</span> <span class="o">=</span> <span class="p">[</span>
             <span class="c1">#[OSM_JUMP_FWD_ID, OSM_JUMP_BWD_ID],</span>
@@ -206,6 +209,11 @@
             <span class="c1">#[OSM_JUMP_BWD_ID, OSM_GAP_ID, OSM_JUMP_BWD_ID],</span>
             <span class="p">[</span><span class="n">OSM_GAP_ID</span><span class="p">,</span> <span class="n">OSM_GAP_ID</span><span class="p">]</span>
         <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_is_pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">token</span> <span class="o">&gt;</span> <span class="n">OSM_JUMP_BWD_ID</span>
+        <span class="k">return</span> <span class="n">token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span>
     
 <div class="viewcode-block" id="OSMPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sets the number of source tokens.</span>
@@ -247,9 +255,9 @@
     
 <div class="viewcode-block" id="OSMPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.structure.OSMPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Updates the number of holes, EOPs, and the head position.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_pop</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop_ids</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_pop</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">n_eop</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">elif</span> <span class="n">word</span> <span class="o">==</span> <span class="n">OSM_GAP_ID</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">n_holes</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -589,7 +597,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, University of Cambridge.
+        &copy; Copyright 2019, University of Cambridge.
 
     </p>
   </div>
@@ -611,7 +619,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.5.1',
+            VERSION:'0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

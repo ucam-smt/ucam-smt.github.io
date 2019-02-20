@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.misc &mdash; SGNMT 0.5.1 documentation</title>
+  <title>cam.sgnmt.predictors.misc &mdash; SGNMT 0.6 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5.1 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.5.1
+                0.6
               </div>
             
           
@@ -144,7 +144,12 @@
 <span class="sd">wrapper which loads source sentences from a different file.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
 
 
 <div class="viewcode-block" id="AltsrcPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.AltsrcPredictor">[docs]</a><span class="k">class</span> <span class="nc">AltsrcPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
@@ -223,7 +228,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">)</span></div></div>
         
 
-<div class="viewcode-block" id="UnboundedAltsrcPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.UnboundedAltsrcPredictor">[docs]</a><span class="k">class</span> <span class="nc">UnboundedAltsrcPredictor</span><span class="p">(</span><span class="n">AltsrcPredictor</span><span class="p">,</span><span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+<div class="viewcode-block" id="UnboundedAltsrcPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.UnboundedAltsrcPredictor">[docs]</a><span class="k">class</span> <span class="nc">UnboundedAltsrcPredictor</span><span class="p">(</span><span class="n">AltsrcPredictor</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This class is a version of ``AltsrcPredictor`` for unbounded </span>
 <span class="sd">    vocabulary predictors. This needs an adjusted ``predict_next`` </span>
 <span class="sd">    method to pass through the set of target words to score correctly.</span>
@@ -239,6 +244,218 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">(</span><span class="n">trgt_words</span><span class="p">)</span></div></div>
 
 
+<div class="viewcode-block" id="RankPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor">[docs]</a><span class="k">class</span> <span class="nc">RankPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This wrapper converts predictor scores to (negative) ranks, i.e.</span>
+<span class="sd">    the best word gets a score of -1, the second best of -2 and so on.</span>
+
+<span class="sd">    Note: Using this predictor with UNK matching or predictor heuristics</span>
+<span class="sd">    is not recommended.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new rank wrapper predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            slave_predictor (Predictor): Use score of this predictor to</span>
+<span class="sd">                                         compute ranks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RankPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
+    
+<div class="viewcode-block" id="RankPredictor.score2rank"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.score2rank">[docs]</a>    <span class="k">def</span> <span class="nf">score2rank</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scores</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_iterable</span><span class="p">(</span><span class="n">scores</span><span class="p">))</span>
+            <span class="n">l</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">el</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="o">-</span><span class="p">(</span><span class="n">r</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">l</span><span class="p">)}</span>
+        <span class="c1"># scores is a list or numpy array.</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">-</span><span class="n">scores</span><span class="p">)</span>
+        <span class="n">ranks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="n">ranks</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">scores</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ranks</span></div>
+    
+<div class="viewcode-block" id="RankPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="RankPredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="RankPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">score2rank</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">())</span></div>
+        
+<div class="viewcode-block" id="RankPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="RankPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="RankPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="RankPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RankPredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RankPredictor.set_current_sen_id"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur_sen_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We need to override this method to propagate current\_</span>
+<span class="sd">        sentence_id to the slave predictor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RankPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="RankPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.RankPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">)</span></div></div>
+        
+
+<div class="viewcode-block" id="UnboundedRankPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.UnboundedRankPredictor">[docs]</a><span class="k">class</span> <span class="nc">UnboundedRankPredictor</span><span class="p">(</span><span class="n">RankPredictor</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class is a version of ``RankPredictor`` for unbounded </span>
+<span class="sd">    vocabulary predictors. This needs an adjusted ``predict_next`` </span>
+<span class="sd">    method to pass through the set of target words to score correctly.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="UnboundedRankPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.UnboundedRankPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trgt_words</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return ranks instead of slave scores &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">score2rank</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">(</span><span class="n">trgt_words</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="GluePredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor">[docs]</a><span class="k">class</span> <span class="nc">GluePredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This wrapper masks sentence-level predictors when SGNMT runs on</span>
+<span class="sd">    the document level. The SGNMT hypotheses consist of multiple</span>
+<span class="sd">    sentences, glued together with &lt;s&gt;, but the wrapped predictor is</span>
+<span class="sd">    trained on the sentence level. This predictor splits input</span>
+<span class="sd">    sequences at &lt;s&gt; and feed them to the predictor one by one. The</span>
+<span class="sd">    wrapped predictor is initialized with a new source sentence when</span>
+<span class="sd">    the sentence boundary symbol &lt;s&gt; is emitted. Note that using the</span>
+<span class="sd">    predictor heuristic of the wrapped predictor estimates the future</span>
+<span class="sd">    cost for the current sentence, not for the entire document.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len_factor</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new glue wrapper predictor.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            max_len_factor (int): Target sentences cannot be longer</span>
+<span class="sd">                                  than this times source sentence length</span>
+<span class="sd">            slave_predictor (Predictor): Instance of the sentence-level</span>
+<span class="sd">                                         predictor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GluePredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">=</span> <span class="n">max_len_factor</span>
+    
+<div class="viewcode-block" id="GluePredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Splits ``src_sentence`` at ``utils.GO_ID``, stores all</span>
+<span class="sd">        segments for later use, and calls ``initialize()`` of the</span>
+<span class="sd">        slave predictor with the first segment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_src_sentences</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">last_pos</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_src_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">[</span><span class="n">last_pos</span><span class="p">:</span><span class="n">pos</span><span class="p">])</span>
+                <span class="n">last_pos</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_src_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">[</span><span class="n">last_pos</span><span class="p">:])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next_src_sentence_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next_src_sentence</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_next_src_sentence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_src_sentences</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_next_src_sentence_idx</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sen_budget</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len_factor</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next_src_sentence_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">_sen_len_exceeded</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sen_budget</span> <span class="o">&lt;</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="GluePredictor.is_last_sentence"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.is_last_sentence">[docs]</a>    <span class="k">def</span> <span class="nf">is_last_sentence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if the current sentence is the last sentence</span>
+<span class="sd">        in this document - i.e. we have already consumed n-1 &lt;s&gt;</span>
+<span class="sd">        symbols since the last call of ``initialize()``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next_src_sentence_idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_src_sentences</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="GluePredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calls predict_next() of the wrapped predictor. Replaces BOS</span>
+<span class="sd">        scores with EOS score if we still have source sentences left.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sen_len_exceeded</span><span class="p">():</span>
+            <span class="n">end_token</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_last_sentence</span><span class="p">()</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Sentence length exceeded!&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">end_token</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+        <span class="n">slave_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_last_sentence</span><span class="p">():</span>
+            <span class="n">slave_scores</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">slave_scores</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span>
+            <span class="n">slave_scores</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">slave_scores</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">return</span> <span class="n">slave_scores</span></div>
+        
+<div class="viewcode-block" id="GluePredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If ``word`` is &lt;s&gt;, initialize the slave predictor with the</span>
+<span class="sd">        next source sentence. Otherwise, pass through ``word`` to the</span>
+<span class="sd">        ``consume()`` method of the slave.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_next_src_sentence</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sen_budget</span> <span class="o">-=</span> <span class="mi">1</span></div>
+    
+<div class="viewcode-block" id="GluePredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;State is the slave state plus the source sentence index.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_next_src_sentence_idx</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sen_budget</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_state</span><span class="p">())</span></div>
+    
+<div class="viewcode-block" id="GluePredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;State is the slave state plus the source sentence index.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next_src_sentence_idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sen_budget</span><span class="p">,</span> <span class="n">slave_state</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">slave_state</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GluePredictor.initialize_heuristic"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.initialize_heuristic">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">initialize_heuristic</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_current_sentence</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="GluePredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sen_len_exceeded</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">get_unk_probability</span><span class="p">(</span><span class="n">posterior</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GluePredictor.estimate_future_cost"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.estimate_future_cost">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_future_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">estimate_future_cost</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GluePredictor.set_current_sen_id"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.set_current_sen_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_current_sen_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cur_sen_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;We need to override this method to propagate current\_</span>
+<span class="sd">        sentence_id to the slave predictor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GluePredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">cur_sen_id</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="GluePredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.GluePredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">)</span></div></div>
+        
+
+<div class="viewcode-block" id="UnboundedGluePredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.UnboundedGluePredictor">[docs]</a><span class="k">class</span> <span class="nc">UnboundedGluePredictor</span><span class="p">(</span><span class="n">GluePredictor</span><span class="p">,</span> <span class="n">UnboundedVocabularyPredictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class is a version of ``GluePredictor`` for unbounded </span>
+<span class="sd">    vocabulary predictors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="UnboundedGluePredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.misc.UnboundedGluePredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trgt_words</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">(</span><span class="n">trgt_words</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>
@@ -250,7 +467,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, University of Cambridge.
+        &copy; Copyright 2019, University of Cambridge.
 
     </p>
   </div>
@@ -272,7 +489,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.5.1',
+            VERSION:'0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decoding package &mdash; SGNMT 0.5.1 documentation</title>
+  <title>cam.sgnmt.decoding package &mdash; SGNMT 0.6 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5.1 documentation" href="index.html"/>
+    <link rel="top" title="SGNMT 0.6 documentation" href="index.html"/>
         <link rel="up" title="cam.sgnmt package" href="cam.sgnmt.html"/>
         <link rel="next" title="cam.sgnmt.misc package" href="cam.sgnmt.misc.html"/>
         <link rel="prev" title="cam.sgnmt.blocks.alignment package" href="cam.sgnmt.blocks.alignment.html"/> 
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.5.1
+                0.6
               </div>
             
           
@@ -132,6 +132,7 @@
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.decode_utils">cam.sgnmt.decode_utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#cam-sgnmt-extract-scores-along-reference-module">cam.sgnmt.extract_scores_along_reference module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.output">cam.sgnmt.output module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.tf_utils">cam.sgnmt.tf_utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.ui">cam.sgnmt.ui module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt.utils">cam.sgnmt.utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cam.sgnmt.html#module-cam.sgnmt">Module contents</a></li>
@@ -613,6 +614,24 @@ constructor of <cite>BeamDecoder</cite>, the following values are fetched
 from <cite>decoder_args</cite>:</p>
 <blockquote>
 <div>combination_scheme (string): breakdown2score strategy</div></blockquote>
+<dl class="staticmethod">
+<dt id="cam.sgnmt.decoding.combibeam.CombiBeamDecoder.get_domain_task_weights">
+<em class="property">static </em><code class="descname">get_domain_task_weights</code><span class="sig-paren">(</span><em>w</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combibeam.html#CombiBeamDecoder.get_domain_task_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combibeam.CombiBeamDecoder.get_domain_task_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get array of domain-task weights from string w
+Returns None if w is None or contains non-square number</p>
+<blockquote>
+<div>of weights (currently invalid)
+or 2D numpy float array of weights otherwise</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="cam.sgnmt.decoding.combibeam.CombiStatePartialHypo">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.combibeam.</code><code class="descname">CombiStatePartialHypo</code><span class="sig-paren">(</span><em>initial_states=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combibeam.html#CombiStatePartialHypo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combibeam.CombiStatePartialHypo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.core.PartialHypothesis" title="cam.sgnmt.decoding.core.PartialHypothesis"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.PartialHypothesis</span></code></a></p>
+<p>Identical to PartialHypothesis, but tracks the
+last-score-but-one for score combination</p>
 </dd></dl>
 
 </div>
@@ -627,7 +646,7 @@ the total score. This is commonly specified via the
 </dl>
 <dl class="function">
 <dt id="cam.sgnmt.decoding.combination.breakdown2score_bayesian">
-<code class="descclassname">cam.sgnmt.decoding.combination.</code><code class="descname">breakdown2score_bayesian</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combination.html#breakdown2score_bayesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combination.breakdown2score_bayesian" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">cam.sgnmt.decoding.combination.</code><code class="descname">breakdown2score_bayesian</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em>, <em>prev_score=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combination.html#breakdown2score_bayesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combination.breakdown2score_bayesian" title="Permalink to this definition">¶</a></dt>
 <dd><p>This realizes score combination following the Bayesian LM
 interpolation scheme from (Allauzen and Riley, 2011)</p>
 <blockquote>
@@ -663,10 +682,53 @@ assume that this function has been called in the</p>
 
 <dl class="function">
 <dt id="cam.sgnmt.decoding.combination.breakdown2score_bayesian_loglin">
-<code class="descclassname">cam.sgnmt.decoding.combination.</code><code class="descname">breakdown2score_bayesian_loglin</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combination.html#breakdown2score_bayesian_loglin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combination.breakdown2score_bayesian_loglin" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">cam.sgnmt.decoding.combination.</code><code class="descname">breakdown2score_bayesian_loglin</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em>, <em>prev_score=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combination.html#breakdown2score_bayesian_loglin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combination.breakdown2score_bayesian_loglin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Like bayesian combination scheme, but uses loglinear model
 combination rather than linear interpolation weights</p>
 <p>TODO: Implement incremental version of it, write weights into breakdowns.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.decoding.combination.breakdown2score_bayesian_state_dependent">
+<code class="descclassname">cam.sgnmt.decoding.combination.</code><code class="descname">breakdown2score_bayesian_state_dependent</code><span class="sig-paren">(</span><em>working_score</em>, <em>score_breakdown</em>, <em>full=False</em>, <em>prev_score=None</em>, <em>lambdas=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/combination.html#breakdown2score_bayesian_state_dependent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.combination.breakdown2score_bayesian_state_dependent" title="Permalink to this definition">¶</a></dt>
+<dd><p>This realizes score combination following the Bayesian LM
+interpolation scheme from (Allauzen and Riley, 2011)</p>
+<blockquote>
+<div>Bayesian Language Model Interpolation for Mobile Speech Input</div></blockquote>
+<p>By setting K=T we define the predictor weights according the score
+the predictors give to the current partial hypothesis. The initial
+predictor weights are used as priors .</p>
+<p>Unlike breakdown2score_bayesian, define state-independent weights
+which affect how much state-dependent mixture weights (alphas) are
+affected by scores from the other model.</p>
+<p>Makes more efficient use of working_score and calculated priors
+when used incrementally.
+:param working_score: Working combined score, which is the</p>
+<blockquote>
+<div>weighted sum of the scores in
+<code class="docutils literal"><span class="pre">score_breakdown</span></code>. Not used.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>score_breakdown</strong> (<em>list</em>) &#8211; Breakdown of the combined score into
+predictor scores</li>
+<li><strong>full</strong> (<em>bool</em>) &#8211; <p>If True, reevaluate all time steps. If False,
+assume that this function has been called in the</p>
+<blockquote>
+<div>previous time step.</div></blockquote>
+</li>
+<li><strong>prev_score</strong> &#8211; score of hypothesis without final step</li>
+<li><strong>lambdas</strong> &#8211; np array of domain-task weights</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">float. Bayesian interpolated predictor scores</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -788,30 +850,6 @@ apply_predictors has been called. All heuristics
 are observing the decoder by default.</p>
 <p>Initializes the decoder instance with no predictors or
 heuristics.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>closed_vocabulary_normalization</strong> (<em>string</em>) &#8211; Defines the
-normalization behavior for closed
-vocabulary predictor scores. See
-the documentation to the
-<code class="docutils literal"><span class="pre">CLOSED_VOCAB_SCORE_NORM_*</span></code>
-variables for more information</li>
-<li><strong>max_len_factor</strong> (<em>int</em>) &#8211; Hypotheses are not longer than
-source sentence length times this.
-Needs to be supported by the search
-strategy implementation</li>
-<li><strong>lower_bounds_file</strong> (<em>string</em>) &#8211; Path to a file with lower
-bounds on hypothesis scores.
-If empty, all lower bounds are
-set to <code class="docutils literal"><span class="pre">NEG_INF</span></code>.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.core.Decoder.add_full_hypo">
 <code class="descname">add_full_hypo</code><span class="sig-paren">(</span><em>hypo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.add_full_hypo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Decoder.add_full_hypo" title="Permalink to this definition">¶</a></dt>
@@ -877,7 +915,7 @@ weights for this apply_predictors() call.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>pred_weights</strong> (<em>list</em>) &#8211; a prior predictor weights</li>
+<li><strong>pred_weights</strong> (<em>list</em>) &#8211; a priori predictor weights</li>
 <li><strong>non_zero_words</strong> (<em>set</em>) &#8211; All words with positive probability</li>
 <li><strong>posteriors</strong> &#8211; Predictor posterior distributions calculated
 with <code class="docutils literal"><span class="pre">predict_next()</span></code></li>
@@ -940,6 +978,11 @@ otherwise</p>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="cam.sgnmt.decoding.core.Decoder.change_predictor_weights">
+<code class="descname">change_predictor_weights</code><span class="sig-paren">(</span><em>new_weights</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.change_predictor_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Decoder.change_predictor_weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="staticmethod">
 <dt id="cam.sgnmt.decoding.core.Decoder.combi_arithmetic_unnormalized">
 <em class="property">static </em><code class="descname">combi_arithmetic_unnormalized</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.combi_arithmetic_unnormalized"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Decoder.combi_arithmetic_unnormalized" title="Permalink to this definition">¶</a></dt>
@@ -952,25 +995,6 @@ values). Do not use with empty lists.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>list</em>) &#8211; List of tuples [(out1, weight1), ...]</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">float. Weighted sum out1*weight1+out2*weight2...</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="staticmethod">
-<dt id="cam.sgnmt.decoding.core.Decoder.combi_geometric_unnormalized">
-<em class="property">static </em><code class="descname">combi_geometric_unnormalized</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.combi_geometric_unnormalized"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Decoder.combi_geometric_unnormalized" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculates the weighted geometric mean. Do not use empty
-lists.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>list</em>) &#8211; List of tuples [(out1, weight1), ...]</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">out1^weight1*out2^weight2...</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">float. Weighted geo. mean</td>
 </tr>
 </tbody>
 </table>
@@ -1156,24 +1180,6 @@ i.e. a list of
 </dd></dl>
 
 <dl class="method">
-<dt id="cam.sgnmt.decoding.core.Decoder.set_predictor_combi_method">
-<code class="descname">set_predictor_combi_method</code><span class="sig-paren">(</span><em>method</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.set_predictor_combi_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Decoder.set_predictor_combi_method" title="Permalink to this definition">¶</a></dt>
-<dd><p>Defines how to accumulate scores over the sequence. Should
-be one of the <code class="docutils literal"><span class="pre">combi_</span></code> methods defined below</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>method</strong> (<em>function</em>) &#8211; A function which accepts a list of
-tuples [(out1, weight1), ...] and
-calculates a combined score, e.g.
-one of the <code class="docutils literal"><span class="pre">combi_*</span></code> methods</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
 <dt id="cam.sgnmt.decoding.core.Decoder.set_predictor_states">
 <code class="descname">set_predictor_states</code><span class="sig-paren">(</span><em>states</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Decoder.set_predictor_states"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.Decoder.set_predictor_states" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calls <code class="docutils literal"><span class="pre">set_state()</span></code> on all predictors.</p>
@@ -1318,7 +1324,8 @@ tokenized on the character instead of the word level.</td>
 <dl class="class">
 <dt id="cam.sgnmt.decoding.core.PartialHypothesis">
 <em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.core.</code><code class="descname">PartialHypothesis</code><span class="sig-paren">(</span><em>initial_states=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#PartialHypothesis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.core.PartialHypothesis" title="Permalink to this definition">¶</a></dt>
-<dd><p>Represents a partial hypothesis in various decoders.</p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Represents a partial hypothesis in various decoders.</p>
 <p>Creates a new partial hypothesis with zero score and empty
 translation prefix.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1795,13 +1802,28 @@ sentences</p>
 specified via the &#8211;interpolation_strategy parameter.</p>
 <dl class="class">
 <dt id="cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.interpolation.</code><code class="descname">EntropyInterpolationStrategy</code><span class="sig-paren">(</span><em>vocab_size</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#EntropyInterpolationStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.interpolation.</code><code class="descname">EntropyInterpolationStrategy</code><span class="sig-paren">(</span><em>vocab_size</em>, <em>cross_entropy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#EntropyInterpolationStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.decoding.interpolation.InterpolationStrategy" title="cam.sgnmt.decoding.interpolation.InterpolationStrategy"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.interpolation.InterpolationStrategy</span></code></a></p>
 <p>The entropy interpolation strategy assigns weights to predictors
 according the entropy of their posteriors to the other posteriors.
 We first build a n x n square matrix of (cross-)entropies between
 all predictors, and then weight according the row sums.</p>
 <p>We assume that predictor weights are log probabilities.</p>
+<p>Constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>vocab_size</strong> (<em>int</em>) &#8211; Vocabulary size</li>
+<li><strong>cross_entropy</strong> (<em>bool</em>) &#8211; If true, use cross entropy to other
+predictors. Otherwise, just use
+predictor distribution entropy.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy.find_weights">
 <code class="descname">find_weights</code><span class="sig-paren">(</span><em>pred_weights</em>, <em>non_zero_words</em>, <em>posteriors</em>, <em>unk_probs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#EntropyInterpolationStrategy.find_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.EntropyInterpolationStrategy.find_weights" title="Permalink to this definition">¶</a></dt>
@@ -1820,6 +1842,11 @@ all predictors, and then weight according the row sums.</p>
 <dd><p>Returns <code class="docutils literal"><span class="pre">pred_weights</span></code>.</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="cam.sgnmt.decoding.interpolation.FixedInterpolationStrategy.is_fixed">
+<code class="descname">is_fixed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#FixedInterpolationStrategy.is_fixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.FixedInterpolationStrategy.is_fixed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
@@ -1836,7 +1863,7 @@ all predictors, and then weight according the row sums.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>pred_weights</strong> (<em>list</em>) &#8211; A prior predictor weights</li>
+<li><strong>pred_weights</strong> (<em>list</em>) &#8211; A priori predictor weights</li>
 <li><strong>non_zero_words</strong> (<em>set</em>) &#8211; All words with positive probability</li>
 <li><strong>posteriors</strong> &#8211; Predictor posterior distributions calculated
 with <code class="docutils literal"><span class="pre">predict_next()</span></code></li>
@@ -1854,6 +1881,11 @@ with <code class="docutils literal"><span class="pre">get_unk_probability</span>
 </tbody>
 </table>
 </dd></dl>
+
+<dl class="method">
+<dt id="cam.sgnmt.decoding.interpolation.InterpolationStrategy.is_fixed">
+<code class="descname">is_fixed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/interpolation.html#InterpolationStrategy.is_fixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.decoding.interpolation.InterpolationStrategy.is_fixed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -1875,7 +1907,8 @@ sgnmt_moe for a full description. Available keys:
 vocab_size, embed_size, activation, hidden_layer_size,
 preprocessing.</dd>
 </dl>
-<p>moe_checkpoint_dir (string): Checkpoint directory</p>
+<p>moe_checkpoint_dir (string): Checkpoint directory
+n_cpu_threads (int): Number of CPU threads for TensorFlow</p>
 </div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -2657,7 +2690,7 @@ syntax_max_terminal_id (int): All IDs larger than this are NTs</div></blockquote
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, University of Cambridge.
+        &copy; Copyright 2019, University of Cambridge.
 
     </p>
   </div>
@@ -2679,7 +2712,7 @@ syntax_max_terminal_id (int): All IDs larger than this are NTs</div></blockquote
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.5.1',
+            VERSION:'0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

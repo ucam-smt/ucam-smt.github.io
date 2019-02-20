@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decoding.combination &mdash; SGNMT 0.5.1 documentation</title>
+  <title>cam.sgnmt.decoding.combination &mdash; SGNMT 0.6 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.5.1 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.5.1
+                0.6
               </div>
             
           
@@ -197,7 +197,7 @@
     <span class="k">return</span> <span class="n">score</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="breakdown2score_bayesian"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.combination.breakdown2score_bayesian">[docs]</a><span class="k">def</span> <span class="nf">breakdown2score_bayesian</span><span class="p">(</span><span class="n">working_score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="breakdown2score_bayesian"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.combination.breakdown2score_bayesian">[docs]</a><span class="k">def</span> <span class="nf">breakdown2score_bayesian</span><span class="p">(</span><span class="n">working_score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">prev_score</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This realizes score combination following the Bayesian LM </span>
 <span class="sd">    interpolation scheme from (Allauzen and Riley, 2011)</span>
 <span class="sd">    </span>
@@ -223,45 +223,108 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">score_breakdown</span> <span class="ow">or</span> <span class="n">working_score</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">working_score</span>
+    <span class="n">alphas</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
     <span class="k">if</span> <span class="n">full</span><span class="p">:</span>
         <span class="n">acc</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">alphas</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># list of all alpha_i,k</span>
-        <span class="c1"># Write priors to alphas</span>
-        <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">alphas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">:</span> <span class="c1"># for each position in the hypothesis</span>
-            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span> 
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span> 
                 <span class="n">alphas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">p</span>
             <span class="n">alpha_part</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">alphas</span><span class="p">)</span>
             <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">alphas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">alpha_part</span> <span class="o">+</span> <span class="n">p</span> 
-                    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos</span><span class="p">)]</span>
+                      <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos</span><span class="p">)]</span>
             <span class="n">acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">scores</span><span class="p">))</span> 
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">acc</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span> <span class="c1"># Incremental: Alphas are in predictor weights</span>
+    <span class="k">else</span><span class="p">:</span> 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">+</span> <span class="n">p</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
             <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
-        <span class="n">priors</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-        <span class="n">last_score</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">w</span> <span class="o">*</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> 
-                          <span class="k">for</span> <span class="n">w</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">priors</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])])</span>
-        <span class="n">working_score</span> <span class="o">-=</span> <span class="n">last_score</span>
-        <span class="c1"># Now, working score does not include the last time step anymore</span>
-        <span class="c1"># Compute updated alphas</span>
-        <span class="n">alphas</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">priors</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
-            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
-                <span class="n">alphas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">p</span>
-        <span class="n">alpha_part</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">alphas</span><span class="p">)</span>
-        <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">alphas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">alpha_part</span> <span class="o">+</span> <span class="n">p</span> 
+        <span class="n">working_score</span> <span class="o">=</span> <span class="n">prev_score</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]):</span>
+            <span class="n">alphas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">+</span> <span class="n">p</span>
+        <span class="n">alpha_norm</span> <span class="o">=</span> <span class="n">alphas</span> <span class="o">-</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">alphas</span><span class="p">)</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">alpha_norm</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+</span> <span class="n">p</span> 
                 <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span>
-        <span class="n">updated_breakdown</span> <span class="o">=</span> <span class="p">[(</span><span class="n">p</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">alphas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">alpha_part</span><span class="p">))</span>
+        <span class="n">updated_breakdown</span> <span class="o">=</span> <span class="p">[(</span><span class="n">p</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">alpha_norm</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
                 <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span>
         <span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">updated_breakdown</span>
         <span class="n">working_score</span> <span class="o">+=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">working_score</span></div>
 
 
-<div class="viewcode-block" id="breakdown2score_bayesian_loglin"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.combination.breakdown2score_bayesian_loglin">[docs]</a><span class="k">def</span> <span class="nf">breakdown2score_bayesian_loglin</span><span class="p">(</span><span class="n">working_score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="breakdown2score_bayesian_state_dependent"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.combination.breakdown2score_bayesian_state_dependent">[docs]</a><span class="k">def</span> <span class="nf">breakdown2score_bayesian_state_dependent</span><span class="p">(</span><span class="n">working_score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">,</span> 
+                                             <span class="n">full</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">prev_score</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                             <span class="n">lambdas</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This realizes score combination following the Bayesian LM </span>
+<span class="sd">    interpolation scheme from (Allauzen and Riley, 2011)</span>
+<span class="sd">    </span>
+<span class="sd">      Bayesian Language Model Interpolation for Mobile Speech Input</span>
+<span class="sd">    </span>
+<span class="sd">    By setting K=T we define the predictor weights according the score</span>
+<span class="sd">    the predictors give to the current partial hypothesis. The initial</span>
+<span class="sd">    predictor weights are used as priors .</span>
+
+<span class="sd">    Unlike breakdown2score_bayesian, define state-independent weights</span>
+<span class="sd">    which affect how much state-dependent mixture weights (alphas) are</span>
+<span class="sd">    affected by scores from the other model.</span>
+
+<span class="sd">    Makes more efficient use of working_score and calculated priors</span>
+<span class="sd">    when used incrementally.</span>
+<span class="sd">    Args:                                                           </span>
+<span class="sd">        working_score (float): Working combined score, which is the </span>
+<span class="sd">                               weighted sum of the scores in</span>
+<span class="sd">                               ``score_breakdown``. Not used.</span>
+<span class="sd">        score_breakdown (list): Breakdown of the combined score into</span>
+<span class="sd">                                predictor scores</span>
+<span class="sd">        full (bool): If True, reevaluate all time steps. If False,</span>
+<span class="sd">                     assume that this function has been called in the</span>
+<span class="sd">                      previous time step.</span>
+<span class="sd">        prev_score: score of hypothesis without final step</span>
+<span class="sd">        lambdas: np array of domain-task weights</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        float. Bayesian interpolated predictor scores</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">score_breakdown</span> <span class="ow">or</span> <span class="n">working_score</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">working_score</span>
+    <span class="k">if</span> <span class="n">full</span><span class="p">:</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">alphas</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">:</span> <span class="c1"># for each position in the hypothesis</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p_k</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+                <span class="n">alphas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">p_k</span>
+            <span class="n">alpha_prob</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">alphas</span> <span class="o">-</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">alphas</span><span class="p">))</span>
+            <span class="n">alpha_prob_lambdas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">alpha_prob</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">alpha_prob</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">alpha_prob</span><span class="p">)):</span>
+                    <span class="n">alpha_prob_lambdas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">alpha_prob</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">*</span> <span class="n">lambdas</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">alpha_prob_lambdas</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">+</span> <span class="n">p</span>
+                      <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos</span><span class="p">)]</span>
+            <span class="n">acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">scores</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">acc</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">+</span> <span class="n">p</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="n">working_score</span> <span class="o">=</span> <span class="n">prev_score</span>
+        <span class="n">alphas</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p_k</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]):</span>
+            <span class="n">alphas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">p_k</span> 
+        <span class="n">alpha_prob</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">alphas</span> <span class="o">-</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">alphas</span><span class="p">))</span> 
+        <span class="n">alpha_prob_lambdas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">alpha_prob</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">alpha_prob</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">alpha_prob</span><span class="p">)):</span>
+                <span class="n">alpha_prob_lambdas</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">alpha_prob</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">*</span> <span class="n">lambdas</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">alpha_prob_lambdas</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">+</span> <span class="n">p</span>
+                  <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span>
+        <span class="n">updated_breakdown</span> <span class="o">=</span> <span class="p">[(</span><span class="n">p</span><span class="p">,</span> <span class="n">alpha_prob</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span>
+        <span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">updated_breakdown</span>
+        <span class="n">working_score</span> <span class="o">+=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">working_score</span></div>
+
+
+<div class="viewcode-block" id="breakdown2score_bayesian_loglin"><a class="viewcode-back" href="../../../../cam.sgnmt.decoding.html#cam.sgnmt.decoding.combination.breakdown2score_bayesian_loglin">[docs]</a><span class="k">def</span> <span class="nf">breakdown2score_bayesian_loglin</span><span class="p">(</span><span class="n">working_score</span><span class="p">,</span> <span class="n">score_breakdown</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                    <span class="n">prev_score</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Like bayesian combination scheme, but uses loglinear model</span>
 <span class="sd">    combination rather than linear interpolation weights</span>
 <span class="sd">   </span>
@@ -273,7 +336,7 @@
     <span class="n">prev_alphas</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># list of all alpha_i,k</span>
     <span class="c1"># Write priors to alphas</span>
     <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-        <span class="n">prev_alphas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">))</span>
+        <span class="n">prev_alphas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">))</span> 
     <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">score_breakdown</span><span class="p">:</span> <span class="c1"># for each position in the hypothesis</span>
         <span class="n">alphas</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">sub_acc</span> <span class="o">=</span> <span class="p">[]</span>
@@ -286,6 +349,8 @@
         <span class="n">prev_alphas</span> <span class="o">=</span> <span class="n">alphas</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">acc</span><span class="p">)</span></div>
 
+
+
 </pre></div>
 
            </div>
@@ -297,7 +362,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, University of Cambridge.
+        &copy; Copyright 2019, University of Cambridge.
 
     </p>
   </div>
@@ -319,7 +384,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.5.1',
+            VERSION:'0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
