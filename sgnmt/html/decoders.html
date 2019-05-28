@@ -88,6 +88,7 @@
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="adding_components.html">Tutorial: Adding new components</a></li>
 <li class="toctree-l1"><a class="reference internal" href="kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="predictors.html">Predictors</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Decoders</a><ul>
@@ -102,11 +103,13 @@
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-core-module">cam.sgnmt.decoding.core module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-decoder-module">cam.sgnmt.decoding.decoder module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-dfs-module">cam.sgnmt.decoding.dfs module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-fstbeam-module">cam.sgnmt.decoding.fstbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-flip-module">cam.sgnmt.decoding.flip module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-greedy-module">cam.sgnmt.decoding.greedy module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-heuristics-module">cam.sgnmt.decoding.heuristics module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-mbrbeam-module">cam.sgnmt.decoding.mbrbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-multisegbeam-module">cam.sgnmt.decoding.multisegbeam module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-predlimitbeam-module">cam.sgnmt.decoding.predlimitbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-restarting-module">cam.sgnmt.decoding.restarting module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-sepbeam-module">cam.sgnmt.decoding.sepbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-syncbeam-module">cam.sgnmt.decoding.syncbeam module</a></li>
@@ -175,6 +178,7 @@ Decoders are specified using the <code class="docutils literal"><span class="pre
 <li><strong>beam</strong>: Beam search like in Bahdanau et al, 2015 .</li>
 <li><strong>sepbeam</strong>: Associates predictors with hypos in beam search and applies only one predictor instead of all for hypo expansion.</li>
 <li><strong>syncbeam</strong>: Beam search which compares after consuming a special synchronization symbol instead of after each iteration.</li>
+<li><strong>fstbeam</strong>: Beam search which compares hypotheses when they share the same state ID in an FST instead of after each iteration.</li>
 <li><strong>syntaxbeam</strong>: Beam search which ensures diversity amongst terminal symbol histories.</li>
 <li><strong>mbrbeam</strong>: Diversity encouraging beam search which maximizes the expected BLEU.</li>
 <li><strong>combibeam</strong>: Beam search which applies <code class="docutils literal"><span class="pre">--combination_scheme</span></code> at each time step.</li>
@@ -183,10 +187,12 @@ Decoders are specified using the <code class="docutils literal"><span class="pre
 but it cannot be used if the search space is too large (like for unrestricted NMT) as it performs exhaustive search.
 If you have not only negative predictor scores, set <code class="docutils literal"><span class="pre">--early_stopping</span></code> to false.</li>
 <li><strong>restarting</strong>: Like DFS but with better admissible pruning behavior.</li>
+<li><strong>simpledfs</strong>: Very fast DFS implementation for complete enumeration with a single predictor.</li>
 <li><strong>astar</strong>: A* search. The heuristic function is configured using the <code class="docutils literal"><span class="pre">--heuristics</span> <span class="pre">options</span></code>.</li>
 <li><strong>bucket</strong>: Works best for bag problems. Maintains buckets for each hypo length and extends a hypo in a bucket by one before selecting the next bucket.</li>
 <li><strong>flip</strong>: This decoder works only for bag problems. It traverses the search space by switching two words in the hypothesis. Do not use bow predictor.</li>
 <li><strong>bow</strong>: Restarting decoder optimized for bag-of-words problems.</li>
+<li><strong>predlimitbeam</strong>: Beam search variant with explicit limits on the culmulative predictor scores at each node expansion.</li>
 <li><strong>bigramgreedy</strong>: Works best for bag problems. Collects bigram statistics and constructs hypos to score by greedily selecting high scoring bigrams. Do not use bow predictor with this search strategy.</li>
 <li><strong>vanilla</strong>: Original Blocks beam decoder. This bypasses the predictor framework and directly performs pure NMT beam
 decoding on the GPU. Use this when you do pure NMT decoding as this is usually faster then using a single nmt predictor
@@ -1319,6 +1325,75 @@ holds the global best scoring hypothesis</td>
 
 </dd></dl>
 
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.dfs.</code><code class="descname">SimpleDFSDecoder</code><span class="sig-paren">(</span><em>decoder_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/dfs.html#SimpleDFSDecoder"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Decoder</span></code></a></p>
+<p>This is a stripped down version of the DFS decoder which is
+designed to explore the entire search space. SimpleDFS is
+intended to be used with a <cite>score_lower_bounds_file</cite> from a
+previous beam search run which already contains good lower
+bounds. SimpleDFS verifies whether the lower bound is actually
+the global best score.</p>
+<p>SimpleDFS can only be used with a single predictor.</p>
+<p>SimpleDFS does not support max_expansions or max_len_factor.
+early_stopping cannot be disabled.</p>
+<p>Creates new SimpleDFS decoder instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
+from the configuration API.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt>
+<code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/dfs.html#SimpleDFSDecoder.decode"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Decodes a single source sentence exhaustively using depth
+first search.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>src_sentence</strong> (<em>list</em>) &#8211; List of source word ids without &lt;S&gt; or
+&lt;/S&gt; which make up the source sentence</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list. A list of <code class="docutils literal"><span class="pre">Hypothesis</span></code> instances ordered by their
+score. If <code class="docutils literal"><span class="pre">max_expansions</span></code> equals 0, the first element
+holds the global best scoring hypothesis</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="cam-sgnmt-decoding-fstbeam-module">
+<h3>cam.sgnmt.decoding.fstbeam module<a class="headerlink" href="#cam-sgnmt-decoding-fstbeam-module" title="Permalink to this headline">¶</a></h3>
+<p>Implementation of a beam search which uses an FST for synchronization.</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.fstbeam.</code><code class="descname">FSTBeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/fstbeam.html#FSTBeamDecoder"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.beam.BeamDecoder" title="cam.sgnmt.decoding.beam.BeamDecoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.beam.BeamDecoder</span></code></a></p>
+<p>This beam search variant synchronizes hypotheses if they share
+the same node in an FST. This is similar to the syncbeam strategy,
+but rather than using a dedicated synchronization symbol, we keep
+track of the state ID of each hypothesis in an FST. Hypotheses are
+expanded until all of them arrive at the same state id, and are
+then compared with each other to select the set of active
+hypotheses in the next time step.</p>
+<p>Creates a new beam decoder instance with FST-based
+synchronization. In addition to the constructor of
+<cite>BeamDecoder</cite>, the following values are fetched from
+<cite>decoder_args</cite>:</p>
+<blockquote>
+<div>max_word_len (int): Maximum length of a single word
+fst_path (string): Path to the FST.</div></blockquote>
+</dd></dl>
+
 </div>
 <div class="section" id="cam-sgnmt-decoding-flip-module">
 <h3>cam.sgnmt.decoding.flip module<a class="headerlink" href="#cam-sgnmt-decoding-flip-module" title="Permalink to this headline">¶</a></h3>
@@ -2169,6 +2244,28 @@ word IDs.</p>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+</div>
+<div class="section" id="cam-sgnmt-decoding-predlimitbeam-module">
+<h3>cam.sgnmt.decoding.predlimitbeam module<a class="headerlink" href="#cam-sgnmt-decoding-predlimitbeam-module" title="Permalink to this headline">¶</a></h3>
+<p>Implementation of beam search with explicit limits on culmulative
+predictor scores at each node expansion.</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.predlimitbeam.</code><code class="descname">PredLimitBeamDecoder</code><span class="sig-paren">(</span><em>decoder_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/predlimitbeam.html#PredLimitBeamDecoder"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.beam.BeamDecoder" title="cam.sgnmt.decoding.beam.BeamDecoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.beam.BeamDecoder</span></code></a></p>
+<p>Beam search variant with explicit limits on the culmulative
+predictor scores at each node expansion.</p>
+<p>Creates a new beam decoder with culmulative predictor score
+limits. In addition to the constructor of <cite>BeamDecoder</cite>, the
+following values are fetched from <cite>decoder_args</cite>:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>pred_limits (string): Comma-separated list of predictor</dt>
+<dd>score limits.</dd>
+</dl>
+</div></blockquote>
 </dd></dl>
 
 </div>

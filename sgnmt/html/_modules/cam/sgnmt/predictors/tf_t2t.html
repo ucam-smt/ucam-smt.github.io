@@ -87,6 +87,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
@@ -916,10 +917,12 @@
             <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span>
                 <span class="s2">&quot;Please specify t2t_model, t2t_problem, and t2t_hparams_set!&quot;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">AttributeError</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">begin_margin</span> <span class="o">=</span> <span class="mi">4</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">end_margin</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">begin_margin</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_margin</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_sentences</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">begin_margin</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_margin</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_sentences</span> <span class="o">=</span> <span class="mi">10000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_sentences</span> <span class="o">=</span> <span class="mi">10000</span>  <span class="c1"># TODO: Make configurable. Default disabled</span>
+        <span class="c1">#self.max_sentences = 20</span>
+        <span class="c1">#self.max_sentences = 25</span>
         <span class="n">predictor_graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
         <span class="k">with</span> <span class="n">predictor_graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">()</span> <span class="k">as</span> <span class="n">g</span><span class="p">:</span>
             <span class="n">hparams</span> <span class="o">=</span> <span class="n">trainer_lib</span><span class="o">.</span><span class="n">create_hparams</span><span class="p">(</span><span class="n">hparams_set_name</span><span class="p">)</span>
@@ -983,7 +986,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="n">word</span> <span class="k">if</span> <span class="n">word</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_sentences</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">False</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_sentences</span><span class="p">:</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Pruning document level history...&quot;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">begin_margin</span><span class="p">]</span> 
@@ -998,6 +1001,8 @@
 
 <div class="viewcode-block" id="SegT2TPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Call the T2T model in self.mon_sess.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_sentences</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
         <span class="n">consumed</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">s</span><span class="p">]</span>
         <span class="n">trg_seg</span><span class="p">,</span> <span class="n">trg_pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gen_seg_and_pos</span><span class="p">(</span><span class="n">consumed</span><span class="p">,</span> <span class="n">trg</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
         <span class="n">log_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mon_sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_probs</span><span class="p">,</span>
@@ -1012,8 +1017,13 @@
     
 <div class="viewcode-block" id="SegT2TPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns true if the (pruned) history is the same &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
+        <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div>
 
+<div class="viewcode-block" id="SegT2TPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.tf_t2t.SegT2TPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fetch posterior[t2t_unk_id]&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history_sentences</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_sentences</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2t_unk_id</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>

@@ -87,6 +87,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
@@ -144,6 +145,7 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">import</span> <span class="nn">math</span>
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Decoder</span><span class="p">,</span> <span class="n">PartialHypothesis</span>
@@ -251,6 +253,102 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_expansions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_max_expansions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_expansions_param</span><span class="p">,</span>
                                                       <span class="n">src_sentence</span><span class="p">)</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_lower_score_bound</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dfs</span><span class="p">(</span><span class="n">PartialHypothesis</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_hypos_sorted</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="SimpleDFSDecoder"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.dfs.SimpleDFSDecoder">[docs]</a><span class="k">class</span> <span class="nc">SimpleDFSDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is a stripped down version of the DFS decoder which is</span>
+<span class="sd">    designed to explore the entire search space. SimpleDFS is</span>
+<span class="sd">    intended to be used with a `score_lower_bounds_file` from a</span>
+<span class="sd">    previous beam search run which already contains good lower</span>
+<span class="sd">    bounds. SimpleDFS verifies whether the lower bound is actually</span>
+<span class="sd">    the global best score.</span>
+
+<span class="sd">    SimpleDFS can only be used with a single predictor.</span>
+
+<span class="sd">    SimpleDFS does not support max_expansions or max_len_factor.</span>
+<span class="sd">    early_stopping cannot be disabled.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates new SimpleDFS decoder instance. </span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            decoder_args (object): Decoder configuration passed through</span>
+<span class="sd">                                   from the configuration API.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SimpleDFSDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">decoder_args</span><span class="p">)</span>
+        <span class="c1">#self._min_length_ratio = 0.25  # TODO: Make configurable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_length_ratio</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span> <span class="o">=</span> <span class="o">-</span><span class="mi">100</span>
+    
+    <span class="k">def</span> <span class="nf">_dfs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partial_hypo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursive function for doing dfs. Note that we do not keep</span>
+<span class="sd">        track of the predictor states inside ``partial_hypo``, because </span>
+<span class="sd">        at each call of ``_dfs`` the current predictor states are equal</span>
+<span class="sd">        to the hypo predictor states.</span>
+<span class="sd">        ATTENTION: Early stopping plus DFS produces wrong results if </span>
+<span class="sd">        you have positive scores!</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            partial_hypo (PartialHypothesis): Partial hypothesis </span>
+<span class="sd">                                              generated so far. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">partial_hypo</span><span class="o">.</span><span class="n">get_last_word</span><span class="p">()</span> <span class="o">==</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">partial_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_full_hypo</span><span class="p">(</span><span class="n">partial_hypo</span><span class="o">.</span><span class="n">generate_full_hypothesis</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">partial_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="n">partial_hypo</span><span class="o">.</span><span class="n">score</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;New best: score: </span><span class="si">%f</span><span class="s2"> exp: </span><span class="si">%d</span><span class="s2"> sentence: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+                          <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span><span class="p">,</span>
+                           <span class="n">partial_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfs_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Expand: best_score: </span><span class="si">%f</span><span class="s2"> exp: </span><span class="si">%d</span><span class="s2"> partial_score: &quot;</span>
+                      <span class="s2">&quot;</span><span class="si">%f</span><span class="s2"> sentence: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+                      <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">apply_predictors_count</span><span class="p">,</span>
+                       <span class="n">partial_hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                       <span class="n">partial_hypo</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">))</span>
+        <span class="n">first_expansion</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">for</span> <span class="n">trgt_word</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_iterable</span><span class="p">(</span><span class="n">posterior</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">partial_hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">+</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">first_expansion</span><span class="p">:</span>
+                    <span class="n">pred_states</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">())</span>
+                    <span class="n">first_expansion</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">set_predictor_states</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">pred_states</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">trgt_word</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dfs</span><span class="p">(</span><span class="n">partial_hypo</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">trgt_word</span><span class="p">,</span>
+                                              <span class="bp">None</span><span class="p">,</span> <span class="c1"># Do not store states</span>
+                                              <span class="n">score</span><span class="p">,</span>
+                                              <span class="p">[(</span><span class="n">score</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)]))</span>
+    
+<div class="viewcode-block" id="SimpleDFSDecoder.decode"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.dfs.SimpleDFSDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decodes a single source sentence exhaustively using depth </span>
+<span class="sd">        first search.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (list): List of source word ids without &lt;S&gt; or</span>
+<span class="sd">                                 &lt;/S&gt; which make up the source sentence</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list. A list of ``Hypothesis`` instances ordered by their</span>
+<span class="sd">            score. If ``max_expansions`` equals 0, the first element</span>
+<span class="sd">            holds the global best scoring hypothesis</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;SimpleDFS only works with a single predictor!&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dfs_predictor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_length_ratio</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_min_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">_min_length_ratio</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)))</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_predictors</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">best_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_lower_score_bound</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dfs</span><span class="p">(</span><span class="n">PartialHypothesis</span><span class="p">())</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_hypos_sorted</span><span class="p">()</span></div></div>

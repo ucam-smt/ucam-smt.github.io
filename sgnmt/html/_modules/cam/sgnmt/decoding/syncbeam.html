@@ -87,6 +87,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
@@ -189,6 +190,16 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span><span class="p">(</span><span class="n">hypo</span><span class="p">):</span>
                 <span class="k">return</span> <span class="bp">True</span>
         <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">_register_sub_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates best_scores and min_score. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">maintain_best_scores</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sub_best_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sub_best_scores</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_best_scores</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sub_best_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_best_scores</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sub_min_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_best_scores</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> 
     
     <span class="k">def</span> <span class="nf">_expand_hypo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hypo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Expand hypo until all of the beam size best hypotheses end </span>
@@ -212,18 +223,24 @@
         <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_eos_or_eow</span><span class="p">(</span><span class="n">hypos</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">it</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_word_len</span><span class="p">:</span> <span class="c1"># prevent infinite loops</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Maximum word length reached.&quot;</span><span class="p">)</span>
-                <span class="k">break</span>
+                <span class="k">return</span> <span class="p">[]</span>
             <span class="n">it</span> <span class="o">=</span> <span class="n">it</span> <span class="o">+</span> <span class="mi">1</span>
             <span class="n">next_hypos</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">next_scores</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sub_min_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sub_best_scores</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span><span class="p">(</span><span class="n">h</span><span class="p">):</span>
                     <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
                     <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">h</span><span class="p">))</span>
                     <span class="k">continue</span> 
-                <span class="k">for</span> <span class="n">next_hypo</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">(</span><span class="n">SyncBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_expand_hypo</span><span class="p">(</span><span class="n">h</span><span class="p">):</span>
-                    <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
-                    <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_min_score</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">next_hypo</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">(</span><span class="n">SyncBeamDecoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_expand_hypo</span><span class="p">(</span><span class="n">h</span><span class="p">):</span>
+                        <span class="n">next_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_combined_score</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">next_score</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_min_score</span><span class="p">:</span>
+                            <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_hypo</span><span class="p">)</span>
+                            <span class="n">next_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_score</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_register_sub_score</span><span class="p">(</span><span class="n">next_score</span><span class="p">)</span>
             <span class="n">hypos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_hypos</span><span class="p">(</span><span class="n">next_hypos</span><span class="p">,</span> <span class="n">next_scores</span><span class="p">)</span>
         <span class="n">ret</span> <span class="o">=</span>  <span class="p">[</span><span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hypos</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span><span class="p">(</span><span class="n">h</span><span class="p">)]</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Expand </span><span class="si">%f</span><span class="s2">: </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">hypo</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
