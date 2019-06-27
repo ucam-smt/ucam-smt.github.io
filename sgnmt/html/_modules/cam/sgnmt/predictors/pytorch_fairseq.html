@@ -1,0 +1,357 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.predictors.pytorch_fairseq &mdash; SGNMT 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 1.0 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.predictors.pytorch_fairseq</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.predictors.pytorch_fairseq</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># coding=utf-8</span>
+<span class="c1"># Copyright 2019 The SGNMT Authors.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;This is the interface to the fairseq library.</span>
+
+<span class="sd">https://github.com/pytorch/fairseq</span>
+
+<span class="sd">The fairseq predictor can read any model trained with fairseq.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Requires fairseq</span>
+    <span class="kn">from</span> <span class="nn">fairseq</span> <span class="kn">import</span> <span class="n">checkpoint_utils</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">tasks</span>
+    <span class="kn">from</span> <span class="nn">fairseq</span> <span class="kn">import</span> <span class="n">utils</span> <span class="k">as</span> <span class="n">fairseq_utils</span>
+    <span class="kn">from</span> <span class="nn">fairseq.sequence_generator</span> <span class="kn">import</span> <span class="n">EnsembleModel</span>
+    <span class="kn">import</span> <span class="nn">torch</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span> <span class="c1"># Deal with it in decode.py</span>
+
+
+<span class="n">FAIRSEQ_INITIALIZED</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="sd">&quot;&quot;&quot;Set to true by _initialize_fairseq() after first constructor call.&quot;&quot;&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">_initialize_fairseq</span><span class="p">(</span><span class="n">user_dir</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">FAIRSEQ_INITIALIZED</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">FAIRSEQ_INITIALIZED</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Setting up fairseq library...&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">user_dir</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">(),</span> <span class="p">{</span><span class="s2">&quot;user_dir&quot;</span><span class="p">:</span> <span class="n">user_dir</span><span class="p">})()</span>
+            <span class="n">fairseq_utils</span><span class="o">.</span><span class="n">import_user_module</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">FAIRSEQ_INITIALIZED</span> <span class="o">=</span> <span class="bp">True</span>
+
+
+<div class="viewcode-block" id="FairseqPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.pytorch_fairseq.FairseqPredictor">[docs]</a><span class="k">class</span> <span class="nc">FairseqPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Predictor for using fairseq models.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_path</span><span class="p">,</span> <span class="n">user_dir</span><span class="p">,</span> <span class="n">lang_pair</span><span class="p">,</span> <span class="n">n_cpu_threads</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes a fairseq predictor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_path (string): Path to the fairseq model (*.pt). Like</span>
+<span class="sd">                                 --path in fairseq-interactive.</span>
+<span class="sd">            lang_pair (string): Language pair string (e.g. &#39;en-fr&#39;).</span>
+<span class="sd">            user_dir (string): Path to fairseq user directory.</span>
+<span class="sd">            n_cpu_threads (int): Number of CPU threads. If negative,</span>
+<span class="sd">                                 use GPU.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FairseqPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="n">_initialize_fairseq</span><span class="p">(</span><span class="n">user_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_cuda</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="ow">and</span> <span class="n">n_cpu_threads</span> <span class="o">&lt;</span> <span class="mi">0</span>
+
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get_generation_parser</span><span class="p">()</span>
+        <span class="n">input_args</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;--path&quot;</span><span class="p">,</span> <span class="n">model_path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">model_path</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">lang_pair</span><span class="p">:</span>
+            <span class="n">src</span><span class="p">,</span> <span class="n">trg</span> <span class="o">=</span> <span class="n">lang_pair</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+            <span class="n">input_args</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;--source-lang&quot;</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="s2">&quot;--target-lang&quot;</span><span class="p">,</span> <span class="n">trg</span><span class="p">])</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">parse_args_and_arch</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">input_args</span><span class="p">)</span>
+
+        <span class="c1"># Setup task, e.g., translation</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">tasks</span><span class="o">.</span><span class="n">setup_task</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">source_dictionary</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trg_vocab_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">target_dictionary</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad_id</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">source_dictionary</span><span class="o">.</span><span class="n">pad</span><span class="p">()</span>
+
+        <span class="c1"># Load ensemble</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Loading fairseq model(s) from {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_path</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">checkpoint_utils</span><span class="o">.</span><span class="n">load_model_ensemble</span><span class="p">(</span>
+            <span class="n">model_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">),</span>
+            <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Optimize ensemble for generation</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">make_generation_fast_</span><span class="p">(</span>
+                <span class="n">beamable_mm_beam_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">need_attn</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_cuda</span><span class="p">:</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">EnsembleModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FairseqPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.pytorch_fairseq.FairseqPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fetch posterior[utils.UNK_ID]&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_get</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span><span class="p">)</span></div>
+                
+<div class="viewcode-block" id="FairseqPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.pytorch_fairseq.FairseqPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Call the fairseq model.&quot;&quot;&quot;</span>
+        <span class="n">lprobs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">forward_decoder</span><span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">consumed</span><span class="p">]),</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder_outs</span>
+        <span class="p">)</span>
+        <span class="n">lprobs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">NEG_INF</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lprobs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+    
+<div class="viewcode-block" id="FairseqPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.pytorch_fairseq.FairseqPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize source tensors, reset consumed.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">src_tokens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">oov_to_unk</span><span class="p">(</span><span class="n">src_sentence</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">],</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">src_vocab_size</span><span class="p">)])</span>
+        <span class="n">src_lengths</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_cuda</span><span class="p">:</span>
+            <span class="n">src_tokens</span> <span class="o">=</span> <span class="n">src_tokens</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+            <span class="n">src_lengths</span> <span class="o">=</span> <span class="n">src_lengths</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder_outs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">forward_encoder</span><span class="p">({</span>
+            <span class="s1">&#39;src_tokens&#39;</span><span class="p">:</span> <span class="n">src_tokens</span><span class="p">,</span>
+            <span class="s1">&#39;src_lengths&#39;</span><span class="p">:</span> <span class="n">src_lengths</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span> <span class="ow">or</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span>
+        <span class="c1"># Reset incremental states</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">incremental_states</span><span class="p">[</span><span class="n">model</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></div>
+   
+<div class="viewcode-block" id="FairseqPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.pytorch_fairseq.FairseqPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Append ``word`` to the current history.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="FairseqPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.pytorch_fairseq.FairseqPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The predictor state is the complete history.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">incremental_states</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> 
+                               <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="FairseqPredictor.set_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.pytorch_fairseq.FairseqPredictor.set_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The predictor state is the complete history.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consumed</span><span class="p">,</span> <span class="n">inc_states</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="k">for</span> <span class="n">model</span><span class="p">,</span> <span class="n">inc_state</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">,</span> <span class="n">inc_states</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">incremental_states</span><span class="p">[</span><span class="n">model</span><span class="p">]</span> <span class="o">=</span> <span class="n">inc_state</span></div>
+
+<div class="viewcode-block" id="FairseqPredictor.is_equal"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.pytorch_fairseq.FairseqPredictor.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state1</span><span class="p">,</span> <span class="n">state2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the history is the same &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">state1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">state2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

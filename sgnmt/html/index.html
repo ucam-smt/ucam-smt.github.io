@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>SGNMT &mdash; SGNMT 0.6 documentation</title>
+  <title>SGNMT &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="#"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="#"/>
         <link rel="next" title="Installation" href="setup.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -84,10 +84,11 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="decoders.html">Decoders</a></li>
@@ -145,18 +146,26 @@
 tasks. The tool provides a flexible platform which allows pairing NMT with various other models such
 as language models, length models, or bag2seq models. It supports rescoring both n-best lists and lattices.
 A wide variety of search strategies is available for complex decoding problems.</p>
-<p>SGNMT is compatible with multiple NMT implementations based on <a class="reference external" href="http://deeplearning.net/software/theano/">Theano</a>
-(<a class="reference external" href="http://blocks.readthedocs.io/en/latest/">Blocks</a>) and <a class="reference external" href="https://www.tensorflow.org/">TensorFlow</a> (the
-<a class="reference external" href="https://github.com/ehasler/tensorflow">extended seq2seq tutorial</a> and <a class="reference external" href="https://github.com/tensorflow/tensor2tensor">tensor2tensor</a>).</p>
+<p>SGNMT is compatible with the following NMT toolkits:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/tensorflow/tensor2tensor">Tensor2Tensor</a> (<a class="reference external" href="https://www.tensorflow.org/">TensorFlow</a>)</li>
+<li><a class="reference external" href="https://github.com/pytorch/fairseq">fairseq</a> (<a class="reference external" href="https://pytorch.org/">PyTorch</a>)</li>
+</ul>
+<p>Old SGNMT versions (0.x) are compatible with:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/ehasler/tensorflow">(extended) TF seq2seq tutorial</a> (<a class="reference external" href="https://www.tensorflow.org/">TensorFlow</a>)</li>
+<li><a class="reference external" href="http://blocks.readthedocs.io/en/latest/">Blocks</a> (<a class="reference external" href="http://deeplearning.net/software/theano/">Theano</a>)</li>
+</ul>
 <div class="section" id="contents">
 <h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="decoders.html">Decoders</a></li>
@@ -167,38 +176,22 @@ A wide variety of search strategies is available for complex decoding problems.<
 </ul>
 </div>
 </div>
-<div class="section" id="quickstart">
-<h2>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h2>
-<p>For example, NMT decoding can be started with this command:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ python decode.py --predictors nmt --src_test sentences.txt
-</pre></div>
-</div>
-<p>where sentences.txt is a plain (indexed) text file with sentences. Rescoring OpenFST
-lattices with NMT is also straight-forward:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ python decode.py --predictors nmt,fst --fst_path lattices/%d.fst --src_test sentences.txt
-</pre></div>
-</div>
-<p>See the <a class="reference internal" href="tutorial.html#tutorial-label"><span class="std std-ref">Tutorial: Basics</span></a> for more examples.</p>
-</div>
 <div class="section" id="features">
 <h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li>Syntactically guided neural machine translation (NMT lattice rescoring)</li>
-<li>NMT support in Theano (Blocks) and TensorFlow (Tensor2Tensor)</li>
 <li>Target-side syntax for NMT</li>
 <li>n-best list rescoring with NMT</li>
 <li>Integrating external n-gram posterior probabilities used in MBR</li>
 <li>Ensemble NMT decoding</li>
 <li>Forced NMT decoding</li>
-<li>Integrating language models (Kneser-Ney, NPLM, RNNLM)</li>
+<li>Integrating language models</li>
 <li>Different search algorithms (beam, A*, depth first search, greedy...)</li>
 <li>Target sentence length modelling</li>
 <li>Bag2Sequence models and decoding algorithms</li>
 <li>Joint decoding with word- and subword/character-level models</li>
 <li>Hypothesis recombination</li>
 <li>Heuristic search</li>
-<li>Extensions to NMT training in Blocks (reshuffling, fixing and customizing word embeddings, ...)</li>
-<li>Neural word alignment (Blocks/Theano)</li>
 <li>...</li>
 </ul>
 </div>
@@ -269,7 +262,7 @@ lattices with NMT is also straight-forward:</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

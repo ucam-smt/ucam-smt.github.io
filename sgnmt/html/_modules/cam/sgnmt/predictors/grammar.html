@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.grammar &mdash; SGNMT 0.6 documentation</title>
+  <title>cam.sgnmt.predictors.grammar &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -84,10 +84,11 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
@@ -140,7 +141,23 @@
            <div itemprop="articleBody">
             
   <h1>Source code for cam.sgnmt.predictors.grammar</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;This module contains everything related to the hiero predictor. This</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># coding=utf-8</span>
+<span class="c1"># Copyright 2019 The SGNMT Authors.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;This module contains everything related to the hiero predictor. This</span>
 <span class="sd">predictor allows applying rules from a syntactical SMT system directly</span>
 <span class="sd">in SGNMT. The main interface is ``RuleXtractPredictor`` which can be </span>
 <span class="sd">used like other predictors during decoding. </span>
@@ -351,10 +368,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_get_elements_recursive</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">terminal_edges</span><span class="p">[</span><span class="n">token_id</span><span class="p">],</span>
                                          <span class="n">src_seq</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
                                          <span class="n">nt_span_lens</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">nt_id</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">nonterminal_edges</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">nt_id</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">nonterminal_edges</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="p">(</span><span class="n">min_span_len</span><span class="p">,</span> <span class="n">max_span_len</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span>
             <span class="n">max_span_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src_seq</span><span class="p">),</span> <span class="n">max_span_len</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">span_len</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">min_span_len</span><span class="p">,</span> <span class="n">max_span_len</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">span_len</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">min_span_len</span><span class="p">,</span> <span class="n">max_span_len</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_get_elements_recursive</span><span class="p">(</span><span class="n">child</span><span class="p">,</span>
                                              <span class="n">src_seq</span><span class="p">[</span><span class="n">span_len</span><span class="p">:],</span>
                                              <span class="n">nt_span_lens</span> <span class="o">+</span> <span class="p">[</span><span class="n">span_len</span><span class="p">])</span></div>
@@ -505,7 +522,7 @@
         <span class="n">multipliers</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="c1"># with dummy element at index 0</span>
         <span class="n">ranges</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span> <span class="c1"># Guardian for lexical counts</span>
         <span class="n">empty_src_side</span> <span class="o">=</span> <span class="bp">False</span>
-        <span class="k">for</span> <span class="n">nt_id</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_nt</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">nt_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_nt</span><span class="p">):</span>
             <span class="c1"># We&#39;ll use it as normal trie here without NT matching</span>
             <span class="n">multis</span> <span class="o">=</span> <span class="n">Trie</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="p">)</span> 
             <span class="k">for</span> <span class="n">rule</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tries</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span><span class="o">.</span><span class="n">get_all_elements</span><span class="p">():</span>
@@ -525,7 +542,7 @@
         <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
         <span class="k">while</span> <span class="n">changed</span><span class="p">:</span>
             <span class="n">changed</span> <span class="o">=</span> <span class="bp">False</span>
-            <span class="k">for</span> <span class="n">nt_id</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_nt</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">nt_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_nt</span><span class="p">):</span>
                 <span class="p">(</span><span class="n">old_min_len</span><span class="p">,</span> <span class="n">old_max_len</span><span class="p">)</span> <span class="o">=</span> <span class="n">ranges</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">old_min_len</span> <span class="o">==</span> <span class="n">old_max_len</span><span class="p">:</span>
                     <span class="k">continue</span>
@@ -542,7 +559,7 @@
                 <span class="k">if</span> <span class="n">min_len</span> <span class="o">!=</span> <span class="n">old_min_len</span> <span class="ow">or</span> <span class="n">max_len</span> <span class="o">!=</span> <span class="n">old_max_len</span><span class="p">:</span>
                     <span class="n">ranges</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">min_len</span><span class="p">,</span> <span class="n">max_len</span><span class="p">)</span>
                     <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
-        <span class="k">for</span> <span class="n">nt_id</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_nt</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">nt_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_nt</span><span class="p">):</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Range for non-terminal </span><span class="si">%d</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nt_id</span><span class="p">,</span>
                                                             <span class="n">ranges</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">span_len_range</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">ranges</span><span class="p">[</span><span class="n">nt_id</span><span class="p">]</span>
@@ -707,7 +724,7 @@
             <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">min_len</span><span class="p">,</span> <span class="n">max_len</span> <span class="o">=</span> <span class="n">minmax_span</span><span class="o">.</span><span class="n">borders</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">min</span><span class="p">(</span><span class="n">span_len_sum</span><span class="p">,</span>
                                                            <span class="n">minmax_span</span><span class="o">.</span><span class="n">borders</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="k">for</span> <span class="n">span_len</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">min_len</span><span class="p">,</span> <span class="n">max_len</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">span_len</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">min_len</span><span class="p">,</span> <span class="n">max_len</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_compatible</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">src_seq</span><span class="p">[</span><span class="n">src_idx</span><span class="p">:</span><span class="n">src_idx</span><span class="o">+</span><span class="n">span_len</span><span class="p">]):</span>
                     <span class="n">span</span> <span class="o">=</span> <span class="n">Span</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="n">src_idx</span><span class="p">,</span> <span class="n">src_idx</span><span class="o">+</span><span class="n">span_len</span><span class="p">))</span>
                     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
@@ -784,7 +801,7 @@
                     <span class="k">break</span>
             <span class="c1"># len of p - no. of NT</span>
             <span class="n">n_terminals</span> <span class="o">=</span> <span class="n">to_src_pos</span><span class="o">+</span><span class="mi">1</span><span class="o">-</span><span class="n">from_src_pos</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">new_internal_trgt_src_map</span><span class="p">)</span> 
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">from_src_pos</span><span class="p">,</span><span class="n">to_src_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">from_src_pos</span><span class="p">,</span><span class="n">to_src_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
                 <span class="n">p_covered</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">spans</span><span class="p">)</span>
             <span class="n">new_span</span> <span class="o">=</span> <span class="n">Span</span><span class="p">(</span><span class="n">span</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">from_src_pos</span><span class="p">:</span><span class="n">to_src_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span>
                             <span class="p">(</span><span class="n">span_min_len</span><span class="o">+</span><span class="n">n_terminals</span><span class="p">,</span>
@@ -1013,7 +1030,7 @@
 <span class="sd">        ``self.finals[n_consumed]``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">posterior</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">stack_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">stack_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">)):</span>
             <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="n">stack_idx</span><span class="p">]</span><span class="o">.</span><span class="n">hypos</span><span class="p">:</span>
                 <span class="n">symb</span> <span class="o">=</span> <span class="n">hypo</span><span class="o">.</span><span class="n">trgt_prefix</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span>
                 <span class="n">posterior</span><span class="p">[</span><span class="n">symb</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">posterior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">symb</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">hypo</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>
@@ -1039,9 +1056,9 @@
         <span class="sd">&quot;&quot;&quot;Remove all hypotheses with translation prefixes which do not</span>
 <span class="sd">        match ``word``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">stack_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">stack_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">)):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="n">stack_idx</span><span class="p">]</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span> <span class="n">word</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">stack_idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">stack_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">)):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">[</span><span class="n">stack_idx</span><span class="p">]</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">,</span> <span class="n">word</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finals</span><span class="p">):</span>
             <span class="c1"># Empty this entry, not needed anymore</span>
@@ -1090,7 +1107,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

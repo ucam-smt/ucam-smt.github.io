@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decoding.core &mdash; SGNMT 0.6 documentation</title>
+  <title>cam.sgnmt.decoding.core &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -84,10 +84,11 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
@@ -140,7 +141,23 @@
            <div itemprop="articleBody">
             
   <h1>Source code for cam.sgnmt.decoding.core</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Contains all the basic interfaces and abstract classes for decoders.</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># coding=utf-8</span>
+<span class="c1"># Copyright 2019 The SGNMT Authors.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Contains all the basic interfaces and abstract classes for decoders.</span>
 <span class="sd">The ``Decoder`` class provides common functionality for all decoders.</span>
 <span class="sd">The ``Hypothesis`` class represents complete hypotheses, which are </span>
 <span class="sd">returned by decoders. ``PartialHypothesis`` is a helper class which can</span>
@@ -160,6 +177,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">mul</span>
 <span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="nb">reduce</span>
 
 
 <div class="viewcode-block" id="Hypothesis"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Hypothesis">[docs]</a><span class="k">class</span> <span class="nc">Hypothesis</span><span class="p">:</span>
@@ -186,48 +204,7 @@
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a string representation of this hypothesis.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> (</span><span class="si">%f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">),</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span><span class="p">)</span>
-
-<div class="viewcode-block" id="Hypothesis.convert_to_char_level"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.Hypothesis.convert_to_char_level">[docs]</a>    <span class="k">def</span> <span class="nf">convert_to_char_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmap</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Creates a new hypothesis on the character level from a </span>
-<span class="sd">        hypothesis on the word level. Both objects will have the same </span>
-<span class="sd">        total score, but the word tokens in trgt_sentence are replaced</span>
-<span class="sd">        by characters and score_breakdown adds word scores on the first</span>
-<span class="sd">        character of the word. The mapping from word ID to character ID</span>
-<span class="sd">        sequence is realized by using ``utils.trg_wmap`` and the char-</span>
-<span class="sd">        to-id map ``cmap``.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            cmap (dict): Mapping from character to character ID</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            Hypothesis. New hypo which corresponds to this hypo but is</span>
-<span class="sd">            tokenized on the character instead of the word level.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span>
-        <span class="n">eow</span> <span class="o">=</span> <span class="n">cmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;&lt;/w&gt;&quot;</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span>
-        <span class="n">dummy_breakdown</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">ctokens</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">cscore_breakdown</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">w</span> <span class="ow">in</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">GO_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]:</span>
-                <span class="n">chars</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span><span class="p">]</span>
-            <span class="k">elif</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">:</span>
-                <span class="n">chars</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">[</span><span class="n">w</span><span class="p">]]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">chars</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span>
-            <span class="n">chars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eow</span><span class="p">)</span>
-            <span class="n">ctokens</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span>
-            <span class="n">cscore_breakdown</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="o">+</span>
-                                    <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">[</span><span class="n">dummy_breakdown</span><span class="p">])</span>
-        <span class="c1"># Remove last eow</span>
-        <span class="n">ctokens</span> <span class="o">=</span> <span class="n">ctokens</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">cscore_breakdown</span> <span class="o">=</span> <span class="n">cscore_breakdown</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">):</span>
-            <span class="n">cscore_breakdown</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score_breakdown</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">chypo</span> <span class="o">=</span> <span class="n">Hypothesis</span><span class="p">(</span><span class="n">ctokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span><span class="p">,</span> <span class="n">cscore_breakdown</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">chypo</span></div></div>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">total_score</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="PartialHypothesis"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.core.PartialHypothesis">[docs]</a><span class="k">class</span> <span class="nc">PartialHypothesis</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -595,13 +572,13 @@
             <span class="n">max_arr_length</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">for</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="n">unrestricted</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                    <span class="n">key_sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="o">.</span><span class="n">viewkeys</span><span class="p">())</span>
+                    <span class="n">key_sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">posterior</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">max_arr_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">max_arr_length</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="n">el</span> <span class="o">&lt;</span> <span class="n">max_arr_length</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">key_sets</span><span class="p">):</span>
-                    <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">)</span>
-                <span class="n">key_sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">)</span>
+                <span class="n">key_sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">max_arr_length</span><span class="p">))</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">key_sets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">key_sets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">return</span> <span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="n">key_sets</span><span class="p">)</span>
@@ -610,7 +587,7 @@
         <span class="n">dict_words</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="k">for</span> <span class="n">posterior</span> <span class="ow">in</span> <span class="n">restricted</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                <span class="n">posterior_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>
+                <span class="n">posterior_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">posterior</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">dict_words</span><span class="p">:</span>
                     <span class="n">dict_words</span> <span class="o">=</span> <span class="n">posterior_words</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -625,7 +602,7 @@
             <span class="n">min_arr_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">arr_lengths</span><span class="p">)</span>
             <span class="k">return</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">dict_words</span> <span class="k">if</span> <span class="n">w</span> <span class="o">&lt;</span> <span class="n">min_arr_length</span><span class="p">]</span>
         <span class="c1"># Array restrictions</span>
-        <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">arr_lengths</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">arr_lengths</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">_split_restricted_posteriors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictors</span><span class="p">,</span> <span class="n">posteriors</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Helper method for _get_non_zero_words(). Splits the</span>
@@ -763,7 +740,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">,</span> <span class="nb">xrange</span><span class="p">)</span> <span class="ow">and</span> <span class="n">top_n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">,</span> <span class="nb">range</span><span class="p">)</span> <span class="ow">and</span> <span class="n">top_n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">non_zero_words</span> <span class="o">=</span> <span class="n">Decoder</span><span class="o">.</span><span class="n">_scale_combine_non_zero_scores</span><span class="p">(</span>
                 <span class="nb">len</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">),</span>
                 <span class="n">posteriors</span><span class="p">,</span>
@@ -815,7 +792,7 @@
                           <span class="n">non_zero_words</span><span class="p">,</span>
                           <span class="n">posteriors</span><span class="p">,</span>
                           <span class="p">[</span><span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
-                               <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">)],</span>
+                               <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">)],</span>
                           <span class="n">top_n</span><span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">_combine_posteriors_norm_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -854,7 +831,7 @@
                     <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="n">score_breakdown_raw</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="n">preds</span>
         <span class="n">renorm_factors</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_predictors</span>
-        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">unk_counts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">renorm_factors</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
                             <span class="mf">1.0</span> 
@@ -893,9 +870,9 @@
                                                 <span class="n">trgt_word</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">w</span><span class="p">)</span>
                         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">)]</span>
         <span class="n">sums</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">):</span>
             <span class="n">sums</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span><span class="p">([</span><span class="n">preds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> 
-                            <span class="k">for</span> <span class="n">preds</span> <span class="ow">in</span> <span class="n">score_breakdown_raw</span><span class="o">.</span><span class="n">itervalues</span><span class="p">()]))</span>
+                            <span class="k">for</span> <span class="n">preds</span> <span class="ow">in</span> <span class="n">score_breakdown_raw</span><span class="o">.</span><span class="n">values</span><span class="p">()]))</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_posteriors_with_renorm</span><span class="p">(</span><span class="n">score_breakdown_raw</span><span class="p">,</span> <span class="n">sums</span><span class="p">)</span>
     
     <span class="nd">@staticmethod</span>
@@ -909,7 +886,7 @@
               <span class="n">posteriors</span><span class="p">,</span> <span class="n">unk_probs</span><span class="p">,</span> <span class="n">pred_weights</span><span class="p">):</span>
           <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
               <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">non_zero_word_count</span><span class="p">,</span> <span class="n">unk_prob</span><span class="p">)</span>
-              <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">posterior</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+              <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">posterior</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                   <span class="k">if</span> <span class="n">word</span> <span class="o">&lt;</span> <span class="n">non_zero_word_count</span><span class="p">:</span>
                       <span class="n">arr</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
               <span class="n">scaled_posteriors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arr</span> <span class="o">*</span> <span class="n">weight</span><span class="p">)</span>
@@ -948,7 +925,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            combined,score_breakdown: like in ``apply_predictors()``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">,</span> <span class="nb">xrange</span><span class="p">)</span> <span class="ow">and</span> <span class="n">top_n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">,</span> <span class="nb">range</span><span class="p">)</span> <span class="ow">and</span> <span class="n">top_n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
           <span class="n">non_zero_words</span> <span class="o">=</span> <span class="n">Decoder</span><span class="o">.</span><span class="n">_scale_combine_non_zero_scores</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">non_zero_words</span><span class="p">),</span> 
                                                                   <span class="n">posteriors</span><span class="p">,</span>
                                                                   <span class="n">unk_probs</span><span class="p">,</span>
@@ -979,9 +956,9 @@
         <span class="n">n_predictors</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)</span>
         <span class="n">combined</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">score_breakdown</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">trgt_word</span><span class="p">,</span><span class="n">preds_raw</span> <span class="ow">in</span> <span class="n">score_breakdown_raw</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">trgt_word</span><span class="p">,</span><span class="n">preds_raw</span> <span class="ow">in</span> <span class="n">score_breakdown_raw</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">preds</span> <span class="o">=</span> <span class="p">[(</span><span class="n">preds_raw</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">renorm_factors</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                      <span class="n">preds_raw</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">)]</span>
+                      <span class="n">preds_raw</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_predictors</span><span class="p">)]</span>
             <span class="n">combined</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combi_predictor_method</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span> 
             <span class="n">score_breakdown</span><span class="p">[</span><span class="n">trgt_word</span><span class="p">]</span> <span class="o">=</span> <span class="n">preds</span>
         <span class="k">return</span> <span class="n">combined</span><span class="p">,</span> <span class="n">score_breakdown</span>
@@ -1086,7 +1063,7 @@
 <span class="sd">            float. Weighted sum out1*weight1+out2*weight2...</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1">#return sum(f*w for f, w in x)</span>
-        <span class="p">(</span><span class="n">fAcc</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="p">(</span><span class="n">f1</span><span class="p">,</span><span class="n">w1</span><span class="p">),</span> <span class="p">(</span><span class="n">f2</span><span class="p">,</span><span class="n">w2</span><span class="p">):(</span><span class="n">f1</span><span class="o">*</span><span class="n">w1</span> <span class="o">+</span> <span class="n">f2</span><span class="o">*</span><span class="n">w2</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">fAcc</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">:</span> <span class="p">(</span><span class="n">x1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">x1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">x2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">x2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">),</span>
                            <span class="n">x</span><span class="p">,</span>
                            <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">fAcc</span></div>
@@ -1172,7 +1149,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

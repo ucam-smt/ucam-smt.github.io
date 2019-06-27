@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.parse &mdash; SGNMT 0.6 documentation</title>
+  <title>cam.sgnmt.predictors.parse &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -84,10 +84,11 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
@@ -140,13 +141,27 @@
            <div itemprop="articleBody">
             
   <h1>Source code for cam.sgnmt.predictors.parse</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">copy</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># coding=utf-8</span>
+<span class="c1"># Copyright 2019 The SGNMT Authors.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.core</span> <span class="kn">import</span> <span class="n">Predictor</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.utils</span> <span class="kn">import</span> <span class="n">w2f</span>
-<span class="kn">import</span> <span class="nn">pywrapfst</span> <span class="kn">as</span> <span class="nn">fst</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
 
@@ -187,8 +202,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">,</span> <span class="n">normalize_scores</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
                  <span class="n">max_internal_len</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">nonterminal_ids</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Create a new parse wrapper for a predictor</span>
+        <span class="sd">&quot;&quot;&quot;Create a new parse wrapper for a predictor</span>
+
 <span class="sd">        Args:</span>
 <span class="sd">          slave_predictor: predictor to wrap with parse wrapper</span>
 <span class="sd">          normalize_scores (bool): whether to normalize posterior scores,</span>
@@ -196,8 +211,7 @@
 <span class="sd">          beam_size (int): beam size for internal beam search over non-terminals</span>
 <span class="sd">          max_internal_len (int): number of consecutive non-terminal tokens</span>
 <span class="sd">                            allowed in internal search before path is ignored</span>
-<span class="sd">          nonterminal_ids: file containing non-terminal ids, one per line</span>
-<span class="sd">          </span>
+<span class="sd">          nonterminal_ids: file containing non-terminal ids, one per line          </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ParsePredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
@@ -229,10 +243,11 @@
 
 
 <div class="viewcode-block" id="ParsePredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.ParsePredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicting_internally</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;predict next tokens.</span>
+        <span class="sd">&quot;&quot;&quot;Predict next tokens.</span>
+
 <span class="sd">        Args: </span>
-<span class="sd">        predicting_internally: will be true if called from internal beam</span>
-<span class="sd">                               search, prevents infinite loop</span>
+<span class="sd">          predicting_internally: will be true if called from internal </span>
+<span class="sd">                                 beam search, prevents infinite loop</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">original_posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
         <span class="n">all_keys</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_viewkeys</span><span class="p">(</span><span class="n">original_posterior</span><span class="p">)</span>
@@ -351,6 +366,7 @@
         <span class="sd">&quot;&quot;&quot;Returns true if the current node is the same &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">state1</span> <span class="o">==</span> <span class="n">state2</span></div></div>
 
+
 <div class="viewcode-block" id="TokParsePredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor">[docs]</a><span class="k">class</span> <span class="nc">TokParsePredictor</span><span class="p">(</span><span class="n">ParsePredictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Unlike ParsePredictor, the grammar predicts tokens according to a grammar. </span>
@@ -362,6 +378,7 @@
                  <span class="n">beam_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_internal_len</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">allow_early_eos</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                  <span class="n">consume_out_of_class</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new parse predictor wrapper.</span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            grammar_path (string): Path to the grammar file</span>
 <span class="sd">            slave_predictor: predictor to wrap</span>
@@ -516,7 +533,6 @@
             <span class="k">if</span> <span class="n">tok</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonterminals</span><span class="p">:</span>
                 <span class="k">del</span> <span class="n">best_posterior</span><span class="p">[</span><span class="n">tok</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">best_posterior</span></div>
-
 
 <div class="viewcode-block" id="TokParsePredictor.find_word"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.parse.TokParsePredictor.find_word">[docs]</a>    <span class="k">def</span> <span class="nf">find_word</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Check whether rhs of best option in posterior is a terminal</span>
@@ -729,7 +745,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

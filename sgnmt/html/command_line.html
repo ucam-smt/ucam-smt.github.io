@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Command-line reference &mdash; SGNMT 0.6 documentation</title>
+  <title>Command-line reference &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,9 +32,9 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="index.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="index.html"/>
         <link rel="next" title="Predictors" href="predictors.html"/>
-        <link rel="prev" title="Tutorial: Grammatical Error Correction (BEA19 Submission)" href="bea19_gec.html"/> 
+        <link rel="prev" title="Tutorial: Blocks/Thano (outdated)" href="tutorial_blocks.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -85,10 +85,11 @@
             
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Command-line reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#decoding">Decoding</a></li>
 </ul>
@@ -157,22 +158,22 @@ For a quick overview of available parameters use <code class="docutils literal">
 <div><ul class="simple">
 <li><code class="docutils literal"><span class="pre">extract_scores_along_reference.py</span></code>: Generates a JSON file which contains the complete posteriors of all
 predictors along a reference decoding path. Can be used for tuning predictor weights. Same arguments as <code class="docutils literal"><span class="pre">decode.py</span></code>.</li>
-<li><code class="docutils literal"><span class="pre">train.py</span></code>: NMT training and shrinking script for attentional RNN models (Blocks/Theano only).</li>
-<li><code class="docutils literal"><span class="pre">batch_decode.py</span></code>: Very fast beam decoder (over 800 words per second on a Titan X GPU) for pure NMT decoding (Blocks/Theano only).</li>
-<li><code class="docutils literal"><span class="pre">align.py</span></code>: Neural word alignment using attentional RNN seq2seq models (Blocks/Theano only).</li>
+<li><code class="docutils literal"><span class="pre">scripts/apply_wmap.py</span></code>: Applies word maps to strings.</li>
+<li><code class="docutils literal"><span class="pre">scripts/mert.py</span></code>: Basic MERT script for tuning SGNMT predictor weights on 1-best translations.</li>
+<li><code class="docutils literal"><span class="pre">scripts/sge/</span></code>: Script for distributed SGNMT decoding on the Sun Grid Engine.</li>
 </ul>
 </div></blockquote>
 <div class="section" id="decoding">
 <h2>Decoding<a class="headerlink" href="#decoding" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">decode</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">config_file</span> <span class="n">CONFIG_FILE</span><span class="p">]</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">decode</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">config_file</span> <span class="n">CONFIG_FILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">run_diagnostics</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">verbosity</span> <span class="p">{</span><span class="n">debug</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">warn</span><span class="p">,</span><span class="n">error</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">min_score</span> <span class="n">MIN_SCORE</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="nb">range</span> <span class="n">RANGE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_test</span> <span class="n">SRC_TEST</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">indexing_scheme</span> <span class="p">{</span><span class="n">blocks</span><span class="p">,</span><span class="n">tf</span><span class="p">,</span><span class="n">t2t</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">indexing_scheme</span> <span class="p">{</span><span class="n">t2t</span><span class="p">,</span><span class="n">fairseq</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ignore_sanity_checks</span> <span class="n">IGNORE_SANITY_CHECKS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">input_method</span> <span class="p">{</span><span class="n">dummy</span><span class="p">,</span><span class="n">file</span><span class="p">,</span><span class="n">shell</span><span class="p">,</span><span class="n">stdin</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">log_sum</span> <span class="p">{</span><span class="n">tropical</span><span class="p">,</span><span class="n">log</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">n_cpu_threads</span> <span class="n">N_CPU_THREADS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">single_cpu_thread</span> <span class="n">SINGLE_CPU_THREAD</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">decoder</span> <span class="p">{</span><span class="n">greedy</span><span class="p">,</span><span class="n">beam</span><span class="p">,</span><span class="n">multisegbeam</span><span class="p">,</span><span class="n">syncbeam</span><span class="p">,</span><span class="n">fstbeam</span><span class="p">,</span><span class="n">predlimitbeam</span><span class="p">,</span><span class="n">sepbeam</span><span class="p">,</span><span class="n">mbrbeam</span><span class="p">,</span><span class="n">syntaxbeam</span><span class="p">,</span><span class="n">combibeam</span><span class="p">,</span><span class="n">dfs</span><span class="p">,</span><span class="n">simpledfs</span><span class="p">,</span><span class="n">restarting</span><span class="p">,</span><span class="n">bow</span><span class="p">,</span><span class="n">flip</span><span class="p">,</span><span class="n">bucket</span><span class="p">,</span><span class="n">bigramgreedy</span><span class="p">,</span><span class="n">astar</span><span class="p">,</span><span class="n">vanilla</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">decoder</span> <span class="p">{</span><span class="n">greedy</span><span class="p">,</span><span class="n">beam</span><span class="p">,</span><span class="n">multisegbeam</span><span class="p">,</span><span class="n">syncbeam</span><span class="p">,</span><span class="n">fstbeam</span><span class="p">,</span><span class="n">predlimitbeam</span><span class="p">,</span><span class="n">sepbeam</span><span class="p">,</span><span class="n">mbrbeam</span><span class="p">,</span><span class="n">syntaxbeam</span><span class="p">,</span><span class="n">combibeam</span><span class="p">,</span><span class="n">dfs</span><span class="p">,</span><span class="n">simpledfs</span><span class="p">,</span><span class="n">restarting</span><span class="p">,</span><span class="n">flip</span><span class="p">,</span><span class="n">bucket</span><span class="p">,</span><span class="n">bigramgreedy</span><span class="p">,</span><span class="n">astar</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">beam</span> <span class="n">BEAM</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sub_beam</span> <span class="n">SUB_BEAM</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">hypo_recombination</span> <span class="n">HYPO_RECOMBINATION</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">allow_unk_in_output</span> <span class="n">ALLOW_UNK_IN_OUTPUT</span><span class="p">]</span>
@@ -199,11 +200,12 @@ predictors along a reference decoding path. Can be used for tuning predictor wei
                  <span class="p">[</span><span class="o">--</span><span class="n">mbrbeam_selection_strategy</span> <span class="p">{</span><span class="n">bleu</span><span class="p">,</span><span class="n">oracle_bleu</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">mbrbeam_evidence_strategy</span> <span class="p">{</span><span class="n">maxent</span><span class="p">,</span><span class="n">renorm</span><span class="p">}]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_limits</span> <span class="n">PRED_LIMITS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nbest</span> <span class="n">NBEST</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">output_fst_unk_id</span> <span class="n">OUTPUT_FST_UNK_ID</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fst_unk_id</span> <span class="n">FST_UNK_ID</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">output_path</span> <span class="n">OUTPUT_PATH</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">outputs</span> <span class="n">OUTPUTS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">remove_eos</span> <span class="n">REMOVE_EOS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">src_wmap</span> <span class="n">SRC_WMAP</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_wmap</span> <span class="n">TRG_WMAP</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">trg_cmap</span> <span class="n">TRG_CMAP</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">predictors</span> <span class="n">PREDICTORS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">src_wmap</span> <span class="n">SRC_WMAP</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trg_wmap</span> <span class="n">TRG_WMAP</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">wmap</span> <span class="n">WMAP</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">preprocessing</span> <span class="p">{</span><span class="nb">id</span><span class="p">,</span><span class="n">word</span><span class="p">,</span><span class="n">char</span><span class="p">,</span><span class="n">bpe</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">postprocessing</span> <span class="p">{</span><span class="nb">id</span><span class="p">,</span><span class="n">wmap</span><span class="p">,</span><span class="n">char</span><span class="p">,</span><span class="n">subword_nmt</span><span class="p">}]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">bpe_codes</span> <span class="n">BPE_CODES</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">predictors</span> <span class="n">PREDICTORS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">predictor_weights</span> <span class="n">PREDICTOR_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">per_sentence_predictor_weights</span> <span class="n">PER_SENTENCE_PREDICTOR_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">interpolation_strategy</span> <span class="n">INTERPOLATION_STRATEGY</span><span class="p">]</span>
@@ -217,25 +219,10 @@ predictors along a reference decoding path. Can be used for tuning predictor wei
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id</span> <span class="n">T2T_UNK_ID</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size</span> <span class="n">PRED_SRC_VOCAB_SIZE</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size</span> <span class="n">PRED_TRG_VOCAB_SIZE</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">length_normalization</span> <span class="n">LENGTH_NORMALIZATION</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config</span> <span class="n">NMT_CONFIG</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path</span> <span class="n">NMT_PATH</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine</span> <span class="p">{</span><span class="n">none</span><span class="p">,</span><span class="n">blocks</span><span class="p">,</span><span class="n">tensorflow</span><span class="p">}]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_model_selector</span> <span class="p">{</span><span class="n">params</span><span class="p">,</span><span class="n">bleu</span><span class="p">,</span><span class="n">time</span><span class="p">}]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">cache_nmt_posteriors</span> <span class="n">CACHE_NMT_POSTERIORS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">gnmt_beta</span> <span class="n">GNMT_BETA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">gnmt_alpha</span> <span class="n">GNMT_ALPHA</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_max_depth</span> <span class="n">SYNTAX_MAX_DEPTH</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_root_id</span> <span class="n">SYNTAX_ROOT_ID</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_pop_id</span> <span class="n">SYNTAX_POP_ID</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_min_terminal_id</span> <span class="n">SYNTAX_MIN_TERMINAL_ID</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_max_terminal_id</span> <span class="n">SYNTAX_MAX_TERMINAL_ID</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_terminal_list</span> <span class="n">SYNTAX_TERMINAL_LIST</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_nonterminal_ids</span> <span class="n">SYNTAX_NONTERMINAL_IDS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">osm_type</span> <span class="n">OSM_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_usr_dir</span> <span class="n">T2T_USR_DIR</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">gnmt_alpha</span> <span class="n">GNMT_ALPHA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_usr_dir</span> <span class="n">T2T_USR_DIR</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_model</span> <span class="n">T2T_MODEL</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem</span> <span class="n">T2T_PROBLEM</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set</span> <span class="n">T2T_HPARAMS_SET</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir</span> <span class="n">T2T_CHECKPOINT_DIR</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">t2t_src_vocab_size</span> <span class="n">T2T_SRC_VOCAB_SIZE</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">t2t_trg_vocab_size</span> <span class="n">T2T_TRG_VOCAB_SIZE</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">nizza_model</span> <span class="n">NIZZA_MODEL</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">nizza_hparams_set</span> <span class="n">NIZZA_HPARAMS_SET</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">nizza_checkpoint_dir</span> <span class="n">NIZZA_CHECKPOINT_DIR</span><span class="p">]</span>
@@ -247,7 +234,17 @@ predictors along a reference decoding path. Can be used for tuning predictor wei
                  <span class="p">[</span><span class="o">--</span><span class="n">lexnizza_beta</span> <span class="n">LEXNIZZA_BETA</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">lexnizza_max_shortlist_length</span> <span class="n">LEXNIZZA_MAX_SHORTLIST_LENGTH</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">lexnizza_min_id</span> <span class="n">LEXNIZZA_MIN_ID</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">src_test_raw</span> <span class="n">SRC_TEST_RAW</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path</span> <span class="n">FAIRSEQ_PATH</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_user_dir</span> <span class="n">FAIRSEQ_USER_DIR</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_lang_pair</span> <span class="n">FAIRSEQ_LANG_PAIR</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_max_depth</span> <span class="n">SYNTAX_MAX_DEPTH</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_root_id</span> <span class="n">SYNTAX_ROOT_ID</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_pop_id</span> <span class="n">SYNTAX_POP_ID</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_min_terminal_id</span> <span class="n">SYNTAX_MIN_TERMINAL_ID</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_max_terminal_id</span> <span class="n">SYNTAX_MAX_TERMINAL_ID</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_terminal_list</span> <span class="n">SYNTAX_TERMINAL_LIST</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_nonterminal_ids</span> <span class="n">SYNTAX_NONTERMINAL_IDS</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">osm_type</span> <span class="n">OSM_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_test_raw</span> <span class="n">SRC_TEST_RAW</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">length_model_weights</span> <span class="n">LENGTH_MODEL_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">use_length_point_probs</span> <span class="n">USE_LENGTH_POINT_PROBS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">length_model_offset</span> <span class="n">LENGTH_MODEL_OFFSET</span><span class="p">]</span>
@@ -277,12 +274,8 @@ predictors along a reference decoding path. Can be used for tuning predictor wei
                  <span class="p">[</span><span class="o">--</span><span class="n">rules_path</span> <span class="n">RULES_PATH</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">use_grammar_weights</span> <span class="n">USE_GRAMMAR_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">grammar_feature_weights</span> <span class="n">GRAMMAR_FEATURE_WEIGHTS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">lm_path</span> <span class="n">LM_PATH</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">srilm_convert_to_ln</span> <span class="n">SRILM_CONVERT_TO_LN</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nplm_path</span> <span class="n">NPLM_PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path</span> <span class="n">RNNLM_PATH</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config</span> <span class="n">RNNLM_CONFIG</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">normalize_nplm_probs</span> <span class="n">NORMALIZE_NPLM_PROBS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">fst_path</span> <span class="n">FST_PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">syntax_path</span> <span class="n">SYNTAX_PATH</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">lm_path</span> <span class="n">LM_PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path</span> <span class="n">FST_PATH</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">syntax_path</span> <span class="n">SYNTAX_PATH</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">syntax_bpe_path</span> <span class="n">SYNTAX_BPE_PATH</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">syntax_word_out</span> <span class="n">SYNTAX_WORD_OUT</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">syntax_allow_early_eos</span> <span class="n">SYNTAX_ALLOW_EARLY_EOS</span><span class="p">]</span>
@@ -303,174 +296,152 @@ predictors along a reference decoding path. Can be used for tuning predictor wei
                  <span class="p">[</span><span class="o">--</span><span class="n">remove_epsilon_in_rtns</span> <span class="n">REMOVE_EPSILON_IN_RTNS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">normalize_fst_weights</span> <span class="n">NORMALIZE_FST_WEIGHTS</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">normalize_rtn_weights</span> <span class="n">NORMALIZE_RTN_WEIGHTS</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config2</span> <span class="n">NMT_CONFIG2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path2</span> <span class="n">NMT_PATH2</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine2</span> <span class="n">NMT_ENGINE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model2</span> <span class="n">T2T_MODEL2</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem2</span> <span class="n">T2T_PROBLEM2</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">t2t_model2</span> <span class="n">T2T_MODEL2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem2</span> <span class="n">T2T_PROBLEM2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set2</span> <span class="n">T2T_HPARAMS_SET2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir2</span> <span class="n">T2T_CHECKPOINT_DIR2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size2</span> <span class="n">PRED_SRC_VOCAB_SIZE2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id2</span> <span class="n">T2T_UNK_ID2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size2</span> <span class="n">PRED_TRG_VOCAB_SIZE2</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config2</span> <span class="n">RNNLM_CONFIG2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path2</span> <span class="n">RNNLM_PATH2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test2</span> <span class="n">ALTSRC_TEST2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map2</span> <span class="n">WORD2CHAR_MAP2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path2</span> <span class="n">FSTTOK_PATH2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap2</span> <span class="n">SRC_IDXMAP2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap2</span> <span class="n">TRG_IDXMAP2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path2</span> <span class="n">FST_PATH2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat2</span> <span class="n">FORCEDLST_SPARSE_FEAT2</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path2</span> <span class="n">NGRAMC_PATH2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order2</span> <span class="n">NGRAMC_ORDER2</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config3</span> <span class="n">NMT_CONFIG3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path3</span> <span class="n">NMT_PATH3</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine3</span> <span class="n">NMT_ENGINE3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model3</span> <span class="n">T2T_MODEL3</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path2</span> <span class="n">FAIRSEQ_PATH2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model3</span> <span class="n">T2T_MODEL3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem3</span> <span class="n">T2T_PROBLEM3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set3</span> <span class="n">T2T_HPARAMS_SET3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir3</span> <span class="n">T2T_CHECKPOINT_DIR3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size3</span> <span class="n">PRED_SRC_VOCAB_SIZE3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id3</span> <span class="n">T2T_UNK_ID3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size3</span> <span class="n">PRED_TRG_VOCAB_SIZE3</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config3</span> <span class="n">RNNLM_CONFIG3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path3</span> <span class="n">RNNLM_PATH3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test3</span> <span class="n">ALTSRC_TEST3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map3</span> <span class="n">WORD2CHAR_MAP3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path3</span> <span class="n">FSTTOK_PATH3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap3</span> <span class="n">SRC_IDXMAP3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap3</span> <span class="n">TRG_IDXMAP3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path3</span> <span class="n">FST_PATH3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat3</span> <span class="n">FORCEDLST_SPARSE_FEAT3</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path3</span> <span class="n">NGRAMC_PATH3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order3</span> <span class="n">NGRAMC_ORDER3</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config4</span> <span class="n">NMT_CONFIG4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path4</span> <span class="n">NMT_PATH4</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine4</span> <span class="n">NMT_ENGINE4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model4</span> <span class="n">T2T_MODEL4</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path3</span> <span class="n">FAIRSEQ_PATH3</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model4</span> <span class="n">T2T_MODEL4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem4</span> <span class="n">T2T_PROBLEM4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set4</span> <span class="n">T2T_HPARAMS_SET4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir4</span> <span class="n">T2T_CHECKPOINT_DIR4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size4</span> <span class="n">PRED_SRC_VOCAB_SIZE4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id4</span> <span class="n">T2T_UNK_ID4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size4</span> <span class="n">PRED_TRG_VOCAB_SIZE4</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config4</span> <span class="n">RNNLM_CONFIG4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path4</span> <span class="n">RNNLM_PATH4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test4</span> <span class="n">ALTSRC_TEST4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map4</span> <span class="n">WORD2CHAR_MAP4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path4</span> <span class="n">FSTTOK_PATH4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap4</span> <span class="n">SRC_IDXMAP4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap4</span> <span class="n">TRG_IDXMAP4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path4</span> <span class="n">FST_PATH4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat4</span> <span class="n">FORCEDLST_SPARSE_FEAT4</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path4</span> <span class="n">NGRAMC_PATH4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order4</span> <span class="n">NGRAMC_ORDER4</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config5</span> <span class="n">NMT_CONFIG5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path5</span> <span class="n">NMT_PATH5</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine5</span> <span class="n">NMT_ENGINE5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model5</span> <span class="n">T2T_MODEL5</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path4</span> <span class="n">FAIRSEQ_PATH4</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model5</span> <span class="n">T2T_MODEL5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem5</span> <span class="n">T2T_PROBLEM5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set5</span> <span class="n">T2T_HPARAMS_SET5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir5</span> <span class="n">T2T_CHECKPOINT_DIR5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size5</span> <span class="n">PRED_SRC_VOCAB_SIZE5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id5</span> <span class="n">T2T_UNK_ID5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size5</span> <span class="n">PRED_TRG_VOCAB_SIZE5</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config5</span> <span class="n">RNNLM_CONFIG5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path5</span> <span class="n">RNNLM_PATH5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test5</span> <span class="n">ALTSRC_TEST5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map5</span> <span class="n">WORD2CHAR_MAP5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path5</span> <span class="n">FSTTOK_PATH5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap5</span> <span class="n">SRC_IDXMAP5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap5</span> <span class="n">TRG_IDXMAP5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path5</span> <span class="n">FST_PATH5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat5</span> <span class="n">FORCEDLST_SPARSE_FEAT5</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path5</span> <span class="n">NGRAMC_PATH5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order5</span> <span class="n">NGRAMC_ORDER5</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config6</span> <span class="n">NMT_CONFIG6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path6</span> <span class="n">NMT_PATH6</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine6</span> <span class="n">NMT_ENGINE6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model6</span> <span class="n">T2T_MODEL6</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path5</span> <span class="n">FAIRSEQ_PATH5</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model6</span> <span class="n">T2T_MODEL6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem6</span> <span class="n">T2T_PROBLEM6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set6</span> <span class="n">T2T_HPARAMS_SET6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir6</span> <span class="n">T2T_CHECKPOINT_DIR6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size6</span> <span class="n">PRED_SRC_VOCAB_SIZE6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id6</span> <span class="n">T2T_UNK_ID6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size6</span> <span class="n">PRED_TRG_VOCAB_SIZE6</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config6</span> <span class="n">RNNLM_CONFIG6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path6</span> <span class="n">RNNLM_PATH6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test6</span> <span class="n">ALTSRC_TEST6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map6</span> <span class="n">WORD2CHAR_MAP6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path6</span> <span class="n">FSTTOK_PATH6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap6</span> <span class="n">SRC_IDXMAP6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap6</span> <span class="n">TRG_IDXMAP6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path6</span> <span class="n">FST_PATH6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat6</span> <span class="n">FORCEDLST_SPARSE_FEAT6</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path6</span> <span class="n">NGRAMC_PATH6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order6</span> <span class="n">NGRAMC_ORDER6</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config7</span> <span class="n">NMT_CONFIG7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path7</span> <span class="n">NMT_PATH7</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine7</span> <span class="n">NMT_ENGINE7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model7</span> <span class="n">T2T_MODEL7</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path6</span> <span class="n">FAIRSEQ_PATH6</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model7</span> <span class="n">T2T_MODEL7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem7</span> <span class="n">T2T_PROBLEM7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set7</span> <span class="n">T2T_HPARAMS_SET7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir7</span> <span class="n">T2T_CHECKPOINT_DIR7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size7</span> <span class="n">PRED_SRC_VOCAB_SIZE7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id7</span> <span class="n">T2T_UNK_ID7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size7</span> <span class="n">PRED_TRG_VOCAB_SIZE7</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config7</span> <span class="n">RNNLM_CONFIG7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path7</span> <span class="n">RNNLM_PATH7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test7</span> <span class="n">ALTSRC_TEST7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map7</span> <span class="n">WORD2CHAR_MAP7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path7</span> <span class="n">FSTTOK_PATH7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap7</span> <span class="n">SRC_IDXMAP7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap7</span> <span class="n">TRG_IDXMAP7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path7</span> <span class="n">FST_PATH7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat7</span> <span class="n">FORCEDLST_SPARSE_FEAT7</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path7</span> <span class="n">NGRAMC_PATH7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order7</span> <span class="n">NGRAMC_ORDER7</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config8</span> <span class="n">NMT_CONFIG8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path8</span> <span class="n">NMT_PATH8</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine8</span> <span class="n">NMT_ENGINE8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model8</span> <span class="n">T2T_MODEL8</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path7</span> <span class="n">FAIRSEQ_PATH7</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model8</span> <span class="n">T2T_MODEL8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem8</span> <span class="n">T2T_PROBLEM8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set8</span> <span class="n">T2T_HPARAMS_SET8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir8</span> <span class="n">T2T_CHECKPOINT_DIR8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size8</span> <span class="n">PRED_SRC_VOCAB_SIZE8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id8</span> <span class="n">T2T_UNK_ID8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size8</span> <span class="n">PRED_TRG_VOCAB_SIZE8</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config8</span> <span class="n">RNNLM_CONFIG8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path8</span> <span class="n">RNNLM_PATH8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test8</span> <span class="n">ALTSRC_TEST8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map8</span> <span class="n">WORD2CHAR_MAP8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path8</span> <span class="n">FSTTOK_PATH8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap8</span> <span class="n">SRC_IDXMAP8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap8</span> <span class="n">TRG_IDXMAP8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path8</span> <span class="n">FST_PATH8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat8</span> <span class="n">FORCEDLST_SPARSE_FEAT8</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path8</span> <span class="n">NGRAMC_PATH8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order8</span> <span class="n">NGRAMC_ORDER8</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config9</span> <span class="n">NMT_CONFIG9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path9</span> <span class="n">NMT_PATH9</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine9</span> <span class="n">NMT_ENGINE9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model9</span> <span class="n">T2T_MODEL9</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path8</span> <span class="n">FAIRSEQ_PATH8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model9</span> <span class="n">T2T_MODEL9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem9</span> <span class="n">T2T_PROBLEM9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set9</span> <span class="n">T2T_HPARAMS_SET9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir9</span> <span class="n">T2T_CHECKPOINT_DIR9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size9</span> <span class="n">PRED_SRC_VOCAB_SIZE9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id9</span> <span class="n">T2T_UNK_ID9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size9</span> <span class="n">PRED_TRG_VOCAB_SIZE9</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config9</span> <span class="n">RNNLM_CONFIG9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path9</span> <span class="n">RNNLM_PATH9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test9</span> <span class="n">ALTSRC_TEST9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map9</span> <span class="n">WORD2CHAR_MAP9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path9</span> <span class="n">FSTTOK_PATH9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap9</span> <span class="n">SRC_IDXMAP9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap9</span> <span class="n">TRG_IDXMAP9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path9</span> <span class="n">FST_PATH9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat9</span> <span class="n">FORCEDLST_SPARSE_FEAT9</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path9</span> <span class="n">NGRAMC_PATH9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order9</span> <span class="n">NGRAMC_ORDER9</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config10</span> <span class="n">NMT_CONFIG10</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path10</span> <span class="n">NMT_PATH10</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine10</span> <span class="n">NMT_ENGINE10</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model10</span> <span class="n">T2T_MODEL10</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path9</span> <span class="n">FAIRSEQ_PATH9</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model10</span> <span class="n">T2T_MODEL10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem10</span> <span class="n">T2T_PROBLEM10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set10</span> <span class="n">T2T_HPARAMS_SET10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir10</span> <span class="n">T2T_CHECKPOINT_DIR10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size10</span> <span class="n">PRED_SRC_VOCAB_SIZE10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id10</span> <span class="n">T2T_UNK_ID10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size10</span> <span class="n">PRED_TRG_VOCAB_SIZE10</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config10</span> <span class="n">RNNLM_CONFIG10</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path10</span> <span class="n">RNNLM_PATH10</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test10</span> <span class="n">ALTSRC_TEST10</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test10</span> <span class="n">ALTSRC_TEST10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map10</span> <span class="n">WORD2CHAR_MAP10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path10</span> <span class="n">FSTTOK_PATH10</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap10</span> <span class="n">SRC_IDXMAP10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap10</span> <span class="n">TRG_IDXMAP10</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path10</span> <span class="n">FST_PATH10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat10</span> <span class="n">FORCEDLST_SPARSE_FEAT10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path10</span> <span class="n">NGRAMC_PATH10</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order10</span> <span class="n">NGRAMC_ORDER10</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config11</span> <span class="n">NMT_CONFIG11</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path11</span> <span class="n">NMT_PATH11</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine11</span> <span class="n">NMT_ENGINE11</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model11</span> <span class="n">T2T_MODEL11</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path10</span> <span class="n">FAIRSEQ_PATH10</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model11</span> <span class="n">T2T_MODEL11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem11</span> <span class="n">T2T_PROBLEM11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set11</span> <span class="n">T2T_HPARAMS_SET11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir11</span> <span class="n">T2T_CHECKPOINT_DIR11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size11</span> <span class="n">PRED_SRC_VOCAB_SIZE11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id11</span> <span class="n">T2T_UNK_ID11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size11</span> <span class="n">PRED_TRG_VOCAB_SIZE11</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config11</span> <span class="n">RNNLM_CONFIG11</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path11</span> <span class="n">RNNLM_PATH11</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test11</span> <span class="n">ALTSRC_TEST11</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test11</span> <span class="n">ALTSRC_TEST11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map11</span> <span class="n">WORD2CHAR_MAP11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path11</span> <span class="n">FSTTOK_PATH11</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap11</span> <span class="n">SRC_IDXMAP11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap11</span> <span class="n">TRG_IDXMAP11</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path11</span> <span class="n">FST_PATH11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat11</span> <span class="n">FORCEDLST_SPARSE_FEAT11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path11</span> <span class="n">NGRAMC_PATH11</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order11</span> <span class="n">NGRAMC_ORDER11</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_config12</span> <span class="n">NMT_CONFIG12</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nmt_path12</span> <span class="n">NMT_PATH12</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">nmt_engine12</span> <span class="n">NMT_ENGINE12</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model12</span> <span class="n">T2T_MODEL12</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path11</span> <span class="n">FAIRSEQ_PATH11</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t2t_model12</span> <span class="n">T2T_MODEL12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_problem12</span> <span class="n">T2T_PROBLEM12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_hparams_set12</span> <span class="n">T2T_HPARAMS_SET12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_checkpoint_dir12</span> <span class="n">T2T_CHECKPOINT_DIR12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_src_vocab_size12</span> <span class="n">PRED_SRC_VOCAB_SIZE12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">t2t_unk_id12</span> <span class="n">T2T_UNK_ID12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">pred_trg_vocab_size12</span> <span class="n">PRED_TRG_VOCAB_SIZE12</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_config12</span> <span class="n">RNNLM_CONFIG12</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">rnnlm_path12</span> <span class="n">RNNLM_PATH12</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test12</span> <span class="n">ALTSRC_TEST12</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">altsrc_test12</span> <span class="n">ALTSRC_TEST12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">word2char_map12</span> <span class="n">WORD2CHAR_MAP12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">fsttok_path12</span> <span class="n">FSTTOK_PATH12</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">src_idxmap12</span> <span class="n">SRC_IDXMAP12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">trg_idxmap12</span> <span class="n">TRG_IDXMAP12</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fst_path12</span> <span class="n">FST_PATH12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">forcedlst_sparse_feat12</span> <span class="n">FORCEDLST_SPARSE_FEAT12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_path12</span> <span class="n">NGRAMC_PATH12</span><span class="p">]</span>
                  <span class="p">[</span><span class="o">--</span><span class="n">ngramc_order12</span> <span class="n">NGRAMC_ORDER12</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">fairseq_path12</span> <span class="n">FAIRSEQ_PATH12</span><span class="p">]</span>
 </pre></div>
 </div>
 <dl class="docutils">
@@ -482,6 +453,10 @@ predictors along a reference decoding path. Can be used for tuning predictor wei
 <tr><td class="option-group">
 <kbd><span class="option">--config_file</span></kbd></td>
 <td>Configuration file in standard .ini format. NOTE: Configuration file overrides command line arguments</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--run_diagnostics=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Run diagnostics and check availability of external libraries.</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--verbosity=info</span></kbd></td>
 </tr>
@@ -503,10 +478,9 @@ predictors along a reference decoding path. Can be used for tuning predictor wei
 </tr>
 <tr><td>&nbsp;</td><td><p class="first">This parameter defines the reserved IDs.
 
-* &#8216;blocks&#8217;: eps,unk: 0, &lt;s&gt;: 1, &lt;/s&gt;: 2.
-* &#8216;tf&#8217;: unk: 3, &lt;s&gt;: 1, &lt;/s&gt;: 2.
-* &#8216;t2t&#8217;: unk: 3, &lt;s&gt;: 2, &lt;/s&gt;: 1.</p>
-<p class="last">Possible choices: blocks, tf, t2t</p>
+* &#8216;t2t&#8217;: unk: 3, &lt;s&gt;: 2, &lt;/s&gt;: 1.
+* &#8216;fairseq&#8217;: unk: 3, &lt;s&gt;: 0, &lt;/s&gt;: 2.</p>
+<p class="last">Possible choices: t2t, fairseq</p>
 </td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--ignore_sanity_checks=False</span></kbd></td>
@@ -565,13 +539,11 @@ In shell and stdin mode you can change SGNMT options on the fly: Beginning a lin
 * &#8216;sepbeam&#8217;: Associates predictors with hypos in beam search and applies only one predictor instead of all for hypo expansion.
 * &#8216;combibeam&#8217;: Applies combination_scheme at each time step.
 * &#8216;fstbeam&#8217;: Beam search optimized for FST constrained search problems.
-* &#8216;bow&#8217;: Restarting decoder optimized for bag-of-words problems.
 * &#8216;flip&#8217;: This decoder works only for bag problems. It traverses the search space by switching two words in the hypothesis. Do not use bow predictor.
 * &#8216;bucket&#8217;: Works best for bag problems. Maintains buckets for each hypo length and extends a hypo in a bucket by one before selecting the next bucket.
 * &#8216;bigramgreedy&#8217;: Works best for bag problems. Collects bigram statistics and constructs hypos to score by greedily selecting high scoring bigrams. Do not use bow predictor with this search strategy.
-* &#8216;astar&#8217;: A* search. The heuristic function is configured using the &#8211;heuristics options.
-* &#8216;vanilla&#8217;: Original Blocks beam decoder. This bypasses the predictor framework and directly performs pure NMT beam decoding on the GPU. Use this when you do pure NMT decoding as this is usually faster then using a single nmt predictor as the search can be parallelized on the GPU.</p>
-<p class="last">Possible choices: greedy, beam, multisegbeam, syncbeam, fstbeam, predlimitbeam, sepbeam, mbrbeam, syntaxbeam, combibeam, dfs, simpledfs, restarting, bow, flip, bucket, bigramgreedy, astar, vanilla</p>
+* &#8216;astar&#8217;: A* search. The heuristic function is configured using the &#8211;heuristics options.</p>
+<p class="last">Possible choices: greedy, beam, multisegbeam, syncbeam, fstbeam, predlimitbeam, sepbeam, mbrbeam, syntaxbeam, combibeam, dfs, simpledfs, restarting, flip, bucket, bigramgreedy, astar</p>
 </td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--beam=4</span></kbd></td>
@@ -747,10 +719,6 @@ Applicable to the bucket decoder, the heuristic of the bow predictor, and the he
 <kbd><span class="option">--nbest=0</span></kbd></td>
 <td>Maximum number of hypotheses in the output files. Set to 0 to output all hypotheses found by the decoder. If you use the beam or astar decoder, this option is limited by the beam size.</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--output_fst_unk_id=0</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>DEPRECATED: Old name for &#8211;fst_unk_id</td></tr>
-<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--fst_unk_id=999999998</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>SGNMT uses the ID 0 for UNK. However, this clashes with OpenFST when writing FSTs as OpenFST reserves 0 for epsilon arcs. Therefore, we use this ID for UNK instead. Note that this only applies to output FSTs created by the fst or sfst output handler, or FSTs used by the fsttok wrapper. Apart from that, UNK is still represented by the ID 0.</td></tr>
@@ -779,13 +747,35 @@ The path to the output files can be specified with &#8211;output_path</td></tr>
 <tr><td>&nbsp;</td><td>Whether to remove &lt;/S&gt; symbol on output.</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--src_wmap=</span></kbd></td>
-<td>Path to the source side word map (Format: &lt;word&gt; &lt;id&gt;). This is used to map the words in &#8211;src_test to their word IDs. If empty, SGNMT expects the input words to be in integer representation.</td></tr>
+<td>Path to the source side word map (Format: &lt;word&gt; &lt;id&gt;). See &#8211;preprocessing and &#8211;postprocessing for more details.</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--trg_wmap=</span></kbd></td>
-<td>Path to the target side word map (Format: &lt;word&gt; &lt;id&gt;). This is used to generate log output and the output formats text and nbest. If empty, we directly write word IDs.</td></tr>
+<td>Path to the source side word map (Format: &lt;word&gt; &lt;id&gt;). See &#8211;preprocessing and &#8211;postprocessing for more details.</td></tr>
 <tr><td class="option-group">
-<kbd><span class="option">--trg_cmap=</span></kbd></td>
-<td>Path to the target side char map (Format: &lt;char&gt; &lt;id&gt;). If this is not empty, all output files are converted to character-level. The mapping from word to character sequence is read from &#8211;trg_wmap. The char map must contain an entry for &lt;/w&gt; which points to the word boundary ID.</td></tr>
+<kbd><span class="option">--wmap=</span></kbd></td>
+<td>Sets &#8211;src_wmap and &#8211;trg_wmap at the same time</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--preprocessing=id</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Preprocessing strategy for source sentences.
+* &#8216;id&#8217;: Input sentences are expected in indexed representation (321 123 456 4444 ...).
+* &#8216;word&#8217;: Apply &#8211;src_wmap on the input.
+* &#8216;char&#8217;: Split into characters, then apply (character-level) &#8211;src_wmap.
+* &#8216;bpe&#8217;: Apply Sennrich&#8217;s subword_nmt segmentation 
+SGNMT style (as in $SGNMT/scripts/subword-nmt)
+* &#8216;bpe&#64;&#64;&#8217;: Apply Sennrich&#8217;s subword_nmt segmentation with original default values (removing &lt;/w&gt;, using &#64;&#64; separator)
+</p>
+<p class="last">Possible choices: id, word, char, bpe</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--postprocessing=id</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Postprocessing strategy for output sentences. See &#8211;preprocessing for more.</p>
+<p class="last">Possible choices: id, wmap, char, subword_nmt</p>
+</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--bpe_codes=</span></kbd></td>
+<td>Must be set if preprocessing=bpe. Path to the BPE codes file from Sennrich&#8217;s subword_nmt.</td></tr>
 </tbody>
 </table>
 </dd>
@@ -794,13 +784,10 @@ The path to the output files can be specified with &#8211;output_path</td></tr>
 <col class="option" />
 <col class="description" />
 <tbody valign="top">
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--predictors=nmt</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Comma separated list of predictors. Predictors are scoring modules which define a distribution over target words given the history and some side information like the source sentence. If vocabulary sizes differ among predictors, we fill in gaps with predictor UNK scores.:
+<tr><td class="option-group">
+<kbd><span class="option">--predictors=</span></kbd></td>
+<td>Comma separated list of predictors. Predictors are scoring modules which define a distribution over target words given the history and some side information like the source sentence. If vocabulary sizes differ among predictors, we fill in gaps with predictor UNK scores.:
 
-* &#8216;nmt&#8217;: neural machine translation predictor.
-         Options: nmt_config, nmt_path, gnmt_beta, nmt_model_selector, cache_nmt_posteriors.
 * &#8216;t2t&#8217;: Tensor2Tensor predictor.
          Options: t2t_usr_dir, t2t_model, t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, pred_src_vocab_size, pred_trg_vocab_size
 * &#8216;segt2t&#8217;: Segmentation-based T2T predictor.
@@ -811,6 +798,8 @@ The path to the output files can be specified with &#8211;output_path</td></tr>
            Options: nizza_model, nizza_hparams_set, nizza_checkpoint_dir, pred_src_vocab_size, pred_trg_vocab_size
 * &#8216;lexnizza&#8217;: Uses Nizza lexical scores for checking the source word coverage.
            Options: nizza_model, nizza_hparams_set, nizza_checkpoint_dir, pred_src_vocab_size, pred_trg_vocab_size, lexnizza_alpha, lexnizza_beta, lexnizza_shortlist_strategies, lexnizza_max_shortlist_length, lexnizza_trg2src_model, lexnizza_trg2src_hparams_set, lexnizza_trg2src_checkpoint_dir, lexnizza_min_id
+* &#8216;fairseq&#8217;: fairseq predictor.
+         Options: fairseq_path, fairseq_user_dir, fairseq_lang_pair, n_cpu_threads
 * &#8216;bracket&#8217;: Well-formed bracketing.
              Options: syntax_max_terminal_id, syntax_pop_id, syntax_max_depth, extlength_path
 * &#8216;osm&#8217;: Well-formed operation sequences.
@@ -819,12 +808,6 @@ The path to the output files can be specified with &#8211;output_path</td></tr>
          Options: trg_test
 * &#8216;kenlm&#8217;: n-gram language model (KenLM).
           Options: lm_pathr
-* &#8216;srilm&#8217;: n-gram language model (SRILM).
-          Options: lm_path, ngramc_order
-* &#8216;nplm&#8217;: neural n-gram language model (NPLM).
-          Options: nplm_path, normalize_nplm_probs
-* &#8216;rnnlm&#8217;: RNN language model based on TensorFlow.
-          Options: rnnlm_config, rnnlm_path
 * &#8216;forced&#8217;: Forced decoding with one reference
             Options: trg_test
 * &#8216;forcedlst&#8217;: Forced decoding with a Moses n-best list (n-best list rescoring)
@@ -953,77 +936,9 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <col class="description" />
 <tbody valign="top">
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--length_normalization=False</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>DEPRECATED. Synonym for &#8211;combination_scheme length_norm. Normalize n-best hypotheses by sentence length. Normally improves pure NMT decoding, but degrades performance when combined with predictors like fst or multiple NMT systems.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_config=</span></kbd></td>
-<td>Defines the configuration of the NMT model. This can either point to a configuration file, or it can directly contain the parameters (e.g. &#8216;src_vocab_size=1234,trg_vocab_size=2345&#8217;). Use &#8216;config_file=&#8217; in the parameter string to use configuration files with the second method.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path=</span></kbd></td>
-<td>Defines the path to the NMT model. If empty, the model is loaded from the default location which depends on the NMT engine</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--nmt_engine=blocks</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td><p class="first">NMT implementation which should be used. Use &#8216;none&#8217; to disable NMT support.</p>
-<p class="last">Possible choices: none, blocks, tensorflow</p>
-</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--nmt_model_selector=bleu</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td><p class="first">NMT training normally creates several files in the ./train/ directory from which we can load the NMT model. Possible options:
-
-* &#8216;params&#8217;: Load parameters from params.npz. This is usually the most recent model.
-* &#8216;bleu&#8217;: Load from the best_bleu_params_* file with the best BLEU score.
-* &#8216;time&#8217;: Load from the most recent best_bleu_params_* file.</p>
-<p class="last">Possible choices: params, bleu, time</p>
-</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--cache_nmt_posteriors=False</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>This enables the cache in the [F]NMT predictor. Normally, the search procedure is responsible to avoid applying predictors to the same history twice. However, due to the limited NMT vocabulary, two different histories might be the same from the NMT perspective, e.g. if they are the same up to words which are outside the NMT vocabulary. If this parameter is set to true, we cache posteriors with histories containing UNK and reload them when needed</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--gnmt_beta=0.0</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If this is greater than zero, add a coverage penalization term following Google&#8217;s NMT (Wu et al., 2016) to the NMT score. Only works for the Blocks NMT predictor.</td></tr>
-<tr><td class="option-group" colspan="2">
 <kbd><span class="option">--gnmt_alpha=0.0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>If this is greater than zero and the combination scheme is set to length_norm, use Google-style length  normalization (Wu et al., 2016) rather than simply dividing by translation length.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--syntax_max_depth=30</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Maximum depth of generated trees. After this depth is reached, only terminals and POP are allowed on the next layer.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--syntax_root_id=-1</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Must be set for the layerbylayer predictor. ID of the initial target root label.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--syntax_pop_id=-1</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>ID of the closing bracket in output syntax trees. layerbylayer and t2t predictors support single integer values. The bracket predictor can take a comma-separated list of integers.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--syntax_min_terminal_id=0</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>All token IDs smaller than this are considered to be non-terminal symbols except the ones specified by &#8211;syntax_terminal_list</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--syntax_max_terminal_id=30003</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>All token IDs larger than this are considered to be non-terminal symbols except the ones specified by &#8211;syntax_terminal_list</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--syntax_terminal_list=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>List of IDs which are explicitly treated as terminals, in addition to all IDs lower or equal &#8211;syntax_max_terminal_id. This can be used to exclude the POP symbol from the list of non-terminals even though it has a ID higher than max_terminal_id.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--syntax_nonterminal_ids=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Explicitly define non-terminals with a file containing their ids. Useful when non-terminals do not occur consecutively in data (e.g. internal bpe units.)</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--osm_type=osm</span></kbd></td>
-<td>Set of operations used for OSM predictor.
-- &#8216;osm&#8217;: Original OSNMT of Stahlberg et al. (2018)
-- &#8216;srcosm&#8217;: Original OSNMT where IDs&gt;7 are POP
-- &#8216;pbosm&#8217;: Phrase-based OSNMT</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_usr_dir=</span></kbd></td>
 <td>Available for the t2t predictor. See the &#8211;t2t_usr_dir argument in tensor2tensor.</td></tr>
@@ -1043,14 +958,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--t2t_checkpoint_dir=</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Available for the t2t predictor. Path to the tensor2tensor checkpoint directory. Same as &#8211;output_dir in t2t_trainer.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--t2t_src_vocab_size=0</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>DEPRECATED! Use &#8211;pred_src_vocab_size</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--t2t_trg_vocab_size=0</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>DEPRECATED! Use &#8211;pred_trg_vocab_size</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--nizza_model=model1</span></kbd></td>
 </tr>
@@ -1097,6 +1004,60 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--lexnizza_min_id=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Word IDs lower than this are not considered by lexnizza. Can be used to filter out frequent words.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_path=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Points to the model file (*.pt) for the fairseq predictor. Like &#8211;path in fairseq-interactive.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_user_dir=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>fairseq user directory for additional models.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_lang_pair=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Language pair such as &#8216;en-fr&#8217; for fairseq. Used to load fairseq dictionaries</td></tr>
+</tbody>
+</table>
+</dd>
+<dt>Structured predictor options</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--syntax_max_depth=30</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Maximum depth of generated trees. After this depth is reached, only terminals and POP are allowed on the next layer.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--syntax_root_id=-1</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Must be set for the layerbylayer predictor. ID of the initial target root label.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--syntax_pop_id=-1</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>ID of the closing bracket in output syntax trees. layerbylayer and t2t predictors support single integer values. The bracket predictor can take a comma-separated list of integers.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--syntax_min_terminal_id=0</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>All token IDs smaller than this are considered to be non-terminal symbols except the ones specified by &#8211;syntax_terminal_list</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--syntax_max_terminal_id=30003</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>All token IDs larger than this are considered to be non-terminal symbols except the ones specified by &#8211;syntax_terminal_list</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--syntax_terminal_list=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>List of IDs which are explicitly treated as terminals, in addition to all IDs lower or equal &#8211;syntax_max_terminal_id. This can be used to exclude the POP symbol from the list of non-terminals even though it has a ID higher than max_terminal_id.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--syntax_nonterminal_ids=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Explicitly define non-terminals with a file containing their ids. Useful when non-terminals do not occur consecutively in data (e.g. internal bpe units.)</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--osm_type=osm</span></kbd></td>
+<td>Set of operations used for OSM predictor.
+- &#8216;osm&#8217;: Original OSNMT of Stahlberg et al. (2018)
+- &#8216;srcosm&#8217;: Original OSNMT where IDs&gt;7 are POP
+- &#8216;pbosm&#8217;: Phrase-based OSNMT</td></tr>
 </tbody>
 </table>
 </dd>
@@ -1287,26 +1248,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--lm_path=lm/ngram.lm.gz</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Path to the ngram LM file in ARPA format</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--srilm_convert_to_ln=False</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Whether to convert srilm scores from log to ln.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--nplm_path=nplm/nplm.gz</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Path to the NPLM language model</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_path=rnnlm/rnn.ckpt</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Path to the RNNLM language model</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config=rnnlm.ini</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Defines the configuration of the RNNLM model. This can either point to a configuration file, or it can directly contain the parameters (e.g. &#8216;src_vocab_size=1234,trg_vocab_size=2345&#8217;). Use &#8216;config_file=&#8217; in the parameter string to use configuration files with the second method. Use &#8216;model_name=X&#8217; in the parameter string to use one of the predefined models.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--normalize_nplm_probs=False</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Whether to normalize nplm probabilities over the current unbounded predictor vocabulary.</td></tr>
 </tbody>
 </table>
 </dd>
@@ -1415,15 +1356,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <col class="description" />
 <tbody valign="top">
 <tr><td class="option-group">
-<kbd><span class="option">--nmt_config2=</span></kbd></td>
-<td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the second one with this parameter. The second nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path2=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the second nmt</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_engine2=</span></kbd></td>
-<td>Overrides &#8211;nmt_engine for the second nmt</td></tr>
-<tr><td class="option-group">
 <kbd><span class="option">--t2t_model2=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the second t2t predictor</td></tr>
 <tr><td class="option-group" colspan="2">
@@ -1450,13 +1382,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size2=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the second t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config2=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the second one with this parameter. The second rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--rnnlm_path2=</span></kbd></td>
-<td>Overrides &#8211;rnnlm_path for the second nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test2=</span></kbd></td>
 </tr>
@@ -1490,15 +1415,10 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--ngramc_order2=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the second ngramc</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_config3=</span></kbd></td>
-<td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the third one with this parameter. The third nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path3=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the third nmt</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_engine3=</span></kbd></td>
-<td>Overrides &#8211;nmt_engine for the third nmt</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_path2=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the second fairseq</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_model3=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the third t2t predictor</td></tr>
@@ -1526,13 +1446,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size3=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the third t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config3=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the third one with this parameter. The third rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--rnnlm_path3=</span></kbd></td>
-<td>Overrides &#8211;rnnlm_path for the third nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test3=</span></kbd></td>
 </tr>
@@ -1566,15 +1479,10 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--ngramc_order3=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the third ngramc</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_config4=</span></kbd></td>
-<td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 4-th one with this parameter. The 4-th nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path4=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the 4-th nmt</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_engine4=</span></kbd></td>
-<td>Overrides &#8211;nmt_engine for the 4-th nmt</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_path3=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the third fairseq</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_model4=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the 4-th t2t predictor</td></tr>
@@ -1602,13 +1510,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size4=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the 4-th t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config4=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the 4-th one with this parameter. The 4-th rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--rnnlm_path4=</span></kbd></td>
-<td>Overrides &#8211;rnnlm_path for the 4-th nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test4=</span></kbd></td>
 </tr>
@@ -1642,15 +1543,10 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--ngramc_order4=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the 4-th ngramc</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_config5=</span></kbd></td>
-<td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 5-th one with this parameter. The 5-th nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path5=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the 5-th nmt</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_engine5=</span></kbd></td>
-<td>Overrides &#8211;nmt_engine for the 5-th nmt</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_path4=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the 4-th fairseq</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_model5=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the 5-th t2t predictor</td></tr>
@@ -1678,13 +1574,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size5=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the 5-th t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config5=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the 5-th one with this parameter. The 5-th rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--rnnlm_path5=</span></kbd></td>
-<td>Overrides &#8211;rnnlm_path for the 5-th nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test5=</span></kbd></td>
 </tr>
@@ -1718,15 +1607,10 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--ngramc_order5=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the 5-th ngramc</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_config6=</span></kbd></td>
-<td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 6-th one with this parameter. The 6-th nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path6=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the 6-th nmt</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_engine6=</span></kbd></td>
-<td>Overrides &#8211;nmt_engine for the 6-th nmt</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_path5=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the 5-th fairseq</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_model6=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the 6-th t2t predictor</td></tr>
@@ -1754,13 +1638,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size6=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the 6-th t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config6=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the 6-th one with this parameter. The 6-th rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--rnnlm_path6=</span></kbd></td>
-<td>Overrides &#8211;rnnlm_path for the 6-th nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test6=</span></kbd></td>
 </tr>
@@ -1794,15 +1671,10 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--ngramc_order6=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the 6-th ngramc</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_config7=</span></kbd></td>
-<td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 7-th one with this parameter. The 7-th nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path7=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the 7-th nmt</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_engine7=</span></kbd></td>
-<td>Overrides &#8211;nmt_engine for the 7-th nmt</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_path6=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the 6-th fairseq</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_model7=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the 7-th t2t predictor</td></tr>
@@ -1830,13 +1702,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size7=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the 7-th t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config7=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the 7-th one with this parameter. The 7-th rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--rnnlm_path7=</span></kbd></td>
-<td>Overrides &#8211;rnnlm_path for the 7-th nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test7=</span></kbd></td>
 </tr>
@@ -1870,15 +1735,10 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--ngramc_order7=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the 7-th ngramc</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_config8=</span></kbd></td>
-<td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 8-th one with this parameter. The 8-th nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path8=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the 8-th nmt</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_engine8=</span></kbd></td>
-<td>Overrides &#8211;nmt_engine for the 8-th nmt</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_path7=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the 7-th fairseq</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_model8=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the 8-th t2t predictor</td></tr>
@@ -1906,13 +1766,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size8=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the 8-th t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config8=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the 8-th one with this parameter. The 8-th rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--rnnlm_path8=</span></kbd></td>
-<td>Overrides &#8211;rnnlm_path for the 8-th nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test8=</span></kbd></td>
 </tr>
@@ -1946,15 +1799,10 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--ngramc_order8=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the 8-th ngramc</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_config9=</span></kbd></td>
-<td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 9-th one with this parameter. The 9-th nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path9=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the 9-th nmt</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_engine9=</span></kbd></td>
-<td>Overrides &#8211;nmt_engine for the 9-th nmt</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_path8=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the 8-th fairseq</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_model9=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the 9-th t2t predictor</td></tr>
@@ -1982,13 +1830,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size9=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the 9-th t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config9=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the 9-th one with this parameter. The 9-th rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--rnnlm_path9=</span></kbd></td>
-<td>Overrides &#8211;rnnlm_path for the 9-th nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test9=</span></kbd></td>
 </tr>
@@ -2023,16 +1864,9 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the 9-th ngramc</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--nmt_config10=</span></kbd></td>
+<kbd><span class="option">--fairseq_path9=</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 10-th one with this parameter. The 10-th nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path10=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the 10-th nmt</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--nmt_engine10=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Overrides &#8211;nmt_engine for the 10-th nmt</td></tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the 9-th fairseq</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_model10=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the 10-th t2t predictor</td></tr>
@@ -2060,14 +1894,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size10=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the 10-th t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config10=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the 10-th one with this parameter. The 10-th rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_path10=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Overrides &#8211;rnnlm_path for the 10-th nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test10=</span></kbd></td>
 </tr>
@@ -2104,16 +1930,9 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the 10-th ngramc</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--nmt_config11=</span></kbd></td>
+<kbd><span class="option">--fairseq_path10=</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 11-th one with this parameter. The 11-th nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path11=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the 11-th nmt</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--nmt_engine11=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Overrides &#8211;nmt_engine for the 11-th nmt</td></tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the 10-th fairseq</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_model11=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the 11-th t2t predictor</td></tr>
@@ -2141,14 +1960,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size11=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the 11-th t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config11=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the 11-th one with this parameter. The 11-th rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_path11=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Overrides &#8211;rnnlm_path for the 11-th nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test11=</span></kbd></td>
 </tr>
@@ -2185,16 +1996,9 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the 11-th ngramc</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--nmt_config12=</span></kbd></td>
+<kbd><span class="option">--fairseq_path11=</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one nmt predictor, you can specify the configuration for the 12-th one with this parameter. The 12-th nmt predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--nmt_path12=</span></kbd></td>
-<td>Overrides &#8211;nmt_path for the 12-th nmt</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--nmt_engine12=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Overrides &#8211;nmt_engine for the 12-th nmt</td></tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the 11-th fairseq</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--t2t_model12=</span></kbd></td>
 <td>Overrides &#8211;t2t_model for the 12-th t2t predictor</td></tr>
@@ -2222,14 +2026,6 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--pred_trg_vocab_size12=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;pred_trg_vocab_size for the 12-th t2t predictor</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_config12=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>If the &#8211;predictors string contains more than one rnnlm predictor, you can specify the configuration for the 12-th one with this parameter. The 12-th rnnlm predictor inherits all previous settings except for the ones in this parameter.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--rnnlm_path12=</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Overrides &#8211;rnnlm_path for the 12-th nmt</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--altsrc_test12=</span></kbd></td>
 </tr>
@@ -2265,6 +2061,10 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
 <kbd><span class="option">--ngramc_order12=0</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Overrides &#8211;ngramc_order for the 12-th ngramc</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fairseq_path12=</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Overrides &#8211;fairseq_path for the 12-th fairseq</td></tr>
 </tbody>
 </table>
 </dd>
@@ -2282,7 +2082,7 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
         <a href="predictors.html" class="btn btn-neutral float-right" title="Predictors" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="bea19_gec.html" class="btn btn-neutral" title="Tutorial: Grammatical Error Correction (BEA19 Submission)" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="tutorial_blocks.html" class="btn btn-neutral" title="Tutorial: Blocks/Thano (outdated)" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -2313,7 +2113,7 @@ Interpolation strategies can be specified for each predictor separately, eg &#82
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

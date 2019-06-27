@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Decoders &mdash; SGNMT 0.6 documentation</title>
+  <title>Decoders &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="index.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="index.html"/>
         <link rel="next" title="Examples" href="examples.html"/>
         <link rel="prev" title="Predictors" href="predictors.html"/> 
 
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -85,23 +85,24 @@
             
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="predictors.html">Predictors</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Decoders</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#available-decoders">Available decoders</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#relevant-modules">Relevant modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#main-decoders">Main decoders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#experimental-decoders">Experimental decoders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#decoder-modules">Decoder modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-contents">Module contents</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-astar-module">cam.sgnmt.decoding.astar module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-beam-module">cam.sgnmt.decoding.beam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-bigramgreedy-module">cam.sgnmt.decoding.bigramgreedy module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-bow-module">cam.sgnmt.decoding.bow module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-bucket-module">cam.sgnmt.decoding.bucket module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-combibeam-module">cam.sgnmt.decoding.combibeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-core-module">cam.sgnmt.decoding.core module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-decoder-module">cam.sgnmt.decoding.decoder module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-dfs-module">cam.sgnmt.decoding.dfs module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-fstbeam-module">cam.sgnmt.decoding.fstbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-flip-module">cam.sgnmt.decoding.flip module</a></li>
@@ -114,7 +115,6 @@
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-sepbeam-module">cam.sgnmt.decoding.sepbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-syncbeam-module">cam.sgnmt.decoding.syncbeam module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cam-sgnmt-decoding-syntaxbeam-module">cam.sgnmt.decoding.syntaxbeam module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -170,38 +170,48 @@
   <div class="section" id="decoders">
 <h1>Decoders<a class="headerlink" href="#decoders" title="Permalink to this headline">¶</a></h1>
 <p>Decoders are search strategies for traversing the search space which is spanned by the predictors.
-Decoders are specified using the <code class="docutils literal"><span class="pre">--decoder</span></code> arguments.</p>
-<div class="section" id="available-decoders">
-<h2>Available decoders<a class="headerlink" href="#available-decoders" title="Permalink to this headline">¶</a></h2>
+Decoders are specified using the <code class="docutils literal"><span class="pre">--decoder</span></code> argument.</p>
+<p>Remember to set the <code class="docutils literal"><span class="pre">--early_stopping</span></code> option correctly depending on your predictor constellation. Decoders often improve
+search efficiency when <code class="docutils literal"><span class="pre">early_stopping=True</span></code> (default) under the assumption that predictor scores are non-positive. Set
+<code class="docutils literal"><span class="pre">early_stopping=False</span></code> if your predictors can yield positive scores (e.g.the <code class="docutils literal"><span class="pre">ngramc</span></code> predictor).</p>
+<div class="section" id="main-decoders">
+<h2>Main decoders<a class="headerlink" href="#main-decoders" title="Permalink to this headline">¶</a></h2>
+<p>For a more detailed description of the decoders, search for the name of the decoder in the <a class="reference internal" href="#decoder-modules-label"><span class="std std-ref">Decoder modules</span></a> section.</p>
 <ul class="simple">
 <li><strong>greedy</strong>: Greedy decoding (similar to beam=1)</li>
 <li><strong>beam</strong>: Beam search like in Bahdanau et al, 2015 .</li>
+<li><strong>combibeam</strong>: Beam search which applies <code class="docutils literal"><span class="pre">--combination_scheme</span></code> at each time step.</li>
+<li><strong>dfs</strong>: Depth-first search. This should be used for exact decoding or the complete enumeration of the search space.
+but it cannot be used if the search space is too large (like for unrestricted NMT) as it performs exhaustive search.</li>
+<li><strong>astar</strong>: A* search. The heuristic function is configured using the <code class="docutils literal"><span class="pre">--heuristics</span></code> option.</li>
+</ul>
+</div>
+<div class="section" id="experimental-decoders">
+<h2>Experimental decoders<a class="headerlink" href="#experimental-decoders" title="Permalink to this headline">¶</a></h2>
+<p>Experimental decoders are less frequently used search strategies for special cases.</p>
+<ul class="simple">
 <li><strong>sepbeam</strong>: Associates predictors with hypos in beam search and applies only one predictor instead of all for hypo expansion.</li>
 <li><strong>syncbeam</strong>: Beam search which compares after consuming a special synchronization symbol instead of after each iteration.</li>
 <li><strong>fstbeam</strong>: Beam search which compares hypotheses when they share the same state ID in an FST instead of after each iteration.</li>
 <li><strong>syntaxbeam</strong>: Beam search which ensures diversity amongst terminal symbol histories.</li>
 <li><strong>mbrbeam</strong>: Diversity encouraging beam search which maximizes the expected BLEU.</li>
-<li><strong>combibeam</strong>: Beam search which applies <code class="docutils literal"><span class="pre">--combination_scheme</span></code> at each time step.</li>
 <li><strong>multisegbeam</strong>: Beam search with multiple segmentations.</li>
-<li><strong>dfs</strong>: Depth-first search. This should be used for exact decoding or the complete enumeration of the search space.
-but it cannot be used if the search space is too large (like for unrestricted NMT) as it performs exhaustive search.
-If you have not only negative predictor scores, set <code class="docutils literal"><span class="pre">--early_stopping</span></code> to false.</li>
 <li><strong>restarting</strong>: Like DFS but with better admissible pruning behavior.</li>
 <li><strong>simpledfs</strong>: Very fast DFS implementation for complete enumeration with a single predictor.</li>
-<li><strong>astar</strong>: A* search. The heuristic function is configured using the <code class="docutils literal"><span class="pre">--heuristics</span> <span class="pre">options</span></code>.</li>
 <li><strong>bucket</strong>: Works best for bag problems. Maintains buckets for each hypo length and extends a hypo in a bucket by one before selecting the next bucket.</li>
 <li><strong>flip</strong>: This decoder works only for bag problems. It traverses the search space by switching two words in the hypothesis. Do not use bow predictor.</li>
-<li><strong>bow</strong>: Restarting decoder optimized for bag-of-words problems.</li>
 <li><strong>predlimitbeam</strong>: Beam search variant with explicit limits on the culmulative predictor scores at each node expansion.</li>
 <li><strong>bigramgreedy</strong>: Works best for bag problems. Collects bigram statistics and constructs hypos to score by greedily selecting high scoring bigrams. Do not use bow predictor with this search strategy.</li>
-<li><strong>vanilla</strong>: Original Blocks beam decoder. This bypasses the predictor framework and directly performs pure NMT beam
-decoding on the GPU. Use this when you do pure NMT decoding as this is usually faster then using a single nmt predictor
-as the search can be parallelized on the GPU.</li>
 </ul>
-<p>Detailed descriptions are available below in the modules.</p>
 </div>
-<div class="section" id="relevant-modules">
-<h2>Relevant modules<a class="headerlink" href="#relevant-modules" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="decoder-modules">
+<span id="decoder-modules-label"></span><h2>Decoder modules<a class="headerlink" href="#decoder-modules" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-contents">
+<h3>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h3>
+<p>This package contains the central interfaces for the decoder (in the
+<code class="docutils literal"><span class="pre">core</span></code> module ), and the implementations of search strategies
+(<code class="docutils literal"><span class="pre">Decoder</span></code>).</p>
+</div>
 <div class="section" id="cam-sgnmt-decoding-astar-module">
 <h3>cam.sgnmt.decoding.astar module<a class="headerlink" href="#cam-sgnmt-decoding-astar-module" title="Permalink to this headline">¶</a></h3>
 <p>Implementation of the A* search strategy</p>
@@ -364,137 +374,6 @@ from the configuration API.</td>
 <dd><p>Decodes a single source sentence with the flip decoder</p>
 </dd></dl>
 
-</dd></dl>
-
-</div>
-<div class="section" id="cam-sgnmt-decoding-bow-module">
-<h3>cam.sgnmt.decoding.bow module<a class="headerlink" href="#cam-sgnmt-decoding-bow-module" title="Permalink to this headline">¶</a></h3>
-<p>Implementation of the bow search strategy</p>
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.bow.</code><code class="descname">BOWDecoder</code><span class="sig-paren">(</span><em>decoder_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/bow.html#BOWDecoder"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.Decoder" title="cam.sgnmt.decoding.core.Decoder"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.core.Decoder</span></code></a></p>
-<p>This decoder is designed to work well for bag-of-words decoding
-experiments. It is similar to the restarting decoder as it back-
-traces to a node in the search tree and does greedy decoding from
-that point. However, the strategy to select the node from which to
-restart differs: we select the node with the highest expected total
-score, which is estimated by taking the score of a full hypothesis
-with the same prefix plus the score in the posterior in the
-corresponding decoding run of the first deviating token. This
-heuristic assumes that the score of the full hypothesis will be
-the same as the previous one, just using the better score at the
-deviating node in place. This assumption is more likely to hold in
-fixed length decoding problems, e.g. bag-of-words tasks.</p>
-<p>Note that this decoder does not support the <code class="docutils literal"><span class="pre">max_length</span></code>
-parameter as it is designed for fixed length decoding problems.</p>
-<p>Also note that even if this decoder is designed for bag problems,
-it can be used even in case of variable length hypotheses.
-Therefore, you still need to use the bow predictor.</p>
-<p>Creates a new bag decoder. The following values
-are fetched from <cite>decoder_args</cite>:</p>
-<blockquote>
-<div><p>hypo_recombination (bool): Activates hypo recombination
-max_node_expansions (int): Maximum number of node expansions</p>
-<blockquote>
-<div>for inadmissible pruning.</div></blockquote>
-<dl class="docutils">
-<dt>stochastic_decoder (bool): If true, select the next node to</dt>
-<dd>restart from randomly. If false,
-take the one with the best
-node score</dd>
-<dt>early_stopping (bool): Activates inadmissible pruning. Do</dt>
-<dd>not use if you have positive scores</dd>
-<dt>decode_always_single_step (bool): If true, we do only a single</dt>
-<dd>expansion from the backtraced
-node and select a new node. If
-false, we perform greedy
-decoding from that node until
-we reach a final node</dd>
-</dl>
-</div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decoder_args</strong> (<em>object</em>) &#8211; Decoder configuration passed through
-from the configuration API.</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt>
-<code class="descname">create_initial_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/bow.html#BOWDecoder.create_initial_node"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Create the root node for the search tree.</p>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">decode</code><span class="sig-paren">(</span><em>src_sentence</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/bow.html#BOWDecoder.decode"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Decodes a single source sentence using BOW search.</p>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">greedy_decode</code><span class="sig-paren">(</span><em>node</em>, <em>word</em>, <em>single_step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/bow.html#BOWDecoder.greedy_decode"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Helper function for greedy decoding from a certain point in
-the search tree.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.bow.</code><code class="descname">BOWNode</code><span class="sig-paren">(</span><em>hypo</em>, <em>posterior</em>, <em>score_breakdown</em>, <em>prev_nodes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/bow.html#BOWNode"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>Helper class for <code class="docutils literal"><span class="pre">BOWDecoder`</span></code> representing a child
-object in the search tree.</p>
-<dl class="attribute">
-<dt id="cam.sgnmt.decoding.bow.BOWNode.hypo">
-<code class="descname">hypo</code><a class="headerlink" href="#cam.sgnmt.decoding.bow.BOWNode.hypo" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>PartialHypothesis</em> &#8211; Hypothesis corresponding to this node</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="cam.sgnmt.decoding.bow.BOWNode.posterior">
-<code class="descname">posterior</code><a class="headerlink" href="#cam.sgnmt.decoding.bow.BOWNode.posterior" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> &#8211; Scores on outgoing arcs</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="cam.sgnmt.decoding.bow.BOWNode.score_breakdown">
-<code class="descname">score_breakdown</code><a class="headerlink" href="#cam.sgnmt.decoding.bow.BOWNode.score_breakdown" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> &#8211; Score breakdowns for outgoing arcs</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="cam.sgnmt.decoding.bow.BOWNode.prev_nodes">
-<code class="descname">prev_nodes</code><a class="headerlink" href="#cam.sgnmt.decoding.bow.BOWNode.prev_nodes" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>list</em> &#8211; Path from the root to this node</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="cam.sgnmt.decoding.bow.BOWNode.active_arcs">
-<code class="descname">active_arcs</code><a class="headerlink" href="#cam.sgnmt.decoding.bow.BOWNode.active_arcs" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> &#8211; Dictionary of unexplored outgoing arcs</p>
-</dd></dl>
-
-<p>Creates a new search tree node. All outgoing arcs are set to
-active by default.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>hypo</strong> (<a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.core.PartialHypothesis" title="cam.sgnmt.decoding.core.PartialHypothesis"><em>PartialHypothesis</em></a>) &#8211; Hypothesis corresponding to this node</li>
-<li><strong>posterior</strong> (<em>dict</em>) &#8211; Scores on outgoing arcs</li>
-<li><strong>score_breakdown</strong> (<em>dict</em>) &#8211; Score breakdowns for outgoing arcs</li>
-<li><strong>prev_nodes</strong> (<em>list</em>) &#8211; Path from the root to this node</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
 </div>
@@ -1150,29 +1029,6 @@ target token in <code class="docutils literal"><span class="pre">trgt_sentence</
 </tr>
 </tbody>
 </table>
-<dl class="method">
-<dt>
-<code class="descname">convert_to_char_level</code><span class="sig-paren">(</span><em>cmap</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/core.html#Hypothesis.convert_to_char_level"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Creates a new hypothesis on the character level from a
-hypothesis on the word level. Both objects will have the same
-total score, but the word tokens in trgt_sentence are replaced
-by characters and score_breakdown adds word scores on the first
-character of the word. The mapping from word ID to character ID
-sequence is realized by using <code class="docutils literal"><span class="pre">utils.trg_wmap</span></code> and the char-
-to-id map <code class="docutils literal"><span class="pre">cmap</span></code>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cmap</strong> (<em>dict</em>) &#8211; Mapping from character to character ID</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Hypothesis. New hypo which corresponds to this hypo but is
-tokenized on the character instead of the word level.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
@@ -1257,9 +1113,6 @@ the new word</li>
 
 </dd></dl>
 
-</div>
-<div class="section" id="cam-sgnmt-decoding-decoder-module">
-<h3>cam.sgnmt.decoding.decoder module<a class="headerlink" href="#cam-sgnmt-decoding-decoder-module" title="Permalink to this headline">¶</a></h3>
 </div>
 <div class="section" id="cam-sgnmt-decoding-dfs-module">
 <h3>cam.sgnmt.decoding.dfs module<a class="headerlink" href="#cam-sgnmt-decoding-dfs-module" title="Permalink to this headline">¶</a></h3>
@@ -1900,58 +1753,6 @@ can be used for subword unit based tokenizers.</p>
 
 <dl class="class">
 <dt>
-<em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.multisegbeam.</code><code class="descname">FSTTokenizer</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#FSTTokenizer"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.multisegbeam.Tokenizer" title="cam.sgnmt.decoding.multisegbeam.Tokenizer"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.multisegbeam.Tokenizer</span></code></a></p>
-<p>This tokenizer reads in an FST which transduces a sequence
-of subword units to a sequence of characters which constitute
-the key. The characters must used the global target cmap.</p>
-<p>Loads subword-&gt;char FST, determinizes and minimizes it.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>string</em>) &#8211; Path to an FST from subword unit to char
-sequence</td>
-</tr>
-</tbody>
-</table>
-<dl class="attribute">
-<dt>
-<code class="descname">EPS_ID</code><em class="property"> = 0</em></dt>
-<dd><p>OpenFST&#8217;s reserved ID for epsilon arcs.</p>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">is_word_begin_token</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#FSTTokenizer.is_word_begin_token"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Returns true if there is an arc labeled with <code class="docutils literal"><span class="pre">token</span></code> from
-the start state in the token2char FST.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>token</strong> (<em>int</em>) &#8211; token ID</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">bool. True if a word can start with <code class="docutils literal"><span class="pre">token</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">key2tokens</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#FSTTokenizer.key2tokens"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt>
-<code class="descname">tokens2key</code><span class="sig-paren">(</span><em>tokens</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#FSTTokenizer.tokens2key"><span class="viewcode-link">[source]</span></a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt>
 <em class="property">class </em><code class="descclassname">cam.sgnmt.decoding.multisegbeam.</code><code class="descname">MixedTokenizer</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#MixedTokenizer"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Bases: <a class="reference internal" href="cam.sgnmt.decoding.html#cam.sgnmt.decoding.multisegbeam.Tokenizer" title="cam.sgnmt.decoding.multisegbeam.Tokenizer"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.decoding.multisegbeam.Tokenizer</span></code></a></p>
 <p>This tokenizer allows to mix word- and character-level
@@ -1987,7 +1788,7 @@ we keep the n best hypotheses on the word level. Predictor scores
 on finer-grained tokens are collapsed into a single score s.t. they
 can be combined with scores from other predictors. This decoder can
 produce words without entry in the word map. In this case, words
-are added to <code class="docutils literal"><span class="pre">utils.trg_wmap</span></code>. Consider using the <code class="docutils literal"><span class="pre">output_chars</span></code>
+are added to <code class="docutils literal"><span class="pre">io.trg_wmap</span></code>. Consider using the <code class="docutils literal"><span class="pre">output_chars</span></code>
 option to avoid dealing with the updated word map in the output.</p>
 <p>Creates a new beam decoder instance for predictors with
 multiple tokenizations.</p>
@@ -2149,11 +1950,11 @@ match any (sub)string without token correspondence.</p>
 <dd>IDs. The multiseg beam search can produce words which are not in
 the original word map. This mapper adds these words to</dd>
 </dl>
-<p><code class="docutils literal"><span class="pre">utils.trg_wmap</span></code>.</p>
+<p><code class="docutils literal"><span class="pre">io.trg_wmap</span></code>.</p>
 <blockquote>
 <div>This class uses the GoF design pattern singleton.</div></blockquote>
 <p>Creates a new mapper instance and synchronizes it with
-<code class="docutils literal"><span class="pre">utils.trg_wmap</span></code>.</p>
+<code class="docutils literal"><span class="pre">io.trg_wmap</span></code>.</p>
 <dl class="staticmethod">
 <dt>
 <em class="property">static </em><code class="descname">get_singleton</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#WordMapper.get_singleton"><span class="viewcode-link">[source]</span></a></dt>
@@ -2173,7 +1974,7 @@ implements lazy initialization.</p>
 <dt>
 <code class="descname">get_word_id</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#WordMapper.get_word_id"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Finds a word ID for the given key. If no such key is in the
-current word map, create a new entry in <code class="docutils literal"><span class="pre">utils.trg_wmap</span></code>.</p>
+current word map, create a new entry in <code class="docutils literal"><span class="pre">io.trg_wmap</span></code>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -2181,7 +1982,7 @@ current word map, create a new entry in <code class="docutils literal"><span cla
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<em>string</em>) &#8211; key to look up</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">int. Word ID corresponding to <code class="docutils literal"><span class="pre">key</span></code>. Add new word ID if
-the key cannot be found in <code class="docutils literal"><span class="pre">utils.trg_wmap</span></code></td>
+the key cannot be found in <code class="docutils literal"><span class="pre">io.trg_wmap</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -2197,7 +1998,7 @@ the key cannot be found in <code class="docutils literal"><span class="pre">util
 <dt>
 <code class="descname">synchronize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/decoding/multisegbeam.html#WordMapper.synchronize"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Synchronizes the internal state of this mapper with
-<code class="docutils literal"><span class="pre">utils.trg_wmap</span></code>. This includes updating the reverse lookup
+<code class="docutils literal"><span class="pre">io.trg_wmap</span></code>. This includes updating the reverse lookup
 table and finding the lowest free word ID which can be assigned
 to new words.</p>
 </dd></dl>
@@ -2454,12 +2255,6 @@ syntax_max_terminal_id (int): All IDs larger than this are NTs</div></blockquote
 </dd></dl>
 
 </div>
-<div class="section" id="module-contents">
-<h3>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h3>
-<p>This package contains the central interfaces for the decoder (in the
-<code class="docutils literal"><span class="pre">core</span></code> module ), and the implementations of search strategies
-(<code class="docutils literal"><span class="pre">Decoder</span></code>).</p>
-</div>
 </div>
 </div>
 
@@ -2504,7 +2299,7 @@ syntax_max_terminal_id (int): All IDs larger than this are NTs</div></blockquote
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

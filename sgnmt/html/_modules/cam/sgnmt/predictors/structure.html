@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.structure &mdash; SGNMT 0.6 documentation</title>
+  <title>cam.sgnmt.predictors.structure &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -84,10 +84,11 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
@@ -140,7 +141,23 @@
            <div itemprop="articleBody">
             
   <h1>Source code for cam.sgnmt.predictors.structure</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;This module implements constraints which assure that highly structured</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># coding=utf-8</span>
+<span class="c1"># Copyright 2019 The SGNMT Authors.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;This module implements constraints which assure that highly structured</span>
 <span class="sd">output is well-formatted. For example, the bracket predictor checks for</span>
 <span class="sd">balanced bracket expressions, and the OSM predictor prevents any sequence</span>
 <span class="sd">of operations which cannot be compiled to a string.</span>
@@ -325,11 +342,11 @@
 
     <span class="k">def</span> <span class="nf">_generate_alignments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">align_stub</span><span class="o">=</span><span class="p">[],</span> <span class="n">compiled_start_pos</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> 
                              <span class="n">sentence_start_pos</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">compiled_start_pos</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">compiled_start_pos</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">)):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;X&#39;</span><span class="p">:</span>
                 <span class="n">word</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="n">pos</span><span class="p">])</span>
-                <span class="k">for</span> <span class="n">sen_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">sentence_start_pos</span><span class="p">,</span> 
-                                      <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">sen_pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sentence_start_pos</span><span class="p">,</span> 
+                                     <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">)):</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">sen_pos</span><span class="p">]</span> <span class="o">==</span> <span class="n">word</span><span class="p">:</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">_generate_alignments</span><span class="p">(</span>
                             <span class="n">align_stub</span> <span class="o">+</span> <span class="p">[(</span><span class="n">pos</span><span class="p">,</span> <span class="n">sen_pos</span><span class="p">)],</span>
@@ -339,7 +356,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">alignments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">align_stub</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_align</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">possible_words</span> <span class="o">=</span> <span class="p">[</span><span class="nb">set</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">))]</span>
+        <span class="n">possible_words</span> <span class="o">=</span> <span class="p">[</span><span class="nb">set</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">))]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">alignments</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_generate_alignments</span><span class="p">(</span><span class="n">align_stub</span><span class="o">=</span><span class="p">[])</span>
         <span class="k">for</span> <span class="n">alignment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alignments</span><span class="p">:</span>
@@ -351,8 +368,8 @@
                    <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">prev_sentence_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">sentence_pos</span><span class="p">])</span>
                <span class="k">if</span> <span class="n">section_words</span><span class="p">:</span>
                    <span class="n">seen_gap</span> <span class="o">=</span> <span class="bp">False</span>
-                   <span class="k">for</span> <span class="n">section_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">prev_compiled_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> 
-                                             <span class="n">compiled_pos</span><span class="p">):</span>
+                   <span class="k">for</span> <span class="n">section_pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">prev_compiled_pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> 
+                                            <span class="n">compiled_pos</span><span class="p">):</span>
                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="n">section_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
                            <span class="k">if</span> <span class="n">seen_gap</span><span class="p">:</span>
                                <span class="n">possible_words</span><span class="p">[</span><span class="n">section_pos</span><span class="p">]</span> <span class="o">|=</span> <span class="n">section_words</span>
@@ -371,7 +388,7 @@
         <span class="sd">&quot;&quot;&quot;Aligns the compiled string to the reference and returns the</span>
 <span class="sd">        possible words at each position.&quot;&quot;&quot;</span>
         <span class="n">possible_words</span> <span class="o">=</span> <span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">)</span> 
-            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">))]</span> <span class="c1"># Initially no constraints</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">))]</span> <span class="c1"># Initially no constraints</span>
         <span class="c1"># Constrain words before first gap</span>
         <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">):</span>
             <span class="n">possible_words</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">pos</span><span class="p">]])</span>
@@ -390,21 +407,21 @@
                     <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">first_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:])</span>
                 <span class="n">rm_before</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">last_idx</span><span class="p">:]</span> <span class="o">+</span> <span class="p">[</span><span class="n">isymb</span><span class="p">])</span> \
                     <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[:</span><span class="n">last_idx</span><span class="p">])</span>
-                <span class="k">for</span> <span class="n">before_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">before_pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
                     <span class="n">possible_words</span><span class="p">[</span><span class="n">before_pos</span><span class="p">]</span> <span class="o">-=</span> <span class="n">rm_before</span>
-                <span class="k">for</span> <span class="n">after_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">after_pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">)):</span>
                     <span class="n">possible_words</span><span class="p">[</span><span class="n">after_pos</span><span class="p">]</span> <span class="o">-=</span> <span class="n">rm_after</span>
                 <span class="c1"># Then, we refine constraints until the nearest gap</span>
                 <span class="k">if</span> <span class="n">first_idx</span> <span class="o">==</span> <span class="n">last_idx</span><span class="p">:</span>
                     <span class="n">cur_idx</span> <span class="o">=</span> <span class="n">first_idx</span> <span class="o">-</span> <span class="mi">1</span>
-                    <span class="k">for</span> <span class="n">before_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pos</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">before_pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pos</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
                         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">[</span><span class="n">before_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
                             <span class="k">break</span>
                         <span class="n">possible_words</span><span class="p">[</span><span class="n">before_pos</span><span class="p">]</span> <span class="o">&amp;=</span> <span class="nb">set</span><span class="p">(</span>
                                 <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="n">cur_idx</span><span class="p">]])</span>
                         <span class="n">cur_idx</span> <span class="o">-=</span> <span class="mi">1</span>
                     <span class="n">cur_idx</span> <span class="o">=</span> <span class="n">first_idx</span> <span class="o">+</span> <span class="mi">1</span>
-                    <span class="k">for</span> <span class="n">after_pos</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">)):</span>
+                    <span class="k">for</span> <span class="n">after_pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compiled</span><span class="p">)):</span>
                         <span class="k">if</span> <span class="n">cur_idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">):</span>
                             <span class="n">constraint</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
                         <span class="k">else</span><span class="p">:</span>
@@ -496,7 +513,7 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">BracketPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_terminal_id</span> <span class="o">=</span> <span class="n">max_terminal_id</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">closing_bracket_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">split_comma</span><span class="p">(</span><span class="n">closing_bracket_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">closing_bracket_ids</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">closing_bracket_id</span><span class="p">)]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span> <span class="o">=</span> <span class="n">max_depth</span> <span class="k">if</span> <span class="n">max_depth</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1000000</span>
@@ -620,7 +637,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

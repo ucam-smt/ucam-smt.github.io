@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decode_utils &mdash; SGNMT 0.6 documentation</title>
+  <title>cam.sgnmt.decode_utils &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -84,10 +84,11 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../decoders.html">Decoders</a></li>
@@ -141,6 +142,21 @@
             
   <h1>Source code for cam.sgnmt.decode_utils</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># coding=utf-8</span>
+<span class="c1"># Copyright 2019 The SGNMT Authors.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
 <span class="sd">&quot;&quot;&quot;This module is the bridge between the command line configuration of</span>
 <span class="sd">the decode.py script and the SGNMT software architecture consisting of</span>
 <span class="sd">decoders, predictors, and output handlers. A common use case is to call</span>
@@ -159,17 +175,14 @@
 <span class="kn">import</span> <span class="nn">uuid</span>
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">io</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.blocks.nmt</span> <span class="kn">import</span> <span class="n">blocks_get_nmt_predictor</span><span class="p">,</span> \
-                                 <span class="n">blocks_get_nmt_vanilla_decoder</span><span class="p">,</span> \
-                                 <span class="n">blocks_get_default_nmt_config</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.parse</span> <span class="kn">import</span> <span class="n">ParsePredictor</span><span class="p">,</span> <span class="n">TokParsePredictor</span><span class="p">,</span> \
                                        <span class="n">BpeParsePredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding</span> <span class="kn">import</span> <span class="n">combination</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.astar</span> <span class="kn">import</span> <span class="n">AstarDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.beam</span> <span class="kn">import</span> <span class="n">BeamDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.bigramgreedy</span> <span class="kn">import</span> <span class="n">BigramGreedyDecoder</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.bow</span> <span class="kn">import</span> <span class="n">BOWDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.bucket</span> <span class="kn">import</span> <span class="n">BucketDecoder</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">UnboundedVocabularyPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Hypothesis</span>
@@ -201,7 +214,6 @@
                                          <span class="n">NondeterministicFstPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.bow</span> <span class="kn">import</span> <span class="n">BagOfWordsPredictor</span><span class="p">,</span> \
                                      <span class="n">BagOfWordsSearchPredictor</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.ffnnlm</span> <span class="kn">import</span> <span class="n">NPLMPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.forced</span> <span class="kn">import</span> <span class="n">ForcedPredictor</span><span class="p">,</span> <span class="n">ForcedLstPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.grammar</span> <span class="kn">import</span> <span class="n">RuleXtractPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.length</span> <span class="kn">import</span> <span class="n">WordCountPredictor</span><span class="p">,</span> <span class="n">NBLengthPredictor</span><span class="p">,</span> \
@@ -221,15 +233,14 @@
                                             <span class="n">UnboundedMaskvocabPredictor</span><span class="p">,</span> \
                                             <span class="n">UnkvocabPredictor</span><span class="p">,</span> \
                                             <span class="n">SkipvocabPredictor</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.ngram</span> <span class="kn">import</span> <span class="n">SRILMPredictor</span><span class="p">,</span> <span class="n">KenLMPredictor</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.ngram</span> <span class="kn">import</span> <span class="n">KenLMPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_t2t</span> <span class="kn">import</span> <span class="n">T2TPredictor</span><span class="p">,</span> \
                                         <span class="n">EditT2TPredictor</span><span class="p">,</span> \
                                         <span class="n">SegT2TPredictor</span><span class="p">,</span> \
                                         <span class="n">FertilityT2TPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tf_nizza</span> <span class="kn">import</span> <span class="n">NizzaPredictor</span><span class="p">,</span> <span class="n">LexNizzaPredictor</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.tokenization</span> <span class="kn">import</span> <span class="n">Word2charPredictor</span><span class="p">,</span> <span class="n">FSTTokPredictor</span>
-<span class="kn">from</span> <span class="nn">cam.sgnmt.tf.interface</span> <span class="kn">import</span> <span class="n">tf_get_nmt_predictor</span><span class="p">,</span> <span class="n">tf_get_nmt_vanilla_decoder</span><span class="p">,</span> \
-    <span class="n">tf_get_rnnlm_predictor</span><span class="p">,</span> <span class="n">tf_get_default_nmt_config</span><span class="p">,</span> <span class="n">tf_get_rnnlm_prefix</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.pytorch_fairseq</span> <span class="kn">import</span> <span class="n">FairseqPredictor</span>
 
 
 <span class="n">args</span> <span class="o">=</span> <span class="bp">None</span>
@@ -254,9 +265,8 @@
         <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">getwriter</span><span class="p">(</span><span class="s1">&#39;UTF-8&#39;</span><span class="p">)(</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">getwriter</span><span class="p">(</span><span class="s1">&#39;UTF-8&#39;</span><span class="p">)(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">getreader</span><span class="p">(</span><span class="s1">&#39;UTF-8&#39;</span><span class="p">)(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;SGNMT is tested with Python 2.7, but you are using &quot;</span>
-                     <span class="s2">&quot;Python 3. Expect the unexpected or switch to 2.7.&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;SGNMT is tested with Python 3, but you are using &quot;</span>
+                     <span class="s2">&quot;Python 2. Expect the unexpected or switch to &gt;3.5.&quot;</span><span class="p">)</span>
     <span class="c1"># Set up logger</span>
     <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(levelname)s</span><span class="s1">: </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">)</span>
@@ -270,16 +280,19 @@
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">==</span> <span class="s1">&#39;error&#39;</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
     <span class="c1"># Set reserved word IDs</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">==</span> <span class="s1">&#39;blocks&#39;</span><span class="p">:</span>
-        <span class="n">utils</span><span class="o">.</span><span class="n">switch_to_blocks_indexing</span><span class="p">()</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">==</span> <span class="s1">&#39;tf&#39;</span><span class="p">:</span>
-        <span class="n">utils</span><span class="o">.</span><span class="n">switch_to_tf_indexing</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">==</span> <span class="s1">&#39;fairseq&#39;</span><span class="p">:</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">switch_to_fairseq_indexing</span><span class="p">()</span>
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">==</span> <span class="s1">&#39;t2t&#39;</span><span class="p">:</span>
         <span class="n">utils</span><span class="o">.</span><span class="n">switch_to_t2t_indexing</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Indexing scheme not implemented&quot;</span><span class="p">)</span>
     <span class="c1"># Log summation (how to compute log(exp(l1)+exp(l2)) for log values l1,l2)</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">log_sum</span> <span class="o">==</span> <span class="s1">&#39;tropical&#39;</span><span class="p">:</span>
         <span class="n">utils</span><span class="o">.</span><span class="n">log_sum</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">log_sum_tropical_semiring</span>
-    <span class="n">ui</span><span class="o">.</span><span class="n">validate_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div>
+    <span class="n">ui</span><span class="o">.</span><span class="n">validate_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">run_diagnostics</span><span class="p">:</span>
+        <span class="n">ui</span><span class="o">.</span><span class="n">run_diagnostics</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span></div>
 
 
 <span class="n">_override_args_cnts</span> <span class="o">=</span> <span class="p">{}</span>
@@ -314,7 +327,7 @@
 <span class="sd">    direct settings such as &#39;param1=x,param2=y&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">add_config</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">parse_param_string</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="n">field</span><span class="p">))</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">default</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">default</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">add_config</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">):</span>
                 <span class="n">default</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">add_config</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
@@ -369,22 +382,7 @@
                 <span class="n">pred_weight</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">weights</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
 
             <span class="c1"># Create predictor instances for the string argument ``pred``</span>
-            <span class="k">if</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;nmt&quot;</span><span class="p">:</span>
-                <span class="c1"># TODO: Clean this up and make a blocks and tfnmt predictor</span>
-                <span class="n">nmt_engine</span> <span class="o">=</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nmt_engine&quot;</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">nmt_engine</span> <span class="o">==</span> <span class="s1">&#39;blocks&#39;</span><span class="p">:</span>
-                    <span class="n">nmt_config</span> <span class="o">=</span> <span class="n">_parse_config_param</span><span class="p">(</span>
-                        <span class="s2">&quot;nmt_config&quot;</span><span class="p">,</span> <span class="n">blocks_get_default_nmt_config</span><span class="p">())</span>
-                    <span class="n">p</span> <span class="o">=</span> <span class="n">blocks_get_nmt_predictor</span><span class="p">(</span>
-                        <span class="n">args</span><span class="p">,</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nmt_path&quot;</span><span class="p">),</span> <span class="n">nmt_config</span><span class="p">)</span>
-                <span class="k">elif</span> <span class="n">nmt_engine</span> <span class="o">==</span> <span class="s1">&#39;tensorflow&#39;</span><span class="p">:</span>
-                    <span class="n">nmt_config</span> <span class="o">=</span> <span class="n">_parse_config_param</span><span class="p">(</span>
-                        <span class="s2">&quot;nmt_config&quot;</span><span class="p">,</span> <span class="n">tf_get_default_nmt_config</span><span class="p">())</span>
-                    <span class="n">p</span> <span class="o">=</span> <span class="n">tf_get_nmt_predictor</span><span class="p">(</span>
-                        <span class="n">args</span><span class="p">,</span> <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nmt_path&quot;</span><span class="p">),</span> <span class="n">nmt_config</span><span class="p">)</span>
-                <span class="k">elif</span> <span class="n">nmt_engine</span> <span class="o">!=</span> <span class="s1">&#39;none&#39;</span><span class="p">:</span>
-                    <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;NMT engine </span><span class="si">%s</span><span class="s2"> is not supported (yet)!&quot;</span> <span class="o">%</span> <span class="n">nmt_engine</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;nizza&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;nizza&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">NizzaPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_src_vocab_size&quot;</span><span class="p">),</span>
                                    <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;pred_trg_vocab_size&quot;</span><span class="p">),</span>
                                    <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nizza_model&quot;</span><span class="p">),</span>
@@ -461,6 +459,11 @@
                                  <span class="n">n_cpu_threasd</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">n_cpu_threads</span><span class="p">,</span>
                                  <span class="n">max_terminal_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span><span class="p">,</span>
                                  <span class="n">pop_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;fairseq&quot;</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">FairseqPredictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;fairseq_path&quot;</span><span class="p">),</span>
+                                     <span class="n">args</span><span class="o">.</span><span class="n">fairseq_user_dir</span><span class="p">,</span>
+                                     <span class="n">args</span><span class="o">.</span><span class="n">fairseq_lang_pair</span><span class="p">,</span>
+                                     <span class="n">args</span><span class="o">.</span><span class="n">n_cpu_threads</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;bracket&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">BracketPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">syntax_max_terminal_id</span><span class="p">,</span>
                                      <span class="n">args</span><span class="o">.</span><span class="n">syntax_pop_id</span><span class="p">,</span>
@@ -521,18 +524,8 @@
                                  <span class="n">to_log</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">fst_to_log</span><span class="p">,</span>
                                  <span class="n">minimize_rtns</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">minimize_rtns</span><span class="p">,</span>
                                  <span class="n">rmeps</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">remove_epsilon_in_rtns</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;srilm&quot;</span><span class="p">:</span>
-                <span class="n">p</span> <span class="o">=</span> <span class="n">SRILMPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">lm_path</span><span class="p">,</span> 
-                                   <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;ngramc_order&quot;</span><span class="p">),</span>
-                                   <span class="n">args</span><span class="o">.</span><span class="n">srilm_convert_to_ln</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;kenlm&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">KenLMPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">lm_path</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;nplm&quot;</span><span class="p">:</span>
-                <span class="n">p</span> <span class="o">=</span> <span class="n">NPLMPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nplm_path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">normalize_nplm_probs</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;rnnlm&quot;</span><span class="p">:</span>
-                <span class="n">p</span> <span class="o">=</span> <span class="n">tf_get_rnnlm_predictor</span><span class="p">(</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;rnnlm_path&quot;</span><span class="p">),</span>
-                                           <span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;rnnlm_config&quot;</span><span class="p">),</span>
-                                           <span class="n">tf_get_rnnlm_prefix</span><span class="p">())</span>
             <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;wc&quot;</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">WordCountPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">wc_word</span><span class="p">,</span>
                                        <span class="n">args</span><span class="o">.</span><span class="n">wc_nonterminal_penalty</span><span class="p">,</span>
@@ -565,8 +558,6 @@
                 <span class="n">p</span> <span class="o">=</span> <span class="n">RuleXtractPredictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">rules_path</span><span class="p">,</span>
                                         <span class="n">args</span><span class="o">.</span><span class="n">use_grammar_weights</span><span class="p">,</span>
                                         <span class="n">fw</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pred</span> <span class="o">==</span> <span class="s2">&quot;vanilla&quot;</span><span class="p">:</span>
-                <span class="k">continue</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Predictor &#39;</span><span class="si">%s</span><span class="s2">&#39; not available. Please check &quot;</span>
                               <span class="s2">&quot;--predictors for spelling errors.&quot;</span> <span class="o">%</span> <span class="n">pred</span><span class="p">)</span>
@@ -760,8 +751,6 @@
                                         <span class="n">args</span><span class="o">.</span><span class="n">restarting_node_score</span><span class="p">,</span>
                                         <span class="n">args</span><span class="o">.</span><span class="n">stochastic_decoder</span><span class="p">,</span>
                                         <span class="n">args</span><span class="o">.</span><span class="n">decode_always_single_step</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bow&quot;</span><span class="p">:</span>
-            <span class="n">decoder</span> <span class="o">=</span> <span class="n">BOWDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;flip&quot;</span><span class="p">:</span>
             <span class="n">decoder</span> <span class="o">=</span> <span class="n">FlipDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;bigramgreedy&quot;</span><span class="p">:</span>
@@ -781,9 +770,6 @@
                                     <span class="n">args</span><span class="o">.</span><span class="n">collect_statistics</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;astar&quot;</span><span class="p">:</span>
             <span class="n">decoder</span> <span class="o">=</span> <span class="n">AstarDecoder</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span> <span class="o">==</span> <span class="s2">&quot;vanilla&quot;</span><span class="p">:</span>
-            <span class="n">decoder</span> <span class="o">=</span> <span class="n">construct_nmt_vanilla_decoder</span><span class="p">()</span>
-            <span class="n">args</span><span class="o">.</span><span class="n">predictors</span> <span class="o">=</span> <span class="s2">&quot;vanilla&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Decoder </span><span class="si">%s</span><span class="s2"> not available. Please double-check the &quot;</span>
                           <span class="s2">&quot;--decoder parameter.&quot;</span> <span class="o">%</span> <span class="n">args</span><span class="o">.</span><span class="n">decoder</span><span class="p">)</span>
@@ -799,34 +785,6 @@
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">heuristics</span><span class="p">:</span>
         <span class="n">add_heuristics</span><span class="p">(</span><span class="n">decoder</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">decoder</span></div>
-
-
-<div class="viewcode-block" id="construct_nmt_vanilla_decoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.construct_nmt_vanilla_decoder">[docs]</a><span class="k">def</span> <span class="nf">construct_nmt_vanilla_decoder</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Creates the vanilla NMT decoder which bypasses the predictor </span>
-<span class="sd">    framework. It uses the template methods ``get_nmt_vanilla_decoder``</span>
-<span class="sd">    for uniform access to the blocks or tensorflow frameworks.</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        NMT vanilla decoder using all specified NMT models, or None if</span>
-<span class="sd">        an error occurred.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">is_nmt</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;nmt&quot;</span> <span class="o">==</span> <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)]</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">is_nmt</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_nmt</span><span class="p">):</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Vanilla decoder can only be used with nmt predictors&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">None</span>
-    <span class="n">nmt_specs</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">nmt_engine</span> <span class="o">==</span> <span class="s1">&#39;blocks&#39;</span><span class="p">:</span>
-        <span class="n">get_default_nmt_config</span> <span class="o">=</span> <span class="n">blocks_get_default_nmt_config</span>
-        <span class="n">get_nmt_vanilla_decoder</span> <span class="o">=</span> <span class="n">blocks_get_nmt_vanilla_decoder</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">nmt_engine</span> <span class="o">==</span> <span class="s1">&#39;tensorflow&#39;</span><span class="p">:</span>
-        <span class="n">get_default_nmt_config</span> <span class="o">=</span> <span class="n">tf_get_default_nmt_config</span>
-        <span class="n">get_nmt_vanilla_decoder</span> <span class="o">=</span> <span class="n">tf_get_nmt_vanilla_decoder</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n</span><span class="p">):</span> 
-        <span class="n">nmt_specs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">_get_override_args</span><span class="p">(</span><span class="s2">&quot;nmt_path&quot;</span><span class="p">),</span>
-                          <span class="n">_parse_config_param</span><span class="p">(</span><span class="s2">&quot;nmt_config&quot;</span><span class="p">,</span>
-                                              <span class="n">get_default_nmt_config</span><span class="p">())))</span>
-    <span class="k">return</span> <span class="n">get_nmt_vanilla_decoder</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">nmt_specs</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="add_heuristics"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.add_heuristics">[docs]</a><span class="k">def</span> <span class="nf">add_heuristics</span><span class="p">(</span><span class="n">decoder</span><span class="p">):</span>
@@ -876,7 +834,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">outputs</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
-    <span class="n">trg_map</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span>
     <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">split_comma</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">outputs</span><span class="p">):</span>
         <span class="k">if</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">output_path</span><span class="p">:</span>
@@ -884,11 +841,10 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">path</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">output_path</span>
         <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span>
-            <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TextOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">trg_map</span><span class="p">))</span>
+            <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TextOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
         <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nbest&quot;</span><span class="p">:</span>
             <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NBestOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> 
-                                              <span class="n">utils</span><span class="o">.</span><span class="n">split_comma</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="p">),</span>
-                                              <span class="n">trg_map</span><span class="p">))</span>
+                                              <span class="n">utils</span><span class="o">.</span><span class="n">split_comma</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">predictors</span><span class="p">)))</span>
         <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;ngram&quot;</span><span class="p">:</span>
             <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NgramOutputHandler</span><span class="p">(</span><span class="n">path</span><span class="p">,</span>
                                               <span class="n">args</span><span class="o">.</span><span class="n">min_ngram_order</span><span class="p">,</span>
@@ -926,7 +882,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">from_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">)</span>
                 <span class="n">to_idx</span> <span class="o">=</span> <span class="n">from_idx</span>
-            <span class="n">ids</span> <span class="o">=</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">from_idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">to_idx</span><span class="p">))</span>
+            <span class="n">ids</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">from_idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">to_idx</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;The --range does not seem to specify a numerical &quot;</span>
                          <span class="s2">&quot;range (</span><span class="si">%s</span><span class="s2">). Interpreting as file name..&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
@@ -959,7 +915,7 @@
         <span class="k">if</span> <span class="n">src_sentences</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
            <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;Input method dummy requires --range&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">ids</span> <span class="o">=</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src_sentences</span><span class="p">))</span>
+            <span class="n">ids</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">src_sentences</span><span class="p">))</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">:</span>
         <span class="k">yield</span> <span class="n">i</span></div>
 
@@ -1019,6 +975,24 @@
     <span class="k">return</span> <span class="n">Hypothesis</span><span class="p">([</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="p">[[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">predictors</span><span class="p">]])</span> 
 
 
+<span class="k">def</span> <span class="nf">_apply_per_sentence_predictor_weights</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Apply per sentence weights if specified.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">src</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">per_sentence_predictor_weights</span><span class="p">:</span>
+        <span class="c1"># change predictor weights per-sentence</span>
+        <span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">src</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">weights</span><span class="p">]</span>
+            <span class="n">src</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Changing predictor weights to {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">weights</span><span class="p">))</span>
+            <span class="n">decoder</span><span class="o">.</span><span class="n">change_predictor_weights</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s1">&#39;No weights read in {} - leaving unchanged&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">src</span>
+
+
 <div class="viewcode-block" id="do_decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.decode_utils.do_decode">[docs]</a><span class="k">def</span> <span class="nf">do_decode</span><span class="p">(</span><span class="n">decoder</span><span class="p">,</span> 
               <span class="n">output_handlers</span><span class="p">,</span> 
               <span class="n">src_sentences</span><span class="p">):</span>
@@ -1048,30 +1022,13 @@
     <span class="k">for</span> <span class="n">sen_idx</span> <span class="ow">in</span> <span class="n">get_sentence_indices</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">range</span><span class="p">,</span> <span class="n">src_sentences</span><span class="p">):</span>
         <span class="n">decoder</span><span class="o">.</span><span class="n">set_current_sen_id</span><span class="p">(</span><span class="n">sen_idx</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">src_sentences</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
-                <span class="n">src</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence (ID: </span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">src</span> <span class="o">=</span> <span class="n">src_sentences</span><span class="p">[</span><span class="n">sen_idx</span><span class="p">]</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">src</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">per_sentence_predictor_weights</span><span class="p">:</span>
-                <span class="c1"># change predictor weights per-sentence</span>
-                <span class="n">weights</span> <span class="o">=</span> <span class="n">src</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">weights</span><span class="p">]</span>
-                    <span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Changing predictor weights to {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">weights</span><span class="p">))</span>
-                    <span class="n">decoder</span><span class="o">.</span><span class="n">change_predictor_weights</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s1">&#39;No weights read in {} - leaving unchanged&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                            <span class="n">src</span><span class="p">))</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence (ID: </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">)))</span>
-            <span class="n">src</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">src</span><span class="p">]</span>
+            <span class="n">src</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span> <span class="k">if</span> <span class="n">src_sentences</span> <span class="ow">is</span> <span class="bp">False</span> <span class="k">else</span> <span class="n">src_sentences</span><span class="p">[</span><span class="n">sen_idx</span><span class="p">]</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Next sentence (ID: </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">src</span><span class="p">))</span>
+            <span class="n">src</span> <span class="o">=</span> <span class="n">_apply_per_sentence_predictor_weights</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">decoder</span><span class="p">)</span>
+            <span class="n">src</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
             <span class="n">start_hypo_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
             <span class="n">decoder</span><span class="o">.</span><span class="n">apply_predictors_count</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypo</span> 
-                     <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">apply_src_wmap</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
+            <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">hypo</span> <span class="k">for</span> <span class="n">hypo</span> <span class="ow">in</span> <span class="n">decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
                         <span class="k">if</span> <span class="n">hypo</span><span class="o">.</span><span class="n">total_score</span> <span class="o">&gt;</span> <span class="n">args</span><span class="o">.</span><span class="n">min_score</span><span class="p">]</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">hypos</span><span class="p">:</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;No translation found for ID </span><span class="si">%d</span><span class="s2">!&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
@@ -1082,12 +1039,9 @@
                                         <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_hypo_time</span><span class="p">))</span>
                 <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">_generate_dummy_hypo</span><span class="p">(</span><span class="n">decoder</span><span class="o">.</span><span class="n">predictors</span><span class="p">)]</span>
             <span class="n">hypos</span> <span class="o">=</span> <span class="n">_postprocess_complete_hypos</span><span class="p">(</span><span class="n">hypos</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">:</span>
-                <span class="n">hypos</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">convert_to_char_level</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hypos</span><span class="p">]</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Decoded (ID: </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
                     <span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
-                    <span class="n">utils</span><span class="o">.</span><span class="n">apply_trg_wmap</span><span class="p">(</span><span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">,</span> 
-                                         <span class="p">{}</span> <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span> <span class="k">else</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">)))</span>
+                    <span class="n">io</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">hypos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">trgt_sentence</span><span class="p">)))</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stats (ID: </span><span class="si">%d</span><span class="s2">): score=</span><span class="si">%f</span><span class="s2"> &quot;</span>
                          <span class="s2">&quot;num_expansions=</span><span class="si">%d</span><span class="s2"> &quot;</span>
                          <span class="s2">&quot;time=</span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sen_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
@@ -1164,7 +1118,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

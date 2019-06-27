@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.ui &mdash; SGNMT 0.6 documentation</title>
+  <title>cam.sgnmt.ui &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -84,10 +84,11 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../decoders.html">Decoders</a></li>
@@ -140,14 +141,34 @@
            <div itemprop="articleBody">
             
   <h1>Source code for cam.sgnmt.ui</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;This module handles configuration and user interface when using </span>
-<span class="sd">blocks. ``yaml`` and ``ArgumentParser`` are used for parsing config</span>
-<span class="sd">files and command line arguments.</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># coding=utf-8</span>
+<span class="c1"># Copyright 2019 The SGNMT Authors.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;This module handles the user interface and contains subroutines</span>
+<span class="sd">for parsing and verifying config files and command line arguments.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">argparse</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">platform</span>
+
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam</span> <span class="kn">import</span> <span class="n">sgnmt</span>
 
 <span class="n">YAML_AVAILABLE</span> <span class="o">=</span> <span class="bp">True</span>
 <span class="k">try</span><span class="p">:</span>
@@ -155,9 +176,90 @@
 <span class="k">except</span><span class="p">:</span>
     <span class="n">YAML_AVAILABLE</span> <span class="o">=</span> <span class="bp">False</span>
 
+
 <div class="viewcode-block" id="str2bool"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.str2bool">[docs]</a><span class="k">def</span> <span class="nf">str2bool</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;For making the ``ArgumentParser`` understand boolean values&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">v</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="run_diagnostics"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.run_diagnostics">[docs]</a><span class="k">def</span> <span class="nf">run_diagnostics</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Check availability of external libraries.&quot;&quot;&quot;</span>
+    <span class="n">OKGREEN</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[92m&#39;</span>
+    <span class="n">FAIL</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[91m&#39;</span>
+    <span class="n">ENDC</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[0m&#39;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking SGNMT version.... </span><span class="si">%s%s%s</span><span class="s2">&quot;</span> 
+          <span class="o">%</span> <span class="p">(</span><span class="n">OKGREEN</span><span class="p">,</span> <span class="n">sgnmt</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking Python3.... </span><span class="si">%s</span><span class="s2">OK (</span><span class="si">%s</span><span class="s2">)</span><span class="si">%s</span><span class="s2">&quot;</span> 
+              <span class="o">%</span> <span class="p">(</span><span class="n">OKGREEN</span><span class="p">,</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_version</span><span class="p">(),</span> <span class="n">ENDC</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking Python3.... </span><span class="si">%s</span><span class="s2">NOT FOUND </span><span class="si">%s%s</span><span class="s2">&quot;</span>
+              <span class="o">%</span> <span class="p">(</span><span class="n">FAIL</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Please upgrade to Python 3!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">YAML_AVAILABLE</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking PyYAML.... </span><span class="si">%s</span><span class="s2">OK</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">OKGREEN</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking PyYAML.... </span><span class="si">%s</span><span class="s2">NOT FOUND</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">FAIL</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;NOTOK: PyYAML is not available. That means that &quot;</span>
+                     <span class="s2">&quot;--config_file cannot be used. Check the documentation &quot;</span>
+                     <span class="s2">&quot;for further instructions.&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking TensorFlow.... </span><span class="si">%s</span><span class="s2">OK (</span><span class="si">%s</span><span class="s2">)</span><span class="si">%s</span><span class="s2">&quot;</span>
+              <span class="o">%</span> <span class="p">(</span><span class="n">OKGREEN</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking TensorFlow.... </span><span class="si">%s</span><span class="s2">NOT FOUND</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">FAIL</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;TensorFlow is not available. This affects the following &quot;</span>
+              <span class="s2">&quot;components: Predictors: *t2t, lexnizza, nizza; interpolation &quot;</span>
+              <span class="s2">&quot;schemes: MoE interpolation. Check the documentation for &quot;</span>
+              <span class="s2">&quot;further instructions.&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">tensor2tensor</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking Tensor2Tensor.... </span><span class="si">%s</span><span class="s2">OK</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">OKGREEN</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking Tensor2Tensor.... </span><span class="si">%s</span><span class="s2">NOT FOUND</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">FAIL</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Tensor2Tensor is not available. This affects the following &quot;</span>
+              <span class="s2">&quot;components: Predictors: t2t, edit2t, fertt2t, segt2t. Check &quot;</span>
+              <span class="s2">&quot;the documentation for further instructions.&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">openfst_python</span> <span class="kn">as</span> <span class="nn">fst</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking OpenFST.... </span><span class="si">%s</span><span class="s2">OK (openfst_python)</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">OKGREEN</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">pywrapfst</span> <span class="kn">as</span> <span class="nn">fst</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking OpenFST.... </span><span class="si">%s</span><span class="s2">OK (pywrapfst)</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">OKGREEN</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking OpenFST.... </span><span class="si">%s</span><span class="s2">NOT FOUND</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">FAIL</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;OpenFST is not available. This affects the following &quot;</span>
+                  <span class="s2">&quot;components: Predictors: nfst, fst, rtn; decoders: fstbeam; &quot;</span>
+                  <span class="s2">&quot;outputs: fst, sfst. Check the documentation for further &quot;</span>
+                  <span class="s2">&quot;instructions.&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">kenlm</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking KenLM.... </span><span class="si">%s</span><span class="s2">OK</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">OKGREEN</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking KenLM.... </span><span class="si">%s</span><span class="s2">NOT FOUND</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">FAIL</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;KenLM is not available. This affects the following components: &quot;</span>
+              <span class="s2">&quot;Predictors: kenlm. Check the documentation for further &quot;</span>
+              <span class="s2">&quot;instructions.&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">torch</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking PyTorch.... </span><span class="si">%s</span><span class="s2">OK (</span><span class="si">%s</span><span class="s2">)</span><span class="si">%s</span><span class="s2">&quot;</span>
+              <span class="o">%</span> <span class="p">(</span><span class="n">OKGREEN</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking PyTorch.... </span><span class="si">%s</span><span class="s2">NOT FOUND</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">FAIL</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;PyTorch is not available. This affects the following &quot;</span>
+              <span class="s2">&quot;components: Predictors: fairseq, onmtpy. Check the &quot;</span>
+              <span class="s2">&quot;documentation for further instructions.&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">fairseq</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking fairseq.... </span><span class="si">%s</span><span class="s2">OK (</span><span class="si">%s</span><span class="s2">)</span><span class="si">%s</span><span class="s2">&quot;</span>
+              <span class="o">%</span> <span class="p">(</span><span class="n">OKGREEN</span><span class="p">,</span> <span class="n">fairseq</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Checking fairseq.... </span><span class="si">%s</span><span class="s2">NOT FOUND</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">FAIL</span><span class="p">,</span> <span class="n">ENDC</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;fairseq is not available. This affects the following &quot;</span>
+              <span class="s2">&quot;components: Predictors: fairseq. Check the &quot;</span>
+              <span class="s2">&quot;documentation for further instructions.&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="parse_args"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.ui.parse_args">[docs]</a><span class="k">def</span> <span class="nf">parse_args</span><span class="p">(</span><span class="n">parser</span><span class="p">):</span>
@@ -171,14 +273,14 @@
         <span class="n">paths</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">config_file</span>
         <span class="nb">delattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s1">&#39;config_file&#39;</span><span class="p">)</span>
         <span class="n">arg_dict</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">__dict__</span>
-        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">split_comma</span><span class="p">(</span><span class="n">paths</span><span class="p">):</span>
             <span class="n">_load_config_file</span><span class="p">(</span><span class="n">arg_dict</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">args</span></div>
 
 
 <span class="k">def</span> <span class="nf">_load_config_file</span><span class="p">(</span><span class="n">arg_dict</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">Loader</span><span class="o">=</span><span class="n">yaml</span><span class="o">.</span><span class="n">FullLoader</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;config_file&quot;</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">sub_path</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
@@ -231,6 +333,9 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--config_file&#39;</span><span class="p">,</span> 
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Configuration file in standard .ini format. NOTE:&quot;</span>
                         <span class="s2">&quot; Configuration file overrides command line arguments&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--run_diagnostics&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Run diagnostics and check availability of &quot;</span>
+                       <span class="s2">&quot;external libraries.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--verbosity&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
                         <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span> <span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="s1">&#39;warn&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Log level: debug,info,warn,error&quot;</span><span class="p">)</span>
@@ -252,11 +357,10 @@
                         <span class="s2">&quot;line. Words need to be indexed, i.e. use word IDs &quot;</span>
                         <span class="s2">&quot;instead of their string representations.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--indexing_scheme&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;t2t&quot;</span><span class="p">,</span>
-                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;blocks&#39;</span><span class="p">,</span> <span class="s1">&#39;tf&#39;</span><span class="p">,</span> <span class="s1">&#39;t2t&#39;</span><span class="p">],</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;t2t&#39;</span><span class="p">,</span> <span class="s1">&#39;fairseq&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This parameter defines the reserved IDs.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;blocks&#39;: eps,unk: 0, &lt;s&gt;: 1, &lt;/s&gt;: 2.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;tf&#39;: unk: 3, &lt;s&gt;: 1, &lt;/s&gt;: 2.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;t2t&#39;: unk: 3, &lt;s&gt;: 2, &lt;/s&gt;: 1.&quot;</span><span class="p">)</span>
+                        <span class="s2">&quot;* &#39;t2t&#39;: unk: 3, &lt;s&gt;: 2, &lt;/s&gt;: 1.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;fairseq&#39;: unk: 3, &lt;s&gt;: 0, &lt;/s&gt;: 2.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ignore_sanity_checks&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;SGNMT terminates when a sanity check fails by &quot;</span>
                        <span class="s2">&quot;default. Set this to true to ignore sanity checks.&quot;</span><span class="p">)</span>
@@ -309,12 +413,10 @@
                                  <span class="s1">&#39;dfs&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;simpledfs&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;restarting&#39;</span><span class="p">,</span>
-                                 <span class="s1">&#39;bow&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;flip&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;bucket&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;bigramgreedy&#39;</span><span class="p">,</span>
-                                 <span class="s1">&#39;astar&#39;</span><span class="p">,</span>
-                                 <span class="s1">&#39;vanilla&#39;</span><span class="p">],</span>
+                                 <span class="s1">&#39;astar&#39;</span><span class="p">],</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Strategy for traversing the search space which &quot;</span>
                         <span class="s2">&quot;is spanned by the predictors.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;greedy&#39;: Greedy decoding (similar to beam=1)</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -348,8 +450,6 @@
                         <span class="s2">&quot;time step.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;fstbeam&#39;: Beam search optimized for FST &quot;</span>
                         <span class="s2">&quot;constrained search problems.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;bow&#39;: Restarting decoder optimized for bag-of-words &quot;</span>
-                        <span class="s2">&quot;problems.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;flip&#39;: This decoder works only for bag problems. &quot;</span>
                         <span class="s2">&quot;It traverses the search space by switching two words &quot;</span>
                         <span class="s2">&quot;in the hypothesis. Do not use bow predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -361,13 +461,7 @@
                         <span class="s2">&quot;score by greedily selecting high scoring bigrams. &quot;</span>
                         <span class="s2">&quot;Do not use bow predictor with this search strategy.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;astar&#39;: A* search. The heuristic function is &quot;</span>
-                        <span class="s2">&quot;configured using the --heuristics options.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;vanilla&#39;: Original Blocks beam decoder. This &quot;</span>
-                        <span class="s2">&quot;bypasses the predictor framework and directly &quot;</span>
-                        <span class="s2">&quot;performs pure NMT beam decoding on the GPU. Use this &quot;</span>
-                        <span class="s2">&quot;when you do pure NMT decoding as this is usually &quot;</span>
-                        <span class="s2">&quot;faster then using a single nmt predictor as the &quot;</span>
-                        <span class="s2">&quot;search can be parallelized on the GPU.&quot;</span><span class="p">)</span>
+                        <span class="s2">&quot;configured using the --heuristics options.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--beam&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Size of beam. Only used if --decoder is set to &quot;</span>
                         <span class="s2">&quot;&#39;beam&#39; or &#39;astar&#39;. For &#39;astar&#39; it limits the capacity&quot;</span>
@@ -598,8 +692,6 @@
                         <span class="s2">&quot;files. Set to 0 to output all hypotheses found by &quot;</span>
                         <span class="s2">&quot;the decoder. If you use the beam or astar decoder, &quot;</span>
                         <span class="s2">&quot;this option is limited by the beam size.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output_fst_unk_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED: Old name for --fst_unk_id&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fst_unk_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">999999998</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;SGNMT uses the ID 0 for UNK. However, this &quot;</span>
                         <span class="s2">&quot;clashes with OpenFST when writing FSTs as OpenFST &quot;</span>
@@ -634,36 +726,46 @@
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to remove &lt;/S&gt; symbol on output.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--src_wmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the source side word map (Format: &lt;word&gt;&quot;</span>
-                        <span class="s2">&quot; &lt;id&gt;). This is used to map the words in --src_test &quot;</span>
-                        <span class="s2">&quot;to their word IDs. If empty, SGNMT expects the input &quot;</span>
-                        <span class="s2">&quot;words to be in integer representation.&quot;</span><span class="p">)</span>
+                        <span class="s2">&quot; &lt;id&gt;). See --preprocessing and --postprocessing for &quot;</span>
+                        <span class="s2">&quot;more details.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_wmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the target side word map (Format: &lt;word&gt;&quot;</span>
-                        <span class="s2">&quot; &lt;id&gt;). This is used to generate log output and the &quot;</span>
-                        <span class="s2">&quot;output formats text and nbest. If empty, we directly &quot;</span>
-                        <span class="s2">&quot;write word IDs.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--trg_cmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the target side char map (Format: &lt;char&gt;&quot;</span>
-                        <span class="s2">&quot; &lt;id&gt;). If this is not empty, all output files are &quot;</span>
-                        <span class="s2">&quot;converted to character-level. The mapping from word &quot;</span>
-                        <span class="s2">&quot;to character sequence is read from --trg_wmap. The &quot;</span>
-                        <span class="s2">&quot;char map must contain an entry for &lt;/w&gt; which points &quot;</span>
-                        <span class="s2">&quot;to the word boundary ID.&quot;</span><span class="p">)</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the source side word map (Format: &lt;word&gt;&quot;</span>
+                        <span class="s2">&quot; &lt;id&gt;). See --preprocessing and --postprocessing for &quot;</span>
+                        <span class="s2">&quot;more details.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--wmap&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Sets --src_wmap and --trg_wmap at the same time&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--preprocessing&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;id&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="s1">&#39;word&#39;</span><span class="p">,</span> <span class="s1">&#39;char&#39;</span><span class="p">,</span> <span class="s1">&#39;bpe&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Preprocessing strategy for source sentences.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;id&#39;: Input sentences are expected in indexed &quot;</span>
+                        <span class="s2">&quot;representation (321 123 456 4444 ...).</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;word&#39;: Apply --src_wmap on the input.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;char&#39;: Split into characters, then apply &quot;</span>
+                        <span class="s2">&quot;(character-level) --src_wmap.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bpe&#39;: Apply Sennrich&#39;s subword_nmt segmentation </span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;SGNMT style (as in $SGNMT/scripts/subword-nmt)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;bpe@@&#39;: Apply Sennrich&#39;s subword_nmt segmentation &quot;</span>
+                        <span class="s2">&quot;with original default values (removing &lt;/w&gt;, using @@&quot;</span>
+                        <span class="s2">&quot; separator)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--postprocessing&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;id&quot;</span><span class="p">,</span>
+                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="s1">&#39;wmap&#39;</span><span class="p">,</span> <span class="s1">&#39;char&#39;</span><span class="p">,</span> <span class="s1">&#39;subword_nmt&#39;</span><span class="p">],</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Postprocessing strategy for output sentences. &quot;</span>
+                        <span class="s2">&quot;See --preprocessing for more.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--bpe_codes&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Must be set if preprocessing=bpe. Path to the &quot;</span>
+                        <span class="s2">&quot;BPE codes file from Sennrich&#39;s subword_nmt.&quot;</span><span class="p">)</span>
     
     <span class="c1">## Predictor options</span>
     
     <span class="c1"># General</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;General predictor options&#39;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--predictors&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;nmt&quot;</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--predictors&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma separated list of predictors. Predictors &quot;</span>
                         <span class="s2">&quot;are scoring modules which define a distribution over &quot;</span>
                         <span class="s2">&quot;target words given the history and some side &quot;</span>
                         <span class="s2">&quot;information like the source sentence. If vocabulary &quot;</span>
                         <span class="s2">&quot;sizes differ among predictors, we fill in gaps with &quot;</span>
                         <span class="s2">&quot;predictor UNK scores.:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;nmt&#39;: neural machine translation predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;         Options: nmt_config, nmt_path, gnmt_beta, &quot;</span>
-                        <span class="s2">&quot;nmt_model_selector, cache_nmt_posteriors.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;t2t&#39;: Tensor2Tensor predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;         Options: t2t_usr_dir, t2t_model, &quot;</span>
                         <span class="s2">&quot;t2t_problem, t2t_hparams_set, t2t_checkpoint_dir, &quot;</span>
@@ -689,6 +791,9 @@
                         <span class="s2">&quot;lexnizza_max_shortlist_length, lexnizza_trg2src_model, &quot;</span>
                         <span class="s2">&quot;lexnizza_trg2src_hparams_set, lexnizza_trg2src_&quot;</span>
                         <span class="s2">&quot;checkpoint_dir, lexnizza_min_id</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;fairseq&#39;: fairseq predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: fairseq_path, fairseq_user_dir, &quot;</span>
+                        <span class="s2">&quot;fairseq_lang_pair, n_cpu_threads</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;bracket&#39;: Well-formed bracketing.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;             Options: syntax_max_terminal_id, &quot;</span>
                         <span class="s2">&quot;syntax_pop_id, syntax_max_depth, extlength_path</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -699,12 +804,6 @@
                         <span class="s2">&quot;         Options: trg_test</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;kenlm&#39;: n-gram language model (KenLM).</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: lm_pathr</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;srilm&#39;: n-gram language model (SRILM).</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;          Options: lm_path, ngramc_order</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;nplm&#39;: neural n-gram language model (NPLM).</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;          Options: nplm_path, normalize_nplm_probs</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;rnnlm&#39;: RNN language model based on TensorFlow.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;          Options: rnnlm_config, rnnlm_path</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;forced&#39;: Forced decoding with one reference</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;            Options: trg_test</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;forcedlst&#39;: Forced decoding with a Moses n-best &quot;</span>
@@ -904,96 +1003,11 @@
     
     <span class="c1"># Neural predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Neural predictor options&#39;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--length_normalization&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED. Synonym for --combination_scheme &quot;</span>
-                        <span class="s2">&quot;length_norm. Normalize n-best hypotheses by sentence &quot;</span>
-                        <span class="s2">&quot;length. Normally improves pure NMT decoding, but &quot;</span>
-                        <span class="s2">&quot;degrades performance when combined with predictors &quot;</span>
-                        <span class="s2">&quot;like fst or multiple NMT systems.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_config&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the configuration of the NMT model. This &quot;</span>
-                        <span class="s2">&quot;can either point to a configuration file, or it can &quot;</span>
-                        <span class="s2">&quot;directly contain the parameters (e.g. &#39;src_vocab_size&quot;</span>
-                        <span class="s2">&quot;=1234,trg_vocab_size=2345&#39;). Use &#39;config_file=&#39; in &quot;</span>
-                        <span class="s2">&quot;the parameter string to use configuration files &quot;</span>
-                        <span class="s2">&quot;with the second method.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the path to the NMT model. If empty, &quot;</span>
-                        <span class="s2">&quot;the model is loaded from the default location which &quot;</span>
-                        <span class="s2">&quot;depends on the NMT engine&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_engine&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;blocks&quot;</span><span class="p">,</span>
-                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;blocks&#39;</span><span class="p">,</span> <span class="s1">&#39;tensorflow&#39;</span><span class="p">],</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NMT implementation which should be used. &quot;</span>
-                        <span class="s2">&quot;Use &#39;none&#39; to disable NMT support.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_model_selector&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;bleu&quot;</span><span class="p">,</span>
-                        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="s1">&#39;bleu&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">],</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;NMT training normally creates several files in &quot;</span>
-                        <span class="s2">&quot;the ./train/ directory from which we can load the NMT&quot;</span>
-                        <span class="s2">&quot; model. Possible options:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;params&#39;: Load parameters from params.npz. This is &quot;</span>
-                        <span class="s2">&quot;usually the most recent model.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;bleu&#39;: Load from the best_bleu_params_* file with &quot;</span>
-                        <span class="s2">&quot;the best BLEU score.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;* &#39;time&#39;: Load from the most recent &quot;</span>
-                        <span class="s2">&quot;best_bleu_params_* file.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--cache_nmt_posteriors&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This enables the cache in the [F]NMT predictor. &quot;</span>
-                        <span class="s2">&quot;Normally, the search procedure is responsible to &quot;</span>
-                        <span class="s2">&quot;avoid applying predictors to the same history twice. &quot;</span>
-                        <span class="s2">&quot;However, due to the limited NMT vocabulary, two &quot;</span>
-                        <span class="s2">&quot;different histories might be the same from the NMT &quot;</span>
-                        <span class="s2">&quot;perspective, e.g. if they are the same up to words &quot;</span>
-                        <span class="s2">&quot;which are outside the NMT vocabulary. If this &quot;</span>
-                        <span class="s2">&quot;parameter is set to true, we cache posteriors with &quot;</span>
-                        <span class="s2">&quot;histories containing UNK and reload them when needed&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--gnmt_beta&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is greater than zero, add a coverage &quot;</span>
-                       <span class="s2">&quot;penalization term following Google&#39;s NMT (Wu et al., &quot;</span>
-                       <span class="s2">&quot;2016) to the NMT score. Only works for the Blocks &quot;</span>
-                       <span class="s2">&quot;NMT predictor.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--gnmt_alpha&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is greater than zero and the combination &quot;</span>
                        <span class="s2">&quot;scheme is set to length_norm, use Google-style length &quot;</span>
                        <span class="s2">&quot; normalization (Wu et al., 2016) rather than simply &quot;</span>
                        <span class="s2">&quot;dividing by translation length.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_max_depth&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum depth of generated trees. After this &quot;</span>
-                       <span class="s2">&quot;depth is reached, only terminals and POP are allowed &quot;</span>
-                       <span class="s2">&quot;on the next layer.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_root_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Must be set for the layerbylayer predictor. ID &quot;</span>
-                       <span class="s2">&quot;of the initial target root label.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_pop_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;-1&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;ID of the closing bracket in output syntax trees.&quot;</span>
-                       <span class="s2">&quot; layerbylayer and t2t predictors support single &quot;</span>
-                       <span class="s2">&quot;integer values. The bracket predictor can take a comma&quot;</span>
-                       <span class="s2">&quot;-separated list of integers.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_min_terminal_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                       <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;All token IDs smaller than this are considered to &quot;</span>
-                       <span class="s2">&quot;be non-terminal symbols except the ones specified by &quot;</span>
-                       <span class="s2">&quot;--syntax_terminal_list&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_max_terminal_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30003</span><span class="p">,</span>
-                       <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;All token IDs larger than this are considered to &quot;</span>
-                       <span class="s2">&quot;be non-terminal symbols except the ones specified by &quot;</span>
-                       <span class="s2">&quot;--syntax_terminal_list&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_terminal_list&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;List of IDs which are explicitly treated as &quot;</span>
-                       <span class="s2">&quot;terminals, in addition to all IDs lower or equal &quot;</span>
-                       <span class="s2">&quot;--syntax_max_terminal_id. This can be used to &quot;</span>
-                       <span class="s2">&quot;exclude the POP symbol from the list of non-terminals &quot;</span>
-                       <span class="s2">&quot;even though it has a ID higher than max_terminal_id.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_nonterminal_ids&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Explicitly define non-terminals with a file &quot;</span>
-                       <span class="s2">&quot;containing their ids. Useful when non-terminals do &quot;</span>
-                       <span class="s2">&quot;not occur consecutively in data (e.g. internal bpe &quot;</span>
-                       <span class="s2">&quot;units.)&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--osm_type&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;osm&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Set of operations used for OSM predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                       <span class="s2">&quot;- &#39;osm&#39;: Original OSNMT of Stahlberg et al. (2018)</span><span class="se">\n</span><span class="s2">&quot;</span>
-                       <span class="s2">&quot;- &#39;srcosm&#39;: Original OSNMT where IDs&gt;7 are POP</span><span class="se">\n</span><span class="s2">&quot;</span>
-                       <span class="s2">&quot;- &#39;pbosm&#39;: Phrase-based OSNMT&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_usr_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the t2t predictor. See the &quot;</span>
                        <span class="s2">&quot;--t2t_usr_dir argument in tensor2tensor.&quot;</span><span class="p">)</span>
@@ -1011,10 +1025,6 @@
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the t2t predictor. Path to the &quot;</span>
                        <span class="s2">&quot;tensor2tensor checkpoint directory. Same as &quot;</span>
                        <span class="s2">&quot;--output_dir in t2t_trainer.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_src_vocab_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED! Use --pred_src_vocab_size&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_trg_vocab_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DEPRECATED! Use --pred_trg_vocab_size&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nizza_model&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;model1&quot;</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Available for the nizza predictor. Name of the &quot;</span>
                        <span class="s2">&quot;nizza model.&quot;</span><span class="p">)</span>
@@ -1057,6 +1067,55 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lexnizza_min_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Word IDs lower than this are not considered by &quot;</span>
                         <span class="s2">&quot;lexnizza. Can be used to filter out frequent words.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fairseq_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Points to the model file (*.pt) for the fairseq &quot;</span>
+                       <span class="s2">&quot;predictor. Like --path in fairseq-interactive.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fairseq_user_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;fairseq user directory for additional models.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fairseq_lang_pair&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Language pair such as &#39;en-fr&#39; for fairseq. Used &quot;</span>
+                       <span class="s2">&quot;to load fairseq dictionaries&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Structured predictors</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Structured predictor options&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_max_depth&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum depth of generated trees. After this &quot;</span>
+                       <span class="s2">&quot;depth is reached, only terminals and POP are allowed &quot;</span>
+                       <span class="s2">&quot;on the next layer.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_root_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Must be set for the layerbylayer predictor. ID &quot;</span>
+                       <span class="s2">&quot;of the initial target root label.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_pop_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;-1&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;ID of the closing bracket in output syntax trees.&quot;</span>
+                       <span class="s2">&quot; layerbylayer and t2t predictors support single &quot;</span>
+                       <span class="s2">&quot;integer values. The bracket predictor can take a comma&quot;</span>
+                       <span class="s2">&quot;-separated list of integers.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_min_terminal_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                       <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;All token IDs smaller than this are considered to &quot;</span>
+                       <span class="s2">&quot;be non-terminal symbols except the ones specified by &quot;</span>
+                       <span class="s2">&quot;--syntax_terminal_list&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_max_terminal_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30003</span><span class="p">,</span>
+                       <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;All token IDs larger than this are considered to &quot;</span>
+                       <span class="s2">&quot;be non-terminal symbols except the ones specified by &quot;</span>
+                       <span class="s2">&quot;--syntax_terminal_list&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_terminal_list&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;List of IDs which are explicitly treated as &quot;</span>
+                       <span class="s2">&quot;terminals, in addition to all IDs lower or equal &quot;</span>
+                       <span class="s2">&quot;--syntax_max_terminal_id. This can be used to &quot;</span>
+                       <span class="s2">&quot;exclude the POP symbol from the list of non-terminals &quot;</span>
+                       <span class="s2">&quot;even though it has a ID higher than max_terminal_id.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--syntax_nonterminal_ids&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Explicitly define non-terminals with a file &quot;</span>
+                       <span class="s2">&quot;containing their ids. Useful when non-terminals do &quot;</span>
+                       <span class="s2">&quot;not occur consecutively in data (e.g. internal bpe &quot;</span>
+                       <span class="s2">&quot;units.)&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--osm_type&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;osm&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Set of operations used for OSM predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                       <span class="s2">&quot;- &#39;osm&#39;: Original OSNMT of Stahlberg et al. (2018)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                       <span class="s2">&quot;- &#39;srcosm&#39;: Original OSNMT where IDs&gt;7 are POP</span><span class="se">\n</span><span class="s2">&quot;</span>
+                       <span class="s2">&quot;- &#39;pbosm&#39;: Phrase-based OSNMT&quot;</span><span class="p">)</span>
 
     <span class="c1"># Length predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Length predictor options&#39;</span><span class="p">)</span>
@@ -1084,7 +1143,7 @@
                         <span class="s2">&quot;consists of blank separated &#39;&lt;length&gt;:&lt;logprob&gt;&#39; &quot;</span>
                         <span class="s2">&quot;pairs.&quot;</span><span class="p">)</span>
     
-    <span class="c1"># UNK count predictors</span>
+    <span class="c1"># Count predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Count predictor options&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--unk_count_lambdas&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Model parameters for the UNK count model: comma-&quot;</span>
@@ -1241,23 +1300,6 @@
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;(Neural) LM predictor options&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--lm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;lm/ngram.lm.gz&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the ngram LM file in ARPA format&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--srilm_convert_to_ln&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to convert srilm scores from log to ln.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nplm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;nplm/nplm.gz&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the NPLM language model&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;rnnlm/rnn.ckpt&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the RNNLM language model&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_config&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;rnnlm.ini&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Defines the configuration of the RNNLM model. This&quot;</span>
-                        <span class="s2">&quot; can either point to a configuration file, or it can &quot;</span>
-                        <span class="s2">&quot;directly contain the parameters (e.g. &#39;src_vocab_size&quot;</span>
-                        <span class="s2">&quot;=1234,trg_vocab_size=2345&#39;). Use &#39;config_file=&#39; in &quot;</span>
-                        <span class="s2">&quot;the parameter string to use configuration files &quot;</span>
-                        <span class="s2">&quot;with the second method. Use &#39;model_name=X&#39; in the &quot;</span>
-                        <span class="s2">&quot;parameter string to use one of the predefined models.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--normalize_nplm_probs&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to normalize nplm probabilities over &quot;</span>
-                        <span class="s2">&quot;the current unbounded predictor vocabulary.&quot;</span><span class="p">)</span>
     
     <span class="c1"># FSM predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;FST and RTN predictor options&#39;</span><span class="p">)</span>
@@ -1339,16 +1381,6 @@
     <span class="k">for</span> <span class="n">n</span><span class="p">,</span><span class="n">w</span> <span class="ow">in</span> <span class="p">[(</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="s1">&#39;second&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">,</span> <span class="s1">&#39;third&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;4&#39;</span><span class="p">,</span> <span class="s1">&#39;4-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;5&#39;</span><span class="p">,</span> <span class="s1">&#39;5-th&#39;</span><span class="p">),</span> 
                 <span class="p">(</span><span class="s1">&#39;6&#39;</span><span class="p">,</span> <span class="s1">&#39;6-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;7&#39;</span><span class="p">,</span> <span class="s1">&#39;7-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;8&#39;</span><span class="p">,</span> <span class="s1">&#39;8-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;9&#39;</span><span class="p">,</span> <span class="s1">&#39;9-th&#39;</span><span class="p">),</span> 
                 <span class="p">(</span><span class="s1">&#39;10&#39;</span><span class="p">,</span> <span class="s1">&#39;10-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;11&#39;</span><span class="p">,</span> <span class="s1">&#39;11-th&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;12&#39;</span><span class="p">,</span> <span class="s1">&#39;12-th&#39;</span><span class="p">)]:</span>
-        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_config</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If the --predictors string contains more than &quot;</span>
-                        <span class="s2">&quot;one nmt predictor, you can specify the configuration &quot;</span>
-                        <span class="s2">&quot;for the </span><span class="si">%s</span><span class="s2"> one with this parameter. The </span><span class="si">%s</span><span class="s2"> nmt &quot;</span>
-                        <span class="s2">&quot;predictor inherits all previous settings except for &quot;</span>
-                        <span class="s2">&quot;the ones in this parameter.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">w</span><span class="p">))</span>
-        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_path</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --nmt_path for the </span><span class="si">%s</span><span class="s2"> nmt&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
-        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--nmt_engine</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --nmt_engine for the </span><span class="si">%s</span><span class="s2"> nmt&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_model</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --t2t_model for the </span><span class="si">%s</span><span class="s2"> t2t predictor&quot;</span>
                         <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
@@ -1367,18 +1399,9 @@
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--t2t_unk_id</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --t2t_unk_id for the </span><span class="si">%s</span><span class="s2"> t2t &quot;</span>
                         <span class="s2">&quot;predictor&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
-
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--pred_trg_vocab_size</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --pred_trg_vocab_size for the </span><span class="si">%s</span><span class="s2"> t2t &quot;</span>
                         <span class="s2">&quot;predictor&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
-        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_config</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span>  <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If the --predictors string contains more than &quot;</span>
-                        <span class="s2">&quot;one rnnlm predictor, you can specify the configuration &quot;</span>
-                        <span class="s2">&quot;for the </span><span class="si">%s</span><span class="s2"> one with this parameter. The </span><span class="si">%s</span><span class="s2"> rnnlm &quot;</span>
-                        <span class="s2">&quot;predictor inherits all previous settings except for &quot;</span>
-                        <span class="s2">&quot;the ones in this parameter.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">w</span><span class="p">))</span>
-        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rnnlm_path</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --rnnlm_path for the </span><span class="si">%s</span><span class="s2"> nmt&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--altsrc_test</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --altsrc_test for the </span><span class="si">%s</span><span class="s2"> altsrc&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--word2char_map</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -1399,6 +1422,8 @@
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --ngramc_path for the </span><span class="si">%s</span><span class="s2"> ngramc&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
         <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramc_order</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --ngramc_order for the </span><span class="si">%s</span><span class="s2"> ngramc&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fairseq_path</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overrides --fairseq_path for the </span><span class="si">%s</span><span class="s2"> fairseq&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span></div>
 
 
@@ -1415,14 +1440,6 @@
     <span class="n">args</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
     
     <span class="c1"># Legacy parameter names</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">t2t_src_vocab_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">args</span><span class="o">.</span><span class="n">pred_src_vocab_size</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">t2t_src_vocab_size</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">t2t_trg_vocab_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">args</span><span class="o">.</span><span class="n">pred_trg_vocab_size</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">t2t_trg_vocab_size</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">length_normalization</span><span class="p">:</span>
-        <span class="n">args</span><span class="o">.</span><span class="n">combination_scheme</span> <span class="o">=</span> <span class="s2">&quot;length_norm&quot;</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">output_fst_unk_id</span><span class="p">:</span>
-        <span class="n">args</span><span class="o">.</span><span class="n">fst_unk_id</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">output_fst_unk_id</span> 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">single_cpu_thread</span><span class="p">:</span>
         <span class="n">args</span><span class="o">.</span><span class="n">n_cpu_threads</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="n">args</span></div>
@@ -1436,15 +1453,9 @@
 <span class="sd">    Args:</span>
 <span class="sd">        args (object):  Configuration as returned by ``get_args``</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">for</span> <span class="n">depr</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;length_normalization&#39;</span><span class="p">,</span> 
-                 <span class="s1">&#39;t2t_src_vocab_size&#39;</span><span class="p">,</span>
-                 <span class="s1">&#39;t2t_trg_vocab_size&#39;</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">depr</span><span class="p">):</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using deprecated argument </span><span class="si">%s</span><span class="s2">. Please check the &quot;</span>
-                         <span class="s2">&quot;documentation for the replacement.&quot;</span> <span class="o">%</span> <span class="n">depr</span><span class="p">)</span>
     <span class="c1"># Validate --range</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">range</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">input_method</span> <span class="o">==</span> <span class="s1">&#39;shell&#39;</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The --range parameter can lead to unintuitive &quot;</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The --range parameter can lead to unexpected &quot;</span>
                      <span class="s2">&quot;behavior in &#39;shell&#39; mode.&quot;</span><span class="p">)</span>
         
     <span class="c1"># Some common pitfalls</span>
@@ -1470,6 +1481,16 @@
     <span class="k">if</span> <span class="s2">&quot;t2t&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">predictors</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">!=</span> <span class="s2">&quot;t2t&quot;</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;You are using the t2t predictor, but indexing_scheme &quot;</span>
                      <span class="s2">&quot;is not set to t2t.&quot;</span><span class="p">)</span>
+        <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="s2">&quot;fairseq&quot;</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">predictors</span> <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">indexing_scheme</span> <span class="o">!=</span> <span class="s2">&quot;fairseq&quot;</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;You are using the fairseq predictor, but indexing_scheme &quot;</span>
+                     <span class="s2">&quot;is not set to fairseq.&quot;</span><span class="p">)</span>
+        <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">preprocessing</span> <span class="o">!=</span> <span class="s2">&quot;id&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">wmap</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">src_wmap</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Your preprocessing method needs a source wmap.&quot;</span><span class="p">)</span>
+        <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">postprocessing</span> <span class="o">!=</span> <span class="s2">&quot;id&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">wmap</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Your postprocessing method needs a target wmap.&quot;</span><span class="p">)</span>
         <span class="n">sanity_check_failed</span> <span class="o">=</span> <span class="bp">True</span>
     <span class="k">if</span> <span class="n">sanity_check_failed</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">ignore_sanity_checks</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Sanity check failed (see warnings). If you want &quot;</span>
@@ -1508,7 +1529,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

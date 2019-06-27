@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.decoding.multisegbeam &mdash; SGNMT 0.6 documentation</title>
+  <title>cam.sgnmt.decoding.multisegbeam &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -84,10 +84,11 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../decoders.html">Decoders</a></li>
@@ -140,7 +141,23 @@
            <div itemprop="articleBody">
             
   <h1>Source code for cam.sgnmt.decoding.multisegbeam</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Implementation of beam search for predictors with multiple</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># coding=utf-8</span>
+<span class="c1"># Copyright 2019 The SGNMT Authors.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Implementation of beam search for predictors with multiple</span>
 <span class="sd">tokenizations.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
@@ -148,9 +165,9 @@
 <span class="kn">import</span> <span class="nn">heapq</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">codecs</span>
-<span class="kn">import</span> <span class="nn">pywrapfst</span> <span class="kn">as</span> <span class="nn">fst</span>
 
 <span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">io</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.decoding.core</span> <span class="kn">import</span> <span class="n">Decoder</span><span class="p">,</span> <span class="n">PartialHypothesis</span>
 <span class="kn">from</span> <span class="nn">cam.sgnmt.predictors.automata</span> <span class="kn">import</span> <span class="n">EPS_ID</span>
 
@@ -174,7 +191,7 @@
     <span class="sd">&quot;&quot;&quot;This class is responsible for the mapping between keys and word</span>
 <span class="sd">    IDs. The multiseg beam search can produce words which are not in </span>
 <span class="sd">    the original word map. This mapper adds these words to </span>
-<span class="sd">   ``utils.trg_wmap``.</span>
+<span class="sd">   ``io.trg_wmap``.</span>
 
 <span class="sd">    This class uses the GoF design pattern singleton.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -196,7 +213,7 @@
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new mapper instance and synchronizes it with</span>
-<span class="sd">        ``utils.trg_wmap``.</span>
+<span class="sd">        ``io.trg_wmap``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_word_id</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">wmap_len</span> <span class="o">=</span> <span class="mi">0</span>
@@ -210,29 +227,29 @@
 
 <div class="viewcode-block" id="WordMapper.synchronize"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.multisegbeam.WordMapper.synchronize">[docs]</a>    <span class="k">def</span> <span class="nf">synchronize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Synchronizes the internal state of this mapper with</span>
-<span class="sd">        ``utils.trg_wmap``. This includes updating the reverse lookup</span>
+<span class="sd">        ``io.trg_wmap``. This includes updating the reverse lookup</span>
 <span class="sd">        table and finding the lowest free word ID which can be assigned</span>
 <span class="sd">        to new words. </span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wmap_len</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wmap_len</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">):</span>
             <span class="k">return</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">key2id</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_word_id</span> <span class="o">=</span> <span class="mi">3</span>
-        <span class="k">for</span> <span class="n">word_id</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">word_id</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">io</span><span class="o">.</span><span class="n">trg_wmap</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">max_word_id</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_word_id</span><span class="p">,</span> <span class="n">word_id</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">key2id</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">word_id</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wmap_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wmap_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="WordMapper.get_word_id"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.multisegbeam.WordMapper.get_word_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_word_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Finds a word ID for the given key. If no such key is in the</span>
-<span class="sd">        current word map, create a new entry in ``utils.trg_wmap``.</span>
+<span class="sd">        current word map, create a new entry in ``io.trg_wmap``.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            key (string): key to look up</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            int. Word ID corresponding to ``key``. Add new word ID if</span>
-<span class="sd">            the key cannot be found in ``utils.trg_wmap`` </span>
+<span class="sd">            the key cannot be found in ``io.trg_wmap`` </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span>
@@ -242,7 +259,7 @@
         <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">key2id</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">key2id</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_word_id</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="n">utils</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">max_word_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">io</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">max_word_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">key2id</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_word_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">wmap_len</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_word_id</span></div></div>
@@ -355,7 +372,7 @@
         <span class="k">if</span> <span class="n">max_len</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">None</span>
         <span class="n">best_tokens</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">key</span><span class="p">[:</span><span class="n">l</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">key2id</span><span class="p">:</span>
                 <span class="n">rest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key2tokens_recursive</span><span class="p">(</span><span class="n">key</span><span class="p">[</span><span class="n">l</span><span class="p">:],</span> <span class="n">max_len</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">rest</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">rest</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_len</span><span class="p">:</span>
@@ -422,93 +439,13 @@
             <span class="n">maps</span> <span class="o">=</span> <span class="n">maps</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">e_key2id</span><span class="p">]</span>
         <span class="n">maps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_key2id</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">maps</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">maps</span><span class="p">))]</span></div>
+                    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">maps</span><span class="p">))]</span></div>
     
 <div class="viewcode-block" id="MixedTokenizer.tokens2key"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.multisegbeam.MixedTokenizer.tokens2key">[docs]</a>    <span class="k">def</span> <span class="nf">tokens2key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
         <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">id2key</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">])</span></div>
 
 <div class="viewcode-block" id="MixedTokenizer.is_word_begin_token"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.multisegbeam.MixedTokenizer.is_word_begin_token">[docs]</a>    <span class="k">def</span> <span class="nf">is_word_begin_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mid_tokens</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span></div></div>
-
-
-<div class="viewcode-block" id="FSTTokenizer"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.multisegbeam.FSTTokenizer">[docs]</a><span class="k">class</span> <span class="nc">FSTTokenizer</span><span class="p">(</span><span class="n">Tokenizer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;This tokenizer reads in an FST which transduces a sequence</span>
-<span class="sd">    of subword units to a sequence of characters which constitute</span>
-<span class="sd">    the key. The characters must used the global target cmap.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    
-    <span class="n">EPS_ID</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="sd">&quot;&quot;&quot;OpenFST&#39;s reserved ID for epsilon arcs. &quot;&quot;&quot;</span>
-    
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Loads subword-&gt;char FST, determinizes and minimizes it.</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            path (string): Path to an FST from subword unit to char</span>
-<span class="sd">                           sequence</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">token2char_fst</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">load_fst</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">token2char_fst</span><span class="o">.</span><span class="n">rmepsilon</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">token2char_fst</span><span class="o">.</span><span class="n">determinize</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">token2char_fst</span><span class="o">.</span><span class="n">minimize</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">word_begin_tokens</span> <span class="o">=</span> <span class="p">{</span><span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span><span class="p">:</span> <span class="bp">True</span> 
-            <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">token2char_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token2char_fst</span><span class="o">.</span><span class="n">start</span><span class="p">())}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">char2token_fst</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">Fst</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token2char_fst</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">char2token_fst</span><span class="o">.</span><span class="n">invert</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cmap</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">trg_cmap</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cmap</span><span class="p">[</span><span class="s2">&quot; &quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cmap</span><span class="p">[</span><span class="s2">&quot;&lt;/w&gt;&quot;</span><span class="p">]</span>
-        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">cmap</span><span class="p">[</span><span class="s2">&quot;&lt;/w&gt;&quot;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">inv_cmap</span> <span class="o">=</span> <span class="p">{(</span><span class="n">i</span><span class="p">,</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cmap</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()}</span>
-    
-<div class="viewcode-block" id="FSTTokenizer.key2tokens"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.multisegbeam.FSTTokenizer.key2tokens">[docs]</a>    <span class="k">def</span> <span class="nf">key2tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
-        <span class="n">idxs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">key</span><span class="p">]</span>
-        <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transduce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">char2token_fst</span><span class="p">,</span> <span class="n">idxs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">tokens</span> <span class="k">if</span> <span class="n">tokens</span> <span class="k">else</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]</span></div>
-    
-<div class="viewcode-block" id="FSTTokenizer.tokens2key"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.multisegbeam.FSTTokenizer.tokens2key">[docs]</a>    <span class="k">def</span> <span class="nf">tokens2key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
-        <span class="n">idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transduce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token2char_fst</span><span class="p">,</span> <span class="n">tokens</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">idxs</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">inv_cmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idxs</span><span class="p">])</span></div>
-    
-    <span class="k">def</span> <span class="nf">_transduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trans_fst</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns the output sequence produced by ``trans_fst`` when</span>
-<span class="sd">        consuming ``seq``. We don&#39;t check if the last state is a final</span>
-<span class="sd">        state</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dfs</span><span class="p">(</span><span class="n">trans_fst</span><span class="p">,</span> <span class="n">trans_fst</span><span class="o">.</span><span class="n">start</span><span class="p">(),</span> <span class="n">seq</span><span class="p">,</span> <span class="p">[])</span>
-            
-    <span class="k">def</span> <span class="nf">_dfs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trans_fst</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">in_seq</span><span class="p">,</span> <span class="n">out_seq_stub</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Perform DFS as subroutine of ``_transduce`` &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">in_seq</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">out_seq_stub</span>
-        <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="n">trans_fst</span><span class="o">.</span><span class="n">arcs</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
-            <span class="n">out_seq</span> <span class="o">=</span> <span class="bp">None</span>
-            <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span> <span class="o">==</span> <span class="n">EPS_ID</span><span class="p">:</span>
-                <span class="n">out_seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dfs</span><span class="p">(</span><span class="n">trans_fst</span><span class="p">,</span>
-                                    <span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">,</span>
-                                    <span class="n">in_seq</span><span class="p">,</span> 
-                                    <span class="n">out_seq_stub</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">arc</span><span class="o">.</span><span class="n">ilabel</span> <span class="o">==</span> <span class="n">in_seq</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-                <span class="n">out_seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dfs</span><span class="p">(</span><span class="n">trans_fst</span><span class="p">,</span> 
-                                    <span class="n">arc</span><span class="o">.</span><span class="n">nextstate</span><span class="p">,</span> 
-                                    <span class="n">in_seq</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> 
-                                    <span class="n">out_seq_stub</span> <span class="o">+</span> <span class="p">[</span><span class="n">arc</span><span class="o">.</span><span class="n">olabel</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">out_seq</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">out_seq</span>
-        <span class="k">return</span> <span class="bp">None</span>
-
-<div class="viewcode-block" id="FSTTokenizer.is_word_begin_token"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.multisegbeam.FSTTokenizer.is_word_begin_token">[docs]</a>    <span class="k">def</span> <span class="nf">is_word_begin_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns true if there is an arc labeled with ``token`` from</span>
-<span class="sd">        the start state in the token2char FST.</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            token (int): token ID</span>
-<span class="sd">        </span>
-<span class="sd">        Returns:</span>
-<span class="sd">            bool. True if a word can start with ``token`` </span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_begin_tokens</span></div></div>
 
 
 <div class="viewcode-block" id="PredictorStub"><a class="viewcode-back" href="../../../../decoders.html#cam.sgnmt.decoding.multisegbeam.PredictorStub">[docs]</a><span class="k">class</span> <span class="nc">PredictorStub</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -658,7 +595,7 @@
 <span class="sd">    on finer-grained tokens are collapsed into a single score s.t. they</span>
 <span class="sd">    can be combined with scores from other predictors. This decoder can </span>
 <span class="sd">    produce words without entry in the word map. In this case, words </span>
-<span class="sd">    are added to ``utils.trg_wmap``. Consider using the ``output_chars``</span>
+<span class="sd">    are added to ``io.trg_wmap``. Consider using the ``output_chars``</span>
 <span class="sd">    option to avoid dealing with the updated word map in the output.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
@@ -823,7 +760,7 @@
         <span class="k">if</span> <span class="n">min_score</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="k">return</span>
         
-        <span class="n">pred_weights</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">el</span><span class="p">:</span> <span class="n">el</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)</span>
+        <span class="n">pred_weights</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">el</span><span class="p">:</span> <span class="n">el</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">))</span>
         <span class="c1"># Get initial continuations by searching with predictors separately</span>
         <span class="n">start_posteriors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_word_initial_posteriors</span><span class="p">(</span><span class="n">hypo</span><span class="p">)</span>
         <span class="n">pred_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_predictor_states</span><span class="p">()</span>
@@ -847,8 +784,8 @@
                         <span class="n">stubs</span><span class="p">[</span><span class="n">pidx</span><span class="p">]</span> <span class="o">=</span> <span class="n">stub</span>
                         <span class="n">keys</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">Continuation</span><span class="p">(</span><span class="n">hypo</span><span class="p">,</span> <span class="n">stubs</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
         <span class="c1"># Fill in stubs which are set to None</span>
-        <span class="k">for</span> <span class="n">cont</span> <span class="ow">in</span> <span class="n">keys</span><span class="o">.</span><span class="n">itervalues</span><span class="p">():</span>
-            <span class="k">for</span> <span class="n">pidx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">cont</span> <span class="ow">in</span> <span class="n">keys</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">pidx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictors</span><span class="p">)):</span>
                 <span class="k">if</span> <span class="n">cont</span><span class="o">.</span><span class="n">pred_stubs</span><span class="p">[</span><span class="n">pidx</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
                     <span class="n">stub</span> <span class="o">=</span> <span class="n">PredictorStub</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">toks</span><span class="p">[</span><span class="n">pidx</span><span class="p">]</span><span class="o">.</span><span class="n">key2tokens</span><span class="p">(</span><span class="n">cont</span><span class="o">.</span><span class="n">key</span><span class="p">),</span>
                                          <span class="n">pred_states</span><span class="p">[</span><span class="n">pidx</span><span class="p">])</span>
@@ -857,7 +794,7 @@
                                          <span class="n">stub</span><span class="o">.</span><span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                                          <span class="n">start_posteriors</span><span class="p">[</span><span class="n">pidx</span><span class="p">][</span><span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">]))</span>
                     <span class="n">cont</span><span class="o">.</span><span class="n">pred_stubs</span><span class="p">[</span><span class="n">pidx</span><span class="p">]</span> <span class="o">=</span> <span class="n">stub</span>
-        <span class="n">conts</span> <span class="o">=</span> <span class="p">[(</span><span class="o">-</span><span class="n">c</span><span class="o">.</span><span class="n">calculate_score</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">),</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">keys</span><span class="o">.</span><span class="n">itervalues</span><span class="p">()]</span>
+        <span class="n">conts</span> <span class="o">=</span> <span class="p">[(</span><span class="o">-</span><span class="n">c</span><span class="o">.</span><span class="n">calculate_score</span><span class="p">(</span><span class="n">pred_weights</span><span class="p">),</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">keys</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
         <span class="n">heapq</span><span class="o">.</span><span class="n">heapify</span><span class="p">(</span><span class="n">conts</span><span class="p">)</span>
         <span class="c1"># Iterate through conts, expand if necessary, yield if complete</span>
         <span class="k">while</span> <span class="n">conts</span><span class="p">:</span>
@@ -933,7 +870,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Installation &mdash; SGNMT 0.6 documentation</title>
+  <title>Installation &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,8 +32,8 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="index.html"/>
-        <link rel="next" title="Tutorial: Basics" href="tutorial.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="index.html"/>
+        <link rel="next" title="Tutorial: Basics (T2T)" href="tutorial.html"/>
         <link rel="prev" title="SGNMT" href="index.html"/> 
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -85,23 +85,20 @@
             
                 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#installing-dependencies">Installing dependencies</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#installing-openfst">Installing OpenFST</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-optional-dependencies">Installing optional dependencies</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#installing-tensor2tensor">Installing Tensor2Tensor</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#installing-tensorflow-not-t2t">Installing TensorFlow (not T2T)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#installing-blocks">Installing Blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-fairseq">Installing fairseq</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#installing-kenlm">Installing KenLM</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#installing-srilm">Installing SRILM</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#installing-nplm">Installing NPLM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-openfst">Installing OpenFST</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#setting-up-sgnmt">Setting up SGNMT</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="decoders.html">Decoders</a></li>
@@ -155,83 +152,108 @@
             
   <div class="section" id="installation">
 <span id="setup-label"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>The latest SGNMT version is available on github:</p>
+<p>We recommend installing SGNMT inside an Anaconda environment. This guide contains step-by-step
+instructions to set up the SGNMT environment from scratch on an Ubuntu &gt;=14.04 system, including
+installing Anaconda and various dependencies like TensorFlow, T2T, OpenFST, etc.</p>
+<p>First, <a class="reference external" href="https://www.anaconda.com/">download the Anaconda installer</a>. We used Anaconda 2019.03
+(Python 3.7) in this guide. Accept the license and choose the Anaconda installation direction. We refer
+to this directory as <code class="docutils literal"><span class="pre">&lt;ANACONDA&gt;</span></code>.</p>
+<p>Change to a new directory where you wish to install SGNMT. We refer to this directory as <code class="docutils literal"><span class="pre">&lt;SGNMT&gt;</span></code>. The
+latest SGNMT version is available on github:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span>$ git clone https://github.com/ucam-smt/sgnmt.git
 </pre></div>
 </div>
-<div class="section" id="installing-dependencies">
-<h2>Installing dependencies<a class="headerlink" href="#installing-dependencies" title="Permalink to this headline">¶</a></h2>
-<p>SGNMT depends on the following libraries:</p>
-<ul class="simple">
-<li><a class="reference external" href="http://openfst.org/">OpenFST</a> for reading and writing FSTs (e.g. translation lattices) (&gt;=1.5.4)</li>
-<li>Optional: <a class="reference external" href="https://github.com/tensorflow/tensor2tensor">Tensor2Tensor</a> for a wide range of different sequence models (&gt;=1.7.0)</li>
-<li>Optional: <a class="reference external" href="https://github.com/ehasler/tensorflow">Eva Hasler&#8217;s TensorFlow fork</a> for an extended version of TensorFlow&#8217;s seq2seq tutorial (latest)</li>
-<li>Optional: <a class="reference external" href="http://blocks.readthedocs.io/en/latest/">Blocks</a> for neural machine translation support based on Theano (&gt;=0.1)</li>
-<li>Optional: <a class="reference external" href="https://github.com/kpu/kenlm">KenLM</a> for reading ARPA language model files with KenLM backend (latest)</li>
-<li>Optional: <a class="reference external" href="https://github.com/desilinguist/swig-srilm">srilm-swig</a> for reading ARPA language model files with SRI-LM backend (&gt;=1.7.1)</li>
-<li>Optional: <a class="reference external" href="http://nlg.isi.edu/software/nplm/">NPLM</a> for using feed-forward neural language models (&gt;=0.3)</li>
-</ul>
-<div class="section" id="installing-openfst">
-<h3>Installing OpenFST<a class="headerlink" href="#installing-openfst" title="Permalink to this headline">¶</a></h3>
-<p>We recommend to install <a class="reference external" href="http://openfst.org/twiki/bin/view/FST/FstDownload">OpenFST &gt;=1.5.4</a>. Make
-sure to enable the Python support when compiling OpenFST:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ ./configure --enable-far --enable-python
-$ make
-$ make install
+<p>Activate your base Anaconda environment:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nb">eval</span> <span class="s2">&quot;$(&lt;ANACONDA&gt;/bin/conda shell.bash hook)&quot;</span>
 </pre></div>
 </div>
-<p>If you wish to use SGNMT in combination with the hierachical phrase-pased SMT system <a class="reference external" href="http://ucam-smt.github.io/">HiFST</a>,
-you can directly use the OpenFST installation under <em>externals/</em> in the HiFST installation directory. This will make
-it possible to create translation lattices with tropicalsparsetuple arcs with SGNMT to keep predictor scores separated
-(see <em>fst</em> output format).</p>
-<p><em>Tested versions: OpenFST 1.5.4-1.6.3</em></p>
+<p>And create a new environment for SGNMT:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">sgnmt_env</span> <span class="n">pip</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.6</span>
+</pre></div>
 </div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">In this guide we use Python 3.6 because TensorFlow 1.13 is not compatible with
+Ubuntu 14.04 under more recent Python versions (more on this <a class="reference external" href="https://github.com/tensorflow/tensorflow/issues/26826">here</a>).
+If you don&#8217;t need compatibility with Ubuntu 14.04 or you don&#8217;t use TensorFlow, select a more recent Python version.</p>
+</div>
+<p>You can activate this new environment with:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">sgnmt_env</span>
+</pre></div>
+</div>
+<p>Install dependencies under the activated <code class="docutils literal"><span class="pre">sgnmt_env</span></code> environment:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">numpy</span> <span class="n">pyyaml</span> <span class="n">scipy</span>
+</pre></div>
+</div>
+<p>Test SGNMT:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">&lt;</span><span class="n">SGNMT</span><span class="o">&gt;/</span><span class="n">decode</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">help</span>
+</pre></div>
+</div>
+<p>We recommend to use an activation script <code class="docutils literal"><span class="pre">&lt;ACTIVATE.SH&gt;</span></code> to set up the SGNMT environment and some
+of the environment variables for external libraries (see below). This is an example of an initial
+<code class="docutils literal"><span class="pre">&lt;ACTIVATE.SH&gt;</span></code> script:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Activate Anaconda environment</span>
+<span class="nb">eval</span> <span class="s2">&quot;$(&lt;ANACONDA&gt;/bin/conda shell.bash hook)&quot;</span>
+<span class="n">conda</span> <span class="n">activate</span> <span class="n">sgnmt_env</span>
+
+<span class="c1"># SGNMT</span>
+<span class="n">export</span> <span class="n">SGNMT</span><span class="o">=&lt;</span><span class="n">SGNMT</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>End your current session and log in again with a clean shell. Then, test it with:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>source &lt;ACTIVATE.SH&gt;
+python $SGNMT/decode.py --help
+</pre></div>
+</div>
+<div class="section" id="installing-optional-dependencies">
+<h2>Installing optional dependencies<a class="headerlink" href="#installing-optional-dependencies" title="Permalink to this headline">¶</a></h2>
+<p>A minimal version of SGNMT runs with basic setup described above. However, some output formats
+and predictors depend on external libraries:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/tensorflow/tensor2tensor">Tensor2Tensor</a> for a wide range of different sequence models in TensorFlow (&gt;=1.7.0)</li>
+<li><a class="reference external" href="https://github.com/pytorch/fairseq">fairseq</a> for a wide range of different sequence models in PyTorch (&gt;=0.7.0)</li>
+<li><a class="reference external" href="https://github.com/kpu/kenlm">KenLM</a> for reading ARPA language model files with KenLM backend (latest)</li>
+<li><a class="reference external" href="http://openfst.org/">OpenFST</a> for reading and writing FSTs (e.g. translation lattices) (&gt;=1.5.4)</li>
+</ul>
+<p>To print out available external libraries, use:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>python $SGNMT/decode.py --run_diagnostics
+</pre></div>
+</div>
+<p>Diagnostics are useful after installing optional dependencies to verify that the installation was successful.</p>
 <div class="section" id="installing-tensor2tensor">
 <h3>Installing Tensor2Tensor<a class="headerlink" href="#installing-tensor2tensor" title="Permalink to this headline">¶</a></h3>
 <p><a class="reference external" href="https://github.com/tensorflow/tensor2tensor">Tensor2Tensor</a> is a TensorFlow-based library with support of various neural
 sequence models. SGNMT can access models trained with tensor2tensor via the <em>t2t</em> predictor. Follow the
 <a class="reference external" href="https://github.com/tensorflow/tensor2tensor#installation">tensor2tensor installation instructions</a> to install t2t and
-TensorFlow, and call SGNMT from the same environment. Note that SGNMT supports the <code class="docutils literal"><span class="pre">--t2t_usr_dir</span></code> argument to extend the
-registry of T2T to your custom directory.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The Tensor2Tensor code base is still under constant change, and SGNMT might not be compatible with the latest version.
-The latest tensor2tensor version which is supported by SGNMT is available in <a class="reference external" href="https://github.com/fstahlberg/tensor2tensor">this fork</a>.</p>
-</div>
-<p><em>Tested versions: Tensor2Tensor 1.7.0-1.9.0, TensorFlow 1.9-1.10.1</em></p>
-</div>
-<div class="section" id="installing-tensorflow-not-t2t">
-<h3>Installing TensorFlow (not T2T)<a class="headerlink" href="#installing-tensorflow-not-t2t" title="Permalink to this headline">¶</a></h3>
-<p>The TensorFlow-based <code class="docutils literal"><span class="pre">nmt</span></code> and <code class="docutils literal"><span class="pre">rnnlm</span></code> predictors are based on <a class="reference external" href="https://github.com/ehasler/tensorflow">Eva Hasler&#8217;s TensorFlow fork</a>
-which extends the seq2seq tutorial to reproduce the Bahdanau-style architecture.</p>
-<p><strong>Note</strong>: You don&#8217;t need this fork if you access TensorFlow only via the Tensor2Tensor library.</p>
-<p><em>Tested versions: latest</em></p>
-</div>
-<div class="section" id="installing-blocks">
-<h3>Installing Blocks<a class="headerlink" href="#installing-blocks" title="Permalink to this headline">¶</a></h3>
-<p>Follow the <a class="reference external" href="http://blocks.readthedocs.io/en/latest/setup.html">instructions</a> in
-the Blocks documentation to install the Blocks framework and all its dependencies.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p>It might be necessary to install the HDF5 development files before installing Blocks, e.g. with:</p>
-<div class="last highlight-default"><div class="highlight"><pre><span></span>$ sudo apt-get install libhdf5-dev
+TensorFlow. Make sure that you have activated your Anaconda environment:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Assumes tensorflow or tensorflow-gpu installed</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">tensor2tensor</span>
+
+<span class="c1"># Installs with tensorflow-gpu requirement</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">tensor2tensor</span><span class="p">[</span><span class="n">tensorflow_gpu</span><span class="p">]</span>
+
+<span class="c1"># Installs with tensorflow (cpu) requirement</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">tensor2tensor</span><span class="p">[</span><span class="n">tensorflow</span><span class="p">]</span>
 </pre></div>
 </div>
+<p>If you need both the GPU and the CPU versions we recommend using two separate Anaconda environments.
+Note that SGNMT supports the <code class="docutils literal"><span class="pre">--t2t_usr_dir</span></code> argument to extend the registry of T2T to your custom directory.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The Tensor2Tensor code base is still under constant change, and SGNMT might or might not be compatible with the latest
+version.</p>
 </div>
-<div class="admonition tip">
-<p class="first admonition-title">Tip</p>
-<p>Make sure that all dependencies of Blocks are updated. On systems where you don&#8217;t have root access,
-use the pip options <code class="docutils literal"><span class="pre">--user</span></code> and <code class="docutils literal"><span class="pre">--force-reinstall</span></code> to install updated packages locally.</p>
-<p class="last"><a class="reference external" href="https://www.continuum.io/">Anaconda</a> is another good option for
-local installations as it already sets up all packages Theano and Blocks depend on correctly. You still need
-to install Blocks with the <a class="reference external" href="http://blocks.readthedocs.io/en/latest/setup.html">pip command</a> using
-Anaconda&#8217;s pip.</p>
+<p><em>Tested versions: Tensor2Tensor 1.7.0-1.13.4 TensorFlow 1.9-1.13.1</em></p>
 </div>
-<p>You&#8217;ll also need to add <code class="docutils literal"><span class="pre">on_unused_input='ignore'</span></code> to your Theano flags as discussed <a class="reference external" href="https://github.com/mila-udem/blocks-examples/issues/58">here</a>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ export THEANO_FLAGS=&quot;on_unused_input=&#39;ignore&#39;&quot;
+<div class="section" id="installing-fairseq">
+<h3>Installing fairseq<a class="headerlink" href="#installing-fairseq" title="Permalink to this headline">¶</a></h3>
+<p>Follow the <a class="reference external" href="https://pytorch.org/">installation instructions for PyTorch</a> in your activated Anaconda environment. Then,
+<a class="reference external" href="https://github.com/pytorch/fairseq">install fairseq</a>, for example using <code class="docutils literal"><span class="pre">pip</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">fairseq</span>
 </pre></div>
 </div>
-<p><em>Tested versions: Blocks 0.1-0.2, Theano 0.8-0.9</em></p>
+<p>For more information on how to use fairseq models in SGNMT, see <a class="reference internal" href="tutorial_pytorch.html#tutorial-pytorch-label"><span class="std std-ref">Tutorial: fairseq (PyTorch)</span></a>.</p>
+<p><em>Tested versions: PyTorch 1.1, fairseq 0.7.1</em></p>
 </div>
 <div class="section" id="installing-kenlm">
 <h3>Installing KenLM<a class="headerlink" href="#installing-kenlm" title="Permalink to this headline">¶</a></h3>
@@ -241,65 +263,32 @@ Anaconda&#8217;s pip.</p>
 </div>
 <p><em>Tested versions: latest</em></p>
 </div>
-<div class="section" id="installing-srilm">
-<h3>Installing SRILM<a class="headerlink" href="#installing-srilm" title="Permalink to this headline">¶</a></h3>
-<p>First, install the version 1.7.1 of the <a class="reference external" href="http://www.speech.sri.com/projects/srilm/">SRI language model toolkit</a> if
-you don&#8217;t already have an installation.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p>According to the <a class="reference external" href="https://github.com/desilinguist/swig-srilm">documentation</a>, swig-srilm requires that SRILM
-is compiled as position independent code using <code class="docutils literal"><span class="pre">MAKE_PIC=yes</span></code>:</p>
-<div class="last highlight-default"><div class="highlight"><pre><span></span>$ make World MAKE_PIC=yes
+<div class="section" id="installing-openfst">
+<h3>Installing OpenFST<a class="headerlink" href="#installing-openfst" title="Permalink to this headline">¶</a></h3>
+<p>SGNMT supports two variants to install the Python interface to OpenFST. The easier option is to install
+the pre-compiled <a class="reference external" href="https://pypi.org/project/openfst-python/">openfst-python</a> package with pip:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">openfst</span><span class="o">-</span><span class="n">python</span>
 </pre></div>
 </div>
-</div>
-<p>Then, checkout the srilm-swig project:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ git clone https://github.com/desilinguist/swig-srilm.git
+<p>Alternatively, OpenFST can be built from the sources without relying on a third-party package. The issue
+at the time of writing is that the <a class="reference external" href="http://openfst.org/twiki/bin/view/FST/FstDownload">official OpenFST release 1.7.2</a>.
+does not support Python 3 out-of-the-box. For future OpenFST versions with Python 3 support, compile with:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ ./configure --enable-far --enable-python
+$ make
+$ make install
 </pre></div>
 </div>
-<p>Modify the Makefile as explained in the <a class="reference external" href="https://github.com/desilinguist/swig-srilm">installation instructions</a>. For Ubuntu, the head of the make file should look like this:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">SRILM_LIBS</span><span class="o">=/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">srilm</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">i686</span><span class="o">-</span><span class="n">m64</span>
-<span class="n">SRILM_INC</span><span class="o">=/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">srilm</span><span class="o">/</span><span class="n">include</span>
-<span class="n">PYTHON_INC</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">python2</span><span class="o">.</span><span class="mi">7</span>
+<p>and add the following lines to <code class="docutils literal"><span class="pre">&lt;ACTIVATE.SH&gt;</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>export LD_LIBRARY_PATH=/path/to/openfst/lib:$LD_LIBRARY_PATH
+export PYTHONPATH=/path/to/openfst/lib/python&lt;VERSION&gt;/site-packages:$PYTHONPATH
 </pre></div>
 </div>
-<p>Build the Python module:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ make python
-</pre></div>
+<p>If you wish to use SGNMT in combination with the hierachical phrase-pased SMT system <a class="reference external" href="http://ucam-smt.github.io/">HiFST</a>,
+you can directly use the OpenFST installation under <em>externals/</em> in the HiFST installation directory. This will make
+it possible to create translation lattices with tropicalsparsetuple arcs with SGNMT to keep predictor scores separated
+(see <em>fst</em> output format).</p>
+<p><em>Tested versions: OpenFST 1.5.4-1.7.2</em></p>
 </div>
-<p><em>Tested versions: srilm 1.7.1</em></p>
-</div>
-<div class="section" id="installing-nplm">
-<h3>Installing NPLM<a class="headerlink" href="#installing-nplm" title="Permalink to this headline">¶</a></h3>
-<p>Download NPLM from the <a class="reference external" href="http://nlg.isi.edu/software/nplm/">project homepage</a> and install it. You can also
-use the <a class="reference external" href="https://github.com/ucam-smt/nplm">UCAM NPLM fork</a> from Gonzalo Iglesias for threadsafety and efficiency.
-If you are using nplm 0.3 there might be a bug in the Python module that prevents the nplm predictor from reading model files.
-Try to replace <em>nplm.py</em> in the <em>python/</em> directory of your NPLM installation with <a class="reference external" href="http:///ucam-smt.io/sgnmt/html/_static/nplm.py">this file</a>.</p>
-<p><em>Tested versions: nplm 0.3</em></p>
-</div>
-</div>
-<div class="section" id="setting-up-sgnmt">
-<h2>Setting up SGNMT<a class="headerlink" href="#setting-up-sgnmt" title="Permalink to this headline">¶</a></h2>
-<p>Update your environment variables to reflect the locations of OpenFST, SRILM/KenLM, and NPLM. On Ubuntu, it might be necessary to
-add <em>/usr/local/lib</em> to your <code class="docutils literal"><span class="pre">LD_LIBRARY_PATH</span></code> (default location for OpenFST):</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ export LD_LIBRARY_PATH=/usr/local/lib/:/path/to/swig-srilm/:/path/to/nplm/src/python:$LD_LIBRARY_PATH
-$ export PYTHONPATH=/path/to/swig-srilm/:/path/to/nplm/python/:$PYTHONPATH
-</pre></div>
-</div>
-<p>If OpenFST was not installed globally, you need to add it to your environment variables:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ export LD_LIBRARY_PATH=/path/to/openfst/lib:$LD_LIBRARY_PATH
-$ export PYTHONPATH=/path/to/openfst/lib/python2.7/site-packages:$PYTHONPATH
-</pre></div>
-</div>
-<p>Clone the GIT repository and try to start <code class="docutils literal"><span class="pre">decode.py</span></code> and <code class="docutils literal"><span class="pre">train.py</span></code>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ git clone https://github.com/ucam-smt/sgnmt.git
-$ cd sgnmt
-$ python train.py --help
-$ python decode.py --help
-</pre></div>
-</div>
-<p>If you see the help texts for both commands, you are ready for the <a class="reference internal" href="tutorial.html#tutorial-label"><span class="std std-ref">Tutorial: Basics</span></a>. Otherwise, there is probably
-something wrong with your OpenFST installation.</p>
 </div>
 </div>
 
@@ -310,7 +299,7 @@ something wrong with your OpenFST installation.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="tutorial.html" class="btn btn-neutral float-right" title="Tutorial: Basics" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="tutorial.html" class="btn btn-neutral float-right" title="Tutorial: Basics (T2T)" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="index.html" class="btn btn-neutral" title="SGNMT" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -344,7 +333,7 @@ something wrong with your OpenFST installation.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.utils &mdash; SGNMT 0.6 documentation</title>
+  <title>cam.sgnmt.utils &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 0.6 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 1.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.6
+                1.0
               </div>
             
           
@@ -84,10 +84,11 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial: Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../kyoto_nmt.html">Tutorial:  NMT decoding strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../predictors.html">Predictors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../decoders.html">Decoders</a></li>
@@ -140,7 +141,23 @@
            <div itemprop="articleBody">
             
   <h1>Source code for cam.sgnmt.utils</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;This file contains common basic functionality which can be used from</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># coding=utf-8</span>
+<span class="c1"># Copyright 2019 The SGNMT Authors.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;This file contains common basic functionality which can be used from</span>
 <span class="sd">anywhere. This includes the definition of reserved word indices, some</span>
 <span class="sd">mathematical functions, and helper functions to deal with the small</span>
 <span class="sd">quirks Python sometimes has.</span>
@@ -150,13 +167,19 @@
 <span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">import</span> <span class="nn">operator</span>
 <span class="kn">from</span> <span class="nn">scipy.misc</span> <span class="kn">import</span> <span class="n">logsumexp</span>
-<span class="kn">import</span> <span class="nn">codecs</span>
 <span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">call</span>
 <span class="kn">from</span> <span class="nn">shutil</span> <span class="kn">import</span> <span class="n">copyfile</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">pywrapfst</span> <span class="kn">as</span> <span class="nn">fst</span>
 <span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pywrapfst</span> <span class="kn">as</span> <span class="nn">fst</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">openfst_python</span> <span class="kn">as</span> <span class="nn">fst</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span> <span class="c1"># Deal with it in decode.py</span>
 
 <span class="c1"># Reserved IDs</span>
 <span class="n">GO_ID</span> <span class="o">=</span> <span class="mi">1</span>
@@ -180,34 +203,21 @@
 
 <span class="n">INF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
 
+
 <span class="n">EPS_P</span> <span class="o">=</span> <span class="mf">0.00001</span>
 
-<div class="viewcode-block" id="switch_to_tf_indexing"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.switch_to_tf_indexing">[docs]</a><span class="k">def</span> <span class="nf">switch_to_tf_indexing</span><span class="p">():</span>
+
+<div class="viewcode-block" id="switch_to_fairseq_indexing"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.switch_to_fairseq_indexing">[docs]</a><span class="k">def</span> <span class="nf">switch_to_fairseq_indexing</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Calling this method overrides the global definitions of the </span>
 <span class="sd">    reserved  word ids ``GO_ID``, ``EOS_ID``, and ``UNK_ID``</span>
-<span class="sd">    with the TensorFlow indexing scheme. This scheme is used the </span>
-<span class="sd">    TensorFlow NMT and RNNLM models. </span>
+<span class="sd">    with the fairseq indexing scheme. </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">global</span> <span class="n">GO_ID</span>
     <span class="k">global</span> <span class="n">EOS_ID</span>
     <span class="k">global</span> <span class="n">UNK_ID</span>
-    <span class="n">GO_ID</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">GO_ID</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">EOS_ID</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">UNK_ID</span> <span class="o">=</span> <span class="mi">3</span></div>
-
-
-<div class="viewcode-block" id="switch_to_blocks_indexing"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.switch_to_blocks_indexing">[docs]</a><span class="k">def</span> <span class="nf">switch_to_blocks_indexing</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Calling this method overrides the global definitions of the </span>
-<span class="sd">    reserved  word ids ``GO_ID``, ``EOS_ID``, and ``UNK_ID``</span>
-<span class="sd">    with the Blocks indexing scheme. This scheme is used in the</span>
-<span class="sd">    Blocks NMT implementation and it&#39;s SGNMT extensions. </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">global</span> <span class="n">GO_ID</span>
-    <span class="k">global</span> <span class="n">EOS_ID</span>
-    <span class="k">global</span> <span class="n">UNK_ID</span>
-    <span class="n">GO_ID</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="n">EOS_ID</span> <span class="o">=</span> <span class="mi">2</span>
-    <span class="n">UNK_ID</span> <span class="o">=</span> <span class="mi">0</span></div>
 
 
 <div class="viewcode-block" id="switch_to_t2t_indexing"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.switch_to_t2t_indexing">[docs]</a><span class="k">def</span> <span class="nf">switch_to_t2t_indexing</span><span class="p">():</span>
@@ -246,7 +256,6 @@
     <span class="k">return</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">]))</span></div>
 
 
-<span class="c1">#log_sum = log_sum_log_semiring</span>
 <span class="n">log_sum</span> <span class="o">=</span> <span class="n">log_sum_log_semiring</span>
 <span class="sd">&quot;&quot;&quot;Defines which log summation function to use. &quot;&quot;&quot;</span>
 
@@ -289,7 +298,7 @@
 <span class="sd">        Index or key of the maximum entry in ``arr``</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span></div>
 
@@ -303,9 +312,9 @@
 <span class="sd">    http://stackoverflow.com/questions/12325608/iterate-over-a-dict-or-list-in-python</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">viewkeys</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="common_iterable"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.common_iterable">[docs]</a><span class="k">def</span> <span class="nf">common_iterable</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
@@ -314,7 +323,7 @@
 <span class="sd">    http://stackoverflow.com/questions/12325608/iterate-over-a-dict-or-list-in-python</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">yield</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
@@ -356,140 +365,11 @@
         <span class="k">return</span> <span class="n">key</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
 
 
-<span class="c1"># Word maps</span>
-
-
-<span class="n">src_wmap</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="sd">&quot;&quot;&quot;Source language word map (word -&gt; id)&quot;&quot;&quot;</span>
-
-
-<span class="n">trg_wmap</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="sd">&quot;&quot;&quot;Target language word map (id -&gt; word)&quot;&quot;&quot;</span>
-
-
-<span class="n">trg_cmap</span> <span class="o">=</span> <span class="bp">None</span>
-<span class="sd">&quot;&quot;&quot;Target language character map (char -&gt; id)&quot;&quot;&quot;</span>
-
-
-<div class="viewcode-block" id="load_src_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.load_src_wmap">[docs]</a><span class="k">def</span> <span class="nf">load_src_wmap</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Loads a source side word map from the file system.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        path (string): Path to the word map (Format: word id)</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        dict. Source word map (key: word, value: id)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">global</span> <span class="n">src_wmap</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
-        <span class="n">src_wmap</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">return</span> <span class="n">src_wmap</span>
-    <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">src_wmap</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])),</span>
-                        <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]))</span>
-    <span class="k">return</span> <span class="n">src_wmap</span></div>
-
-
-<div class="viewcode-block" id="load_trg_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.load_trg_wmap">[docs]</a><span class="k">def</span> <span class="nf">load_trg_wmap</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Loads a target side word map from the file system.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        path (string): Path to the word map (Format: word id)</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        dict. Source word map (key: id, value: word)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">global</span> <span class="n">trg_wmap</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
-        <span class="n">trg_wmap</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">return</span> <span class="n">trg_wmap</span>
-    <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">trg_wmap</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
-                        <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]))</span>
-    <span class="k">return</span> <span class="n">trg_wmap</span></div>
-
-
-<div class="viewcode-block" id="load_trg_cmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.load_trg_cmap">[docs]</a><span class="k">def</span> <span class="nf">load_trg_cmap</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Loads a character map from ``path``. Returns None if ``path`` is</span>
-<span class="sd">    empty or does not point to a file. In this case, output files are</span>
-<span class="sd">    generated on the word level.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        path (string): Path to the character map</span>
-<span class="sd"> </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        dict. Map char -&gt; id or None if character level output is not</span>
-<span class="sd">        activated.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">global</span> <span class="n">trg_cmap</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
-        <span class="n">trg_cmap</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="k">return</span> <span class="bp">None</span>
-    <span class="n">trg_cmap</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">c</span><span class="p">,</span><span class="n">i</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-            <span class="n">trg_cmap</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;&lt;/w&gt;&quot;</span> <span class="ow">in</span> <span class="n">trg_cmap</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Could not find &lt;/w&gt; in char map.&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">trg_cmap</span></div>
-
-
-<div class="viewcode-block" id="apply_src_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.apply_src_wmap">[docs]</a><span class="k">def</span> <span class="nf">apply_src_wmap</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">wmap</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Converts a string to a sequence of integers by applying the</span>
-<span class="sd">    mapping ``wmap``. If ``wmap`` is empty, parse ``seq`` as string</span>
-<span class="sd">    of blank separated integers.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        seq (list): List of strings to convert</span>
-<span class="sd">        wmap (dict): word map to apply (key: word, value: ID). If empty</span>
-<span class="sd">                     use ``utils.src_wmap``</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        list. List of integers</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">wmap</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="n">wmap</span> <span class="o">=</span> <span class="n">src_wmap</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">wmap</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">UNK_ID</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">]</span></div>
-
-
-<div class="viewcode-block" id="apply_trg_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.apply_trg_wmap">[docs]</a><span class="k">def</span> <span class="nf">apply_trg_wmap</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">inv_wmap</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Converts a sequence of integers to a string by applying the</span>
-<span class="sd">    mapping ``wmap``. If ``wmap`` is empty, output the integers</span>
-<span class="sd">    directly.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        seq (list): List of integers to convert</span>
-<span class="sd">        inv_wmap (dict): word map to apply (key: id, value: word). If </span>
-<span class="sd">                         empty use ``utils.trg_wmap``</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        string. Mapped ``seq`` as single (blank separated) string</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">inv_wmap</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="n">inv_wmap</span> <span class="o">=</span> <span class="n">trg_wmap</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">inv_wmap</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">])</span>
-    <span class="k">return</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">inv_wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;UNK&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">])</span></div>
-
-
 <span class="c1"># FST utilities</span>
 
 
 <span class="n">TMP_FILENAME</span> <span class="o">=</span> <span class="s1">&#39;/tmp/sgnmt.</span><span class="si">%s</span><span class="s1">.fst&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span>
 <span class="sd">&quot;&quot;&quot;Temporary file name to use if an FST file is zipped. &quot;&quot;&quot;</span>
-
-
-<div class="viewcode-block" id="split_comma"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.split_comma">[docs]</a><span class="k">def</span> <span class="nf">split_comma</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Splits a string at commas and removes blanks.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">[]</span>
-    <span class="n">parts</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">el</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">func</span><span class="p">(</span><span class="n">el</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="w2f"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.w2f">[docs]</a><span class="k">def</span> <span class="nf">w2f</span><span class="p">(</span><span class="n">fstweight</span><span class="p">):</span>
@@ -542,6 +422,16 @@
     <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
         <span class="k">pass</span>
     <span class="k">return</span> <span class="n">tmpl</span></div>
+
+
+<div class="viewcode-block" id="split_comma"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.utils.split_comma">[docs]</a><span class="k">def</span> <span class="nf">split_comma</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Splits a string at commas and removes blanks.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">el</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">func</span><span class="p">(</span><span class="n">el</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span></div>
 
 
 <span class="n">MESSAGE_TYPE_DEFAULT</span> <span class="o">=</span> <span class="mi">1</span>
@@ -640,7 +530,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.6',
+            VERSION:'1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

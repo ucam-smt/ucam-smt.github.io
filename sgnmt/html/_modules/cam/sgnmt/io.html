@@ -1,0 +1,626 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cam.sgnmt.io &mdash; SGNMT 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="SGNMT 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> SGNMT
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial: Basics (T2T)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../adding_components.html">Tutorial: Adding new components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../bea19_gec.html">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../command_line.html">Command-line reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../predictors.html">Predictors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../decoders.html">Decoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Common issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cam.sgnmt.html">All modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">SGNMT</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>cam.sgnmt.io</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cam.sgnmt.io</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># coding=utf-8</span>
+<span class="c1"># Copyright 2019 The SGNMT Authors.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;This module is responsible for converting input text to integer</span>
+<span class="sd">representations (encode()), and integer translation hypotheses back to </span>
+<span class="sd">readable text (decode()). In the default configuration, this conversion</span>
+<span class="sd">is an identity mapping: Source sentences are provided in integer</span>
+<span class="sd">representations, and output files also contain indexed sentences. </span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">cam.sgnmt</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">import</span> <span class="nn">codecs</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+
+<div class="viewcode-block" id="encode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.encode">[docs]</a><span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts the source sentence in string representation to a</span>
+<span class="sd">    sequence of token IDs. Depending on the configuration of this</span>
+<span class="sd">    module, it applies word maps and/or subword/character segmentation</span>
+<span class="sd">    on the input. This method calls ``encoder.encode()``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        src_sentence (string): A single input sentence</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of integers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.decode">[docs]</a><span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="n">trg_sentence</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts the target sentence represented as sequence of token</span>
+<span class="sd">    IDs to a string representation. This method calls</span>
+<span class="sd">    ``decoder.decode()``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        trg_sentence (list): A sequence of integers (token IDs)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">trg_sentence</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="initialize"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.initialize">[docs]</a><span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Initializes the ``io`` module, including loading word maps and</span>
+<span class="sd">    other resources needed for encoding and decoding. Subsequent calls</span>
+<span class="sd">    of ``encode()`` and ``decode()`` will process input as specified in</span>
+<span class="sd">    ``args``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        args (object): SGNMT config</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">wmap</span><span class="p">:</span>
+        <span class="n">load_src_wmap</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">wmap</span><span class="p">)</span>
+        <span class="n">load_trg_wmap</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">wmap</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">src_wmap</span><span class="p">:</span>
+        <span class="n">load_src_wmap</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">src_wmap</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">:</span>
+        <span class="n">load_trg_wmap</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">trg_wmap</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">preprocessing</span> <span class="o">==</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span>
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">IDEncoder</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">preprocessing</span> <span class="o">==</span> <span class="s2">&quot;word&quot;</span><span class="p">:</span>
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">WordEncoder</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">preprocessing</span> <span class="o">==</span> <span class="s2">&quot;char&quot;</span><span class="p">:</span>
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">CharEncoder</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">preprocessing</span> <span class="o">==</span> <span class="s2">&quot;bpe&quot;</span><span class="p">:</span>
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">BPEEncoder</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">bpe_codes</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">preprocessing</span> <span class="o">==</span> <span class="s2">&quot;bpe@@&quot;</span><span class="p">:</span>
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">BPEEncoder</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">bpe_codes</span><span class="p">,</span> <span class="s2">&quot;@@&quot;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Unknown preprocessing&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">postprocessing</span> <span class="o">==</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">IDDecoder</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">postprocessing</span> <span class="o">==</span> <span class="s2">&quot;word&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">WordDecoder</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">postprocessing</span> <span class="o">==</span> <span class="s2">&quot;char&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">CharDecoder</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">postprocessing</span> <span class="o">==</span> <span class="s2">&quot;bpe&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">BPEDecoder</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">postprocessing</span> <span class="o">==</span> <span class="s2">&quot;bpe@@&quot;</span><span class="p">:</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">BPEAtAtDecoder</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Unknown postprocessing&quot;</span><span class="p">)</span></div>
+
+
+<span class="c1"># Encoders and decoders</span>
+
+
+<span class="n">encoder</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="sd">&quot;&quot;&quot;Encoder called in encode(). Initialized in initialize().&quot;&quot;&quot;</span>
+
+
+<span class="n">decoder</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="sd">&quot;&quot;&quot;Decoder called in decode(). Initialized in initialize().&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="Encoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.Encoder">[docs]</a><span class="k">class</span> <span class="nc">Encoder</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Super class for IO encoders.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Encoder.encode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.Encoder.encode">[docs]</a>    <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts the source sentence in string representation to a</span>
+<span class="sd">        sequence of token IDs. Depending on the configuration of this</span>
+<span class="sd">        module, it applies word maps and/or subword/character segmentation</span>
+<span class="sd">        on the input.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            src_sentence (string): A single input sentence</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of integers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="Decoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.Decoder">[docs]</a><span class="k">class</span> <span class="nc">Decoder</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;&quot;Super class for IO decoders.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Decoder.decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.Decoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts the target sentence represented as sequence of token</span>
+<span class="sd">        IDs to a string representation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            trg_sentence (list): A sequence of integers (token IDs)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="IDEncoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.IDEncoder">[docs]</a><span class="k">class</span> <span class="nc">IDEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Encoder for ID mapping.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IDEncoder.encode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.IDEncoder.encode">[docs]</a>    <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">src_sentence</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span></div></div>
+
+
+<div class="viewcode-block" id="IDDecoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.IDDecoder">[docs]</a><span class="k">class</span> <span class="nc">IDDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;&quot;Decoder for ID mapping.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IDDecoder.decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.IDDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_sentence</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">trg_sentence</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="WordEncoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.WordEncoder">[docs]</a><span class="k">class</span> <span class="nc">WordEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Encoder for word based mapping.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="WordEncoder.encode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.WordEncoder.encode">[docs]</a>    <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">src_wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span> 
+                <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">src_sentence</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span></div></div>
+
+
+<div class="viewcode-block" id="WordDecoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.WordDecoder">[docs]</a><span class="k">class</span> <span class="nc">WordDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;&quot;Decoder for word based mapping.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="WordDecoder.decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.WordDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_sentence</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">trg_wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="s2">&quot;&lt;UNK&gt;&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">trg_sentence</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CharEncoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.CharEncoder">[docs]</a><span class="k">class</span> <span class="nc">CharEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Encoder for char mapping.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CharEncoder.encode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.CharEncoder.encode">[docs]</a>    <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">src_wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span><span class="p">)</span> 
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">src_sentence</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)]</span></div></div>
+
+
+<div class="viewcode-block" id="CharDecoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.CharDecoder">[docs]</a><span class="k">class</span> <span class="nc">CharDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;&quot;Decoder for char mapping.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CharDecoder.decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.CharDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_sentence</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+              <span class="n">trg_wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;&lt;UNK&gt;&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">trg_sentence</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span></div></div>
+
+
+<span class="c1"># The BPE implementation is adapted from Rico Sennrich&#39;s subword_nmt </span>
+<span class="c1"># repository:</span>
+<span class="c1"># https://github.com/rsennrich/subword-nmt</span>
+
+<div class="viewcode-block" id="BPE"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPE">[docs]</a><span class="k">class</span> <span class="nc">BPE</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">codes_path</span><span class="p">,</span> <span class="n">separator</span><span class="o">=</span><span class="s1">&#39;@@&#39;</span><span class="p">,</span> <span class="n">remove_eow</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+        <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">codes_path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">codes</span><span class="p">:</span>
+            <span class="n">codes</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">offset</span><span class="o">=</span><span class="mi">1</span>
+
+            <span class="c1"># check version information</span>
+            <span class="n">firstline</span> <span class="o">=</span> <span class="n">codes</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">firstline</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;#version:&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">r&#39;(\.0+)*$&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">firstline</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)])</span>
+                <span class="n">offset</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">codes</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">bpe_codes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\r\n</span><span class="s1"> &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">))</span> <span class="k">for</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">codes</span><span class="p">)]</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bpe_codes</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;Error: invalid line {0} in BPE codes file: {1}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="n">offset</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">item</span><span class="p">)))</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;The line should exist of exactly two subword units, separated by whitespace</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># some hacking to deal with duplicates (only consider first instance)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bpe_codes</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">code</span><span class="p">,</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">code</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bpe_codes</span><span class="p">)))])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator</span> <span class="o">=</span> <span class="n">separator</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove_eow</span> <span class="o">=</span> <span class="n">remove_eow</span>
+
+<div class="viewcode-block" id="BPE.process_line"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPE.process_line">[docs]</a>    <span class="k">def</span> <span class="nf">process_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;segment line, dealing with leading and trailing whitespace&quot;&quot;&quot;</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">leading_whitespace</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\r\n</span><span class="s1"> &#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">leading_whitespace</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="n">line</span><span class="p">[:</span><span class="n">leading_whitespace</span><span class="p">]</span>
+
+        <span class="n">out</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">segment</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+        <span class="n">trailing_whitespace</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\r\n</span><span class="s1"> &#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">trailing_whitespace</span> <span class="ow">and</span> <span class="n">trailing_whitespace</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="n">line</span><span class="p">[</span><span class="o">-</span><span class="n">trailing_whitespace</span><span class="p">:]</span>
+
+        <span class="k">return</span> <span class="n">out</span></div>
+
+<div class="viewcode-block" id="BPE.segment"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPE.segment">[docs]</a>    <span class="k">def</span> <span class="nf">segment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;segment single sentence (whitespace-tokenized string) with BPE encoding&quot;&quot;&quot;</span>
+        <span class="n">segments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">segment_tokens</span><span class="p">(</span><span class="n">sentence</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\r\n</span><span class="s1"> &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">segments</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BPE.segment_tokens"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPE.segment_tokens">[docs]</a>    <span class="k">def</span> <span class="nf">segment_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;segment a sequence of tokens with BPE encoding&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+            <span class="c1"># eliminate double spaces</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">word</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">new_word</span> <span class="o">=</span> <span class="p">[</span><span class="n">out</span> <span class="k">for</span> <span class="n">out</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">word</span><span class="p">)]</span>
+
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">new_word</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_word</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">output</span></div>
+
+<div class="viewcode-block" id="BPE.get_pairs"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPE.get_pairs">[docs]</a>    <span class="k">def</span> <span class="nf">get_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return set of symbol pairs in a word.</span>
+
+<span class="sd">        word is represented as tuple of symbols (symbols being variable-length strings)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">prev_char</span> <span class="o">=</span> <span class="n">word</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">word</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">pairs</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">prev_char</span><span class="p">,</span> <span class="n">char</span><span class="p">))</span>
+            <span class="n">prev_char</span> <span class="o">=</span> <span class="n">char</span>
+        <span class="k">return</span> <span class="n">pairs</span></div>
+
+<div class="viewcode-block" id="BPE.encode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPE.encode">[docs]</a>    <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">orig</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Encode word based on list of BPE merge operations, which are applied consecutively</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">orig</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="n">orig</span><span class="p">]</span>
+  
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">word</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;&lt;/w&gt;&#39;</span><span class="p">,)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span> <span class="c1"># more consistent handling of word-final segments</span>
+            <span class="n">word</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">orig</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span> <span class="n">orig</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;&lt;/w&gt;&#39;</span><span class="p">,)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+        <span class="n">pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pairs</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pairs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">orig</span>
+
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">bigram</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bpe_codes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)))</span>
+            <span class="k">if</span> <span class="n">bigram</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bpe_codes</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">first</span><span class="p">,</span> <span class="n">second</span> <span class="o">=</span> <span class="n">bigram</span>
+            <span class="n">new_word</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="n">word</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+                    <span class="n">new_word</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">j</span><span class="p">])</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">j</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">new_word</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="p">:])</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">first</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">second</span><span class="p">:</span>
+                    <span class="n">new_word</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">first</span><span class="o">+</span><span class="n">second</span><span class="p">)</span>
+                    <span class="n">i</span> <span class="o">+=</span> <span class="mi">2</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_word</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">new_word</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">new_word</span><span class="p">)</span>
+            <span class="n">word</span> <span class="o">=</span> <span class="n">new_word</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pairs</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_eow</span><span class="p">:</span>
+            <span class="c1"># don&#39;t print end-of-word symbols</span>
+            <span class="k">if</span> <span class="n">word</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&lt;/w&gt;&#39;</span><span class="p">:</span>
+                <span class="n">word</span> <span class="o">=</span> <span class="n">word</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">word</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;&lt;/w&gt;&#39;</span><span class="p">):</span>
+                <span class="n">word</span> <span class="o">=</span> <span class="n">word</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&lt;/w&gt;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">),)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="n">orig</span><span class="p">]</span> <span class="o">=</span> <span class="n">word</span>
+        <span class="k">return</span> <span class="n">word</span></div></div>
+
+
+<div class="viewcode-block" id="BPEEncoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPEEncoder">[docs]</a><span class="k">class</span> <span class="nc">BPEEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Encoder for BPE mapping.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">codes_path</span><span class="p">,</span> <span class="n">separator</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">remove_eow</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bpe</span> <span class="o">=</span> <span class="n">BPE</span><span class="p">(</span><span class="n">codes_path</span><span class="p">,</span> <span class="n">separator</span><span class="p">,</span> <span class="n">remove_eow</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BPEEncoder.encode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPEEncoder.encode">[docs]</a>    <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
+        <span class="n">bpe_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bpe</span><span class="o">.</span><span class="n">segment</span><span class="p">(</span><span class="n">src_sentence</span><span class="p">)</span>
+        <span class="n">bpe_int</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">bpe_str</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">w</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">src_wmap</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;src_wmap does not fully cover bpe_codes (&#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span>
+                    <span class="s2">&quot; not found in wmap, skipping)&quot;</span> <span class="o">%</span> <span class="n">w</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">bpe_int</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">src_wmap</span><span class="p">[</span><span class="n">w</span><span class="p">])</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;BPE segmentation: &#39;</span><span class="si">%s</span><span class="s2">&#39; =&gt; &#39;</span><span class="si">%s</span><span class="s2">&#39; (</span><span class="si">%s</span><span class="s2">)&quot;</span> 
+                      <span class="o">%</span> <span class="p">(</span><span class="n">src_sentence</span><span class="p">,</span> <span class="n">bpe_str</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">bpe_int</span><span class="p">))))</span>
+        <span class="k">return</span> <span class="n">bpe_int</span></div></div>
+
+
+<div class="viewcode-block" id="BPEDecoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPEDecoder">[docs]</a><span class="k">class</span> <span class="nc">BPEDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;&quot;Decoder for BPE mapping SGNMT style.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BPEDecoder.decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPEDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_sentence</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+           <span class="n">trg_wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="s2">&quot;&lt;UNK&gt;&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">trg_sentence</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&lt;/w&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="BPEAtAtDecoder"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPEAtAtDecoder">[docs]</a><span class="k">class</span> <span class="nc">BPEAtAtDecoder</span><span class="p">(</span><span class="n">Decoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;&quot;Decoder for BPE mapping with @@ separator.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BPEAtAtDecoder.decode"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.BPEAtAtDecoder.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_sentence</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+           <span class="n">trg_wmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="s2">&quot;&lt;UNK&gt;&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">trg_sentence</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;@@ &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span></div></div>
+
+
+<span class="c1"># Word maps</span>
+
+
+<span class="n">src_wmap</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="sd">&quot;&quot;&quot;Source language word map (word -&gt; id)&quot;&quot;&quot;</span>
+
+
+<span class="n">trg_wmap</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="sd">&quot;&quot;&quot;Target language word map (id -&gt; word)&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="load_src_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.load_src_wmap">[docs]</a><span class="k">def</span> <span class="nf">load_src_wmap</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads a source side word map from the file system.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path (string): Path to the word map (Format: word id)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        dict. Source word map (key: word, value: id)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">src_wmap</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+        <span class="n">src_wmap</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="n">src_wmap</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">src_wmap</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])),</span>
+                        <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">src_wmap</span></div>
+
+
+<div class="viewcode-block" id="load_trg_wmap"><a class="viewcode-back" href="../../../cam.sgnmt.html#cam.sgnmt.io.load_trg_wmap">[docs]</a><span class="k">def</span> <span class="nf">load_trg_wmap</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads a target side word map from the file system.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        path (string): Path to the word map (Format: word id)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        dict. Source word map (key: id, value: word)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">trg_wmap</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+        <span class="n">trg_wmap</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="n">trg_wmap</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">trg_wmap</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                        <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">trg_wmap</span></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, University of Cambridge.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
