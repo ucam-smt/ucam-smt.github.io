@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Tutorial: Grammatical Error Correction (BEA19 Submission) &mdash; SGNMT 1.0 documentation</title>
+  <title>Tutorial: Grammatical error correction &mdash; SGNMT 1.0 documentation</title>
   
 
   
@@ -88,7 +88,11 @@
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: Basics (T2T)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial_pytorch.html">Tutorial: fairseq (PyTorch)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="adding_components.html">Tutorial: Adding new components</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial:  Grammatical Error Correction (BEA19 Submission)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial:  Grammatical error correction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#restricted-track-submission">Restricted track submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#low-resource-track-submission">Low-resource track submission</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial_blocks.html">Tutorial: Blocks/Thano (outdated)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_line.html">Command-line reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="predictors.html">Predictors</a></li>
@@ -127,7 +131,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Tutorial:  Grammatical Error Correction (BEA19 Submission)</li>
+    <li>Tutorial:  Grammatical error correction</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -141,9 +145,95 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="tutorial-grammatical-error-correction-bea19-submission">
-<span id="bea19-gec-label"></span><h1>Tutorial:  Grammatical Error Correction (BEA19 Submission)<a class="headerlink" href="#tutorial-grammatical-error-correction-bea19-submission" title="Permalink to this headline">¶</a></h1>
-<p>Coming soon...</p>
+  <div class="section" id="tutorial-grammatical-error-correction">
+<span id="bea19-gec-label"></span><h1>Tutorial:  Grammatical error correction<a class="headerlink" href="#tutorial-grammatical-error-correction" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial reproduces the single system results of the Cambridge University Engineering Department&#8217;s submissions to the
+<a class="reference external" href="https://www.cl.cam.ac.uk/research/nl/bea2019st/">BEA-2019 shared task on grammatical error correction</a>. Details about the
+submissions can be found in the system description paper:</p>
+<blockquote>
+<div><a class="reference external" href="https://arxiv.org/TODO">https://arxiv.org/TODO</a></div></blockquote>
+<p>The tutorial data is available under the following DOI:</p>
+<p><a class="reference external" href="http://dx.doi.org/TODO">http://dx.doi.org/TODO</a> (We are in the process of publishing the data under a DOI. In the meantime, please write <a class="reference external" href="mailto:fs439&#37;&#52;&#48;cam&#46;ac&#46;uk">fs439<span>&#64;</span>cam<span>&#46;</span>ac<span>&#46;</span>uk</a> to get access to this data)</p>
+<p>Please download the archive and extract it:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ tar xzf tutorial-bea2019-gec.tar.gz
+$ cd tutorial-bea2019-gec
+</pre></div>
+</div>
+<div class="section" id="restricted-track-submission">
+<h2>Restricted track submission<a class="headerlink" href="#restricted-track-submission" title="Permalink to this headline">¶</a></h2>
+<p>Our restricted track systems are purely neural. The base system (last row in Tab. 9 in the paper) can be run using the <code class="docutils literal"><span class="pre">ini/restricted-base_dev.ini</span></code> config file:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">predictors</span><span class="p">:</span> <span class="n">t2t</span>
+
+<span class="n">src_test</span><span class="p">:</span> <span class="n">data</span><span class="o">/</span><span class="n">dev</span><span class="o">.</span><span class="n">ne</span>
+<span class="n">config_file</span><span class="p">:</span> <span class="n">ini</span><span class="o">/</span><span class="n">bpe</span><span class="o">.</span><span class="n">ini</span>
+
+<span class="n">pred_src_vocab_size</span><span class="p">:</span> <span class="mi">34937</span>
+<span class="n">pred_trg_vocab_size</span><span class="p">:</span> <span class="mi">34937</span>
+<span class="n">t2t_problem</span><span class="p">:</span> <span class="n">translate_ende_wmt32k</span>
+<span class="n">t2t_model</span><span class="p">:</span> <span class="n">transformer</span>
+<span class="n">t2t_hparams_set</span><span class="p">:</span> <span class="n">transformer_base_v2</span>
+<span class="n">t2t_checkpoint_dir</span><span class="p">:</span> <span class="n">models</span><span class="o">/</span><span class="n">nmt</span><span class="o">/</span><span class="n">base</span><span class="o">/</span>
+
+<span class="n">outputs</span><span class="p">:</span> <span class="n">nbest</span><span class="p">,</span><span class="n">text</span>
+</pre></div>
+</div>
+<p>Decode as usual:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>python $SGNMT/decode.py --config_file ini/restricted-base_dev.ini  --range 68
+(...)
+2019-06-28 17:43:46,168 INFO: Next sentence (ID: 68): After many years he still dream to become a super hero .
+2019-06-28 17:43:49,687 INFO: Decoded (ID: 68): After many years he still dreams of becoming a super hero .
+2019-06-28 17:43:49,687 INFO: Stats (ID: 68): score=-2.711742 num_expansions=45 time=3.52
+2019-06-28 17:43:49,687 INFO: Decoding finished. Time: 3.52
+</pre></div>
+</div>
+<p><a class="reference external" href="https://github.com/chrisjbryant/errant">ERRANT</a> scores can be computed as described by the <a class="reference external" href="https://www.cl.cam.ac.uk/research/nl/bea2019st/">shared task organizers</a>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>python3 $ERRANT_HOME/parallel_to_m2.py -orig data/dev.ne -cor &lt;path-to-sgnmt-output-file&gt; -out tmp.m2
+python3 $ERRANT_HOME/compare_m2.py -hyp tmp.m2 -ref &lt;dev-set-reference-m2&gt;
+</pre></div>
+</div>
+<p>Scores might differ slightly from the ones in the paper due to different Python, SGNMT, TensorFlow, and Tensor2Tensor versions. Configuration files for the big single
+NMT systems (rows 3 and 4 in Tab. 10) are provided as <code class="docutils literal"><span class="pre">ini/restricted-big_dev.ini</span></code> and <code class="docutils literal"><span class="pre">ini/restricted-big+lm_dev.ini</span></code>.</p>
+</div>
+<div class="section" id="low-resource-track-submission">
+<h2>Low-resource track submission<a class="headerlink" href="#low-resource-track-submission" title="Permalink to this headline">¶</a></h2>
+<p>The low-resource track does not permit the use of parallel training data except the BEA-2019 development set with around 4K sentence pairs. As
+explained in the paper, our submission to this track works by constructing the search space with a cascade of FST compositions, and then
+rescoring that search space with neural language models. The final FSTs that can be used for rescoring are in <code class="docutils literal"><span class="pre">./supplementary/composed_fsts/d_s_i</span></code>
+(<em>d_s_i</em> stands for the composition cascade <em>deletion-substitution-insertion</em>). The paper describes the search space as a single FST. In this
+tutorial, we use three FSTs instead, all with the same topology but with different scores: FSTs in &#8216;100&#8217; contain only deletion scores, in &#8216;010&#8217;
+only substitution scores, and in &#8216;001&#8217; only insertion scores. While composing these three FSTs to a single FST would be more efficient, keeping
+them separate is more flexible as it allows us to scale the different penalties directly inside SGNMT by simply using three different <code class="docutils literal"><span class="pre">fst</span></code> predictors
+with different predictor weights:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">predictors</span><span class="p">:</span> <span class="n">t2t</span><span class="p">,</span><span class="n">fst</span><span class="p">,</span><span class="n">fst</span><span class="p">,</span><span class="n">fst</span>
+<span class="n">predictor_weights</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span><span class="mf">0.75</span><span class="p">,</span><span class="mf">0.75</span><span class="p">,</span><span class="mf">0.9375</span>
+<span class="n">beam</span><span class="p">:</span> <span class="mi">8</span>
+
+<span class="n">src_test</span><span class="p">:</span> <span class="n">data</span><span class="o">/</span><span class="n">dev</span><span class="o">.</span><span class="n">ne</span>
+<span class="n">config_file</span><span class="p">:</span> <span class="n">ini</span><span class="o">/</span><span class="n">bpe</span><span class="o">.</span><span class="n">ini</span>
+
+<span class="n">fst_path</span><span class="p">:</span> <span class="n">supplementary</span><span class="o">/</span><span class="n">composed_fsts</span><span class="o">/</span><span class="n">d_s_i</span><span class="o">/</span><span class="mi">100</span><span class="o">/</span><span class="n">dev</span><span class="o">/%</span><span class="n">d</span><span class="o">.</span><span class="n">fst</span>
+<span class="n">fst_path2</span><span class="p">:</span> <span class="n">supplementary</span><span class="o">/</span><span class="n">composed_fsts</span><span class="o">/</span><span class="n">d_s_i</span><span class="o">/</span><span class="mi">010</span><span class="o">/</span><span class="n">dev</span><span class="o">/%</span><span class="n">d</span><span class="o">.</span><span class="n">fst</span>
+<span class="n">fst_path3</span><span class="p">:</span> <span class="n">supplementary</span><span class="o">/</span><span class="n">composed_fsts</span><span class="o">/</span><span class="n">d_s_i</span><span class="o">/</span><span class="mi">001</span><span class="o">/</span><span class="n">dev</span><span class="o">/%</span><span class="n">d</span><span class="o">.</span><span class="n">fst</span>
+<span class="n">use_fst_weights</span><span class="p">:</span> <span class="n">true</span>
+
+<span class="n">pred_src_vocab_size</span><span class="p">:</span> <span class="mi">34937</span>
+<span class="n">pred_trg_vocab_size</span><span class="p">:</span> <span class="mi">34937</span>
+<span class="n">t2t_problem</span><span class="p">:</span> <span class="n">languagemodel_lm1b32k</span>
+<span class="n">t2t_model</span><span class="p">:</span> <span class="n">transformer</span>
+<span class="n">t2t_hparams_set</span><span class="p">:</span> <span class="n">transformer_big</span>
+<span class="n">t2t_checkpoint_dir</span><span class="p">:</span> <span class="n">models</span><span class="o">/</span><span class="n">lm</span><span class="o">/</span><span class="n">big</span><span class="o">/</span>
+
+<span class="n">outputs</span><span class="p">:</span> <span class="n">nbest</span><span class="p">,</span><span class="n">text</span>
+</pre></div>
+</div>
+<p>This SGNMT config file for the BEA-2019 dev set is stored as <code class="docutils literal"><span class="pre">ini/lowresource-1lm_dev.ini</span></code> which corresponds to row 4 in Tab. 2 in the paper. Our best
+system on the low-resource track (last row in Tab. 2) bumps up the beam size to 32 and adds another LM (<code class="docutils literal"><span class="pre">ini/lowresource-2lm_dev.ini</span></code>). Note that
+these are evaluation systems for which decoding time is secondary. We recommend using distributed decoding and/or GPUs.</p>
+<p>Again, ERRANT scores might differ slightly from the figures reported in the paper due to different versions of Python, TensorFlow, and Tensor2Tensor.</p>
+<p>For your reference, we also provide resources and scripts to build the composition cascade from scratch. Your starting point to learn more about
+how to build these FSTs would be <code class="docutils literal"><span class="pre">./supplementary/README</span></code>. Note that some of the scripts require external dependencies such as spaCy, hunspell,
+and <a class="reference external" href="https://github.com/chrisjbryant/lmgec-lite">lmgec-lite</a>.</p>
+</div>
 </div>
 
 
