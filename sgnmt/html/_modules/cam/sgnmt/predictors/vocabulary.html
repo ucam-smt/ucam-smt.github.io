@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.vocabulary &mdash; SGNMT 1.0 documentation</title>
+  <title>cam.sgnmt.predictors.vocabulary &mdash; SGNMT 1.1 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 1.0 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 1.1 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0
+                1.1
               </div>
             
           
@@ -327,6 +327,37 @@
                             <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">prob</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_iterable</span><span class="p">(</span><span class="n">posterior</span><span class="p">)}</span></div></div>
 
 
+<div class="viewcode-block" id="VocabSpec"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.VocabSpec">[docs]</a><span class="k">class</span> <span class="nc">VocabSpec</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper class for maskvocab and skipvocab predictors.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Takes a string that specifies a vocabulary. Examples:</span>
+<span class="sd">          &#39;10,11,12&#39;: The tokens 10, 11, and 12</span>
+<span class="sd">          &#39;&gt;55&#39;: All token IDs larger than 55</span>
+<span class="sd">          &#39;&lt;33,99&#39;: All token IDs less than 33 and the token 99.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">          spec_str (string): String specification of the vocabulary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_id</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_id</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">spec_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">):</span>
+          <span class="k">if</span> <span class="n">el</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;&gt;&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">el</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+          <span class="k">elif</span> <span class="n">el</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">el</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+          <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">el</span><span class="p">))</span>
+
+<div class="viewcode-block" id="VocabSpec.contains"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.VocabSpec.contains">[docs]</a>    <span class="k">def</span> <span class="nf">contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">token</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">token</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="n">token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span></div></div>
+
+
 <div class="viewcode-block" id="MaskvocabPredictor"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor">[docs]</a><span class="k">class</span> <span class="nc">MaskvocabPredictor</span><span class="p">(</span><span class="n">Predictor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This wrapper predictor hides certain words in the SGNMT </span>
 <span class="sd">    vocabulary from the predictor. Those words are scored by the</span>
@@ -334,18 +365,16 @@
 <span class="sd">    only for other words.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Creates a new idxmap wrapper predictor. The index maps have</span>
-<span class="sd">        to be plain text files, each line containing the mapping from</span>
-<span class="sd">        a SGNMT word index to the slave predictor word index.</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_spec</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new maskvocab wrapper predictor.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
-<span class="sd">            words (set): List of masked words</span>
+<span class="sd">            vocab_spec (string): Vocabulary specification (see VocabSpec)</span>
 <span class="sd">            slave_predictor (Predictor): Instance of the predictor with</span>
 <span class="sd">                                         a different wmap than SGNMT</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">MaskvocabPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_spec</span> <span class="o">=</span> <span class="n">VocabSpec</span><span class="p">(</span><span class="n">vocab_spec</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
 
 <div class="viewcode-block" id="MaskvocabPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
@@ -355,7 +384,7 @@
 <div class="viewcode-block" id="MaskvocabPredictor.predict_next"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.predict_next">[docs]</a>    <span class="k">def</span> <span class="nf">predict_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Pass through to slave predictor, set masked to 0.0 &quot;&quot;&quot;</span>
         <span class="n">posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">predict_next</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_spec</span><span class="o">.</span><span class="n">tokens</span><span class="p">:</span>
             <span class="n">posterior</span><span class="p">[</span><span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="k">return</span> <span class="n">posterior</span></div>
         
@@ -365,7 +394,7 @@
     
 <div class="viewcode-block" id="MaskvocabPredictor.consume"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.consume">[docs]</a>    <span class="k">def</span> <span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Pass through to slave predictor &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_spec</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span><span class="o">.</span><span class="n">consume</span><span class="p">(</span><span class="n">word</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="MaskvocabPredictor.get_state"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -499,19 +528,19 @@
 <span class="sd">    in-vocabulary word scores are collected from the wrapped predictor.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_id</span><span class="p">,</span> <span class="n">stop_size</span><span class="p">,</span> <span class="n">beam</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_spec</span><span class="p">,</span> <span class="n">stop_size</span><span class="p">,</span> <span class="n">beam</span><span class="p">,</span> <span class="n">slave_predictor</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new skipvocab wrapper predictor.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
-<span class="sd">            max_id (int): All words greater than this are skipped</span>
+<span class="sd">            vocab_spec (string): Vocabulary specification (see VocabSpec)</span>
 <span class="sd">            stop_size (int): Stop internal beam search when the best</span>
 <span class="sd">                             stop_size words are in-vocabulary</span>
 <span class="sd">            beam (int): Beam size of internal beam search</span>
 <span class="sd">            slave_predictor (Predictor): Wrapped predictor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">SkipvocabPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_spec</span> <span class="o">=</span> <span class="n">VocabSpec</span><span class="p">(</span><span class="n">vocab_spec</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slave_predictor</span> <span class="o">=</span> <span class="n">slave_predictor</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_id</span> <span class="o">=</span> <span class="n">max_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stop_size</span> <span class="o">=</span> <span class="n">stop_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">beam</span> <span class="o">=</span> <span class="n">beam</span>
     
@@ -530,7 +559,7 @@
     <span class="k">def</span> <span class="nf">_is_stopping_posterior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">common_iterable</span><span class="p">(</span><span class="n">posterior</span><span class="p">),</span>
                               <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="o">-</span><span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">])[:</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_size</span><span class="p">]:</span>
-            <span class="k">if</span> <span class="n">word</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_id</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_spec</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
                 <span class="k">return</span> <span class="bp">False</span>
         <span class="k">return</span> <span class="bp">True</span>
  
@@ -565,7 +594,7 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="c1"># Look for ways to expand this hypo with OOV words.</span>
                     <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">common_iterable</span><span class="p">(</span><span class="n">posterior</span><span class="p">):</span>
-                        <span class="k">if</span> <span class="n">word</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_id</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_spec</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
                             <span class="n">next_hypos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SkipvocabInternalHypothesis</span><span class="p">(</span>
                                 <span class="n">hypo</span><span class="o">.</span><span class="n">score</span> <span class="o">+</span> <span class="n">score</span><span class="p">,</span> <span class="n">pred_state</span><span class="p">,</span> <span class="n">word</span><span class="p">))</span>
             <span class="n">next_hypos</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="o">-</span><span class="n">h</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
@@ -633,7 +662,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'1.0',
+            VERSION:'1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

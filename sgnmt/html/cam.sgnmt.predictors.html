@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors package &mdash; SGNMT 1.0 documentation</title>
+  <title>cam.sgnmt.predictors package &mdash; SGNMT 1.1 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 1.0 documentation" href="index.html"/>
+    <link rel="top" title="SGNMT 1.1 documentation" href="index.html"/>
         <link rel="up" title="cam.sgnmt package" href="cam.sgnmt.html"/>
         <link rel="prev" title="cam.sgnmt.misc package" href="cam.sgnmt.misc.html"/> 
 
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                1.0
+                1.1
               </div>
             
           
@@ -1287,7 +1287,7 @@ organize the target sentences in a Trie</p>
 
 <dl class="class">
 <dt id="cam.sgnmt.predictors.forced.ForcedPredictor">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.forced.</code><code class="descname">ForcedPredictor</code><span class="sig-paren">(</span><em>trg_test_file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/forced.html#ForcedPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.forced.ForcedPredictor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.forced.</code><code class="descname">ForcedPredictor</code><span class="sig-paren">(</span><em>trg_test_file</em>, <em>spurious_words=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/forced.html#ForcedPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.forced.ForcedPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This predictor realizes forced decoding. It stores one target
 sentence for each source sentence and outputs predictive probability
@@ -1297,10 +1297,15 @@ sentence for each source sentence and outputs predictive probability
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trg_test_file</strong> (<em>string</em>) &#8211; Path to the plain text file with
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>trg_test_file</strong> (<em>string</em>) &#8211; Path to the plain text file with
 the target sentences. Must have the
 same number of lines as the number
-of source sentences to decode</td>
+of source sentences to decode</li>
+<li><strong>spurious_words</strong> (<em>list</em>) &#8211; List of words that are permitted to
+occur anywhere in the sequence</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
@@ -3454,7 +3459,7 @@ current depth is zero, exclude closing brackets.</p>
 
 <dl class="class">
 <dt id="cam.sgnmt.predictors.structure.ForcedOSMPredictor">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.structure.</code><code class="descname">ForcedOSMPredictor</code><span class="sig-paren">(</span><em>trg_test_file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.structure.</code><code class="descname">ForcedOSMPredictor</code><span class="sig-paren">(</span><em>trg_wmap</em>, <em>trg_test_file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#ForcedOSMPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.ForcedOSMPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This predictor allows forced decoding with an OSM output, which
 essentially means running the OSM in alignment mode. This predictor
@@ -3469,10 +3474,15 @@ supressed until all words in the reference have been consumed.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>trg_test_file</strong> (<em>string</em>) &#8211; Path to the plain text file with
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>trg_wmap</strong> (<em>string</em>) &#8211; Path to the target wmap file. Used to
+grap OSM operation IDs.</li>
+<li><strong>trg_test_file</strong> (<em>string</em>) &#8211; Path to the plain text file with
 the target sentences. Must have the
 same number of lines as the number
-of source sentences to decode</td>
+of source sentences to decode</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
@@ -3536,16 +3546,46 @@ of source sentences to decode</td>
 
 <dl class="class">
 <dt id="cam.sgnmt.predictors.structure.OSMPredictor">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.structure.</code><code class="descname">OSMPredictor</code><span class="sig-paren">(</span><em>osm_type='osm'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#OSMPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.OSMPredictor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.structure.</code><code class="descname">OSMPredictor</code><span class="sig-paren">(</span><em>src_wmap</em>, <em>trg_wmap</em>, <em>use_jumps=True</em>, <em>use_auto_pop=False</em>, <em>use_unpop=False</em>, <em>use_pop2=False</em>, <em>use_src_eop=False</em>, <em>use_copy=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#OSMPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.OSMPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This predictor applies the following constraints to an OSM output:</p>
-<ul class="simple">
-<li>The number of EOP (end-of-phrase) tokens must not exceed the number
-of source tokens.</li>
-<li>JUMP_FWD and JUMP_BWD tokens are constraint to avoid jumping out of
-bounds.</li>
+<blockquote>
+<div><ul class="simple">
+<li>The number of POP tokens must be equal to the number of source
+tokens</li>
+<li>JUMP_FWD and JUMP_BWD tokens are constraint to avoid jumping out
+of bounds.</li>
 </ul>
+</div></blockquote>
+<p>The predictor supports the original OSNMT operation set (default)
+plus a number of variations that are set by the use_* arguments in
+the constructor.</p>
 <p>Creates a new osm predictor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src_wmap</strong> (<em>string</em>) &#8211; Path to the source wmap. Used to grap
+EOP id.</li>
+<li><strong>trg_wmap</strong> (<em>string</em>) &#8211; Path to the target wmap. Used to update
+IDs of operations.</li>
+<li><strong>use_jumps</strong> (<em>bool</em>) &#8211; If true, use SET_MARKER, JUMP_FWD and
+JUMP_BWD operations</li>
+<li><strong>use_auto_pop</strong> (<em>bool</em>) &#8211; If true, each word insertion
+automatically moves read head</li>
+<li><strong>use_unpop</strong> (<em>bool</em>) &#8211; If true, use SRC_UNPOP to move read head
+to the left.</li>
+<li><strong>use_pop2</strong> (<em>bool</em>) &#8211; If true, use two read heads to align
+phrases</li>
+<li><strong>use_src_eop</strong> (<em>bool</em>) &#8211; If true, expect EOP tokens in the src
+sentence</li>
+<li><strong>use_copy</strong> (<em>bool</em>) &#8211; If true, move read head at COPY operations</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="cam.sgnmt.predictors.structure.OSMPredictor.consume">
 <code class="descname">consume</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#OSMPredictor.consume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.OSMPredictor.consume" title="Permalink to this definition">¶</a></dt>
@@ -3616,6 +3656,34 @@ must contain blank separated &lt;length&gt;:&lt;score&gt; pairs in each line.</p
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of dicts mapping a length to its scores, one dict for each
 sentence.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.predictors.structure.update_src_osm_ids">
+<code class="descclassname">cam.sgnmt.predictors.structure.</code><code class="descname">update_src_osm_ids</code><span class="sig-paren">(</span><em>wmap_path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#update_src_osm_ids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.update_src_osm_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the OSM_*_ID variables using a source word map.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wmap_path</strong> (<em>string</em>) &#8211; Path to the wmap file.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="cam.sgnmt.predictors.structure.update_trg_osm_ids">
+<code class="descclassname">cam.sgnmt.predictors.structure.</code><code class="descname">update_trg_osm_ids</code><span class="sig-paren">(</span><em>wmap_path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/structure.html#update_trg_osm_ids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.structure.update_trg_osm_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the OSM_*_ID variables using a target word map.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wmap_path</strong> (<em>string</em>) &#8211; Path to the wmap file.</td>
 </tr>
 </tbody>
 </table>
@@ -4712,21 +4780,19 @@ sentence_id to the slave predictor</p>
 
 <dl class="class">
 <dt id="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.vocabulary.</code><code class="descname">MaskvocabPredictor</code><span class="sig-paren">(</span><em>words</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.vocabulary.</code><code class="descname">MaskvocabPredictor</code><span class="sig-paren">(</span><em>vocab_spec</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#MaskvocabPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This wrapper predictor hides certain words in the SGNMT
 vocabulary from the predictor. Those words are scored by the
 masked predictor with zero. The wrapper passes through consume()
 only for other words.</p>
-<p>Creates a new idxmap wrapper predictor. The index maps have
-to be plain text files, each line containing the mapping from
-a SGNMT word index to the slave predictor word index.</p>
+<p>Creates a new maskvocab wrapper predictor.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>words</strong> (<em>set</em>) &#8211; List of masked words</li>
+<li><strong>vocab_spec</strong> (<em>string</em>) &#8211; Vocabulary specification (see VocabSpec)</li>
 <li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Instance of the predictor with
 a different wmap than SGNMT</li>
 </ul>
@@ -4806,7 +4872,7 @@ sentence_id to the slave predictor</p>
 
 <dl class="class">
 <dt id="cam.sgnmt.predictors.vocabulary.SkipvocabPredictor">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.vocabulary.</code><code class="descname">SkipvocabPredictor</code><span class="sig-paren">(</span><em>max_id</em>, <em>stop_size</em>, <em>beam</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#SkipvocabPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.vocabulary.</code><code class="descname">SkipvocabPredictor</code><span class="sig-paren">(</span><em>vocab_spec</em>, <em>stop_size</em>, <em>beam</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#SkipvocabPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.SkipvocabPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.Predictor</span></code></a></p>
 <p>This predictor wrapper masks predictors with a larger vocabulary
 than the SGNMT vocabulary. The SGNMT OOV words are not scored with
@@ -4820,7 +4886,7 @@ in-vocabulary word scores are collected from the wrapped predictor.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>max_id</strong> (<em>int</em>) &#8211; All words greater than this are skipped</li>
+<li><strong>vocab_spec</strong> (<em>string</em>) &#8211; Vocabulary specification (see VocabSpec)</li>
 <li><strong>stop_size</strong> (<em>int</em>) &#8211; Stop internal beam search when the best
 stop_size words are in-vocabulary</li>
 <li><strong>beam</strong> (<em>int</em>) &#8211; Beam size of internal beam search</li>
@@ -4915,20 +4981,18 @@ method to pass through the set of target words to score correctly.</p>
 
 <dl class="class">
 <dt id="cam.sgnmt.predictors.vocabulary.UnboundedMaskvocabPredictor">
-<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.vocabulary.</code><code class="descname">UnboundedMaskvocabPredictor</code><span class="sig-paren">(</span><em>words</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#UnboundedMaskvocabPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.UnboundedMaskvocabPredictor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.vocabulary.</code><code class="descname">UnboundedMaskvocabPredictor</code><span class="sig-paren">(</span><em>vocab_spec</em>, <em>slave_predictor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#UnboundedMaskvocabPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.UnboundedMaskvocabPredictor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#cam.sgnmt.predictors.vocabulary.MaskvocabPredictor" title="cam.sgnmt.predictors.vocabulary.MaskvocabPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.vocabulary.MaskvocabPredictor</span></code></a>, <a class="reference internal" href="#cam.sgnmt.predictors.core.UnboundedVocabularyPredictor" title="cam.sgnmt.predictors.core.UnboundedVocabularyPredictor"><code class="xref py py-class docutils literal"><span class="pre">cam.sgnmt.predictors.core.UnboundedVocabularyPredictor</span></code></a></p>
 <p>This class is a version of <code class="docutils literal"><span class="pre">MaskvocabPredictor</span></code> for unbounded
 vocabulary predictors. This needs an adjusted <code class="docutils literal"><span class="pre">predict_next</span></code>
 method to pass through the set of target words to score correctly.</p>
-<p>Creates a new idxmap wrapper predictor. The index maps have
-to be plain text files, each line containing the mapping from
-a SGNMT word index to the slave predictor word index.</p>
+<p>Creates a new maskvocab wrapper predictor.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>words</strong> (<em>set</em>) &#8211; List of masked words</li>
+<li><strong>vocab_spec</strong> (<em>string</em>) &#8211; Vocabulary specification (see VocabSpec)</li>
 <li><strong>slave_predictor</strong> (<a class="reference internal" href="#cam.sgnmt.predictors.core.Predictor" title="cam.sgnmt.predictors.core.Predictor"><em>Predictor</em></a>) &#8211; Instance of the predictor with
 a different wmap than SGNMT</li>
 </ul>
@@ -5027,6 +5091,32 @@ sentence_id to the slave predictor</p>
 
 </dd></dl>
 
+<dl class="class">
+<dt id="cam.sgnmt.predictors.vocabulary.VocabSpec">
+<em class="property">class </em><code class="descclassname">cam.sgnmt.predictors.vocabulary.</code><code class="descname">VocabSpec</code><span class="sig-paren">(</span><em>spec_str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#VocabSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.VocabSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Helper class for maskvocab and skipvocab predictors.</p>
+<dl class="docutils">
+<dt>Takes a string that specifies a vocabulary. Examples:</dt>
+<dd>&#8216;10,11,12&#8217;: The tokens 10, 11, and 12
+&#8216;&gt;55&#8217;: All token IDs larger than 55
+&#8216;&lt;33,99&#8217;: All token IDs less than 33 and the token 99.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>spec_str</strong> (<em>string</em>) &#8211; String specification of the vocabulary</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="cam.sgnmt.predictors.vocabulary.VocabSpec.contains">
+<code class="descname">contains</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/cam/sgnmt/predictors/vocabulary.html#VocabSpec.contains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cam.sgnmt.predictors.vocabulary.VocabSpec.contains" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="module-cam.sgnmt.predictors">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-cam.sgnmt.predictors" title="Permalink to this headline">¶</a></h2>
@@ -5078,7 +5168,7 @@ added to <code class="docutils literal"><span class="pre">blocks.ui</span></code
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.0',
+            VERSION:'1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.predictors.forced &mdash; SGNMT 1.0 documentation</title>
+  <title>cam.sgnmt.predictors.forced &mdash; SGNMT 1.1 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 1.0 documentation" href="../../../../index.html"/>
+    <link rel="top" title="SGNMT 1.1 documentation" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0
+                1.1
               </div>
             
           
@@ -176,7 +176,7 @@
 <span class="sd">    1 along this path, and 0 otherwise.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_test_file</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg_test_file</span><span class="p">,</span> <span class="n">spurious_words</span><span class="o">=</span><span class="p">[]):</span>
         <span class="sd">&quot;&quot;&quot;Creates a new forced decoding predictor.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -184,6 +184,8 @@
 <span class="sd">                                    the target sentences. Must have the</span>
 <span class="sd">                                    same number of lines as the number</span>
 <span class="sd">                                    of source sentences to decode</span>
+<span class="sd">            spurious_words (list): List of words that are permitted to</span>
+<span class="sd">                                   occur anywhere in the sequence</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ForcedPredictor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span> <span class="o">=</span> <span class="p">[]</span>
@@ -192,6 +194,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">trg_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> 
                             <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span> <span class="o">+</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">=</span> <span class="mi">0</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">spurious_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">spurious_words</span><span class="p">)</span>
         
 <div class="viewcode-block" id="ForcedPredictor.get_unk_probability"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.get_unk_probability">[docs]</a>    <span class="k">def</span> <span class="nf">get_unk_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">posterior</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns negative infinity unconditionally: Words which are</span>
@@ -205,11 +208,13 @@
 <span class="sd">        key is either the next word in the target sentence or (if the</span>
 <span class="sd">        target sentence has no more words) the end-of-sentence symbol.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="n">w</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spurious_words</span><span class="p">}</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">):</span>
-            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="n">NEG_INF</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="n">NEG_INF</span>
+            <span class="n">ret</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span> <span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span></div>
+            <span class="n">ret</span><span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">EOS_ID</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
     
 <div class="viewcode-block" id="ForcedPredictor.initialize"><a class="viewcode-back" href="../../../../predictors.html#cam.sgnmt.predictors.forced.ForcedPredictor.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_sentence</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fetches the corresponding target sentence and resets the</span>
@@ -229,6 +234,8 @@
 <span class="sd">        Args:</span>
 <span class="sd">            word (int): Next word to consume</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spurious_words</span><span class="p">:</span>
+            <span class="k">return</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">):</span>
             <span class="n">trg_word</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_trg_sentence</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_consumed</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">trg_word</span> <span class="o">!=</span> <span class="n">utils</span><span class="o">.</span><span class="n">UNK_ID</span> <span class="ow">and</span> <span class="n">trg_word</span> <span class="o">!=</span> <span class="n">word</span><span class="p">:</span>
@@ -434,7 +441,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'1.0',
+            VERSION:'1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

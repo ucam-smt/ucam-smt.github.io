@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>cam.sgnmt.ui &mdash; SGNMT 1.0 documentation</title>
+  <title>cam.sgnmt.ui &mdash; SGNMT 1.1 documentation</title>
   
 
   
@@ -32,7 +32,7 @@
   
 
   
-    <link rel="top" title="SGNMT 1.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="SGNMT 1.1 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0
+                1.1
               </div>
             
           
@@ -408,10 +408,12 @@
                                  <span class="s1">&#39;predlimitbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;sepbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;mbrbeam&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;lenbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;syntaxbeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;combibeam&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;dfs&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;simpledfs&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;simplelendfs&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;restarting&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;flip&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;bucket&#39;</span><span class="p">,</span>
@@ -432,6 +434,8 @@
                         <span class="s2">&quot;only one predictor. Good for exhaustive search in &quot;</span>
                         <span class="s2">&quot;combination with --score_lower_bounds_file from a &quot;</span>
                         <span class="s2">&quot;previous (beam) run.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;simplelendfs&#39;: simpledfs variant with length-&quot;</span>
+                        <span class="s2">&quot;dependent lower bounds.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;restarting&#39;: Like DFS but with better admissible &quot;</span>
                         <span class="s2">&quot;pruning behavior.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;multisegbeam&#39;: Beam search for predictors with &quot;</span>
@@ -443,6 +447,8 @@
                         <span class="s2">&quot;symbol diversity.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;mbrbeam&#39;: Uses an MBR-based criterion to select &quot;</span>
                         <span class="s2">&quot;the next hypotheses at each time step.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;* &#39;lenbeam&#39;: Beam search that adds EOS extensions &quot;</span>
+                        <span class="s2">&quot;at each length to the results set.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;sepbeam&#39;: Associates predictors with hypos in &quot;</span>
                         <span class="s2">&quot;beam search and applies only one predictor instead &quot;</span>
                         <span class="s2">&quot;of all for hypo expansion.</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -684,6 +690,11 @@
                         <span class="s2">&quot; list of maximum accumulated values for each predictor&quot;</span>
                         <span class="s2">&quot; at each node expansion. Use &#39;-inf&#39; or &#39;neg_inf&#39; to &quot;</span>
                         <span class="s2">&quot;not restrict a specific predictor.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--simplelendfs_lower_bounds_file&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to a file with length dependent lower &quot;</span>
+                        <span class="s2">&quot;lower bounds for the simplelendfs decoder. Each line &quot;</span>
+                        <span class="s2">&quot;must be in the format &lt;len1&gt;:&lt;lower-bound1&gt; ... &quot;</span>
+                        <span class="s2">&quot;&lt;lenN&gt;:&lt;lower-boundN&gt;.&quot;</span><span class="p">)</span>
 
     <span class="c1">## Output options</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Output options&#39;</span><span class="p">)</span>
@@ -798,14 +809,16 @@
                         <span class="s2">&quot;             Options: syntax_max_terminal_id, &quot;</span>
                         <span class="s2">&quot;syntax_pop_id, syntax_max_depth, extlength_path</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;osm&#39;: Well-formed operation sequences.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;         Options: osm_type</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: osm_use_jumps, osm_use_auto_pop, &quot;</span>
+                        <span class="s2">&quot;osm_use_pop2, osm_use_src_eop, osm_use_copy, &quot;</span>
+                        <span class="s2">&quot;osm_use_unpop, src_wmap, trg_wmap</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;forcedosm&#39;: Forced decoding under OSM. Use in &quot;</span>
                         <span class="s2">&quot;combination with osm predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;         Options: trg_test</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;         Options: trg_test, trg_wmap</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;kenlm&#39;: n-gram language model (KenLM).</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;          Options: lm_pathr</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;forced&#39;: Forced decoding with one reference</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;            Options: trg_test</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;            Options: trg_test,forced_spurious</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;forcedlst&#39;: Forced decoding with a Moses n-best &quot;</span>
                         <span class="s2">&quot;list (n-best list rescoring)</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;               Options: trg_test, forcedlst_match_unk&quot;</span>
@@ -857,7 +870,7 @@
                         <span class="s2">&quot;            Options: src_idxmap, trg_idxmap</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;maskvocab&#39;: Hides certain words in the SGNMT vocab&quot;</span>
                         <span class="s2">&quot;ulary from the masked predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;            Options: maskvocab_words</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;            Options: maskvocab_vocab</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;rank&#39;: Uses the rank of a word in the score list &quot;</span>
                         <span class="s2">&quot;of the wrapped predictor, not the score itself.</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;glue&#39;: Masks a sentence-level predictor when SGNMT&quot;</span>
@@ -878,7 +891,7 @@
                         <span class="s2">&quot;            Options: word2char_map</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;skipvocab&#39;: Skip a subset of the predictor &quot;</span>
                         <span class="s2">&quot;vocabulary.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;               Options: skipvocab_max_id, &quot;</span>
+                        <span class="s2">&quot;               Options: skipvocab_vocab, &quot;</span>
                         <span class="s2">&quot;skipvocab_stop_size</span><span class="se">\n</span><span class="s2">&quot;</span>
                         <span class="s2">&quot;* &#39;ngramize&#39;: Extracts n-gram posterior from &quot;</span>
                         <span class="s2">&quot;predictors without token-level history.</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -1111,11 +1124,27 @@
                        <span class="s2">&quot;containing their ids. Useful when non-terminals do &quot;</span>
                        <span class="s2">&quot;not occur consecutively in data (e.g. internal bpe &quot;</span>
                        <span class="s2">&quot;units.)&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--osm_type&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;osm&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
-                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Set of operations used for OSM predictor.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                       <span class="s2">&quot;- &#39;osm&#39;: Original OSNMT of Stahlberg et al. (2018)</span><span class="se">\n</span><span class="s2">&quot;</span>
-                       <span class="s2">&quot;- &#39;srcosm&#39;: Original OSNMT where IDs&gt;7 are POP</span><span class="se">\n</span><span class="s2">&quot;</span>
-                       <span class="s2">&quot;- &#39;pbosm&#39;: Phrase-based OSNMT&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--osm_use_jumps&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is true, use SET_MARKER, JUMP_BWD and &quot;</span>
+                        <span class="s2">&quot;JUMP_FWD operations to control a target write head&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--osm_use_auto_pop&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is true, all word insertion operations &quot;</span>
+                        <span class="s2">&quot;automatically move the source read head by one.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--osm_use_unpop&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is true, use SRC_UNPOP to move the &quot;</span>
+                        <span class="s2">&quot;source read head by one to the left.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--osm_use_pop2&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is true, use phrase-based OSM with two &quot;</span>
+                        <span class="s2">&quot;source read heads.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--osm_use_src_eop&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is true, the source sentence is pre-&quot;</span>
+                        <span class="s2">&quot;segmented with EOP markers, and SRC_POP operations &quot;</span>
+                        <span class="s2">&quot;advance the read head to the next segment.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--osm_use_copy&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is true, use COPY operation that &quot;</span>
+                        <span class="s2">&quot;automatically move source read head by one. The &quot;</span>
+                        <span class="s2">&quot;aligned source token is not copied by SGNMT - this &quot;</span>
+                        <span class="s2">&quot;has to be done in post-processing.&quot;</span><span class="p">)</span>
 
     <span class="c1"># Length predictors</span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Length predictor options&#39;</span><span class="p">)</span>
@@ -1188,9 +1217,10 @@
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ngramc_discount_factor&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If this is non-negative, discount ngram counts &quot;</span>
                        <span class="s2">&quot;by this factor each time the ngram is consumed&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--skipvocab_max_id&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30003</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;All tokens above this threshold are skipped &quot;</span>
-                        <span class="s2">&quot;by the skipvocab predictor wrapper.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--skipvocab_vocab&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Tokens specified here are skipped by the &quot;</span>
+                        <span class="s2">&quot;skipvocab predictor wrapper. Accepts strings like &quot;</span>
+                        <span class="s2">&quot;&#39;4,7,12&#39;, &#39;&gt;66,4&#39;, etc.&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--skipvocab_stop_size&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The internal beam search of the skipvocab &quot;</span>
                         <span class="s2">&quot;predictor wrapper stops if the best stop_size &quot;</span>
@@ -1204,6 +1234,10 @@
                         <span class="s2">&quot;This is only required for the predictors &#39;forced&#39; &quot;</span>
                         <span class="s2">&quot;and &#39;forcedlst&#39;. For &#39;forcedlst&#39; this needs to point &quot;</span>
                         <span class="s2">&quot;to an n-best list in Moses format.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--forced_spurious&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma separated list of token IDs that are &quot;</span>
+                        <span class="s2">&quot;allowed to occur anywhere in a sequence when the &quot;</span>
+                        <span class="s2">&quot;&#39;forced&#39; predictor is used&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--forcedlst_sparse_feat&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> 
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Per default, the forcedlst predictor uses the &quot;</span>
                         <span class="s2">&quot;combined score in the Moses nbest list. Alternatively,&quot;</span>
@@ -1254,10 +1288,10 @@
                         <span class="s2">&quot; to the target side mapping file. The format is &quot;</span>
                         <span class="s2">&quot;&#39;&lt;index&gt; &lt;alternative_index&gt;&#39;. The mapping must be &quot;</span>
                         <span class="s2">&quot;complete and should be a bijection.&quot;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--maskvocab_words&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for maskvocab wrapper predictor. &quot;</span>
-                        <span class="s2">&quot;Comma-separated list of token IDs which are masked &quot;</span>
-                        <span class="s2">&quot;out.&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--maskvocab_vocab&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Token IDs which are masked out by the &quot;</span>
+                       <span class="s2">&quot;maskvocab predictor wrapper. Accepts strings like &quot;</span>
+                       <span class="s2">&quot;&#39;4,7,12&#39;, &#39;&gt;66,4&#39;, etc.&quot;</span> <span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--altsrc_test&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;test_en.alt&quot;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only required for altsrc wrapper predictor. Path&quot;</span>
                         <span class="s2">&quot; to the alternative source sentences.&quot;</span><span class="p">)</span>
@@ -1529,7 +1563,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'1.0',
+            VERSION:'1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
